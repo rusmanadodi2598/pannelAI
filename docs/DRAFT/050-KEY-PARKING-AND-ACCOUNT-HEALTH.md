@@ -17,7 +17,7 @@ dikoreksi di bagian Hasil masing-masing grup, dan itu tempat grup C harus mulai.
 
 | | |
 | --- | --- |
-| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. **T1(b) landed 2026-10-13** (`quota_cooldown_until`, migrasi 000017). Yang terbuka tinggal **T2(ii) retry ber-eskalasi** (diukur salah, diundur, lihat Hasil grup C). **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** dan **D4 (probe)** |
+| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. **T1(b) landed 2026-10-13** (`quota_cooldown_until`, migrasi 000017). **T2(ii) landed 2026-10-13** (ladder `oauth_retry_at`, migrasi 000018). Sepuluh temuan laporan owner: semua tertutup. **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** dan **D4 (probe)** |
 | **Cakupan** | `app-serv/internal/dataplane/` (`engine_failure.go`, `engine_relay.go`, `transport_call.go`, `selection.go`, `selection_health.go`, `ping.go`), `internal/domain/` (`upstream_key_health.go`, `upstream_endpoint.go`, `oauth_refresh.go`, `settings_routing.go`), `internal/repository/postgres/` (`endpoint_key_health.go`, `endpoint_parity.go`, `endpoint_oauth_batch.go`, `quota_published.go`), `internal/service/` (`endpoint_probe_use.go`, `media_perform.go`) |
 | **Tidak termasuk** | `app-ui`. Kolom `rate_limited_until` dan `test_status` dirender panel (`EndpointKeysTable.svelte`, `EndpointDetailDrawer.svelte`) dan ikut berubah bentuknya hanya jika D3/D5 memutuskan begitu; itu pass tersendiri |
 | **Struktural (AGENTS.md §1.9)** | **Bukan N/A.** T1 mengaktifkan kolom yang hari ini mati, T2/T6 mengubah siklus hidup `status`, T3/T4 mengubah arti `KeyFailureClass` yang merupakan kontrak §7.5, dan T8 menambahkan field ke `settings_routing`. `SYSTEM_MAP.md` harus diubah pada commit yang mengubahnya, dan SPEC-API §7.5 perlu dibaca ulang sebelum D3 dikerjakan |
@@ -248,7 +248,7 @@ Minimal dua hal yang harus dibereskan, dan hanya satu yang butuh keputusan: kome
 debate di sini), dan jalur tulis harus ada atau filternya dihapus. Arah fix menunggu D1/T4, karena penulis alami
 kolom ini adalah 429 pada level *endpoint*, yang hari ini hanya ada di level kunci.
 
-#### T2 (MEDIUM) Benar, TIDAK dikerjakan: satu-satunya transisi akun → `error` adalah OAuth dead-letter, dan itu kuburan satu arah
+#### T2 (MEDIUM) Benar, LANDED: satu-satunya transisi akun → `error` adalah OAuth dead-letter, dan itu kuburan satu arah
 
 `MarkUnhealthy` menulis `UpstreamEndpointError` (`oauth_refresh.go:58-61`), satu pemanggil
 (`oauth_flow_refresh.go:179`), dan `grep UpstreamEndpointError` di luar deklarasi
@@ -887,3 +887,67 @@ baru, dan itu bukan kegagalan prediksi, itu default yang benar.
 `-race` hijau (9.2s / 2.0s); `go-lint` (vet, vet tagged, gofmt, staticcheck, golangci-lint 0 issues) PASS tanpa
 warning baru; `go-headers` 1292 berkas; `antislop` PASS; `contract-openapi` PASS (kontrak tidak berubah: kolom ini
 tidak naik ke wire); `contract-drift` PASS; `secrets` PASS; `panel-check` PASS.
+
+## T2(ii) landed, 2026-10-13 (ladder kunjungan untuk akun dead-letter)
+
+Keputusan (ii) akhirnya sampai, lewat bentuk yang diukur aman, bukan lewat bentuk yang pertama saya coba.
+
+**Yang salah dan tetap salah:** menyertakan akun `error` ke sweep worker. Token hasil dead-letter selalu expired,
+jadi selalu `due`, jadi sweep itu mengulang **seluruh budget 5 attempt + sleep-nya** setiap tick terhadap vendor yang
+sudah menjawab `invalid_grant`. Pin `TestOAuthRefreshWorkerRetriesThenDeadLetters` menangkapnya dua kali: pertama
+saat saya kerjakan (`grant calls = 6`), lalu sekali lagi saat ladder ini landed, karena pin itu memang menyimpan
+perilaku lama.
+
+**Yang landed:** satu jendela per akun, disimpan, yang hanya melebar.
+
+| Kunjungan | Jendela setelahnya |
+|---|---|
+| burial (percobaan ke-5) | 1 jam |
+| revisit gagal #1 | 2 jam |
+| #2 | 4 jam |
+| #3 | 8 jam |
+| #4 | 16 jam |
+| #5 dan seterusnya | 24 jam, plafon |
+
+Bentuknya: `upstream_endpoints.oauth_retry_at` + `oauth_retry_rounds` (migrasi `000018`), domain
+`ScheduleRefreshRetry` / `RefreshRetryDue` / `ClearRefreshRetry`, `Status()` menjawab `RetryDue` yang sudah
+dibandingkan ke instant pembacaannya sendiri (jadi worker tidak butuh jam terpisah), dan worker memanggil
+`retryDeadLettered` untuk akun `error`: **satu grant per jendela**, bukan burst. Grant yang berhasil mengakhiri
+dead-letter dan ladder bersamaan, lewat jalur yang sudah ada dari grup C.
+
+**Yang berubah pada pin test, dan ini perlu dicatat:** blok penutup
+`TestOAuthRefreshWorkerRetriesThenDeadLetters` sebelumnya berbunyi "A dead-lettered endpoint is not retried on later
+sweeps" dan mem-pin `grant calls == 5` selamanya. Itu bukan collateral: itu pernyataan bahwa kuburan satu arah, yaitu
+perilaku yang keputusan (ii) minta ganti. Blok itu sekarang mem-pin tiga hal sekaligus: di dalam jendela tidak terjadi
+apa-apa, lewat jendela tepat satu grant, dan akun tetap terkubur dengan rounds = 2. Test baru
+`TestOAuthRefreshWorkerRevisitsAndRecoversADeadLetteredAccount` mengunci manfaat sebenarnya: vendor yang token
+endpoint-nya mati selama burst, lalu pulih, kini ditemukan sendiri tanpa ada operator yang melihat.
+
+**Yang sengaja tidak dibuat:** index (pembacanya sudah dibatasi halaman yang sama dengan layar status), kolom
+`oauth_retry_*` di agregat selain dua di atas, dan attempt-counter worker yang persisten (burst 5 percobaan tetap
+in-memory seperti sebelumnya; yang tahan-restart hanya ladder).
+
+**Naik ke wire:** `GET .../oauth/status` kini menjawab `refresh_retry_at` dan `refresh_retry_rounds` per endpoint
+(kontrak YAML + `openapi.json` diregenerasi). Alasannya: temuan ini dilaporkan justru karena negara kuburan tidak
+terlihat; jendela yang tak terbaca adalah negara yang sama dengan selisih satu kolom.
+
+Berkas baru: `domain/upstream_endpoint_oauth_retry.go` (85), `domain/upstream_endpoint_oauth_retry_test.go` (119),
+`service/oauth_refresh_retry` menyatu di `oauth_refresh_recovery_test.go` (62 → 118),
+`postgres/endpoint_oauth_retry_integration_test.go` (115), migrasi `000018` up/down. Berkas yang berubah:
+`domain/upstream_endpoint.go`, `domain/upstream_endpoint_parity.go`, `service/oauth_flow_refresh.go`,
+`service/oauth_refresh_worker.go`, `service/endpoint_stub_test.go`, `handler/oauth.go`, `schema/oauth.go`,
+`postgres/endpoint_row.go`, `endpoint_batch.go`, `endpoint_oauth_batch.go`, `endpoint_jsonb.go`, kontrak YAML +
+`openapi.json`, `SYSTEM_MAP.md`, `docs/SPEC-API/001-SPEC-API.md`.
+
+### Satu jebakan yang hampir lolos: test double yang diam-diam membuang kolom
+
+`service/endpoint_stub_test.go:withKeys` merekonstruksi agregat lewat `RehydrateUpstreamEndpoint` dan **menulis ulang
+daftar parity secara eksplisit**. Tanpa perubahan di sana, ladder hasil `Update` hilang antara tulis dan baca, dan
+`Status()` akan menjawab `RetryDue` selalu benar: worker akan revisit setiap tick persis seperti bug yang baru saja
+diperbaiki, dan seluruh test service tetap hijau karena double-nya yang bohong. Dok double itu sudah menyatakan ini
+"the drift this double exists to avoid"; dok `domain/upstream_endpoint_parity_load_test.go` juga. Keduanya kini
+membawa tiga kolom baru, dan test load itu yang akan gagal lebih dulu kalau ada kolom keempat yang lupa.
+
+### Gerbang
+
+Lihat bagian "Gerbang" di bawah untuk hasil `go test -race`, integrasi PostgreSQL, dan keenam gate skrip pada pass ini.

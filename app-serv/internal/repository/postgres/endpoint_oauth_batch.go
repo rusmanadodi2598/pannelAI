@@ -94,8 +94,10 @@ UPDATE upstream_endpoints
        last_error = $13,
        last_error_at = $14,
        error_code = $15,
-       proxy_pool_id = $16
- WHERE id = $17`
+       proxy_pool_id = $16,
+       oauth_retry_at = $17,
+       oauth_retry_rounds = $18
+ WHERE id = $19`
 
 	args := []any{
 		endpoint.Label(), endpoint.Priority(), string(endpoint.Status()),

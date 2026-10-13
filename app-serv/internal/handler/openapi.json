@@ -5116,6 +5116,16 @@
           },
           "refresh_state": {
             "type": "string"
+          },
+          "refresh_retry_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the worker will next attempt this account's refresh grant. Absent on a live account: the ladder only speaks for an account the vendor has already refused five times (SPEC-API-001 §7.4, draft 050 T2)."
+          },
+          "refresh_retry_rounds": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many times the account has been buried without a grant succeeding, which is the step its next window was taken from."
           }
         },
         "required": [

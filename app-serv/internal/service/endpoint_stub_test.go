@@ -81,6 +81,11 @@ func (s *memEndpointStore) withKeys(endpoint domain.UpstreamEndpoint) domain.Ups
 			GlobalPriority: endpoint.GlobalPriority(), DefaultModel: endpoint.DefaultModel(),
 			ConsecutiveUseCount: endpoint.ConsecutiveUseCount(), LastErrorCode: code,
 			LastErrorMessage: message, LastErrorAt: at, ProxyPoolID: endpoint.ProxyPoolID(),
+			// The quota cooldown and the OAuth retry ladder ride the same read, and
+			// dropping them here would hide them from every sweep this double feeds.
+			QuotaCooldownUntil: endpoint.QuotaCooldownUntil(),
+			RefreshRetryAt:     endpoint.RefreshRetryAt(),
+			RefreshRetryRounds: endpoint.RefreshRetryRounds(),
 		})
 }
 

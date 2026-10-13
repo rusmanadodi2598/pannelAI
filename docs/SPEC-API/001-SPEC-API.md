@@ -214,7 +214,7 @@ recorded here so their absence reads as a decision rather than a gap
 | POST   | `/api/v1/providers/{provider_id}/test-models`    | S    | `{limit?}` sweeps the provider's chat models in catalog order; answers `{provider_id, source, warning?, tested, total, stopped?, results[]}`                                              | P1                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/start`    | S    | `{redirect_uri?}` → `{authorize_url, state}` (OAuth providers only)                                                                                                                 | P2                                                                   |
 | GET    | `/api/v1/providers/{provider_id}/oauth/callback` | P    | Completes flow (validates `state` replay-guard), creates upstream endpoint + tokens; `302` redirect for browsers, `200` JSON body for headless callers (`Accept: application/json`) | P2                                                                   |
-| GET    | `/api/v1/providers/{provider_id}/oauth/status`   | S    | Token expiry / refresh state per endpoint                                                                                                                                           | P2                                                                   |
+| GET    | `/api/v1/providers/{provider_id}/oauth/status`   | S    | Token expiry / refresh state per endpoint, plus the dead-letter's next visit                                                                                                                                           | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/refresh`  | S    | Force token refresh (worker also auto-refreshes at `refresh_lead`)                                                                                                                  | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/device/start` | S | `{}` → `{device_code, verification_url, user_code?, interval_seconds, expires_in}` (device-flow providers: the registry entry declares no authorize URL; `user_code` rides only with a round whose flow mints a short code)                            | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/device/poll`  | S | `{device_code}` → `{status: "pending"}` while the operator is still authorizing, then `{status: "connected", endpoint_id, token_hint, created}`                                        | P2                                                                   |
@@ -289,6 +289,17 @@ hands out twice is stored once. The connected account then follows the same iden
 unreadable identity must not void a login the vendor already granted), and falls back to the synthetic
 `qoder-user-<user_id>` email the match still recognizes. The machine id the round minted is persisted on
 the account, because every later signed request replays it.
+
+The refresh worker's dead letter is not a grave with no exit. Five consecutive failures on one account move it to
+`error` and open a **retry ladder**: the worker visits it again an hour later, then on a window that doubles per
+failed visit up to once a day (`refresh_retry_at`, `refresh_retry_rounds` on migration 000018, both shown by
+`GET .../oauth/status` and absent on a live account). The ladder exists because a dead-lettered token is expired,
+so the account reads `due` on every tick: without a window, sweeping these accounts would re-spend the whole
+five-attempt budget, with its sleeps, on a vendor that had already answered `invalid_grant`. A grant the vendor
+accepts ends the dead letter, clears the ladder, and returns the account to `active` on the token's own clock; the
+operator's `POST .../oauth/refresh` reaches these accounts too, which is the second exit and the one that needs no
+window. Nothing here changes serving: an `error` account is not selected, and a revisit that fails leaves it
+buried with the reason replaced by what this attempt hit (draft `050` T2 decision ii).
 
 A device token's expiry arrives in any of four shapes (a millisecond epoch as number or numeric string, an
 RFC3339 string, or `expires_in` seconds) and is parsed in that order, falling back to thirty days and
@@ -1436,3 +1447,12 @@ one key that took the throttle. Two questions, two columns: the key's park decid
 decides who gets polled. The cooldown extends only, is taken as `GREATEST` in the database so a concurrent write
 cannot shorten it, expires on its own with no sweeper, and is not cleared even by a served call, because a model
 endpoint that answered says nothing about whether the usage endpoint will._
+
+_Changelog 2026-10-13: §7.4 gives the OAuth dead letter a retry ladder and `GET .../oauth/status` the two fields that
+show it (draft `050` T2 decision ii, migration 000018). Group C had already measured why the obvious fix was wrong:
+including `error` accounts in the worker's sweep re-ran the full five-attempt budget on every tick, because a
+dead-lettered token is expired and therefore always `due` (the pinned test caught it at `grant calls = 6`). The window
+is what makes the account reachable without making it hammered: one hour after the burial, doubling per failed visit
+to once a day, stored rather than inferred because a past deadline looks the same whether it is the first visit or the
+tenth. A grant that works clears the ladder and the dead letter together, so an account buried by a vendor outage now
+recovers with nobody watching it, which is the harm this decision was asked for._

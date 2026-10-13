@@ -47,6 +47,10 @@ type EndpointParity struct {
 	// same load and written by the same outcome call; it is the published-quota
 	// poller's wait (§7.12), not a serving input.
 	QuotaCooldownUntil *time.Time
+	// The OAuth dead-letter ladder rides the same load for the same reason: it is
+	// read on every status listing and written by the refresh path (§7.4).
+	RefreshRetryAt     *time.Time
+	RefreshRetryRounds int
 }
 
 // Accessors for the parity fields. They are grouped here rather than beside the

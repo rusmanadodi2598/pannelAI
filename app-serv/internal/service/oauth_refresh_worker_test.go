@@ -137,11 +137,9 @@ func TestOAuthRefreshWorkerRetriesThenDeadLetters(t *testing.T) {
 	if endpoint.TestStatus().State() != domain.EndpointTestFail {
 		t.Fatalf("test state = %q, want fail with a reason", endpoint.TestStatus().State())
 	}
-	// A dead-lettered endpoint is not retried on later sweeps.
-	fixture.advance(time.Hour)
-	if refreshed := fixture.worker.Sweep(context.Background()); refreshed != 0 {
-		t.Fatalf("post-dead-letter sweep refreshed = %d, want 0", refreshed)
-	}
+	// The burst stops at the dead letter: the sweep that buries an account does not
+	// visit it again, because the ladder in the row decides when that happens
+	// (TestOAuthRefreshWorkerVisitsTheGraveOnItsWindow owns the visits).
 	if calls := len(fixture.tokens.grantCalls); calls != oauthRefreshMaxAttempts {
 		t.Fatalf("grant calls = %d, want exactly the %d attempts", calls, oauthRefreshMaxAttempts)
 	}

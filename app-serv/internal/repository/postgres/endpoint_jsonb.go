@@ -173,6 +173,8 @@ func parityColumns(endpoint domain.UpstreamEndpoint) []any {
 		at,
 		nullIfEmpty(code),
 		nullIfEmpty(endpoint.ProxyPoolID()),
+		endpoint.RefreshRetryAt(),
+		endpoint.RefreshRetryRounds(),
 	}
 }
 

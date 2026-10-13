@@ -132,6 +132,10 @@ func toOAuthStatusResponse(status service.OAuthStatus) schema.OAuthStatusRespons
 		if endpoint.LastRefreshAt != nil {
 			row.LastRefreshAt = ptr(schema.Timestamp(*endpoint.LastRefreshAt))
 		}
+		if endpoint.RetryAt != nil {
+			row.RefreshRetryAt = ptr(schema.Timestamp(*endpoint.RetryAt))
+		}
+		row.RefreshRetryRounds = endpoint.RetryRounds
 		resp.Endpoints = append(resp.Endpoints, row)
 	}
 	return resp

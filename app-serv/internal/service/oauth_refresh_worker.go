@@ -75,10 +75,11 @@ func (w *OAuthRefreshWorker) Run(ctx context.Context, interval time.Duration) {
 	}
 }
 
-// Sweep refreshes every due, active OAuth endpoint of every provider whose
-// flow the shared client can serve, and returns how many tokens it refreshed.
-// Device and connector flows are skipped: their cadence belongs to their own
-// connectors, and a provider with no token endpoint has nothing to refresh.
+// Sweep refreshes every due, active OAuth endpoint of every provider whose flow
+// the shared client can serve, and visits the dead-lettered ones whose ladder window
+// has passed. It returns how many tokens it refreshed. Device and connector flows
+// are skipped: their cadence belongs to their own connectors, and a provider with no
+// token endpoint has nothing to refresh.
 func (w *OAuthRefreshWorker) Sweep(ctx context.Context) int {
 	refreshed := 0
 	for _, provider := range w.index.All() {
@@ -93,20 +94,51 @@ func (w *OAuthRefreshWorker) Sweep(ctx context.Context) int {
 			continue
 		}
 		for _, endpoint := range status.Endpoints {
-			// `error` stays out deliberately: a dead-lettered token is expired, so it
-			// reads due on every tick and the sweep would re-run the whole attempt
-			// budget against a vendor that already said invalid_grant. Recovery is the
-			// operator's refresh call, which does reach these accounts (draft 050 T2).
-			if endpoint.Status != string(domain.UpstreamEndpointActive) ||
-				endpoint.RefreshState != domain.RefreshDue {
+			if endpoint.RefreshState != domain.RefreshDue {
 				continue
 			}
-			if w.sweepOne(ctx, provider.ID, endpoint) {
-				refreshed++
+			switch endpoint.Status {
+			case string(domain.UpstreamEndpointActive):
+				if w.sweepOne(ctx, provider.ID, endpoint) {
+					refreshed++
+				}
+			case string(domain.UpstreamEndpointError):
+				// A dead-lettered account is due on every tick, because its token is
+				// expired, so it gets one attempt per ladder window rather than the
+				// burst below: five grants and their sleeps, every tick, against a
+				// vendor that already answered invalid_grant (draft 050 T2).
+				if !endpoint.RetryDue {
+					continue
+				}
+				if w.retryDeadLettered(ctx, provider.ID, endpoint) {
+					refreshed++
+				}
 			}
 		}
 	}
 	return refreshed
+}
+
+// retryDeadLettered revisits one buried account with a single grant. Success ends
+// the dead-letter and the ladder, both inside the refresh path; failure widens the
+// next window and leaves the account where it is, still `error`, with the reason
+// replaced by what this attempt actually hit.
+func (w *OAuthRefreshWorker) retryDeadLettered(ctx context.Context, providerID string, endpoint OAuthEndpointState) bool {
+	_, err := w.flow.Refresh(ctx, providerID, endpoint.EndpointID)
+	if err == nil {
+		slog.Info("oauth refresh worker recovered a dead-lettered account",
+			"provider", providerID, "endpoint", endpoint.EndpointID, "rounds", endpoint.RetryRounds)
+		return true
+	}
+	message := "oauth refresh revisit failed: " + err.Error()
+	if deadErr := w.flow.MarkRefreshDeadLetter(ctx, endpoint.EndpointID, message); deadErr != nil {
+		slog.Error("oauth refresh worker could not re-schedule the dead-lettered endpoint",
+			"endpoint", endpoint.EndpointID, "error", deadErr)
+	}
+	slog.Warn("oauth refresh revisit of a dead-lettered account failed",
+		"provider", providerID, "endpoint", endpoint.EndpointID,
+		"round", endpoint.RetryRounds, "error", err)
+	return false
 }
 
 // sweepOne refreshes one endpoint and applies the retry policy on failure:

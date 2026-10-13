@@ -48,6 +48,10 @@ type UpstreamEndpoint struct {
 	// input: Available() never reads it. Its rule lives in
 	// upstream_endpoint_quota_cooldown.go.
 	quotaCooldownUntil *time.Time
+	// refreshRetryAt and refreshRetryRounds are the dead-letter OAuth ladder. Their
+	// rule lives in upstream_endpoint_oauth_retry.go.
+	refreshRetryAt     *time.Time
+	refreshRetryRounds int
 
 	// The service-account fields. Their rules live in
 	// upstream_endpoint_service_account.go.
@@ -121,6 +125,8 @@ func RehydrateUpstreamEndpoint(
 		lastErrorAt:         parity.LastErrorAt,
 		proxyPoolID:         parity.ProxyPoolID,
 		quotaCooldownUntil:  parity.QuotaCooldownUntil,
+		refreshRetryAt:      parity.RefreshRetryAt,
+		refreshRetryRounds:  parity.RefreshRetryRounds,
 		saProjectID:         serviceAccount.ProjectID,
 		saLocation:          serviceAccount.Location,
 	}

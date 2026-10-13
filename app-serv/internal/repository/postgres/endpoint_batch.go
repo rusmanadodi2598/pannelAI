@@ -156,9 +156,10 @@ INSERT INTO upstream_endpoints
      test_status, rate_limited_until, last_used_at, created_at, updated_at,
      global_priority, default_model, consecutive_use_count,
      last_error, last_error_at, error_code, proxy_pool_id,
+     oauth_retry_at, oauth_retry_rounds,
      sa_project_id, sa_location)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-        $14, $15, $16, $17, $18, $19, $20, $21, $22)`
+        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`
 
 	serviceAccount := endpoint.ServiceAccount()
 	args := []any{

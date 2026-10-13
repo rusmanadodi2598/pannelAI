@@ -28,6 +28,15 @@ type OAuthEndpointState struct {
 	ExpiresAt     *time.Time
 	LastRefreshAt *time.Time
 	RefreshState  string
+	// RetryDue says whether this account may be attempted at the instant the status
+	// was read: a dead-lettered one is withheld until its ladder window passes.
+	RetryDue bool
+	// RetryAt is that window, carried for the read that shows the operator when the
+	// account will be visited again; nil when nothing is buried.
+	RetryAt *time.Time
+	// RetryRounds is how many times the account has been buried without a grant
+	// succeeding, which is the ladder step the next window came from.
+	RetryRounds int
 }
 
 // OAuthStatus answers the status route: the flow kind the provider declares
@@ -79,6 +88,9 @@ func (s *OAuthFlowService) Status(ctx context.Context, providerID string) (OAuth
 			ExpiresAt:     credentialExpiry(credential),
 			LastRefreshAt: lastRefresh(credential),
 			RefreshState:  domain.OAuthRefreshState(credential, refreshLead(entry.OAuth), now),
+			RetryDue:      endpoint.RefreshRetryDue(now),
+			RetryAt:       endpoint.RefreshRetryAt(),
+			RetryRounds:   endpoint.RefreshRetryRounds(),
 		})
 	}
 	return OAuthStatus{ProviderID: name, Flow: flowKind(entry.OAuth), Endpoints: states}, nil
@@ -164,21 +176,29 @@ func (s *OAuthFlowService) refreshEndpoint(ctx context.Context, oauth *registry.
 
 	endpoint.SetOAuth(&next, now)
 	// A grant the vendor accepted is the evidence the dead-letter was wrong, so it
-	// also ends the dead-letter (draft 050 T2).
+	// also ends the dead-letter and its retry ladder (draft 050 T2).
 	endpoint.MarkHealthy(now)
+	endpoint.ClearRefreshRetry(now)
 	if err := s.store.UpdateIfUnchanged(ctx, endpoint, loaded); err != nil {
 		return nil, err
 	}
 	return next.ExpiresAt(), nil
 }
 
-// MarkRefreshDeadLetter moves an endpoint to the error state with the reason
-// its refresh died, the terminal act of the worker's retry policy.
+// MarkRefreshDeadLetter moves an endpoint to the error state with the reason its
+// refresh died, the terminal act of the worker's retry policy, and opens the
+// account's next visit on the widening ladder (draft 050 T2 decision ii).
+//
+// It is the same call for a burial and for a failed revisit: the ladder is in the
+// row, so a second call an hour later widens the next window without the caller
+// tracking anything.
 func (s *OAuthFlowService) MarkRefreshDeadLetter(ctx context.Context, endpointID, message string) error {
 	endpoint, err := s.store.GetByID(ctx, endpointID)
 	if err != nil {
 		return err
 	}
-	endpoint.MarkUnhealthy(message, s.clock())
+	now := s.clock()
+	endpoint.MarkUnhealthy(message, now)
+	endpoint.ScheduleRefreshRetry(now)
 	return s.store.Update(ctx, endpoint)
 }
