@@ -59,3 +59,16 @@ func (e *UpstreamEndpoint) MarkUnhealthy(message string, now time.Time) {
 	e.status = UpstreamEndpointError
 	e.RecordTest(string(EndpointTestFail), 0, message, now)
 }
+
+// MarkHealthy returns an account that health tracking parked to `error` once its
+// credential demonstrably worked again. It is limited to `error` on purpose:
+// `disabled` is an operator decision, and no worker may vote it back into
+// rotation. The recorded test result is left as the last probe reported it,
+// because a refresh grant is not a connectivity measurement.
+func (e *UpstreamEndpoint) MarkHealthy(now time.Time) {
+	if e.status != UpstreamEndpointError {
+		return
+	}
+	e.status = UpstreamEndpointActive
+	e.updatedAt = now
+}

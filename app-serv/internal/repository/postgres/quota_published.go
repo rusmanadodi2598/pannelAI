@@ -102,9 +102,10 @@ func (r *PublishedQuotaRepository) DueForRefresh(ctx context.Context, now time.T
 	}
 	// The cooldown filter sits in the WHERE, before the LIMIT, not after the rows come back:
 	// a throttled endpoint that still occupies an oldest-due slot would eat budget every tick
-	// and starve the accounts behind it. `rate_limited_until` is the deadline the data plane
-	// already sets when that endpoint answers 429 to real traffic, so the poller respects the
-	// cooldown an operator's requests have already proven necessary (AGENTS.md §1.6).
+	// and starve the accounts behind it. It is inert today: no Go path writes a deadline into
+	// `upstream_endpoints.rate_limited_until`, so the comparison is always against NULL and the
+	// poller honours no cooldown that an operator's requests proved necessary. Wiring that write,
+	// or dropping this filter, is draft 050 T1 (AGENTS.md §1.6).
 	const q = `SELECT ` + publishedStateColumns + `
 	  FROM quota_published_state s
 	 WHERE s.next_attempt_at <= $1

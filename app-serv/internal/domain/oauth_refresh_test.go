@@ -118,3 +118,55 @@ func TestMarkUnhealthySetsErrorStatusAndReason(t *testing.T) {
 		})
 	}
 }
+
+// TestUpstreamEndpoint_MarkHealthyReturnsOnlyFromError is the counterpart of the
+// dead-letter above. It is limited to `error` because `disabled` is an operator
+// decision and health tracking has no authority to reverse it.
+func TestUpstreamEndpoint_MarkHealthyReturnsOnlyFromError(t *testing.T) {
+	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name      string
+		start     UpstreamEndpointStatus
+		wantState UpstreamEndpointStatus
+	}{
+		{"an error endpoint returns to active", UpstreamEndpointError, UpstreamEndpointActive},
+		{"an active endpoint is left alone", UpstreamEndpointActive, UpstreamEndpointActive},
+		{"a disabled endpoint is not revived", UpstreamEndpointDisabled, UpstreamEndpointDisabled},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			endpoint, err := NewUpstreamEndpoint("ep_test", "provider", "acc", UpstreamAuthOAuth, 1, now)
+			if err != nil {
+				t.Fatalf("building endpoint: %v", err)
+			}
+			switch tc.start {
+			case UpstreamEndpointDisabled:
+				if err := endpoint.Update("acc", 1, string(UpstreamEndpointDisabled), now); err != nil {
+					t.Fatalf("disabling: %v", err)
+				}
+			case UpstreamEndpointError:
+				endpoint.MarkUnhealthy("the refresh died", now)
+			}
+			endpoint.MarkHealthy(now)
+			if got := endpoint.Status(); got != tc.wantState {
+				t.Fatalf("status = %q, want %q", got, tc.wantState)
+			}
+		})
+	}
+}
+
+// TestUpstreamEndpoint_MarkHealthyKeepsTheLastTestResult pins that recovery is
+// about routability, not a connectivity claim: the refresh never probed the
+// upstream, so the recorded test result stays what the last probe said.
+func TestUpstreamEndpoint_MarkHealthyKeepsTheLastTestResult(t *testing.T) {
+	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
+	endpoint, err := NewUpstreamEndpoint("ep_test", "provider", "acc", UpstreamAuthOAuth, 1, now)
+	if err != nil {
+		t.Fatalf("building endpoint: %v", err)
+	}
+	endpoint.MarkUnhealthy("the refresh died", now)
+	endpoint.MarkHealthy(now)
+	if got := endpoint.TestStatus().State(); got != EndpointTestFail {
+		t.Fatalf("test state = %q, want the dead-letter's fail to remain", got)
+	}
+}

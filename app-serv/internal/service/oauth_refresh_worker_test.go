@@ -26,6 +26,7 @@ import (
 // rather than waited for.
 type workerFixture struct {
 	worker  *OAuthRefreshWorker
+	flow    *OAuthFlowService
 	store   *memEndpointStore
 	tokens  *fakeTokenClient
 	index   *fakeIndex
@@ -55,6 +56,7 @@ func newWorkerFixture(t *testing.T, providers ...registry.Provider) *workerFixtu
 	if err != nil {
 		t.Fatalf("NewOAuthFlowService: %v", err)
 	}
+	fixture.flow = svc
 	fixture.clockAt = testNow
 	svc.clock = func() time.Time {
 		fixture.clockMu.Lock()
@@ -191,4 +193,30 @@ func mustWorkerSealer(t *testing.T) (sealer *domain.Sealer) {
 		t.Fatalf("sealer: %v", err)
 	}
 	return sealer
+}
+
+// TestOAuthRefreshWorkerLeavesDisabledAccountsAlone pins that neither sweep
+// touches an operator-disabled account: `disabled` is a decision, not a symptom.
+func TestOAuthRefreshWorkerLeavesDisabledAccountsAlone(t *testing.T) {
+	fixture := newWorkerFixture(t, providerWithIdentity("identity-provider"))
+	endpoint := seedOAuthEndpoint(t, oauthFlowFixture{store: fixture.store, sealer: mustWorkerSealer(t)},
+		"ep_off", "identity-provider", "off@example.com", "off@example.com", testNow.Add(-time.Minute))
+	ctx := context.Background()
+	if err := endpoint.Update(endpoint.Label(), endpoint.Priority(), string(domain.UpstreamEndpointDisabled), testNow); err != nil {
+		t.Fatalf("disabling: %v", err)
+	}
+	if err := fixture.store.Update(ctx, endpoint); err != nil {
+		t.Fatalf("storing the disabled account: %v", err)
+	}
+
+	if refreshed := fixture.worker.Sweep(ctx); refreshed != 0 {
+		t.Fatalf("sweep of a disabled account = %d, want 0", refreshed)
+	}
+	stored, err := fixture.store.GetByID(ctx, "ep_off")
+	if err != nil {
+		t.Fatalf("reloading: %v", err)
+	}
+	if stored.Status() != domain.UpstreamEndpointDisabled {
+		t.Fatalf("status = %q, want it left disabled", stored.Status())
+	}
 }

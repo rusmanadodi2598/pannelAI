@@ -347,11 +347,11 @@ tried (credential-first failover, §7.7). This generalizes the reference 1-conne
 | GET    | `/api/v1/endpoints/{id}`               | S    | Detail incl. keys summary + test status                                                                | P1    |
 | PATCH  | `/api/v1/endpoints/{id}`               | S    | `{label?, priority?, status?}`: priority change reorders siblings transactionally                      | P1    |
 | DELETE | `/api/v1/endpoints/{id}`               | S    | Delete endpoint + its keys                                                                             | P1    |
-| POST   | `/api/v1/endpoints/{id}/test`          | S    | Connectivity test; `{key_id?}` targets one key else first active; updates `test_status`                | P1    |
+| POST   | `/api/v1/endpoints/{id}/test`          | S    | Connectivity test; `{key_id?}` targets one key else the first key the operator has not disabled (a key inside its backoff is testable on purpose); updates `test_status` and the key's circuit | P1    |
 | POST   | `/api/v1/endpoints/{id}/keys`          | S    | Add key `{label?, value}`                                                                              | P1    |
 | GET    | `/api/v1/endpoints/{id}/keys`          | S    | List keys (hints only) with health fields                                                              | P1    |
 | PATCH  | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | `{label?, value?, priority?, status?}`: value is write-only                                            | P1    |
-| DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | Remove key (endpoint must keep ≥1 active key if the auth type stores keys: `api_key` or `service_account`) | P1    |
+| DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | Remove key (endpoint must keep ≥1 key the operator has not disabled if the auth type stores keys: `api_key` or `service_account`; a parked key counts, because its window ends by itself) | P1    |
 
 **Multi-account and bulk onboarding (owner requirement).** Every provider is multi-account: an
 account is one endpoint, so N accounts are N endpoints under one `provider_id`, distinguished by
@@ -1365,3 +1365,19 @@ finite and the state deliberately stays `error`, because §7.5 gives `disabled` 
 status parser refuses a state the panel cannot set: an escalation that parked an account forever would be the
 one-directional grave the OAuth dead-letter already is (draft `050` T2). The transient 5xx window stays a flat 30s:
 a target that was briefly unhealthy is not a credential that is dead._
+
+_Changelog 2026-10-13: §7.5's >=1-key invariant is stated as "a key the operator has not disabled" rather than "an
+active key" (draft `050` T6). The guard counted `status = active`, and that status is written by the health system
+and only ever cleared by a successful call, so an endpoint whose keys were all parked could not have a key removed
+or deactivated at all, and one whose keys had recovered but never served again stayed frozen the same way. The floor
+the rule defends is that a key-backed endpoint keeps a credential that routing can use again; a park is temporary, so
+a parked key satisfies it, and a key the operator disabled does not. The client-facing refusal text is unchanged
+(§1.3), so a reader of the message sees "active" where the rule now says "not disabled"._
+
+_Changelog 2026-10-13: §7.5's test route targets "the first key the operator has not disabled" instead of "the first
+active key", and states plainly that a probe still writes the key's circuit (draft `050` T6, T9, owner decision b).
+The rule was already the file's intent: a key parked inside its backoff is exactly what a manual test is for, because
+testing one is how an operator proves a credential they just fixed, and the refusal on the stored `error` status left
+no way to prove it since only a served call clears that status. The probe keeps writing health for the same reason,
+which means a failed Test now also climbs the credential ladder (2m, 4m, 8m, up to the 1h ceiling): a diagnostic that
+repeatedly fails is the same evidence real traffic would give._

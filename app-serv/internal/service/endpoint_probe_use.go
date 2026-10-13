@@ -110,7 +110,8 @@ func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.Upstr
 // It does not use NextKey, because that answers a different question ("which key
 // would routing spend now"): a key parked inside its circuit-breaker backoff is
 // deliberately skipped there, and testing such a key is exactly what an operator
-// does after fixing a credential.
+// does after fixing a credential. Only `disabled` is refused here, because that
+// state is the operator's own decision (draft 050 T6).
 func selectProbeKey(endpoint domain.UpstreamEndpoint, keyID string) (domain.UpstreamKey, error) {
 	if strings.TrimSpace(keyID) != "" {
 		key := endpoint.Key(keyID)
@@ -122,7 +123,7 @@ func selectProbeKey(endpoint domain.UpstreamEndpoint, keyID string) (domain.Upst
 	keys := endpoint.Keys()
 	best := domain.UpstreamKey{}
 	for _, key := range keys {
-		if key.Status() != domain.UpstreamKeyActive {
+		if key.Status() == domain.UpstreamKeyDisabled {
 			continue
 		}
 		if best.ID() == "" || key.Priority() < best.Priority() {
@@ -130,7 +131,7 @@ func selectProbeKey(endpoint domain.UpstreamEndpoint, keyID string) (domain.Upst
 		}
 	}
 	if best.ID() == "" {
-		return domain.UpstreamKey{}, domain.NewValidationError("this endpoint has no active key to test")
+		return domain.UpstreamKey{}, domain.NewValidationError("this endpoint has no enabled key to test")
 	}
 	return best, nil
 }

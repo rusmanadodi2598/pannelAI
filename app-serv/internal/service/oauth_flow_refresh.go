@@ -163,6 +163,9 @@ func (s *OAuthFlowService) refreshEndpoint(ctx context.Context, oauth *registry.
 	}
 
 	endpoint.SetOAuth(&next, now)
+	// A grant the vendor accepted is the evidence the dead-letter was wrong, so it
+	// also ends the dead-letter (draft 050 T2).
+	endpoint.MarkHealthy(now)
 	if err := s.store.UpdateIfUnchanged(ctx, endpoint, loaded); err != nil {
 		return nil, err
 	}

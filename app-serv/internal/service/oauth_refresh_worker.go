@@ -93,6 +93,10 @@ func (w *OAuthRefreshWorker) Sweep(ctx context.Context) int {
 			continue
 		}
 		for _, endpoint := range status.Endpoints {
+			// `error` stays out deliberately: a dead-lettered token is expired, so it
+			// reads due on every tick and the sweep would re-run the whole attempt
+			// budget against a vendor that already said invalid_grant. Recovery is the
+			// operator's refresh call, which does reach these accounts (draft 050 T2).
 			if endpoint.Status != string(domain.UpstreamEndpointActive) ||
 				endpoint.RefreshState != domain.RefreshDue {
 				continue

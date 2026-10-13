@@ -17,7 +17,7 @@ dikoreksi di bagian Hasil masing-masing grup, dan itu tempat grup C harus mulai.
 
 | | |
 | --- | --- |
-| **Status** | **Grup A (T3, T4) landed 2026-10-12. Grup B (T7, T5) landed 2026-10-13.** C dan D masih ☐. Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** dan **D4 (probe)** |
+| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. Yang terbuka: **T1(b) kolom cooldown poller** (arah sudah dipilih, sisa pekerjaan) dan **T2(ii) retry ber-eskalasi** (diukur salah, diundur, lihat Hasil grup C). Grup D (T8, T10) ☐. Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** dan **D4 (probe)** |
 | **Cakupan** | `app-serv/internal/dataplane/` (`engine_failure.go`, `engine_relay.go`, `transport_call.go`, `selection.go`, `selection_health.go`, `ping.go`), `internal/domain/` (`upstream_key_health.go`, `upstream_endpoint.go`, `oauth_refresh.go`, `settings_routing.go`), `internal/repository/postgres/` (`endpoint_key_health.go`, `endpoint_parity.go`, `endpoint_oauth_batch.go`, `quota_published.go`), `internal/service/` (`endpoint_probe_use.go`, `media_perform.go`) |
 | **Tidak termasuk** | `app-ui`. Kolom `rate_limited_until` dan `test_status` dirender panel (`EndpointKeysTable.svelte`, `EndpointDetailDrawer.svelte`) dan ikut berubah bentuknya hanya jika D3/D5 memutuskan begitu; itu pass tersendiri |
 | **Struktural (AGENTS.md §1.9)** | **Bukan N/A.** T1 mengaktifkan kolom yang hari ini mati, T2/T6 mengubah siklus hidup `status`, T3/T4 mengubah arti `KeyFailureClass` yang merupakan kontrak §7.5, dan T8 menambahkan field ke `settings_routing`. `SYSTEM_MAP.md` harus diubah pada commit yang mengubahnya, dan SPEC-API §7.5 perlu dibaca ulang sebelum D3 dikerjakan |
@@ -248,7 +248,7 @@ Minimal dua hal yang harus dibereskan, dan hanya satu yang butuh keputusan: kome
 debate di sini), dan jalur tulis harus ada atau filternya dihapus. Arah fix menunggu D1/T4, karena penulis alami
 kolom ini adalah 429 pada level *endpoint*, yang hari ini hanya ada di level kunci.
 
-#### T2 (MEDIUM) Benar: satu-satunya transisi akun → `error` adalah OAuth dead-letter, dan itu kuburan satu arah
+#### T2 (MEDIUM) Benar, TIDAK dikerjakan: satu-satunya transisi akun → `error` adalah OAuth dead-letter, dan itu kuburan satu arah
 
 `MarkUnhealthy` menulis `UpstreamEndpointError` (`oauth_refresh.go:58-61`), satu pemanggil
 (`oauth_flow_refresh.go:179`), dan `grep UpstreamEndpointError` di luar deklarasi
@@ -262,7 +262,7 @@ Komentar di `oauth_refresh.go:54-57` menyatakan ini disengaja (dead-letter adala
 dan itu benar sebagai *sebab* masuknya keadaan. Yang tidak diputuskan di sana adalah *keluarnya*. Butuh D3, karena
 jawaban yang sama dipakai T5 dan T6.
 
-#### T6 (MEDIUM) Benar: `status='error'` di DB tidak pernah dibalik kecuali oleh sukses
+#### T6 (MEDIUM) Benar, LANDED untuk guard kunci; sisi probe masih keputusan: `status='error'` di DB tidak pernah dibalik kecuali oleh sukses
 
 **Efek silang dari grup B, catat sebelum mengerjakan ini.** T5 menaikkan jendela kredensial dari 2 menit sampai
 1 jam, dan kolom `status` hanya dibalik oleh sukses. Artinya rentang tempat T6 bekerja jadi lebih lebar: kunci yang
@@ -283,7 +283,7 @@ Dampak yang terverifikasi di kode (belum diverifikasi live):
 Ini juga alasan `Available()` dan `status` perlu dinyatakan sebagai dua hal yang berbeda, bukan dua nama untuk satu
 state. `Available()` sudah benar: jendela adalah state-nya, tanpa sweeper.
 
-#### T9 (MEDIUM) Benar: probe diagnostik memiliki efek samping pada kesehatan, dan bypass-nya separuh
+#### T9 (MEDIUM) Benar, TIDAK dikerjakan: probe diagnostik memiliki efek samping pada kesehatan, dan bypass-nya separuh
 
 `Engine.Ping` → `Relay` (`ping.go:41-47`) → `relayOnce` → `recordFailure` (`engine_relay.go:140,182`). Menekan
 "Test" memparkir kunci persis seperti trafik nyata (2 menit untuk 401, 30 detik untuk 5xx, dan pasca-T4/D1 untuk
@@ -634,3 +634,129 @@ ditanam di bawah rantai penalaran). Perbaikannya bukan memangkas sampai di bawah
 baris per fakta; fakta "GREATEST mengabaikan sisi NULL" saya pindah ke sebelah SQL tempat pembacaan terjadi, karena
 di sana ia mencegah orang menambahkan COALESCE yang tidak perlu. Berkas test baru juga dibuat karena §1.1, bukan
 karena selera: 247 dari 250.
+
+## Hasil grup C (sebagian), 2026-10-13
+
+Grup C berhenti di tengah dengan sengaja: empat butirnya ternyata adalah keputusan, bukan bug, dan tiga di antaranya
+ternyata **sudah di-pin sebagai perilaku yang diinginkan**. Yang dikerjakan adalah yang tidak punya konflik seperti
+itu.
+
+### T6 (guard kunci): landed
+
+Aturan "endpoint harus menyisakan ≥1 kunci" sekarang menghitung kunci yang **tidak di-disable operator**, bukan
+kunci ber-status `active`. Alasannya diukur lebih dulu dengan test merah:
+
+- `TestUpstreamEndpoint_RemovingOneOfTwoRecoveredKeysIsAllowed`: dua kunci parked, jendela lewat, menghapus satu
+  ditolak hari ini (`CONFLICT: this endpoint must keep at least one active key`). Status `error` yang sudah pulih
+  tidak terlihat oleh guard.
+- Test kedua saya sempat salah, dan kesalahan itu menemukan harm yang laporan awal tidak menyebut: dengan guard
+  berbasis status, **endpoint yang semua kuncinya sedang parked tidak bisa dikelola sama sekali** (hapus maupun
+  disable ditolak), dan grup B memperpanjang jendela itu sampai 1 jam.
+
+Kenapa tidak pakai `Available(now)` saja, walaupun itu jawaban yang lebih tampak benar: `Available()` untuk kunci
+`error` dengan `rate_limited_until = NULL` adalah **false** (`upstream_key_health.go:96-99`: tanpa jendela, kunci
+hanya tersedia bila statusnya active). Guard berbasis `Available` jadi tetap membekukan manajemen kunci selama park
+berlangsung, yang justru harm kedua di atas. Park itu sementara, dan ia selesai sendiri; tidak ada alasan guard
+memperlakukannya seperti kredensial yang dimatikan.
+
+Batasan yang tetap: `ActiveKeyCount()` di respons publik (`handler/endpoint_response.go:70`, field
+`active_key_count`) **tidak diubah**, karena ia menjawab pertanyaan tampilan ("berapa kunci yang hari ini aktif")
+dan ia berdampingan dengan `available` pada respons yang sama. Tidak ada bentuk wire yang berubah
+(`contract-drift` PASS). Pesan refusal ke klien juga tetap (§1.3), jadi §7.5 sekarang berkata "not disabled" sementara
+pesan berkata "active"; itu tercatat di changelog spesifikasi sebagai gap kata, bukan sebagai perubahan copy.
+
+### T1 dan T2 (klaim cooldown): komentar dan peta dibuat akurat
+
+Komentar `quota_published.go:103-107` dan `SYSTEM_MAP.md:544` keduanya menyatakan data plane menulis deadline ke
+`upstream_endpoints.rate_limited_until`. Tidak ada jalur Go yang menulisnya. Keduanya sekarang menyatakan yang
+sebenarnya: filter poller **inert**, bandingannya selalu terhadap NULL, dan menyambungkan tulisannya (atau menghapus
+filternya) adalah T1 yang masih menunggu keputusan. Tidak ada perilaku yang berubah di sini.
+
+### Yang ternyata keputusan, bukan bug (butuh putusan owner)
+
+- **T1 tulis deadline level endpoint.** `UpstreamEndpoint.Available()` (`upstream_endpoint.go:143`) sudah membaca
+  kolom itu. Jadi menulis satu deadline non-NULL **langsung mengaktifkan skip level akun** di router: satu akun yang
+  429 hilang dari rotasi untuk seluruh jendela, bukan hanya satu kunci. Itu breaker yang lebih benar secara model,
+  dan sekaligus perubahan perilaku routing dengan blast radius satu akun penuh. Butuh keputusan, bukan asumsi.
+- **T2 kuburan `error` level endpoint.** Temuan baru (**P5**): `oauth_refresh_worker.go:96` melewati endpoint dengan
+  `status != active`, dan satu-satunya penulis `UpstreamEndpointActive` di domain adalah konstruktor
+  (`upstream_endpoint.go:82`). Artinya akun yang di-dead-letter oleh OAuth **tidak ikut sweep yang bisa
+  memulihkannya**, dan tidak ada sukses yang membalik statusnya: keluar dari kuburan hanya lewat PATCH operator.
+  Pilihan yang saya lihat: (i) refresh sukses membalik `error → active`, (ii) sweep tetap menyertakan `error`,
+  (iii) jendela + eskalasi seperti grup B untuk level endpoint, (iv) terima sebagai handal.
+- **T6 sisi probe.** `TestEndpointService_TestRefusesWithoutAUsableCredential` (`endpoint_probe_selection_test.go:79-95`)
+  sengaja mem-pin bahwa endpoint yang kunci satunya berstatus `error` **menolak** tombol Test, dengan komentar yang
+  beralasan. Dok `selectProbeKey` (`endpoint_probe_use.go:107-113`) menyatakan hal sebaliknya: menguji kunci yang
+  diparkir "exactly what an operator does after fixing a credential". Dua pernyataan itu bertabrakan, dan yang satu
+  punya test. Saya tidak membalik keputusan yang di-pin tanpa izin.
+- **T9 probe menulis kesehatan.** `TestEndpointService_TestParksOnFirstFailure` (`endpoint_probe_test.go:174-213`)
+  mem-pin probe 401 memarkir kunci 2 menit **dan** mem-pin bahwa probe sukses berikutnya memulihkannya. Jadi parkir
+  itu adalah cara operator mengumumkan "kredensial sudah saya betulkan". Efek sampingnya sejak grup B: kegagalan
+  probe ikut menaikkan anak tangga ladder kredensial (2m → 4m → 8m …), karena ia menambah `consecutive_errors` sama
+  seperti trafik nyata. Butuh D4 dengan fakta ini di atas meja.
+
+### Dampak lingkungan yang perlu diketahui owner
+
+`SYSTEM_MAP.md` **bukan UTF-8 valid**: 48 tempat di file itu menyimpan panah sebagai `e2 86 3f` (tiga byte `→` dengan
+byte ketiga terganti `?`), yang menjelaskan kenapa `grep` treat file itu sebagai binary sejak pencarian pertama.
+Ini hasil konversi lossy yang sudah ada sebelum pass ini (saya tidak menyentuh byte-byte itu; edit saya lakukan pada
+level byte agar tidak mengarang ulang file). Cara memperbaikinya jelas (`\xe2\x86?` → `\xe2\x86\x92`) dan bisa
+dibuktikan dengan `python3 -c "open('SYSTEM_MAP.md','rb').read().decode('utf-8')"` yang harusnya bersih, tapi ini
+dokumen governance dengan 61 KB isi, jadi saya laporkan, bukan saya betulkan diam-diam.
+
+## Grup C selesai, dengan satu keputusan owner yang harus diundur
+
+Keputusan owner 2026-10-13: T2 = (ii) sweep sertakan `error` + (i) refresh sukses membalik status; T1 = (b) kolom
+terpisah untuk poller; probe = (b) probe tetap menulis kesehatan tapi `selectProbeKey` dilonggarkan.
+
+### Yang landed
+
+- **T6 (guard ≥1 kunci)** dan **T6/T9 sisi probe.** `selectProbeKey` sekarang menolak hanya kunci `disabled`. Bukan
+  perubahan arah: dok fungsi itu dan dok berkas test-nya sudah menyatakan "a key parked inside its circuit-breaker
+  backoff is exactly what a manual test is for", sementara kodenya menyaring `Status() != active`. Sub-case yang
+  mem-pin penolakan itu ditulis ulang ke bentuk yang sebenarnya ia maksud (kunci `disabled`), plus case baru bahwa
+  kunci `error` tetap dites. Pesan refusal ikut ("no enabled key to test") dan tidak ada satu pun test, UI, atau
+  kontrak yang memegang teks lama.
+- **T2 sebagian: jalur keluarnya nyata sekarang.** `MarkHealthy` (domain, hanya `error → active`, tidak pernah
+  membangunkan `disabled`) dipanggil di `refreshEndpoint` saat grant vendor diterima. Karena `sweepProvider` (jalur
+  `POST /oauth/refresh`, menyaring hanya pada `RefreshDue`) sejak awal memang mencapai akun `error`, satu tombol
+  refresh provider kini memulihkan akun yang di-dead-letter. Test: `TestOAuthFlowRefreshRecoversADeadLetteredAccount`
+  dan tabel `TestUpstreamEndpoint_MarkHealthyReturnsOnlyFromError`.
+- **T1/T2 komentar dan peta** sudah akurat (bagian sebelumnya). §7.5 amended dua kali (invariant ≥1 kunci, aturan
+  target probe), `contract-drift` dan `contract-openapi` PASS.
+
+### T2 (ii) diukur salah, dan saya undur
+
+Sweep worker saya lebarkan ke `status != disabled` sesuai keputusan (ii). Hasilnya satu test lama gagal, dan test itu
+bukan collateral: `TestOAuthRefreshWorkerRetriesThenDeadLetters` mem-pin bahwa worker berhenti mencoba setelah
+dead-letter (`grant calls = 6, want exactly the 5 attempts`). Setelah dibaca ulang, pin itu benar dan (ii) salah
+dengan cara yang lebih buruk dari kuburan yang ia gantikan: token hasil dead-letter selalu expired, jadi ia selalu
+`RefreshDue`, jadi worker yang menyertakan `error` akan mengulang **seluruh budget 5 attempt setiap tick** terhadap
+vendor yang sudah menjawab `invalid_grant`, lalu menuliskan dead-letter baru. Filter worker dikembalikan ke
+`status == active`, dengan alasan itu tertulis di sana, dan keluar dari kuburan lewat jalur refresh operator.
+
+Sisa dari (ii) yang tidak bisa dikerjakan tanpa keputusan lagi: "retry dead-letter pada schedule yang melebar"
+(bentuknya sama dengan ladder grup B: jendela per akun, dibaca `Available()`), dan itu bukan satu baris. Ia butuh
+kolom waktu-coba-berikutnya di level endpoint, yang tumpang tindih dengan keputusan T1(b) di bawah.
+
+### T1(b) belum dikerjakan, dan ini alasan bentuknya
+
+Kolom terpisah untuk poller (`quota_cooldown_until`, tulis oleh parity endpoint saat kelas 429) adalah migration +
+satu kolom di agregat + jalur tulis di `endpoint_parity.go` + filter `quota_published.go` yang dibaca ulang, plus
+`SYSTEM_MAP.md` dan §7.5. Tidak ada keputusan yang terbuka (arahnya sudah Anda pilih), hanya sisa pekerjaan: ia
+sengaja tidak saya kerjakan di pass yang sama dengan empat item lain, karena ukurannya berbeda kelas dari yang lain
+di grup ini.
+
+### Gerbang dan ukuran berkas
+
+`go test -race -count=1 ./...` bersih, suite integrasi `-race` hijau, `go-lint` / `go-headers` / `antislop` /
+`contract-drift` / `contract-openapi` / `secrets` PASS.
+
+Satu tangkapan lagi, dan kali ini terhadap prediksi saya sendiri: menambah dua test ke `oauth_refresh_worker_test.go`
+(194 baris) membuatnya **264**, dan `go-lint` menolaknya sesuai §1.1. Test pemulihan pindah ke berkas baru
+`oauth_refresh_recovery_test.go` (62), berkas asal kembali 222. Draft ini sudah memperingatkan pola ini ("berkas baru
+lebih baik daripada menambah ke yang sudah mendekati 220") dan saya tetap melakukannya.
+
+Yang mendekati batas setelah pass ini, untuk siapa pun yang melanjutkan: `upstream_endpoint_keys.go` 209,
+`oauth_refresh_worker_test.go` 222, `endpoint_probe_use.go` 181, `upstream_key_health_test.go` 156 +
+`upstream_key_ladder_test.go` 108.
