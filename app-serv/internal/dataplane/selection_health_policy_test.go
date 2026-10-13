@@ -27,7 +27,10 @@ type stubHealth struct {
 	asked    []string
 }
 
-func (s *stubHealth) KeyHealthPolicy(_ context.Context, providerID string) (domain.KeyHealthPolicy, error) {
+func (s *stubHealth) KeyHealthPolicy(ctx context.Context, providerID string) (domain.KeyHealthPolicy, error) {
+	if err := ctx.Err(); err != nil {
+		return domain.KeyHealthPolicy{}, err
+	}
 	s.asked = append(s.asked, providerID)
 	if s.err != nil {
 		return domain.KeyHealthPolicy{}, s.err

@@ -130,8 +130,11 @@ func (t *ActiveRequestTracker) Begin(ctx context.Context, in dataplane.ActiveMar
 		once = true
 		// reason: releasing the marker is bookkeeping, and the staleness window
 		// is the backstop; a failed release retries on no path and does not
-		// deserve an error the caller cannot act on.
-		if err := t.store.Finish(ctx, marker); err != nil {
+		// deserve an error the caller cannot act on. It runs detached because the
+		// call it describes is already over.
+		releaseCtx, cancel := accountingContext(ctx)
+		defer cancel()
+		if err := t.store.Finish(releaseCtx, marker); err != nil {
 			t.logger.Warn("releasing an active request failed",
 				"provider_id", marker.ProviderID, "request_id", marker.RequestID, "error", err)
 		}

@@ -74,7 +74,12 @@ func (r *memEndpointRepo) List(_ context.Context, filter repository.EndpointFilt
 	return found, int64(len(found)), nil
 }
 
-func (r *memEndpointRepo) RecordKeyHealth(_ context.Context, key domain.UpstreamKey) error {
+func (r *memEndpointRepo) RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error {
+	// A done context fails the write the way the driver does, so a test can tell a
+	// detached health write from one that rode the caller's cancellation.
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.healthErr != nil {
@@ -84,7 +89,10 @@ func (r *memEndpointRepo) RecordKeyHealth(_ context.Context, key domain.Upstream
 	return nil
 }
 
-func (r *memEndpointRepo) RecordUpstreamOutcome(_ context.Context, endpoint domain.UpstreamEndpoint) error {
+func (r *memEndpointRepo) RecordUpstreamOutcome(ctx context.Context, endpoint domain.UpstreamEndpoint) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.healthErr != nil {

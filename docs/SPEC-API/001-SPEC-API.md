@@ -402,7 +402,7 @@ reached the upstream (DNS, TLS, dial, deadline) are **target-shaped**, recorded 
 state while the chain keeps walking to the next credential, because another account may serve the model the
 first refused and a credential that was never sent cannot have failed. Any other 4xx records nothing because
 the request, not the credential, is the cause. `consecutive_errors` counts
-every parked failure and a successful call resets all of it. A 429 also stamps the endpoint's quota cooldown,
+every parked failure and a successful call resets all of it. The write runs after the client's answer is on the wire and under its own bounded context, so a client that closes the connection the moment the answer lands cannot erase the health row its call produced; the same rule the usage rows already follow. A 429 also stamps the endpoint's quota cooldown,
 which is read by the published-quota poller alone and never by selection (§7.12). The health lives on the key row; only
 the rotation cursor is Redis-backed. `test_status`, the endpoint's own connectivity column, is display-only: routing
 never reads it, because a probe answers when an operator last pressed the button and the parking above already carries
@@ -1470,3 +1470,12 @@ elsewhere. The class now parks on its own ladder (15m doubling to 6h, retunable 
 still implicates the credential so the account leaves rotation, and still fails over, because the next account may well
 have credit. The client code is 503 rather than 402: the debt is the gateway's account with its vendor, and a client
 told to pay would be told to fix something it cannot see._
+
+_Changelog 2026-10-13: §7.5 states that a key's health write outlives the caller's context. Live traffic showed the pair
+`key health could not be recorded after a served call` / `releasing an active request failed` on requests that answered 200:
+both writes ran under the request context, which the server cancels when the client hangs up after the final chunk, so a
+recovered credential stayed parked and a failing one stayed selectable. The usage rows had already been given this rule and
+the in-flight marker's release now has it too, each under a five-second bound like the accounting writes beside them. This
+also records what the fix exposed in the test doubles: the data plane's fake endpoint repository had been ignoring the
+context its writes were handed, so three new tests passed against an unfixed build until the double was made to refuse a
+cancelled write the way the driver does._

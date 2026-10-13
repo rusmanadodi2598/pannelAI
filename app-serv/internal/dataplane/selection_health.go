@@ -2,7 +2,7 @@
 //
 // @file      internal/dataplane/selection_health.go
 // @for       The health accounting a selection produces: the key circuit a served or failed call updates, the parking budget it applies, and its persistence.
-// @uses      internal/domain, context.
+// @uses      internal/domain, internal/logx, context, time.
 // @reason    Selection and accounting are two jobs: Select decides who serves the next request from the endpoint's current state, while these writes change that state afterwards. Keeping them apart also keeps the keyless rule readable, because a no_auth selection has no key circuit to write and must not fail the request on a bookkeeping error (G15 in the P2 register).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -12,16 +12,30 @@ package dataplane
 
 import (
 	"context"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 )
+
+// healthWriteTimeout bounds one health write that runs after its call is over.
+const healthWriteTimeout = 5 * time.Second
+
+// accountingCtx detaches a health write from the caller's cancellation: the write
+// describes a call that already happened, so a client hanging up as the answer
+// lands must not erase it (draft 021 F6's rule for the usage rows, applied here).
+func accountingCtx(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.WithoutCancel(ctx), healthWriteTimeout)
+}
 
 // RecordSuccess applies a served request to the endpoint's parity state and the
 // key's circuit, persisting both. A keyless selection (a no_auth endpoint) has
 // no key circuit to write, but its upstream was still reached and served, so the
 // endpoint's own connection state is recorded for it too.
 func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error {
+	writeCtx, cancel := accountingCtx(ctx)
+	defer cancel()
+
 	now := s.clock()
 	endpoint := selection.Endpoint
 	endpoint.RecordUpstreamSuccess(now)
@@ -30,11 +44,11 @@ func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error
 		if err != nil {
 			return err
 		}
-		if err := s.endpoints.RecordKeyHealth(ctx, updated); err != nil {
+		if err := s.endpoints.RecordKeyHealth(writeCtx, updated); err != nil {
 			return err
 		}
 	}
-	return s.endpoints.RecordUpstreamOutcome(ctx, endpoint)
+	return s.endpoints.RecordUpstreamOutcome(writeCtx, endpoint)
 }
 
 // RecordFailure applies a failed attempt to the endpoint's parity state and the
@@ -46,6 +60,9 @@ func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reaso
 	if class == domain.KeyFailureRequest {
 		return nil
 	}
+	writeCtx, cancel := accountingCtx(ctx)
+	defer cancel()
+
 	now := s.clock()
 	endpoint := selection.Endpoint
 	endpoint.RecordUpstreamError(parityCode(class), reason, now)
@@ -57,15 +74,17 @@ func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reaso
 		endpoint.MarkQuotaThrottled(now)
 	}
 	if selection.Key.ID() != "" && class.ImplicatesCredential() {
-		updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class, s.healthPolicy(ctx, endpoint.ProviderID()), now)
+		// The budget read is detached too: a client that left must not silently
+		// trade the operator's configured window for the documented default.
+		updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class, s.healthPolicy(writeCtx, endpoint.ProviderID()), now)
 		if err != nil {
 			return err
 		}
-		if err := s.endpoints.RecordKeyHealth(ctx, updated); err != nil {
+		if err := s.endpoints.RecordKeyHealth(writeCtx, updated); err != nil {
 			return err
 		}
 	}
-	return s.endpoints.RecordUpstreamOutcome(ctx, endpoint)
+	return s.endpoints.RecordUpstreamOutcome(writeCtx, endpoint)
 }
 
 // healthPolicy resolves the parking budget for one provider. A nil seam and a

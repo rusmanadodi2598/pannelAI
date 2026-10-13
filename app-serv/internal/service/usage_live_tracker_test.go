@@ -118,3 +118,26 @@ func TestActiveRequestTracker_MintsARequestIDWhenNoneIsPresent(t *testing.T) {
 		t.Fatal("the marker carries no request id, so the row it describes is unfindable")
 	}
 }
+
+// TestActiveRequestTracker_ReleaseOutlivesTheCallersContext pins the release
+// write detached: the call it describes is already over, so a client that closed
+// the connection as its answer landed must not leave the drawing's node lit until
+// the staleness window prunes it.
+func TestActiveRequestTracker_ReleaseOutlivesTheCallersContext(t *testing.T) {
+	now := time.Date(2026, 9, 22, 10, 0, 0, 0, time.UTC)
+	active := &liveActiveDouble{}
+	tracker := NewActiveRequestTracker(active, func(context.Context) string { return "req_hangup" }, nil)
+	tracker.SetClock(func() time.Time { return now })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	release := tracker.Begin(ctx, dataplane.ActiveMarker{ProviderID: "openai", EndpointID: "ep_1", Model: "gpt-4o"})
+	cancel()
+	release()
+
+	if got := active.removedCount(); got != 1 {
+		t.Fatalf("markers removed = %d, want the release to reach the store after the caller hung up", got)
+	}
+	if active.finishCtxErr != nil {
+		t.Fatalf("the release arrived on a %v context, want it detached from the caller's", active.finishCtxErr)
+	}
+}

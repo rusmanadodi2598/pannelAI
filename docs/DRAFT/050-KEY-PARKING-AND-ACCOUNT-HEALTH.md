@@ -1078,3 +1078,57 @@ dan 401 tidak ikut berubah nama).
 
 `engine_failover_rules_test.go` tidak diubah: baris "402 fails over and parks" sudah mem-pin dua hal yang tetap benar
 (rantai jalan, kunci parkir), dan test itu tidak membaca panjang jendela maupun kode.
+
+## L1 dari live-test, landed 2026-10-13 (tulis kesehatan dihapus oleh klien yang menutup koneksi)
+
+Bukan bagian sepuluh temuan laporan owner; ini muncul dari log live setelah deploy. Bentuknya selalu sama, tiga baris
+per request:
+
+```
+WARN key health could not be recorded after a served call   reason:"upstream_keys: context canceled"
+WARN releasing an active request failed                    error:"removing active request: context canceled"
+INFO request handled  status:200  duration_ms:33746
+```
+
+`status:200` dan dua WARN **sebelum** baris `request handled` adalah diagnosanya: response sudah selesai, requestnya
+sukses, dan dua tulis yang berjalan *setelah* itu gagal karena `r.Context()` sudah dibatalkan. Ini bukan timeout server
+(`main.go:132-134`: ReadTimeout 30s / WriteTimeout 120s, sementara dua request itu 33,7s dan 16,4s), dan bukan shutdown
+(tidak ada `shutdown signal received` di sekitar timestamp-nya). Yang terjadi: klien menutup koneksi segera setelah
+chunk terakhir, dan flush terakhir itulah yang membuat server melihat penutupan itu -- jadi tulis berikutnya selalu kalah.
+
+**Kenapa ini nyata, dan kenapa cuma sebagian yang hilang.** Aturan yang sama sudah pernah dipelajari repo ini untuk baris
+usage/log (draft 021 F6) dan sudah punya helper sendiri: `service/accounting_context.go` men-drop cancellation dengan
+`WithTimeout(WithoutCancel(ctx), 5s)`. Yang belum memakai aturan itu adalah dua penulis lain:
+
+- `engine_relay.go:90` -> `Selector.RecordSuccess(ctx, ...)` (reset park kunci + parity endpoint)
+- `usage_live_tracker.go:134` -> `store.Finish(ctx, marker)` (pelepas penanda in-flight Redis)
+
+Asimetri itu persis yang terlihat di log: baris usage tetap tercatat, health dan marker tidak.
+
+**Yang hilang sebelum fix.** Park kunci tidak dilepas, jadi kredensial yang sudah pulih tetap di-skip router sampai
+jendelanya kedaluwarsa sendiri. `RecordKeyHealth` gagal lebih dulu dan return lebih awal, jadi `RecordUpstreamOutcome`
+**tidak jalan sama sekali**: parity endpoint ikut basi, dan kolom cooldown poller dari T1(b) tidak terisi -- 429 yang
+datang setelah klien keluar tidak memberi poller apa pun. Di layar, node provider tetap menyala sampai prune 60 detik.
+
+**Yang dikerjakan.** Satu titik di dataplane, bukan per call site: `accountingCtx(ctx)` di pembuka `Selector.RecordSuccess`
+dan `RecordFailure`, jadi relay, media, embeddings, dan systemone semuanya ikut. Pada jalur failure ctx detach juga dipakai
+untuk **baca** kebijakan parking, bukan cuma tulisnya -- kalau tidak, klien yang keluar membuat jendela yang diatur operator hilang
+dan kunci diparkir di default yang terdokumentasi. Release marker memakai `accountingContext` yang sudah ada di paket itu.
+
+### Yang paling berharga dari item ini: test-nya dulu tidak bisa gagal
+
+Tiga test dataplane pertama saya **hijau pada build yang belum diperbaiki**. Penyebabnya bukan testnya salah, tapi
+double-nya: `memEndpointRepo.RecordKeyHealth` / `RecordUpstreamOutcome` dan `stubHealth.KeyHealthPolicy` semuanya memakai
+`_ context.Context` dan tidak pernah memeriksa `ctx.Err()`, jadi bagi mereka tulis di context yang sudah cancelled sama
+saja dengan tulis normal. Driver PostgreSQL yang asli menolak. Double yang tidak meniru kegagalan yang sedang diuji membuat
+test seperti ini selalu lulus, dan lulus itulah yang membuatnya tidak berguna.
+
+Setelah double-nya dibuat menolak ctx cancelled, ketiga test itu FAIL pada build tanpa detach (pesan yang keluar persis
+`context canceled`) dan PASS pada build dengan detach. Verifikasi dua arah ini sekarang bagian dari item ini; test yang
+tidak pernah dicoba pada kode yang salah bukan test, dan untuk ketiga kalinya di draft ini alat yang menemukannya, bukan
+saya: grup C oleh worker retry, grup D oleh `go-lint`, L1 oleh double yang dibuat jujur.
+
+Berkas: `dataplane/selection_health.go` (helper + dua titik), `service/usage_live_tracker.go` (release),
+`dataplane/selection_fixtures_test.go` + `selection_health_policy_test.go` (double menghormati ctx), test baru
+`dataplane/selection_health_context_test.go` (125, tiga test) dan satu test di `service/usage_live_tracker_test.go`
+(120 -> 143). §7.5 bertambah satu kalimat + satu entri changelog.
