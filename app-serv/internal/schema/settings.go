@@ -37,14 +37,27 @@ type RoutingSettingsResponse struct {
 	StickyLimit        int                                 `json:"sticky_limit"`
 	FallbackStrategy   string                              `json:"fallback_strategy"`
 	ProviderStrategies map[string]ProviderStrategyResponse `json:"provider_strategies"`
+	// KeyPark answers the windows the group resolves to, so a read of a document
+	// that predates the knobs still names the lengths the router parks with.
+	KeyPark KeyParkResponse `json:"key_park"`
+}
+
+// KeyParkResponse is one level of the parking budget, in seconds. A provider
+// entry renders only the windows it stores, so an unset one is absent rather than
+// a zero the panel would read as "park for nothing".
+type KeyParkResponse struct {
+	AuthSeconds      int `json:"auth_seconds,omitempty"`
+	RateLimitSeconds int `json:"rate_limit_seconds,omitempty"`
+	TransientSeconds int `json:"transient_seconds,omitempty"`
 }
 
 // ProviderStrategyResponse is one provider's rotation override. An absent field
-// inherits the global default, so the two fields carry `omitempty` and the
-// panel renders what is stored rather than a filled-in copy.
+// inherits the global default, so the fields carry `omitempty` and the panel
+// renders what is stored rather than a filled-in copy.
 type ProviderStrategyResponse struct {
-	FallbackStrategy string `json:"fallback_strategy,omitempty"`
-	StickyLimit      *int   `json:"sticky_limit,omitempty"`
+	FallbackStrategy string           `json:"fallback_strategy,omitempty"`
+	StickyLimit      *int             `json:"sticky_limit,omitempty"`
+	KeyPark          *KeyParkResponse `json:"key_park,omitempty"`
 }
 
 // NetworkSettingsResponse is the §7.14 network group. The strategy answers the

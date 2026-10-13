@@ -31,6 +31,7 @@ func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 			StickyLimit:        s.Routing.StickyLimit,
 			FallbackStrategy:   string(s.Routing.FallbackStrategy),
 			ProviderStrategies: strategiesOrEmpty(s.Routing.ProviderStrategies),
+			KeyPark:            effectiveKeyPark(s.Routing.KeyPark),
 		},
 		Network: NetworkSettingsResponse{
 			OutboundProxyEnabled:  s.Network.OutboundProxyEnabled,

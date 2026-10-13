@@ -17,6 +17,7 @@ import (
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 )
 
 // Test probes one endpoint's credential and records the outcome on the aggregate.
@@ -87,7 +88,7 @@ func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.Upstr
 			if reason == "" {
 				reason = "connectivity test failed"
 			}
-			if _, err := endpoint.RecordKeyFailure(key.ID(), reason, class, now); err != nil {
+			if _, err := endpoint.RecordKeyFailure(key.ID(), reason, class, s.healthPolicy(ctx, endpoint.ProviderID()), now); err != nil {
 				return domain.UpstreamEndpoint{}, ProbeOutcome{}, err
 			}
 		}
@@ -104,9 +105,24 @@ func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.Upstr
 	return endpoint, outcome, nil
 }
 
+// healthPolicy resolves the provider's parking windows for a failed probe. A nil
+// seam and a failed read both answer the documented windows: the strike is still
+// recorded, at the length nobody configured.
+func (s *EndpointService) healthPolicy(ctx context.Context, providerID string) domain.KeyHealthPolicy {
+	if s.health == nil {
+		return domain.DefaultKeyHealthPolicy()
+	}
+	policy, err := s.health.KeyHealthPolicy(ctx, providerID)
+	if err != nil {
+		logx.Degraded(nil, "key health policy unavailable, the probe parked at the documented windows", err,
+			"provider_id", providerID)
+		return domain.DefaultKeyHealthPolicy()
+	}
+	return policy
+}
+
 // selectProbeKey resolves which key a probe targets: the named one, or the first
-// key in the active status ordered by priority.
-//
+// key in the active status ordered by priority.//
 // It does not use NextKey, because that answers a different question ("which key
 // would routing spend now"): a key parked inside its circuit-breaker backoff is
 // deliberately skipped there, and testing such a key is exactly what an operator

@@ -17,7 +17,7 @@ dikoreksi di bagian Hasil masing-masing grup, dan itu tempat grup C harus mulai.
 
 | | |
 | --- | --- |
-| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. Yang terbuka: **T1(b) kolom cooldown poller** (arah sudah dipilih, sisa pekerjaan) dan **T2(ii) retry ber-eskalasi** (diukur salah, diundur, lihat Hasil grup C). Grup D (T8, T10) ☐. Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** dan **D4 (probe)** |
+| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. Yang terbuka: **T1(b) kolom cooldown poller** (arah sudah dipilih, sisa pekerjaan) dan **T2(ii) retry ber-eskalasi** (diukur salah, diundur, lihat Hasil grup C). **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Yang tersisa dari daftar awal cuma dua: **T1(b)** dan **T2(ii)**. Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** dan **D4 (probe)** |
 | **Cakupan** | `app-serv/internal/dataplane/` (`engine_failure.go`, `engine_relay.go`, `transport_call.go`, `selection.go`, `selection_health.go`, `ping.go`), `internal/domain/` (`upstream_key_health.go`, `upstream_endpoint.go`, `oauth_refresh.go`, `settings_routing.go`), `internal/repository/postgres/` (`endpoint_key_health.go`, `endpoint_parity.go`, `endpoint_oauth_batch.go`, `quota_published.go`), `internal/service/` (`endpoint_probe_use.go`, `media_perform.go`) |
 | **Tidak termasuk** | `app-ui`. Kolom `rate_limited_until` dan `test_status` dirender panel (`EndpointKeysTable.svelte`, `EndpointDetailDrawer.svelte`) dan ikut berubah bentuknya hanya jika D3/D5 memutuskan begitu; itu pass tersendiri |
 | **Struktural (AGENTS.md §1.9)** | **Bukan N/A.** T1 mengaktifkan kolom yang hari ini mati, T2/T6 mengubah siklus hidup `status`, T3/T4 mengubah arti `KeyFailureClass` yang merupakan kontrak §7.5, dan T8 menambahkan field ke `settings_routing`. `SYSTEM_MAP.md` harus diubah pada commit yang mengubahnya, dan SPEC-API §7.5 perlu dibaca ulang sebelum D3 dikerjakan |
@@ -296,7 +296,7 @@ Dikerjakan grup B sebagai D3(a): ladder kredensial 2m berlipat sampai cap 1h, sa
 
 ### Kelompok D (LOW): konfigurasi dan kolom tampilan (T8, T10)
 
-#### T8 (LOW) Benar: tidak ada ambang kesehatan yang bisa dikonfigurasi per provider
+#### T8 (LOW) Benar, LANDED: tidak ada ambang kesehatan yang bisa dikonfigurasi per provider
 
 `settings_routing.go` (216 baris) hanya membawa rotasi (`fallback_strategy`, `sticky_limit`) dan override per provider
 (`:69-72,96`, resolusi `:131-150`). Semua jendela parkir adalah konstanta (`upstream_key_health.go:35,40,44-48`).
@@ -308,7 +308,7 @@ Sengaja di LOW: ini butuh bentuk data baru di `settings_routing` (§1.9, dan ber
 semua nilainya akan jauh lebih berguna setelah D3 memutuskan berapa banyak ambang yang memang ada. Mendesain
 konfigurasi untuk tiga konstanta hari ini adalah pekerjaan yang akan diulang.
 
-#### T10 (LOW) Benar: `test_status` tidak pernah menyaring rotasi
+#### T10 (LOW) Benar, DIJAWAB (display-only, bukan bug): `test_status` tidak pernah menyaring rotasi
 
 `Available()` (`upstream_endpoint.go:139-154`) tidak membaca `testStatus`. `RecordTest` (`:205-208`) hanya mengisi
 kolom tampilan, jadi akun yang gagal diuji tetap dipilih router. Ini bukan bug yang berdiri sendiri: memilih
@@ -376,7 +376,7 @@ sebelum B: T1 mengaktifkan kolom yang penulis alaminya adalah hasil dari D1/D3.
 | **A** | T3, T4 (klasifikasi) | **LANDED 2026-10-12.** D1 terjawab dan bentuknya berubah dari rekomendasi (lihat D1); D2 masih terbuka dan tidak ikut dikerjakan | `engine_failure.go` (120), `upstream_key_health.go` (134), `selection_health.go` (79), tiga site service, `engine_target_failure_test.go` baru (114). `engine_relay.go` (237) sengaja tidak disentuh |
 | **B** | T7 lalu T5 (counter, race, eskalasi) | **LANDED 2026-10-13.** D3 dijawab (a); D5 selesai sebagai GREATEST satu kolom, transaksi sengaja tidak | `endpoint_key_health.go` (55), `upstream_key_health.go` (122), `selection_health.go` (77), test `-race` |
 | **C** | T1, T2, T6, T9 (level akun, probe) | butuh D3 (lagi) + D4 | `quota_published.go` (135), `oauth_refresh.go` (61), `ping.go` (72), `endpoint_probe_use.go` (180), migration kalau bentuk data berubah |
-| **D** | T8, T10 (konfigurasi, tampilan) | butuh bentuk hasil A-C | `settings_routing.go` (216 ⚠ 250), `upstream_endpoint.go` (208) |
+| **D** | T8, T10 (konfigurasi, tampilan) | **LANDED 2026-10-13.** T8 = tiga jendela konfigurabel per provider; T10 = display-only, keputusan dicatat di §7.5 | `settings_routing_health.go` (baru), `settings_routing_patch.go` (baru), `selection_ports.go` (baru), kontrak YAML + `openapi.json` |
 
 Aturan repo yang mengikat setiap grup di atas (`AGENTS.md`):
 
@@ -760,3 +760,82 @@ lebih baik daripada menambah ke yang sudah mendekati 220") dan saya tetap melaku
 Yang mendekati batas setelah pass ini, untuk siapa pun yang melanjutkan: `upstream_endpoint_keys.go` 209,
 `oauth_refresh_worker_test.go` 222, `endpoint_probe_use.go` 181, `upstream_key_health_test.go` 156 +
 `upstream_key_ladder_test.go` 108.
+
+## Grup D (LOW) selesai, 2026-10-13
+
+### T8: jendela parkir bukan konstanta lagi
+
+Bentuk yang dikerjakan adalah tiga basis per kelas, global dan override per provider, dengan plafon ladder tetap
+konstanta:
+
+| Kelas | Kunci wire | Default | Bound tersimpan | Plafon (tidak konfigurabel) |
+|---|---|---|---|---|
+| Auth (401/402/403) | `routing.key_park.auth_seconds` | 120 | 1..900 | 1h |
+| Rate limit (429) | `routing.key_park.rate_limit_seconds` | 2 | 1..300 | 5m |
+| Transient (5xx dijawab) | `routing.key_park.transient_seconds` | 30 | 1..300 | flat, tanpa ladder |
+
+Override per provider memakai `provider_strategies["<id>"].key_park` dengan kunci yang sama. Resolusinya
+`RoutingSettings.HealthFor(providerID)`, persis pola `RotationFor`: field per field, yang nol berarti warisi.
+
+Yang harus diputuskan dan saya putuskan sendiri (dan bisa dibalik):
+
+- **Plafon sengaja tidak dibuat konfigurabel.** Alasannya bukan estetika: park yang bisa diatur sampai tidak
+  kedaluwarsa adalah kuburan satu arah yang barusan dibongkar T2/i, dan `Available()` tidak punya sweeper. Kalau
+  owner mau plafon bisa diatur, itu keputusan terpisah dan butuh aturan "park tak pernah kedaluwarsa" yang jelas.
+- **Satu angka di dua penulis.** `recordProbe` (jalur `POST /test`) membaca resolusi yang sama dengan selector,
+  lewat seam opsional baru `service.KeyHealthPolicyReader` / `dataplane.KeyHealthPolicyReader`, keduanya dipenuhi
+  `*SettingsService`. Kalau seam tidak terpasang atau baca gagal: park tetap terjadi, di jendela terdokumentasi.
+  Kegagalan baca settings tidak boleh membuat kredensial mati tetap melayani.
+- **Angka efektif selalu dijawab di read.** `routing.key_park` di response mengisi 120/2/30 untuk baris yang ditulis
+  sebelum kunci ini ada; override provider menampilkan apa yang tersimpan saja (window yang tidak disebut hilang,
+  bukan `0`), karena `0` di kolom itu berarti "warisi", bukan "park 0 detik".
+- **App-ui tidak disentuh.** Zod panel tidak `.strict()`, jadi kunci baru di-strip tanpa error, dan tab routing
+  hanya PATCH empat kunci yang ia punya. Kontrol panel untuk jendela ini bukan bagian temuan LOW ini.
+
+Berkas yang berubah: `domain/settings_routing_health.go` (baru, 170), `domain/settings_routing_patch.go` (baru, 88),
+`domain/settings_routing.go` (232 lalu 156), `domain/upstream_key_health.go`, `domain/upstream_endpoint_keys.go`,
+`dataplane/selection_ports.go` (baru, 78) + `selection.go` (237 lalu 183) + `selection_health.go`,
+`service/endpoint.go` + `endpoint_ports.go` + `endpoint_probe_use.go` + `settings_reads.go`,
+`schema/settings.go` + `settings_routing_patch.go` + `settings_response.go`, dua berkas `cmd/app-serv/*_wiring.go`,
+kontrak YAML + `openapi.json` (+ `KeyParkResponse` / `KeyParkPatch` di registry test).
+
+Signature domain berubah dan itu menular ke test: `UpstreamKey.RecordFailure(reason, class, **policy**, now)` dan
+`UpstreamEndpoint.RecordKeyFailure(id, reason, class, **policy**, now)`. `KeyHealthPolicy{}` (nol) = jendela
+terdokumentasi, jadi 15 panggilan test lama hanya dapat satu argumen, bukan perubahan perilaku.
+
+Test baru: `domain/settings_routing_health_test.go` (resolusi, clamp, bound, entry rule, merge, apply),
+`domain/upstream_key_policy_test.go` (basis konfigurabel, plafon mengabaikan basis, transient flat, nol = default),
+`schema/settings_routing_health_test.go` (tag bound, lowering dua level, dua arah response),
+`dataplane/selection_health_policy_test.go` (window provider terpakai; dua bentuk degradasi; keyless tidak membaca),
+`service/endpoint_probe_policy_test.go` (probe park di window konfigurabel; dua bentuk degradasi),
+`service/settings_health_policy_test.go` (resolusi per provider, baris pra-perubahan, gagal baca).
+
+Tangkapan ukuran berkas, dan ini yang ketiga kalinya: `settings_routing.go` 232 dan `selection.go` 237 kena WARNING
+`go-lint` (ambang 220, bukan FAIL 250). Keduanya dipecah sebelum jadi utang: aturan PATCH pindah ke
+`domain/settings_routing_patch.go`, seam selection pindah ke `dataplane/selection_ports.go`. Yang masih menyimpan
+warning setelah pass ini tinggal `endpoint_key_health_integration_test.go` 226, sudah ada sejak grup B.
+
+### T10: `test_status` display-only, dan itu jawabannya
+
+Tidak ada perubahan kode. Yang berubah adalah status pertanyaannya: `Available()` memang tidak seharusnya membaca
+kolom itu. Alasannya tercatat di §7.5 (plus satu entri changelog): hasil probe menjawab "kapan terakhir operator
+menekan tombol", yang bisa basi berminggu-minggu, sedangkan model parkir sudah menyerap setiap hasil upstream nyata.
+Menjadikan rotasi bergantung padanya berarti satu tes basi menahan akun yang bekerja, dan memberi diagnostik panel
+suara yang lebih keras atas rotasi daripada trafik yang benar-benar melayani. Kalau owner mau sinyal probe ikut
+menyaring, itu permintaan baru dan bentuknya bukan `Available()` hari ini.
+
+### Cara menjalankan suite integrasi di host ini (percobaan kedua, dan yang benar)
+
+```bash
+export PANNELAI_TEST_POSTGRES_DSN="user=rusmanadodi dbname=pannelai_health050_test host=/var/run/postgresql sslmode=disable"
+cd app-serv && go test -race -count=1 -tags=integration ./internal/repository/postgres/   # 7.4s, hijau
+```
+
+DSN dengan `localhost:5432` gagal di SASL (`password authentication failed for user "rusmanadodi"`) karena host ini
+mengauthenticate lewat socket Unix, bukan password TCP. Berkas `.env` tidak dibaca dan tidak dipakai untuk ini.
+
+### Gerbang grup D
+
+`go test -race -count=1 ./...` bersih, integrasi `-race` hijau (7.4s), `go-lint` (vet + gofmt + staticcheck +
+golangci-lint 0 issues, tanpa warning baru), `go-headers` (1290 berkas), `antislop` PASS, `contract-openapi` PASS
+setelah `go run ./tools/openapi-gen`, `contract-drift` PASS, `secrets` PASS.

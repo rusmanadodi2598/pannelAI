@@ -2,7 +2,7 @@
 //
 // @file      internal/schema/settings_routing_patch.go
 // @for       The routing group's PATCH DTO, its lowering into the domain mutation, and the per-entry rules of the provider override map.
-// @uses      internal/domain.
+// @uses      internal/domain, time.
 // @reason    SPEC-API-001 §7.14 validates a PATCH per key. The provider override map is the one value whose entries carry their own rules, so keeping its DTO and its checks together is what stops the settings patch file from growing past the line budget while the group stays one reviewable unit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
@@ -10,7 +10,11 @@
 // @since     2026-09-24
 package schema
 
-import "github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+import (
+	"time"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+)
 
 // RoutingSettingsPatch updates the routing group. A non-positive sticky limit
 // is rejected rather than clamped: a limit of zero would rotate on every
@@ -23,12 +27,25 @@ type RoutingSettingsPatch struct {
 	StickyLimit        *int                              `json:"sticky_limit,omitempty" validate:"omitempty,min=1,max=100"`
 	FallbackStrategy   *string                           `json:"fallback_strategy,omitempty" validate:"omitempty,oneof=fill-first round-robin"`
 	ProviderStrategies *map[string]ProviderStrategyPatch `json:"provider_strategies,omitempty" validate:"omitempty,dive"`
+	KeyPark            *KeyParkPatch                     `json:"key_park,omitempty"`
+}
+
+// KeyParkPatch is one level of the parking budget: the group's own windows or a
+// provider's override. Each window is optional on its own, because retuning one
+// failure class must not reset the other two. The bounds mirror the domain's
+// (MaxKeyParkAuthSeconds, MaxKeyParkRateLimit, MaxKeyParkTransient), which is the
+// authority a stored document is checked against.
+type KeyParkPatch struct {
+	AuthSeconds      *int `json:"auth_seconds,omitempty" validate:"omitempty,min=1,max=900"`
+	RateLimitSeconds *int `json:"rate_limit_seconds,omitempty" validate:"omitempty,min=1,max=300"`
+	TransientSeconds *int `json:"transient_seconds,omitempty" validate:"omitempty,min=1,max=300"`
 }
 
 // ProviderStrategyPatch is one provider's override as the wire carries it.
 type ProviderStrategyPatch struct {
-	FallbackStrategy *string `json:"fallback_strategy,omitempty" validate:"omitempty,oneof=fill-first round-robin"`
-	StickyLimit      *int    `json:"sticky_limit,omitempty" validate:"omitempty,min=1,max=100"`
+	FallbackStrategy *string       `json:"fallback_strategy,omitempty" validate:"omitempty,oneof=fill-first round-robin"`
+	StickyLimit      *int          `json:"sticky_limit,omitempty" validate:"omitempty,min=1,max=100"`
+	KeyPark          *KeyParkPatch `json:"key_park,omitempty"`
 }
 
 // validateProviderStrategies applies the entry rules the struct tags cannot
@@ -40,9 +57,9 @@ func validateProviderStrategies(in *RoutingSettingsPatch) error {
 		return nil
 	}
 	for id, override := range *in.ProviderStrategies {
-		if override.FallbackStrategy == nil && override.StickyLimit == nil {
+		if override.FallbackStrategy == nil && override.StickyLimit == nil && override.KeyPark == nil {
 			return domain.NewValidationError("provider_strategies[" + id +
-				"] must set fallback_strategy or sticky_limit; delete the entry to inherit the default")
+				"] must set fallback_strategy, sticky_limit, or key_park; delete the entry to inherit the default")
 		}
 	}
 	return nil
@@ -72,7 +89,7 @@ func routingPtr(in *RoutingSettingsPatch) *domain.RoutingSettingsPatch {
 	if in.ProviderStrategies != nil {
 		replaced := make(map[string]domain.ProviderStrategy, len(*in.ProviderStrategies))
 		for id, override := range *in.ProviderStrategies {
-			entry := domain.ProviderStrategy{StickyLimit: override.StickyLimit}
+			entry := domain.ProviderStrategy{StickyLimit: override.StickyLimit, KeyPark: keyPark(override.KeyPark)}
 			if override.FallbackStrategy != nil {
 				if parsed, err := domain.ParseCredentialRotation(*override.FallbackStrategy); err == nil {
 					entry.FallbackStrategy = parsed
@@ -82,7 +99,39 @@ func routingPtr(in *RoutingSettingsPatch) *domain.RoutingSettingsPatch {
 		}
 		patch.ProviderStrategies = &replaced
 	}
+	if in.KeyPark != nil {
+		parked := keyParkPatch(*in.KeyPark)
+		patch.KeyPark = &parked
+	}
 	return patch
+}
+
+// keyParkPatch lowers one wire parking entry into the domain mutation.
+func keyParkPatch(in KeyParkPatch) domain.KeyParkPatch {
+	return domain.KeyParkPatch{
+		AuthSeconds:      in.AuthSeconds,
+		RateLimitSeconds: in.RateLimitSeconds,
+		TransientSeconds: in.TransientSeconds,
+	}
+}
+
+// keyPark lowers a provider entry's override into stored windows. A nil entry
+// names no window, which is what an absent key_park means: inherit them all.
+func keyPark(in *KeyParkPatch) domain.KeyParkWindows {
+	windows := domain.KeyParkWindows{}
+	if in == nil {
+		return windows
+	}
+	if in.AuthSeconds != nil {
+		windows.AuthSeconds = *in.AuthSeconds
+	}
+	if in.RateLimitSeconds != nil {
+		windows.RateLimitSeconds = *in.RateLimitSeconds
+	}
+	if in.TransientSeconds != nil {
+		windows.TransientSeconds = *in.TransientSeconds
+	}
+	return windows
 }
 
 // strategiesOrEmpty renders the override map, never as null, so a panel
@@ -90,10 +139,37 @@ func routingPtr(in *RoutingSettingsPatch) *domain.RoutingSettingsPatch {
 func strategiesOrEmpty(in map[string]domain.ProviderStrategy) map[string]ProviderStrategyResponse {
 	out := make(map[string]ProviderStrategyResponse, len(in))
 	for id, override := range in {
-		out[id] = ProviderStrategyResponse{
+		entry := ProviderStrategyResponse{
 			FallbackStrategy: string(override.FallbackStrategy),
 			StickyLimit:      override.StickyLimit,
 		}
+		if !override.KeyPark.IsEmpty() {
+			parked := keyParkResponse(override.KeyPark)
+			entry.KeyPark = &parked
+		}
+		out[id] = entry
 	}
 	return out
+}
+
+// keyParkResponse renders stored seconds, so a provider override reads back as the
+// windows it names and nothing else.
+func keyParkResponse(in domain.KeyParkWindows) KeyParkResponse {
+	return KeyParkResponse{
+		AuthSeconds:      in.AuthSeconds,
+		RateLimitSeconds: in.RateLimitSeconds,
+		TransientSeconds: in.TransientSeconds,
+	}
+}
+
+// effectiveKeyPark renders the group's windows as the durations the router will
+// actually park with, which is what a read of a document that never set them has
+// to answer.
+func effectiveKeyPark(in domain.KeyParkWindows) KeyParkResponse {
+	policy := in.Policy()
+	return KeyParkResponse{
+		AuthSeconds:      int(policy.AuthWindow / time.Second),
+		RateLimitSeconds: int(policy.RateLimitWindow / time.Second),
+		TransientSeconds: int(policy.TransientWindow / time.Second),
+	}
 }

@@ -146,7 +146,7 @@ func TestUpstreamEndpoint_AttachKeyRejectsDuplicates(t *testing.T) {
 func parkEveryKey(t *testing.T, endpoint *UpstreamEndpoint) {
 	t.Helper()
 	for _, key := range endpoint.Keys() {
-		if _, err := endpoint.RecordKeyFailure(key.ID(), "the credential was refused", KeyFailureAuth, keyNow); err != nil {
+		if _, err := endpoint.RecordKeyFailure(key.ID(), "the credential was refused", KeyFailureAuth, DefaultKeyHealthPolicy(), keyNow); err != nil {
 			t.Fatalf("RecordKeyFailure(%s) error = %v", key.ID(), err)
 		}
 	}

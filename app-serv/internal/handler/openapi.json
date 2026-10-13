@@ -3653,6 +3653,37 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/ProviderStrategyPatch"
             }
+          },
+          "key_park": {
+            "$ref": "#/components/schemas/KeyParkPatch"
+          }
+        },
+        "additionalProperties": false
+      },
+      "KeyParkPatch": {
+        "type": "object",
+        "description": "The key-parking budget in seconds (SPEC-API-001 §7.5). Each window is optional on its own: an unnamed one keeps the value it has, and a provider entry that names none inherits the group's. The ladder ceilings are not configurable.",
+        "properties": {
+          "auth_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 900,
+            "description": "The first credential-shaped failure parks the key for this long, then doubles."
+          },
+          "rate_limit_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 300,
+            "description": "The first rate limit backs this long, then doubles."
+          },
+          "transient_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 300,
+            "description": "How long an upstream 5xx parks the key that served it. Flat."
           }
         },
         "additionalProperties": false
@@ -3672,6 +3703,9 @@
             "type": "integer",
             "format": "int64",
             "minimum": 1
+          },
+          "key_park": {
+            "$ref": "#/components/schemas/KeyParkPatch"
           }
         },
         "additionalProperties": false
@@ -4879,6 +4913,9 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/ProviderStrategyResponse"
             }
+          },
+          "key_park": {
+            "$ref": "#/components/schemas/KeyParkResponse"
           }
         },
         "required": [
@@ -4886,8 +4923,28 @@
           "combo_sticky_limit",
           "sticky_limit",
           "fallback_strategy",
-          "provider_strategies"
+          "provider_strategies",
+          "key_park"
         ],
+        "additionalProperties": false
+      },
+      "KeyParkResponse": {
+        "type": "object",
+        "description": "The effective key-parking budget in seconds (SPEC-API-001 §7.5). The group answers what the router will actually use, so a document that predates the keys still names 120, 2 and 30 rather than blanks.",
+        "properties": {
+          "auth_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rate_limit_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transient_seconds": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
         "additionalProperties": false
       },
       "ProviderStrategyResponse": {
@@ -4904,6 +4961,9 @@
           "sticky_limit": {
             "type": "integer",
             "format": "int64"
+          },
+          "key_park": {
+            "$ref": "#/components/schemas/KeyParkResponse"
           }
         },
         "additionalProperties": false

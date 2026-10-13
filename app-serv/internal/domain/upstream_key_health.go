@@ -43,17 +43,16 @@ func (c KeyFailureClass) ImplicatesCredential() bool {
 	return c == KeyFailureAuth || c == KeyFailureRateLimit || c == KeyFailureTransient
 }
 
-// keyTransientCooldown is how long an outage-shaped failure parks a key: long
+// keyTransientCooldown is the §7.5 flat window for an outage-shaped failure: long
 // enough to skip the overloaded instance, short enough that a recovered one is
-// picked up by the next request. It is flat on purpose: a target that answered
-// 5xx a moment ago is not a credential that is dead, and only the latter earns
-// an escalating window (draft 050 D3a).
+// picked up by the next request. It stays flat because a target that answered 5xx
+// a moment ago is not a credential that is dead, and only the latter earns an
+// escalating window (draft 050 D3a).
 const keyTransientCooldown = 30 * time.Second
 
-// The two doubling ladders. The rate-limit ladder is the reference's
-// BACKOFF_CONFIG; the credential ladder is draft 050 T5, added because a dead
-// credential was parked for the same flat 2 minutes forever and re-spent on
-// every round.
+// The documented default of each ladder and its ceiling. The bases are what the
+// routing group may retune (KeyParkWindows); the ceilings are not, because a park
+// that can be configured never to expire buries an account nothing then heals.
 const (
 	keyAuthBase      = 2 * time.Minute
 	keyAuthMax       = time.Hour
@@ -104,20 +103,14 @@ func (k UpstreamKey) Available(now time.Time) bool {
 // the reason but parks nothing, because the key is not what failed. The
 // credential and rate-limit windows grow with the streak and stop at their
 // ceilings; the transient one stays flat.
-func (k *UpstreamKey) RecordFailure(reason string, class KeyFailureClass, now time.Time) {
+func (k *UpstreamKey) RecordFailure(reason string, class KeyFailureClass, policy KeyHealthPolicy, now time.Time) {
 	k.lastError = reason
 	k.updatedAt = now
 	if !class.ImplicatesCredential() {
 		return
 	}
 	k.consecutiveErrors++
-	window := keyTransientCooldown
-	switch class {
-	case KeyFailureAuth:
-		window = backoff(keyAuthBase, k.consecutiveErrors, keyAuthMax)
-	case KeyFailureRateLimit:
-		window = backoff(keyRateLimitBase, k.consecutiveErrors, keyRateLimitMax)
-	}
+	window := policy.WindowFor(class, k.consecutiveErrors)
 	k.status = UpstreamKeyError
 	until := now.Add(window)
 	k.rateLimitedUntil = &until

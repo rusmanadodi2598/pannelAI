@@ -380,14 +380,18 @@ never presents the JSON itself; a deployment wired without a minter refuses such
 
 Key health model (parking per key, class-aware): the first upstream failure parks the key with a
 window sized by its class: 401/402/403 ⇒ exponential `2m × 2^(n-1)` capped at 1h (`n` = consecutive failures, reset by a successful call); 429 ⇒ exponential `2s × 2^(n-1)` capped at 5m
-(`n` = consecutive failures, reset by a successful call); an answered 5xx ⇒ 30s. A failure the credential
-did not cause parks nothing: an upstream 404 (this account does not serve that model) and a call that never
+(`n` = consecutive failures, reset by a successful call); an answered 5xx ⇒ 30s. Those three numbers are the
+defaults of `routing.key_park` (§7.14), which retunes each class per provider; the two ceilings are not
+configurable, because a park an operator can extend without limit is a state nothing then heals. A failure the
+credential did not cause parks nothing: an upstream 404 (this account does not serve that model) and a call that never
 reached the upstream (DNS, TLS, dial, deadline) are **target-shaped**, recorded on the endpoint's connection
 state while the chain keeps walking to the next credential, because another account may serve the model the
 first refused and a credential that was never sent cannot have failed. Any other 4xx records nothing because
 the request, not the credential, is the cause. `consecutive_errors` counts
 every parked failure and a successful call resets all of it. The health lives on the key row; only
-the rotation cursor is Redis-backed.
+the rotation cursor is Redis-backed. `test_status`, the endpoint's own connectivity column, is display-only: routing
+never reads it, because a probe answers when an operator last pressed the button and the parking above already carries
+every real upstream outcome.
 
 ### 7.6 Models (catalog, custom, alias, disabled)
 
@@ -881,7 +885,7 @@ v1 settings surface (subset of reference `DEFAULT_SETTINGS`):
 ```json
 {
   "security": { "require_login": true, "require_api_key": true },
-  "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {} },
+  "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {}, "key_park": { "auth_seconds": 120, "rate_limit_seconds": 2, "transient_seconds": 30 } },
   "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "", "outbound_proxy_strategy": "fallback", "provider_proxies": {} },
   "token_saver": { "see §7.9" },
   "reasoning": { "provider_thinking": {} },
@@ -897,6 +901,17 @@ the reference's own `providerStrategies` shape: `{"<provider_id>": {"fallback_st
 that provider (§7.5), not only combo members; the combo's own rotation stays `combo_strategy` /
 `combo_sticky_limit`. `provider_strategies` is written whole, like the reference's PATCH, so a
 read-modify-write is what changes one provider.
+
+`routing.key_park` holds the key-parking budget the health model applies (§7.5): `auth_seconds` (1..900,
+default 120) is the first credential-shaped failure's window, `rate_limit_seconds` (1..300, default 2) the
+first 429's, and `transient_seconds` (1..300, default 30) the flat window an answered 5xx takes. Each window
+is PATCHed on its own, because retuning one failure class must not reset the other two, and a provider entry
+may name the same three keys to retune one account family alone: `{"<provider_id>": {"key_park":
+{"transient_seconds": 45}}}`. An entry that names no window inherits every one from the group, and an entry
+that sets nothing at all is refused like the rotation rule refuses an empty entry. The windows are read per
+failure, so a retune takes effect on the next parked key without a restart. The ceilings (1h, 5m) and the
+doubling rule are not configurable: they are what bounds how long a dead credential can stay out of rotation
+after the last successful call.
 
 An emptied URL clears the stored value: `network.outbound_proxy_url: ""` and
 `token_saver.headroom.url: ""` both store the clear, because the panel sends `""` when the operator
@@ -1381,3 +1396,21 @@ testing one is how an operator proves a credential they just fixed, and the refu
 no way to prove it since only a served call clears that status. The probe keeps writing health for the same reason,
 which means a failed Test now also climbs the credential ladder (2m, 4m, 8m, up to the 1h ceiling): a diagnostic that
 repeatedly fails is the same evidence real traffic would give._
+
+_Changelog 2026-10-13: §7.14 adds `routing.key_park` and a provider entry's own `key_park`, and §7.5 names them as
+the source of the three parking windows (draft `050` T8). They were compile-time constants, so an operator facing a
+vendor whose rate limit or credential refusal needed a different cooldown had no lever: they could not widen a
+backoff, shorten a park, or retune one provider without a rebuild. The bases are now per-class seconds with stored
+bounds (1..900, 1..300, 1..300) resolved provider-over-group on the rotation rule, patched one window at a time, and
+read per failure so a retune takes effect on the next parked key. The ceilings (1h, 5m) stay fixed: a park that can
+be configured never to expire is the one-directional grave §7.5 just dug an account out of. Both writers of a parked
+key read the same resolved budget, so the Test button and a live request cannot park one credential for different
+lengths._
+
+_Changelog 2026-10-13: §7.5 states that `test_status` is display-only and does not filter rotation (draft `050` T10).
+The finding was that nothing read the column when choosing an account; the answer is that routing must not. A probe
+answers "did this credential work when an operator pressed the button", an event that can be weeks old, while the
+health model already consumes every real upstream outcome (§7.5 parking). Making rotation depend on the probe would
+let one stale manual test withhold a working account, and would give the panel's own diagnostic a second, stronger
+say over routing than the traffic that actually serves customers. The column stays what it is: the panel's last
+result, and the signal an operator acts on._

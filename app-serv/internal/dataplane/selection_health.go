@@ -1,7 +1,7 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_health.go
-// @for       The health accounting a selection produces: the key circuit a served or failed call updates, and its persistence.
+// @for       The health accounting a selection produces: the key circuit a served or failed call updates, the parking budget it applies, and its persistence.
 // @uses      internal/domain, context.
 // @reason    Selection and accounting are two jobs: Select decides who serves the next request from the endpoint's current state, while these writes change that state afterwards. Keeping them apart also keeps the keyless rule readable, because a no_auth selection has no key circuit to write and must not fail the request on a bookkeeping error (G15 in the P2 register).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
@@ -14,6 +14,7 @@ import (
 	"context"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 )
 
 // RecordSuccess applies a served request to the endpoint's parity state and the
@@ -49,7 +50,7 @@ func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reaso
 	endpoint := selection.Endpoint
 	endpoint.RecordUpstreamError(parityCode(class), reason, now)
 	if selection.Key.ID() != "" && class.ImplicatesCredential() {
-		updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class, now)
+		updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class, s.healthPolicy(ctx, endpoint.ProviderID()), now)
 		if err != nil {
 			return err
 		}
@@ -58,6 +59,23 @@ func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reaso
 		}
 	}
 	return s.endpoints.RecordUpstreamOutcome(ctx, endpoint)
+}
+
+// healthPolicy resolves the parking budget for one provider. A nil seam and a
+// failed read both answer the documented windows: the key is still parked, at the
+// length nobody configured, because a settings read must not decide whether a
+// failing credential keeps serving.
+func (s *Selector) healthPolicy(ctx context.Context, providerID string) domain.KeyHealthPolicy {
+	if s.health == nil {
+		return domain.DefaultKeyHealthPolicy()
+	}
+	policy, err := s.health.KeyHealthPolicy(ctx, providerID)
+	if err != nil {
+		logx.Degraded(s.logger, "key health policy unavailable, parking fell back to the documented windows", err,
+			"provider_id", providerID)
+		return domain.DefaultKeyHealthPolicy()
+	}
+	return policy
 }
 
 // parityCode names an endpoint-level failure the way the wire's error taxonomy

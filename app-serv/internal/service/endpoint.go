@@ -31,6 +31,7 @@ type EndpointService struct {
 	sealer  CredentialSealer
 	prober  EndpointProber
 	proxies ProxyPoolFinder
+	health  KeyHealthPolicyReader
 	clock   func() time.Time
 }
 
@@ -45,6 +46,9 @@ type EndpointServiceDeps struct {
 	// Proxies is optional: a deployment that wires none refuses a
 	// `proxy_pool_id` rather than storing a name nothing can resolve.
 	Proxies ProxyPoolFinder
+	// Health is optional: a deployment that wires none parks a failed probe at
+	// the documented windows rather than the configured ones.
+	Health KeyHealthPolicyReader
 }
 
 // NewEndpointService validates deps and returns a ready service.
@@ -64,6 +68,7 @@ func NewEndpointService(deps EndpointServiceDeps) (*EndpointService, error) {
 		sealer:  deps.Sealer,
 		prober:  deps.Prober,
 		proxies: deps.Proxies,
+		health:  deps.Health,
 		clock:   time.Now,
 	}, nil
 }

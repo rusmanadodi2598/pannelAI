@@ -63,12 +63,15 @@ func (m CredentialRotation) IsValid() bool {
 func (m CredentialRotation) UsesRotation() bool { return m == RotationRoundRobin }
 
 // ProviderStrategy is one provider's override of the global rotation policy.
-// Both fields are optional: an absent field inherits the global default. An
-// entry that sets neither is refused by validateRouting rather than stored as
-// dead configuration.
+// Every field is optional: an absent one inherits the global default. An entry
+// that sets nothing is refused by validateRouting rather than stored as dead
+// configuration.
 type ProviderStrategy struct {
 	FallbackStrategy CredentialRotation `json:"fallback_strategy,omitempty"`
 	StickyLimit      *int               `json:"sticky_limit,omitempty"`
+	// KeyPark retunes the parking windows for this provider alone. An empty entry
+	// inherits every window from the group.
+	KeyPark KeyParkWindows `json:"key_park,omitempty"`
 }
 
 // RotationPolicy is the credential walk resolved for one provider: the mode the
@@ -94,6 +97,9 @@ type RoutingSettings struct {
 	// ProviderStrategies holds the per-provider overrides, keyed by provider
 	// id. It is written whole, like the reference's providerStrategies map.
 	ProviderStrategies map[string]ProviderStrategy `json:"provider_strategies,omitempty"`
+	// KeyPark holds the global key-parking windows. It is the §7.5 budget the
+	// ladder starts from before any provider override.
+	KeyPark KeyParkWindows `json:"key_park,omitempty"`
 }
 
 // defaultRoutingSettings is the §7.14 routing default: combo fallback with a
@@ -147,70 +153,4 @@ func (s RoutingSettings) RotationFor(providerID string) RotationPolicy {
 		policy.StickyLimit = DefaultStickyLimit
 	}
 	return policy
-}
-
-// RoutingSettingsPatch updates the routing group.
-type RoutingSettingsPatch struct {
-	ComboStrategy    *ComboStrategy
-	ComboStickyLimit *int
-	StickyLimit      *int
-	FallbackStrategy *CredentialRotation
-	// ProviderStrategies replaces the whole override map when present, so an
-	// empty map is a real value (clear every override) rather than "leave
-	// unchanged", which the nil pointer already means.
-	ProviderStrategies *map[string]ProviderStrategy
-}
-
-// applyRouting writes the routing group from a patch.
-func applyRouting(dst *RoutingSettings, p *RoutingSettingsPatch) {
-	if p.ComboStrategy != nil {
-		dst.ComboStrategy = *p.ComboStrategy
-	}
-	applyInt(&dst.ComboStickyLimit, p.ComboStickyLimit)
-	applyInt(&dst.StickyLimit, p.StickyLimit)
-	if p.FallbackStrategy != nil {
-		dst.FallbackStrategy = *p.FallbackStrategy
-	}
-	if p.ProviderStrategies != nil {
-		replaced := make(map[string]ProviderStrategy, len(*p.ProviderStrategies))
-		for id, override := range *p.ProviderStrategies {
-			replaced[id] = override
-		}
-		dst.ProviderStrategies = replaced
-	}
-}
-
-// validateRouting checks the routing group's rules. The per-field bounds live
-// in the schema tags; these are the cross-key ones and the entry rule the tags
-// cannot state.
-func validateRouting(s RoutingSettings) error {
-	if s.ComboStickyLimit < 1 {
-		return NewValidationError("routing.combo_sticky_limit must be at least 1")
-	}
-	if s.StickyLimit < 1 {
-		return NewValidationError("routing.sticky_limit must be at least 1")
-	}
-	if s.StickyLimit > MaxStickyLimit {
-		return NewValidationError("routing.sticky_limit must be at most 100")
-	}
-	if !s.ComboStrategy.IsValid() {
-		return NewValidationError("routing.combo_strategy is invalid")
-	}
-	if s.FallbackStrategy != "" && !s.FallbackStrategy.IsValid() {
-		return NewValidationError("routing.fallback_strategy must be one of fill-first, round-robin")
-	}
-	for id, override := range s.ProviderStrategies {
-		if override.FallbackStrategy == "" && override.StickyLimit == nil {
-			return NewValidationError("routing.provider_strategies[" + id +
-				"] must set fallback_strategy or sticky_limit; delete the entry to inherit the default")
-		}
-		if override.FallbackStrategy != "" && !override.FallbackStrategy.IsValid() {
-			return NewValidationError("routing.provider_strategies[" + id +
-				"].fallback_strategy must be one of fill-first, round-robin")
-		}
-		if override.StickyLimit != nil && (*override.StickyLimit < 1 || *override.StickyLimit > MaxStickyLimit) {
-			return NewValidationError("routing.provider_strategies[" + id + "].sticky_limit must be between 1 and 100")
-		}
-	}
-	return nil
 }

@@ -63,7 +63,7 @@ func seedHealthKey(t *testing.T, repo *EndpointRepository, failures int, now tim
 		t.Fatalf("reading back: %v", err)
 	}
 	for range failures {
-		updated, err := loaded.RecordKeyFailure(healthKeyID, "upstream refused", domain.KeyFailureAuth, now)
+		updated, err := loaded.RecordKeyFailure(healthKeyID, "upstream refused", domain.KeyFailureAuth, domain.DefaultKeyHealthPolicy(), now)
 		if err != nil {
 			t.Fatalf("recording a failure: %v", err)
 		}
@@ -86,7 +86,7 @@ func TestIntegration_RecordKeyHealthCountsEachConcurrentFailure(t *testing.T) {
 	// Both selectors loaded the key at zero errors and each decided it had just
 	// failed once, so each hands the store the same value: 1.
 	loaded := seedHealthKey(t, repo, 0, now)
-	failed, err := loaded.RecordKeyFailure(healthKeyID, "upstream refused", domain.KeyFailureAuth, now)
+	failed, err := loaded.RecordKeyFailure(healthKeyID, "upstream refused", domain.KeyFailureAuth, domain.DefaultKeyHealthPolicy(), now)
 	if err != nil {
 		t.Fatalf("recording a failure: %v", err)
 	}

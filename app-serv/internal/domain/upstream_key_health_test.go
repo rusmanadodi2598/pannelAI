@@ -41,7 +41,7 @@ func TestUpstreamKey_RecordFailureParksByClass(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			key := newTestKey(t, 1)
-			key.RecordFailure("upstream said no", tc.class, keyNow)
+			key.RecordFailure("upstream said no", tc.class, DefaultKeyHealthPolicy(), keyNow)
 			if got := key.Status(); got != tc.wantStatus {
 				t.Fatalf("status = %q, want %q", got, tc.wantStatus)
 			}
@@ -95,8 +95,8 @@ func TestKeyFailureClass_ImplicatesCredential(t *testing.T) {
 func TestUpstreamKey_NonCredentialFailureLeavesTheCounterAlone(t *testing.T) {
 	for _, class := range []KeyFailureClass{KeyFailureRequest, KeyFailureTarget} {
 		key := newTestKey(t, 1)
-		key.RecordFailure("the upstream could not be reached", class, keyNow)
-		key.RecordFailure("the upstream could not be reached", class, keyNow)
+		key.RecordFailure("the upstream could not be reached", class, DefaultKeyHealthPolicy(), keyNow)
+		key.RecordFailure("the upstream could not be reached", class, DefaultKeyHealthPolicy(), keyNow)
 		if got := key.ConsecutiveErrors(); got != 0 {
 			t.Fatalf("consecutive errors = %d for class %d, want 0", got, class)
 		}
@@ -108,7 +108,7 @@ func TestUpstreamKey_NonCredentialFailureLeavesTheCounterAlone(t *testing.T) {
 
 func TestUpstreamKey_RecordSuccessResetsHealth(t *testing.T) {
 	key := newTestKey(t, 1)
-	key.RecordFailure("upstream said no", KeyFailureAuth, keyNow)
+	key.RecordFailure("upstream said no", KeyFailureAuth, DefaultKeyHealthPolicy(), keyNow)
 	if key.Available(keyNow) {
 		t.Fatal("a parked key must not be available")
 	}
@@ -145,7 +145,7 @@ func TestUpstreamKey_AvailableDuringAndAfterBackoff(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			key := newTestKey(t, 1)
-			key.RecordFailure("upstream said no", KeyFailureAuth, keyNow)
+			key.RecordFailure("upstream said no", KeyFailureAuth, DefaultKeyHealthPolicy(), keyNow)
 			if got := key.Available(keyNow.Add(tc.advance)); got != tc.available {
 				t.Fatalf("Available(+%v) = %v, want %v", tc.advance, got, tc.available)
 			}

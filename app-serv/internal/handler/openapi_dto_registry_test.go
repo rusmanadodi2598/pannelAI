@@ -123,6 +123,8 @@ func dtoRegistry() map[string]reflect.Type {
 		{"ConsoleResponse", schema.ConsoleResponse{}},
 		{"SecuritySettingsResponse", schema.SecuritySettingsResponse{}},
 		{"RoutingSettingsResponse", schema.RoutingSettingsResponse{}},
+		{"KeyParkResponse", schema.KeyParkResponse{}},
+		{"KeyParkPatch", schema.KeyParkPatch{}},
 		{"NetworkSettingsResponse", schema.NetworkSettingsResponse{}},
 		{"LoggingSettingsResponse", schema.LoggingSettingsResponse{}},
 		{"SettingsResponse", schema.SettingsResponse{}},

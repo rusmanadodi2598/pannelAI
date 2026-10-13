@@ -117,13 +117,14 @@ func (e *UpstreamEndpoint) UpdateKey(id, label, valueEncrypted, keyHint string, 
 }
 
 // RecordKeyFailure applies a failed attempt to one key and returns its state, so
-// the caller can log which key was parked.
-func (e *UpstreamEndpoint) RecordKeyFailure(id, reason string, class KeyFailureClass, now time.Time) (UpstreamKey, error) {
+// the caller can log which key was parked. The policy is the provider's own
+// parking budget, resolved by the caller from the routing group.
+func (e *UpstreamEndpoint) RecordKeyFailure(id, reason string, class KeyFailureClass, policy KeyHealthPolicy, now time.Time) (UpstreamKey, error) {
 	index := e.keyIndex(id)
 	if index < 0 {
 		return UpstreamKey{}, NewNotFoundError("upstream key not found")
 	}
-	e.keys[index].RecordFailure(reason, class, now)
+	e.keys[index].RecordFailure(reason, class, policy, now)
 	e.updatedAt = now
 	return e.keys[index], nil
 }

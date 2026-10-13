@@ -56,6 +56,13 @@ type CredentialSealer interface {
 	SecretOpener
 }
 
+// KeyHealthPolicyReader answers the parking windows the operator configured for
+// one provider (§7.14), so a failed Test parks the key it spent at the length
+// routing would rather than a second number only the probe knows.
+type KeyHealthPolicyReader interface {
+	KeyHealthPolicy(ctx context.Context, providerID string) (domain.KeyHealthPolicy, error)
+}
+
 // BulkRowIndexer is satisfied by a store error that can name the batch row it
 // refused.
 //

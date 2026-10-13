@@ -97,6 +97,9 @@ func buildManagement(
 	endpointSvc, err := service.NewEndpointService(service.EndpointServiceDeps{
 		Store: endpointRepo, Index: runtimeIndex, Sealer: sealer, Prober: prober,
 		Proxies: proxyPoolFinder{proxies: postgres.NewProxyRepository(pool)},
+		// A failed Test parks the key it spent with the same windows routing
+		// would use (§7.14), so one number is not kept in two places.
+		Health: settingsSvc,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: endpoints: %w", err)

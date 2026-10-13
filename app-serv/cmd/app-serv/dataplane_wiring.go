@@ -71,6 +71,9 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		// so a policy read that fails degrades to priority order in the
 		// selector rather than failing the request.
 		Strategies: in.Settings,
+		// The §7.14 key-park windows resolved per provider; an unwired read or a
+		// failed one parks at the documented defaults instead of failing the call.
+		Health: in.Settings,
 		// §7.12: an endpoint whose stored budget cap is spent is skipped, which
 		// is the enforcement half of the quota surface. The quota service
 		// satisfies the seam directly, so no adapter is written for it.

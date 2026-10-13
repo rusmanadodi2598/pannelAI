@@ -34,7 +34,7 @@ func TestUpstreamKey_AuthLadderEscalates(t *testing.T) {
 	for _, tc := range cases {
 		key := newTestKey(t, 1)
 		for range tc.failures {
-			key.RecordFailure("the credential was refused", KeyFailureAuth, keyNow)
+			key.RecordFailure("the credential was refused", KeyFailureAuth, DefaultKeyHealthPolicy(), keyNow)
 		}
 		if got := key.RateLimitedUntil().Sub(keyNow); got != tc.wantDelay {
 			t.Fatalf("after %d credential failures: window = %v, want %v", tc.failures, got, tc.wantDelay)
@@ -47,10 +47,10 @@ func TestUpstreamKey_AuthLadderEscalates(t *testing.T) {
 func TestUpstreamKey_AuthLadderResetsOnSuccess(t *testing.T) {
 	key := newTestKey(t, 1)
 	for range 5 {
-		key.RecordFailure("the credential was refused", KeyFailureAuth, keyNow)
+		key.RecordFailure("the credential was refused", KeyFailureAuth, DefaultKeyHealthPolicy(), keyNow)
 	}
 	key.RecordSuccess(keyNow)
-	key.RecordFailure("the credential was refused", KeyFailureAuth, keyNow)
+	key.RecordFailure("the credential was refused", KeyFailureAuth, DefaultKeyHealthPolicy(), keyNow)
 	if got := key.RateLimitedUntil().Sub(keyNow); got != 2*time.Minute {
 		t.Fatalf("window after a success = %v, want the first step of 2m", got)
 	}
@@ -61,7 +61,7 @@ func TestUpstreamKey_AuthLadderResetsOnSuccess(t *testing.T) {
 func TestUpstreamKey_TransientStaysFlat(t *testing.T) {
 	key := newTestKey(t, 1)
 	for range 4 {
-		key.RecordFailure("the upstream is overloaded", KeyFailureTransient, keyNow)
+		key.RecordFailure("the upstream is overloaded", KeyFailureTransient, DefaultKeyHealthPolicy(), keyNow)
 	}
 	if got := key.RateLimitedUntil().Sub(keyNow); got != 30*time.Second {
 		t.Fatalf("transient window = %v, want the flat 30s", got)
@@ -83,7 +83,7 @@ func TestUpstreamKey_RateLimitLadder(t *testing.T) {
 	for _, tc := range cases {
 		key := newTestKey(t, 1)
 		for i := 0; i < tc.failures; i++ {
-			key.RecordFailure("rate limited", KeyFailureRateLimit, keyNow)
+			key.RecordFailure("rate limited", KeyFailureRateLimit, DefaultKeyHealthPolicy(), keyNow)
 		}
 		if got := key.RateLimitedUntil().Sub(keyNow); got != tc.wantDelay {
 			t.Fatalf("after %d rate limits: window = %v, want %v", tc.failures, got, tc.wantDelay)
@@ -94,7 +94,7 @@ func TestUpstreamKey_RateLimitLadder(t *testing.T) {
 	for _, failures := range []int{20, 100} {
 		key := newTestKey(t, 1)
 		for i := 0; i < failures; i++ {
-			key.RecordFailure("rate limited", KeyFailureRateLimit, keyNow)
+			key.RecordFailure("rate limited", KeyFailureRateLimit, DefaultKeyHealthPolicy(), keyNow)
 		}
 		if got := key.RateLimitedUntil().Sub(keyNow); got != 5*time.Minute {
 			t.Fatalf("after %d rate limits: window = %v, want the 5m cap", failures, got)
