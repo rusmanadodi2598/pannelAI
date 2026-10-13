@@ -24,6 +24,10 @@ const (
 	MaxKeyParkAuthSeconds = 900
 	MaxKeyParkRateLimit   = 300
 	MaxKeyParkTransient   = 300
+	// MaxKeyParkBilling holds a configured billing base to an hour, so the ladder's
+	// second step is still inside two hours and it reaches its ceiling by doubling
+	// rather than starting past it.
+	MaxKeyParkBilling = 3600
 )
 
 // KeyParkWindows is the parking budget as the routing group stores it: seconds,
@@ -32,12 +36,14 @@ type KeyParkWindows struct {
 	AuthSeconds      int `json:"auth_seconds,omitempty"`
 	RateLimitSeconds int `json:"rate_limit_seconds,omitempty"`
 	TransientSeconds int `json:"transient_seconds,omitempty"`
+	BillingSeconds   int `json:"billing_seconds,omitempty"`
 }
 
 // IsEmpty reports whether the entry names no window at all, which is what makes a
 // provider override with nothing in it dead configuration.
 func (w KeyParkWindows) IsEmpty() bool {
-	return w.AuthSeconds == 0 && w.RateLimitSeconds == 0 && w.TransientSeconds == 0
+	return w.AuthSeconds == 0 && w.RateLimitSeconds == 0 &&
+		w.TransientSeconds == 0 && w.BillingSeconds == 0
 }
 
 // KeyParkPatch is the parking group of a routing PATCH: one pointer per window, so
@@ -46,6 +52,7 @@ type KeyParkPatch struct {
 	AuthSeconds      *int
 	RateLimitSeconds *int
 	TransientSeconds *int
+	BillingSeconds   *int
 }
 
 // applyTo writes the windows the patch names, and only those.
@@ -53,6 +60,7 @@ func (p KeyParkPatch) applyTo(dst *KeyParkWindows) {
 	applyInt(&dst.AuthSeconds, p.AuthSeconds)
 	applyInt(&dst.RateLimitSeconds, p.RateLimitSeconds)
 	applyInt(&dst.TransientSeconds, p.TransientSeconds)
+	applyInt(&dst.BillingSeconds, p.BillingSeconds)
 }
 
 // Merged replaces the windows this entry names with the override's own, field by
@@ -68,6 +76,9 @@ func (w KeyParkWindows) Merged(over KeyParkWindows) KeyParkWindows {
 	if over.TransientSeconds != 0 {
 		w.TransientSeconds = over.TransientSeconds
 	}
+	if over.BillingSeconds != 0 {
+		w.BillingSeconds = over.BillingSeconds
+	}
 	return w
 }
 
@@ -80,6 +91,7 @@ func (w KeyParkWindows) Policy() KeyHealthPolicy {
 		AuthWindow:      secondsWindow(w.AuthSeconds, keyAuthBase, MaxKeyParkAuthSeconds),
 		RateLimitWindow: secondsWindow(w.RateLimitSeconds, keyRateLimitBase, MaxKeyParkRateLimit),
 		TransientWindow: secondsWindow(w.TransientSeconds, keyTransientCooldown, MaxKeyParkTransient),
+		BillingWindow:   secondsWindow(w.BillingSeconds, keyBillingBase, MaxKeyParkBilling),
 	}
 }
 
@@ -102,6 +114,7 @@ type KeyHealthPolicy struct {
 	AuthWindow      time.Duration
 	RateLimitWindow time.Duration
 	TransientWindow time.Duration
+	BillingWindow   time.Duration
 }
 
 // DefaultKeyHealthPolicy answers the §7.5 windows a provider gets when nobody
@@ -111,11 +124,12 @@ func DefaultKeyHealthPolicy() KeyHealthPolicy {
 		AuthWindow:      keyAuthBase,
 		RateLimitWindow: keyRateLimitBase,
 		TransientWindow: keyTransientCooldown,
+		BillingWindow:   keyBillingBase,
 	}
 }
 
 // WindowFor reports how long a failure of this class parks a key that has now
-// failed it n times running. The two ladders stop at their ceilings and the
+// failed it n times running. Each ladder stops at its ceiling and the
 // ceilings are not configurable: a park an operator can set to never expire is
 // the one-way grave draft 050 T2 had to dig an account out of.
 func (p KeyHealthPolicy) WindowFor(class KeyFailureClass, n int) time.Duration {
@@ -124,6 +138,8 @@ func (p KeyHealthPolicy) WindowFor(class KeyFailureClass, n int) time.Duration {
 		return backoff(durationOr(p.AuthWindow, keyAuthBase), n, keyAuthMax)
 	case KeyFailureRateLimit:
 		return backoff(durationOr(p.RateLimitWindow, keyRateLimitBase), n, keyRateLimitMax)
+	case KeyFailureBilling:
+		return backoff(durationOr(p.BillingWindow, keyBillingBase), n, keyBillingMax)
 	default:
 		return durationOr(p.TransientWindow, keyTransientCooldown)
 	}
@@ -159,6 +175,7 @@ func validateKeyPark(scope string, w KeyParkWindows) error {
 		{"auth_seconds", w.AuthSeconds, MaxKeyParkAuthSeconds},
 		{"rate_limit_seconds", w.RateLimitSeconds, MaxKeyParkRateLimit},
 		{"transient_seconds", w.TransientSeconds, MaxKeyParkTransient},
+		{"billing_seconds", w.BillingSeconds, MaxKeyParkBilling},
 	}
 	for _, field := range fields {
 		if field.value < 0 || field.value > field.max {

@@ -33,6 +33,7 @@ const (
 	CodeUpstreamTimeout     = "UPSTREAM_TIMEOUT"
 	CodeModelNotFound       = "MODEL_NOT_FOUND"
 	CodeProviderNotRoutable = "PROVIDER_NOT_ROUTABLE"
+	CodeBillingExhausted    = "BILLING_EXHAUSTED"
 )
 
 // Error is a data plane failure: the machine code, the English message, and the
@@ -100,7 +101,9 @@ func statusFor(code string) int {
 		return http.StatusUnauthorized
 	case CodeRateLimited:
 		return http.StatusTooManyRequests
-	case CodeNoProvider:
+	case CodeNoProvider, CodeBillingExhausted:
+		// 503 and not 402: the debt is the gateway's account with its vendor, and a
+		// client told to pay would be told to retry something it cannot fix.
 		return http.StatusServiceUnavailable
 	case CodeUpstreamError:
 		return http.StatusBadGateway

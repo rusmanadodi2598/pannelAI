@@ -89,10 +89,14 @@ func (s *Selector) healthPolicy(ctx context.Context, providerID string) domain.K
 // does (§8), so the panel's last-error block and the client's error code agree
 // about the same upstream event.
 func parityCode(class domain.KeyFailureClass) string {
-	if class == domain.KeyFailureRateLimit {
+	switch class {
+	case domain.KeyFailureRateLimit:
 		return CodeRateLimited
+	case domain.KeyFailureBilling:
+		return CodeBillingExhausted
+	default:
+		return CodeUpstreamError
 	}
-	return CodeUpstreamError
 }
 
 // PersistKey records a key whose health was already updated in memory, so a

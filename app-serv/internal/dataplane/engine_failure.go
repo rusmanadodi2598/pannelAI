@@ -21,13 +21,17 @@ import (
 )
 
 // FailureClass maps an upstream HTTP status onto the key-health class that
-// decides its parking window: the credential's own failures, rate limits, and
-// transient outages implicate the key, while a 404 is this target not serving
+// decides its parking window: the credential's own failures, rate limits, billing,
+// and transient outages implicate the key, while a 404 is this target not serving
 // the model and every other 4xx is the request itself.
 func FailureClass(status int) domain.KeyFailureClass {
 	switch status {
-	case http.StatusUnauthorized, http.StatusPaymentRequired, http.StatusForbidden:
+	case http.StatusUnauthorized, http.StatusForbidden:
 		return domain.KeyFailureAuth
+	case http.StatusPaymentRequired:
+		// Not Auth: the credential is valid and the account behind it has no credit,
+		// a hours-long condition an operator fixes by buying credit (draft 050 D2).
+		return domain.KeyFailureBilling
 	case http.StatusTooManyRequests:
 		return domain.KeyFailureRateLimit
 	case http.StatusNotFound:
@@ -82,6 +86,10 @@ func (e *Engine) translateCallError(err error) error {
 		switch {
 		case failure.Status == http.StatusTooManyRequests:
 			code = CodeRateLimited
+		case FailureClass(failure.Status) == domain.KeyFailureBilling:
+			// Named rather than folded into UPSTREAM_ERROR, so a client's retry policy
+			// and the panel both see nothing can serve until credit is bought.
+			code = CodeBillingExhausted
 		case FailureClass(failure.Status) == domain.KeyFailureRequest:
 			// The upstream refused this request itself (context overflow, an
 			// unsupported parameter): the same body would be refused by every
@@ -109,10 +117,11 @@ func finalError(first, last error) error {
 
 // failoverWorthy reports whether another credential or combo member could
 // plausibly succeed. A request-shaped refusal fails identically everywhere, so
-// only an upstream-side failure is worth another attempt.
+// only an upstream-side failure is worth another attempt. A bill exhausted on this
+// account says nothing about the next one, so BILLING_EXHAUSTED keeps walking too.
 func failoverWorthy(code string) bool {
 	switch code {
-	case CodeUpstreamError, CodeUpstreamTimeout, CodeRateLimited, CodeNoProvider:
+	case CodeUpstreamError, CodeUpstreamTimeout, CodeRateLimited, CodeNoProvider, CodeBillingExhausted:
 		return true
 	default:
 		return false

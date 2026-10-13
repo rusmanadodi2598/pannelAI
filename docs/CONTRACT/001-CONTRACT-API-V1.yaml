@@ -2696,6 +2696,12 @@ components:
           minimum: 1
           maximum: 300
           description: How long an upstream 5xx parks the key that served it. Flat.
+        billing_seconds:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 3600
+          description: The first upstream 402 parks the account's key this long, then doubles up to six hours.
       additionalProperties: false
     ProviderStrategyPatch:
       type: object
@@ -3606,8 +3612,8 @@ components:
     KeyParkResponse:
       type: object
       description: 'The effective key-parking budget in seconds (SPEC-API-001 §7.5). The group answers
-        what the router will actually use, so a document that predates the keys still names 120, 2
-        and 30 rather than blanks.'
+        what the router will actually use, so a document that predates the keys still names 120, 2,
+        900 and 30 rather than blanks.'
       properties:
         auth_seconds:
           type: integer
@@ -3616,6 +3622,9 @@ components:
           type: integer
           format: int64
         transient_seconds:
+          type: integer
+          format: int64
+        billing_seconds:
           type: integer
           format: int64
       additionalProperties: false
@@ -4390,9 +4399,10 @@ components:
                   type: server_error
                   code: UPSTREAM_ERROR
     DataPlaneUnavailableError:
-      description: Every endpoint and key for the resolved model is unhealthy or out of quota.
+      description: Every endpoint and key for the resolved model is unhealthy, out of quota, or out of credit.
       x-error-codes:
       - NO_PROVIDER_AVAILABLE
+      - BILLING_EXHAUSTED
       content:
         application/json:
           schema:
@@ -4404,6 +4414,12 @@ components:
                   message: No provider is available for this request.
                   type: server_error
                   code: NO_PROVIDER_AVAILABLE
+            BILLING_EXHAUSTED:
+              value:
+                error:
+                  message: Every account for this model has exhausted its credit.
+                  type: server_error
+                  code: BILLING_EXHAUSTED
     DataPlaneTimeoutError:
       description: The upstream call exceeded its deadline after retries.
       x-error-codes:
@@ -9111,6 +9127,7 @@ x-contract:
         MODEL_NOT_FOUND: 404
         PROVIDER_NOT_ROUTABLE: 400
         UPSTREAM_REJECTED: 400
+        BILLING_EXHAUSTED: 503
         UNAUTHORIZED: 401
         RATE_LIMITED: 429
         INTERNAL_ERROR: 500

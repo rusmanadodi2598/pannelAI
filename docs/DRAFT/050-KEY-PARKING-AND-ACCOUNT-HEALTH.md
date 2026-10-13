@@ -17,7 +17,7 @@ dikoreksi di bagian Hasil masing-masing grup, dan itu tempat grup C harus mulai.
 
 | | |
 | --- | --- |
-| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. **T1(b) landed 2026-10-13** (`quota_cooldown_until`, migrasi 000017). **T2(ii) landed 2026-10-13** (ladder `oauth_retry_at`, migrasi 000018). Sepuluh temuan laporan owner: semua tertutup. **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** saja (lihat bagian D2 di bawah). D4 sudah dijawab owner (b) dan landed di grup C |
+| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. **T1(b) landed 2026-10-13** (`quota_cooldown_until`, migrasi 000017). **T2(ii) landed 2026-10-13** (ladder `oauth_retry_at`, migrasi 000018). Sepuluh temuan laporan owner: semua tertutup. **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). **D2 landed 2026-10-13** (owner keputusan c: `KeyFailureBilling` + `BILLING_EXHAUSTED`). Tidak ada temuan atau keputusan yang terbuka. |
 | **Cakupan** | `app-serv/internal/dataplane/` (`engine_failure.go`, `engine_relay.go`, `transport_call.go`, `selection.go`, `selection_health.go`, `ping.go`), `internal/domain/` (`upstream_key_health.go`, `upstream_endpoint.go`, `oauth_refresh.go`, `settings_routing.go`), `internal/repository/postgres/` (`endpoint_key_health.go`, `endpoint_parity.go`, `endpoint_oauth_batch.go`, `quota_published.go`), `internal/service/` (`endpoint_probe_use.go`, `media_perform.go`) |
 | **Tidak termasuk** | `app-ui`. Kolom `rate_limited_until` dan `test_status` dirender panel (`EndpointKeysTable.svelte`, `EndpointDetailDrawer.svelte`) dan ikut berubah bentuknya hanya jika D3/D5 memutuskan begitu; itu pass tersendiri |
 | **Struktural (AGENTS.md §1.9)** | **Bukan N/A.** T1 mengaktifkan kolom yang hari ini mati, T2/T6 mengubah siklus hidup `status`, T3/T4 mengubah arti `KeyFailureClass` yang merupakan kontrak §7.5, dan T8 menambahkan field ke `settings_routing`. `SYSTEM_MAP.md` harus diubah pada commit yang mengubahnya, dan SPEC-API §7.5 perlu dibaca ulang sebelum D3 dikerjakan |
@@ -1019,3 +1019,61 @@ ulang suite integrasi, buat lagi dengan nama yang mengandung `test` (guard harne
 createdb pannelai_health050_test
 export PANNELAI_TEST_POSTGRES_DSN="user=rusmanadodi dbname=pannelai_health050_test host=/var/run/postgresql sslmode=disable"
 ```
+
+## D2 landed, 2026-10-13 (402 punya keranjang sendiri)
+
+Keputusan owner: **(c) kelas sendiri + label panel**. Yang dikerjakan:
+
+| | sebelum | sesudah |
+|---|---|---|
+| kelas 402 | `KeyFailureAuth` bersama 401/403 | `KeyFailureBilling` sendiri |
+| jendela | 2m x 2^(n-1), cap 1h | 15m x 2^(n-1), cap 6h |
+| knob | `key_park.auth_seconds` (berbagi) | `key_park.billing_seconds` (1..3600, default 900) |
+| kode ke client | `UPSTREAM_ERROR` / 502 | `BILLING_EXHAUSTED` / 503 |
+| `error_code` parity | `UPSTREAM_ERROR` | `BILLING_EXHAUSTED` |
+| rantai failover | jalan | jalan (sengaja: akun berikutnya bisa punya tagihan) |
+
+**Kenapa 503 dan bukan 402 ke client.** Utangnya adalah akun gateway di vendor, bukan akun pemanggil. Client yang
+disuruh membayar (402) disuruh memperbaiki sesuatu yang tidak bisa ia lihat; 503 adalah kata yang benar untuk
+"gerbang ini tidak bisa melayani sekarang, coba lagi nanti", dan sudah dipakai satu keluarga sebab yang sama
+(`NO_PROVIDER_AVAILABLE`).
+
+**Kenapa kelas ini tetap memarkir kunci.** 402 datang dengan kunci yang sah, jadi ia bukan kelas Target; tapi akun di
+balik kunci itu tidak bisa melayani, jadi kuncinya harus keluar dari rotasi. Yang berubah adalah *panjang* jendelanya,
+karena penyebabnya dihitung dalam jam dan obatnya adalah operator membeli credit, bukan kunci yang dites lagi.
+
+**Dua hal yang saya putuskan sendiri dan bisa dibalik owner:**
+- Angka 15m/6h. Alasannya: 15m adalah tempat seorang operator masih mungkin melihat akun itu pulih dalam satu shift,
+  dan 6h adalah batas bawah dari "semalam" sehingga akun bangkrut tidak dites lebih dari 4x sehari.
+- `finalError` tetap memakai kode kegagalan *pertama* pada rantai. Artinya rantai yang mulai dengan 402 lalu kena 5xx
+  menjawab `BILLING_EXHAUSTED`, bukan 502. Itu konsisten dengan aturan yang sudah ada (kelas yang dilihat retry logic
+  client lebih dulu), tapi ini konsekuensi yang perlu diketahui, bukan kebetulan.
+
+**Yang menyentuh permukaan lain, dan itu yang membuat opsi (c) lebih mahal dari (b):**
+- §8 closed enum jadi 14 kode; `app-ui/src/lib/schemas/error.ts` ikut (enum + satu baris fallback bahasa Inggris),
+  dan `contract-drift` sekarang mem-pin 14 di kedua sisi.
+- Kontrak YAML: `BILLING_EXHAUSTED: 503` di kedua tabel kode, plus ia masuk `x-error-codes` blok 503 (management dan
+  data plane) dengan contoh envelope; `openapi.json` diregenerasi.
+- App-ui tidak dapat kontrol untuk `billing_seconds`; panel hanya membaca nilai efektif yang dijawab grup routing.
+- Dua peta `codes:` di kontrak YAML adalah **per-plane**, bukan satu daftar gabungan: `PROVIDER_NOT_ROUTABLE` dan
+  `MODEL_NOT_FOUND` hanya ada di peta data plane. Edit pertama saya menaruh `BILLING_EXHAUSTED` di peta management
+  juga (dan di `ManagementUnavailableError`), yang salah: tidak ada rute management yang bisa menjawabnya. Sudah
+  ditarik kembali; kode itu hanya ada di peta data plane + `DataPlaneUnavailableError`. §8 tetap satu daftar 14 kode
+  karena daftar itu memang union yang di-pin `contract-drift`.
+
+Berkas: `domain/upstream_key_health.go` (kelas + konstanta), `domain/settings_routing_health.go` (window + bound +
+patch + validasi), `dataplane/engine_failure.go` (kelas, kode ke client, rantai tetap jalan),
+`dataplane/selection_health.go` (parity code), `dataplane/errors.go` (kode + status), `schema/*` (3 berkas),
+dua `cmd/app-serv/*_wiring.go` tidak berubah, kontrak YAML + `openapi.json`, `docs/SPEC-API/001-SPEC-API.md`
+(§7.5, §7.14, §8, changelog), `app-ui/src/lib/schemas/error.ts`.
+
+Test: `domain/upstream_key_health_test.go` (baris kelas baru di tabel yang sudah ada),
+`domain/upstream_key_policy_test.go` (`TestUpstreamKey_BillingLadderIsMeasuredInHours`, 7 langkah termasuk plafon),
+`domain/settings_routing_health_test.go` (default 4 jendela, clamp, bound),
+`schema/settings_routing_health_test.go` (bound ditolak, response menjawab 4 angka efektif),
+`service/settings_health_policy_test.go` (override provider mencakup billing),
+`dataplane/engine_billing_failure_test.go` (baru, 112: kelas, 503+billing ke client, kunci tetap parkir, parity code,
+dan 401 tidak ikut berubah nama).
+
+`engine_failover_rules_test.go` tidak diubah: baris "402 fails over and parks" sudah mem-pin dua hal yang tetap benar
+(rantai jalan, kunci parkir), dan test itu tidak membaca panjang jendela maupun kode.

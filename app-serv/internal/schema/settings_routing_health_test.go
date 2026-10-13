@@ -42,6 +42,9 @@ func TestValidateStruct_GuardsTheKeyParkBounds(t *testing.T) {
 		{"a group window of zero", PatchSettingsRequest{Routing: &RoutingSettingsPatch{
 			KeyPark: &KeyParkPatch{AuthSeconds: limitPtr(0)},
 		}}},
+		{"a billing window past its ceiling", PatchSettingsRequest{Routing: &RoutingSettingsPatch{
+			KeyPark: &KeyParkPatch{BillingSeconds: limitPtr(domain.MaxKeyParkBilling + 1)},
+		}}},
 		{"an entry window past its ceiling", PatchSettingsRequest{Routing: &RoutingSettingsPatch{
 			ProviderStrategies: &map[string]ProviderStrategyPatch{
 				"alpha": {KeyPark: &KeyParkPatch{TransientSeconds: limitPtr(domain.MaxKeyParkTransient + 1)}},
@@ -115,8 +118,9 @@ func TestSettingsResponseFrom_RendersTheBudgetBothWays(t *testing.T) {
 	}
 
 	rendered := SettingsResponseFrom(settings)
-	if got := rendered.Routing.KeyPark; got.AuthSeconds != 120 || got.RateLimitSeconds != 2 || got.TransientSeconds != 30 {
-		t.Fatalf("group key_park = %+v, want the effective 120/2/30", got)
+	if got := rendered.Routing.KeyPark; got.AuthSeconds != 120 || got.RateLimitSeconds != 2 ||
+		got.TransientSeconds != 30 || got.BillingSeconds != 900 {
+		t.Fatalf("group key_park = %+v, want the effective 120/2/900/30", got)
 	}
 	entry := rendered.Routing.ProviderStrategies["alpha"]
 	if entry.KeyPark == nil {

@@ -390,11 +390,14 @@ gateway exchanges the JSON for a short-lived bearer before a call (the media pla
 never presents the JSON itself; a deployment wired without a minter refuses such a call instead.
 
 Key health model (parking per key, class-aware): the first upstream failure parks the key with a
-window sized by its class: 401/402/403 ⇒ exponential `2m × 2^(n-1)` capped at 1h (`n` = consecutive failures, reset by a successful call); 429 ⇒ exponential `2s × 2^(n-1)` capped at 5m
-(`n` = consecutive failures, reset by a successful call); an answered 5xx ⇒ 30s. Those three numbers are the
-defaults of `routing.key_park` (§7.14), which retunes each class per provider; the two ceilings are not
+window sized by its class: 401/403 ⇒ exponential `2m × 2^(n-1)` capped at 1h (`n` = consecutive failures, reset by a successful call); 402 ⇒ exponential `15m × 2^(n-1)` capped at 6h, its own
+basket because an account out of credit is a condition measured in hours and the operator fixes it by buying
+credit, not by the key being retried; 429 ⇒ exponential `2s × 2^(n-1)` capped at 5m
+(`n` = consecutive failures, reset by a successful call); an answered 5xx ⇒ 30s. Those four numbers are the
+defaults of `routing.key_park` (§7.14), which retunes each class per provider; no ceiling is
 configurable, because a park an operator can extend without limit is a state nothing then heals. A failure the
-credential did not cause parks nothing: an upstream 404 (this account does not serve that model) and a call that never
+credential did not cause parks nothing (402 does cause it: the credential is valid but the account behind it cannot serve,
+so its key leaves rotation while the chain walks on to the next account): an upstream 404 (this account does not serve that model) and a call that never
 reached the upstream (DNS, TLS, dial, deadline) are **target-shaped**, recorded on the endpoint's connection
 state while the chain keeps walking to the next credential, because another account may serve the model the
 first refused and a credential that was never sent cannot have failed. Any other 4xx records nothing because
@@ -928,7 +931,8 @@ read-modify-write is what changes one provider.
 
 `routing.key_park` holds the key-parking budget the health model applies (§7.5): `auth_seconds` (1..900,
 default 120) is the first credential-shaped failure's window, `rate_limit_seconds` (1..300, default 2) the
-first 429's, and `transient_seconds` (1..300, default 30) the flat window an answered 5xx takes. Each window
+first 429's, `billing_seconds` (1..3600, default 900) the first 402's, and `transient_seconds` (1..300,
+default 30) the flat window an answered 5xx takes. Each window
 is PATCHed on its own, because retuning one failure class must not reset the other two, and a provider entry
 may name the same three keys to retune one account family alone: `{"<provider_id>": {"key_park":
 {"transient_seconds": 45}}}`. An entry that names no window inherits every one from the group, and an entry
@@ -1146,6 +1150,7 @@ no database table, because the changelog describes the binary and the binary car
 | `CONFLICT`              | 409  | Uniqueness / referential conflict (e.g. deleting last key)                                                            |
 | `RATE_LIMITED`          | 429  | Gateway or login rate limit hit                                                                                       |
 | `NO_PROVIDER_AVAILABLE` | 503  | Data plane: all endpoints/keys for the model are unhealthy or quota-exhausted                                         |
+| `BILLING_EXHAUSTED`     | 503  | Data plane: every account that could serve the request answered 402, so the vendor credit behind the gateway is out  |
 | `UPSTREAM_ERROR`        | 502  | Upstream returned unrecoverable error                                                                                 |
 | `UPSTREAM_REJECTED`     | 400  | Data plane: the upstream rejected the request itself (a 4xx other than 401/402/403/404/429); the failover chain stops |
 | `UPSTREAM_TIMEOUT`      | 504  | Upstream timeout after retries                                                                                        |
@@ -1456,3 +1461,12 @@ is what makes the account reachable without making it hammered: one hour after t
 to once a day, stored rather than inferred because a past deadline looks the same whether it is the first visit or the
 tenth. A grant that works clears the ladder and the dead letter together, so an account buried by a vendor outage now
 recovers with nobody watching it, which is the harm this decision was asked for._
+
+_Changelog 2026-10-13: §7.5 gives an upstream 402 its own failure class and §8 gives it `BILLING_EXHAUSTED` (503)
+(draft `050` D2, owner decision c). It had been parked with 401/403 since the health model was written, which said two
+false things at once: that the credential is what failed (a 402 arrives with a valid key on an account that simply has
+no credit), and that the right remedy is retrying that key on a minutes-scale window while an operator buys credit
+elsewhere. The class now parks on its own ladder (15m doubling to 6h, retunable through `routing.key_park.billing_seconds`),
+still implicates the credential so the account leaves rotation, and still fails over, because the next account may well
+have credit. The client code is 503 rather than 402: the debt is the gateway's account with its vendor, and a client
+told to pay would be told to fix something it cannot see._

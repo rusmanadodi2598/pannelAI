@@ -37,6 +37,8 @@ func TestUpstreamKey_RecordFailureParksByClass(t *testing.T) {
 			wantStatus: UpstreamKeyActive, wantAvailable: true},
 		{name: "a target-shaped failure parks nothing", class: KeyFailureTarget,
 			wantStatus: UpstreamKeyActive, wantAvailable: true},
+		{name: "a billing failure parks the key for fifteen minutes", class: KeyFailureBilling,
+			wantStatus: UpstreamKeyError, wantAvailable: false, wantBackoff: 15 * time.Minute},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

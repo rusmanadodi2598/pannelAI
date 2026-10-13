@@ -24,7 +24,8 @@ func TestRoutingSettings_HealthForDefaults(t *testing.T) {
 	if want := DefaultKeyHealthPolicy(); got != want {
 		t.Fatalf("HealthFor(unconfigured) = %+v, want %+v", got, want)
 	}
-	if got.AuthWindow != 2*time.Minute || got.RateLimitWindow != 2*time.Second || got.TransientWindow != 30*time.Second {
+	if got.AuthWindow != 2*time.Minute || got.RateLimitWindow != 2*time.Second ||
+		got.TransientWindow != 30*time.Second || got.BillingWindow != 15*time.Minute {
 		t.Fatalf("documented windows changed: %+v", got)
 	}
 }
@@ -71,12 +72,15 @@ func TestRoutingSettings_HealthForOverrideWinsPerWindow(t *testing.T) {
 // before the bounds existed: an absurd window is pulled to the edge rather than
 // parked forever or dropped back to a default the operator did not ask for.
 func TestKeyParkWindows_PolicyClamps(t *testing.T) {
-	clamped := KeyParkWindows{AuthSeconds: 999999, RateLimitSeconds: -5}.Policy()
+	clamped := KeyParkWindows{AuthSeconds: 999999, RateLimitSeconds: -5, BillingSeconds: 99999}.Policy()
 	if clamped.AuthWindow != time.Duration(MaxKeyParkAuthSeconds)*time.Second {
 		t.Fatalf("auth window = %v, want the %ds ceiling", clamped.AuthWindow, MaxKeyParkAuthSeconds)
 	}
 	if clamped.RateLimitWindow != 2*time.Second {
 		t.Fatalf("negative rate-limit window = %v, want the documented default", clamped.RateLimitWindow)
+	}
+	if clamped.BillingWindow != time.Duration(MaxKeyParkBilling)*time.Second {
+		t.Fatalf("billing window = %v, want the %ds ceiling", clamped.BillingWindow, MaxKeyParkBilling)
 	}
 }
 
@@ -93,6 +97,7 @@ func TestValidateRouting_KeyParkBounds(t *testing.T) {
 		{name: "group within bounds", windows: KeyParkWindows{AuthSeconds: MaxKeyParkAuthSeconds}},
 		{name: "group past the ceiling", windows: KeyParkWindows{RateLimitSeconds: MaxKeyParkRateLimit + 1}, refuses: true},
 		{name: "group negative", windows: KeyParkWindows{TransientSeconds: -1}, refuses: true},
+		{name: "billing past the ceiling", windows: KeyParkWindows{BillingSeconds: MaxKeyParkBilling + 1}, refuses: true},
 		{
 			name:    "provider past the ceiling",
 			entry:   map[string]ProviderStrategy{"openai": {StickyLimit: &limit, KeyPark: KeyParkWindows{AuthSeconds: MaxKeyParkAuthSeconds + 1}}},

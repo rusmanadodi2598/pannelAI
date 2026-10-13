@@ -21,7 +21,7 @@ import "time"
 type KeyFailureClass int
 
 const (
-	// KeyFailureAuth covers 401/402/403: the credential or its account.
+	// KeyFailureAuth covers 401/403: the credential itself was refused.
 	KeyFailureAuth KeyFailureClass = iota
 	// KeyFailureRateLimit covers 429.
 	KeyFailureRateLimit
@@ -33,14 +33,19 @@ const (
 	// upstream: the target or the network caused it, and another credential on
 	// the same body could still succeed.
 	KeyFailureTarget
+	// KeyFailureBilling covers an upstream 402: the credential is valid and the
+	// account behind it has no credit, a condition measured in hours rather than
+	// in minutes, and one the operator fixes by topping the account up.
+	KeyFailureBilling
 )
 
 // ImplicatesCredential reports whether a failure of this class says anything
 // about the credential that served it. A new class opts in here rather than by
 // being absent from a blacklist, because the default for a class nobody thought
-// about is to leave the credential alone.
+// about is to leave the credential alone. A bill does implicate it: the account
+// behind that key cannot serve, so the key leaves rotation on its own ladder.
 func (c KeyFailureClass) ImplicatesCredential() bool {
-	return c == KeyFailureAuth || c == KeyFailureRateLimit || c == KeyFailureTransient
+	return c == KeyFailureAuth || c == KeyFailureRateLimit || c == KeyFailureTransient || c == KeyFailureBilling
 }
 
 // keyTransientCooldown is the §7.5 flat window for an outage-shaped failure: long
@@ -58,6 +63,8 @@ const (
 	keyAuthMax       = time.Hour
 	keyRateLimitBase = 2 * time.Second
 	keyRateLimitMax  = 5 * time.Minute
+	keyBillingBase   = 15 * time.Minute
+	keyBillingMax    = 6 * time.Hour
 	keyLadderMaxN    = 15
 )
 

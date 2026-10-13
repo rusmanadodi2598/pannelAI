@@ -39,6 +39,7 @@ type KeyParkPatch struct {
 	AuthSeconds      *int `json:"auth_seconds,omitempty" validate:"omitempty,min=1,max=900"`
 	RateLimitSeconds *int `json:"rate_limit_seconds,omitempty" validate:"omitempty,min=1,max=300"`
 	TransientSeconds *int `json:"transient_seconds,omitempty" validate:"omitempty,min=1,max=300"`
+	BillingSeconds   *int `json:"billing_seconds,omitempty" validate:"omitempty,min=1,max=3600"`
 }
 
 // ProviderStrategyPatch is one provider's override as the wire carries it.
@@ -112,6 +113,7 @@ func keyParkPatch(in KeyParkPatch) domain.KeyParkPatch {
 		AuthSeconds:      in.AuthSeconds,
 		RateLimitSeconds: in.RateLimitSeconds,
 		TransientSeconds: in.TransientSeconds,
+		BillingSeconds:   in.BillingSeconds,
 	}
 }
 
@@ -130,6 +132,9 @@ func keyPark(in *KeyParkPatch) domain.KeyParkWindows {
 	}
 	if in.TransientSeconds != nil {
 		windows.TransientSeconds = *in.TransientSeconds
+	}
+	if in.BillingSeconds != nil {
+		windows.BillingSeconds = *in.BillingSeconds
 	}
 	return windows
 }
@@ -159,6 +164,7 @@ func keyParkResponse(in domain.KeyParkWindows) KeyParkResponse {
 		AuthSeconds:      in.AuthSeconds,
 		RateLimitSeconds: in.RateLimitSeconds,
 		TransientSeconds: in.TransientSeconds,
+		BillingSeconds:   in.BillingSeconds,
 	}
 }
 
@@ -171,5 +177,6 @@ func effectiveKeyPark(in domain.KeyParkWindows) KeyParkResponse {
 		AuthSeconds:      int(policy.AuthWindow / time.Second),
 		RateLimitSeconds: int(policy.RateLimitWindow / time.Second),
 		TransientSeconds: int(policy.TransientWindow / time.Second),
+		BillingSeconds:   int(policy.BillingWindow / time.Second),
 	}
 }

@@ -24,7 +24,7 @@ import (
 func TestSettingsService_KeyHealthPolicyResolvesPerProvider(t *testing.T) {
 	repo := newStubSettingsStore()
 	stored := `{"combo_strategy":"fallback","combo_sticky_limit":1,"sticky_limit":3,` +
-		`"fallback_strategy":"fill-first","key_park":{"auth_seconds":600,"transient_seconds":60},` +
+		`"fallback_strategy":"fill-first","key_park":{"auth_seconds":600,"transient_seconds":60,"billing_seconds":1800},` +
 		`"provider_strategies":{"beta":{"key_park":{"transient_seconds":5}}}}`
 	if err := repo.Save(context.Background(), domain.SettingsKeyRouting, stored); err != nil {
 		t.Fatalf("seeding the routing row: %v", err)
@@ -35,8 +35,8 @@ func TestSettingsService_KeyHealthPolicyResolvesPerProvider(t *testing.T) {
 		provider string
 		want     domain.KeyHealthPolicy
 	}{
-		{"alpha", domain.KeyHealthPolicy{AuthWindow: 10 * time.Minute, RateLimitWindow: 2 * time.Second, TransientWindow: time.Minute}},
-		{"beta", domain.KeyHealthPolicy{AuthWindow: 10 * time.Minute, RateLimitWindow: 2 * time.Second, TransientWindow: 5 * time.Second}},
+		{"alpha", domain.KeyHealthPolicy{AuthWindow: 10 * time.Minute, RateLimitWindow: 2 * time.Second, TransientWindow: time.Minute, BillingWindow: 30 * time.Minute}},
+		{"beta", domain.KeyHealthPolicy{AuthWindow: 10 * time.Minute, RateLimitWindow: 2 * time.Second, TransientWindow: 5 * time.Second, BillingWindow: 30 * time.Minute}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.provider, func(t *testing.T) {

@@ -67,6 +67,34 @@ func TestUpstreamKey_RecordFailureCeilingsIgnoreTheConfiguredBase(t *testing.T) 
 	}
 }
 
+// TestUpstreamKey_BillingLadderIsMeasuredInHours is D2's window: the first exhausted
+// credit parks a key for fifteen minutes and the ladder stops at six hours, because
+// the condition is an account with no credit rather than a credential that never
+// worked, and an operator fixes it by buying credit rather than by rotating a key.
+func TestUpstreamKey_BillingLadderIsMeasuredInHours(t *testing.T) {
+	cases := []struct {
+		failures  int
+		wantDelay time.Duration
+	}{
+		{1, 15 * time.Minute},
+		{2, 30 * time.Minute},
+		{3, time.Hour},
+		{4, 2 * time.Hour},
+		{5, 4 * time.Hour},
+		{6, 6 * time.Hour},
+		{20, 6 * time.Hour},
+	}
+	for _, tc := range cases {
+		key := newTestKey(t, 1)
+		for range tc.failures {
+			key.RecordFailure("the account has no credit", KeyFailureBilling, DefaultKeyHealthPolicy(), keyNow)
+		}
+		if got := key.RateLimitedUntil().Sub(keyNow); got != tc.wantDelay {
+			t.Fatalf("after %d billing failures: window = %v, want %v", tc.failures, got, tc.wantDelay)
+		}
+	}
+}
+
 // TestUpstreamKey_RecordFailureTransientStaysFlatOnAConfiguredWindow is D3a's rule
 // with a retuned number: an outage-shaped failure takes the configured window and
 // never doubles, however long the streak grows.

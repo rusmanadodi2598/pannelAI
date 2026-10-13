@@ -2,7 +2,7 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_key_ladder_test.go
-// @for       Tests for the two doubling parking ladders: the credential (401/402/403) window and the rate-limit (429) window, with their ceilings and the reset that returns them to the first step.
+// @for       Tests for the doubling parking ladders: the credential (401/403) window, the rate-limit (429) window, and the billing (402) one, with their ceilings and the reset that returns them to the first step.
 // @uses      testing, time, internal/domain
 // @reason    Draft 050 T5 turned the flat 2-minute credential park into a ladder, and a ladder pins three things a constant does not: the first step, the doubling, and the ceiling that stops a long streak from overflowing the duration. They live apart from the parking-class tests because each drives RecordFailure in a loop.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
