@@ -17,7 +17,7 @@ dikoreksi di bagian Hasil masing-masing grup, dan itu tempat grup C harus mulai.
 
 | | |
 | --- | --- |
-| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. **T1(b) landed 2026-10-13** (`quota_cooldown_until`, migrasi 000017). **T2(ii) landed 2026-10-13** (ladder `oauth_retry_at`, migrasi 000018). Sepuluh temuan laporan owner: semua tertutup. **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** saja; D4 sudah dijawab owner (b) dan landed di grup C |
+| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. **T1(b) landed 2026-10-13** (`quota_cooldown_until`, migrasi 000017). **T2(ii) landed 2026-10-13** (ladder `oauth_retry_at`, migrasi 000018). Sepuluh temuan laporan owner: semua tertutup. **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** saja (lihat bagian D2 di bawah). D4 sudah dijawab owner (b) dan landed di grup C |
 | **Cakupan** | `app-serv/internal/dataplane/` (`engine_failure.go`, `engine_relay.go`, `transport_call.go`, `selection.go`, `selection_health.go`, `ping.go`), `internal/domain/` (`upstream_key_health.go`, `upstream_endpoint.go`, `oauth_refresh.go`, `settings_routing.go`), `internal/repository/postgres/` (`endpoint_key_health.go`, `endpoint_parity.go`, `endpoint_oauth_batch.go`, `quota_published.go`), `internal/service/` (`endpoint_probe_use.go`, `media_perform.go`) |
 | **Tidak termasuk** | `app-ui`. Kolom `rate_limited_until` dan `test_status` dirender panel (`EndpointKeysTable.svelte`, `EndpointDetailDrawer.svelte`) dan ikut berubah bentuknya hanya jika D3/D5 memutuskan begitu; itu pass tersendiri |
 | **Struktural (AGENTS.md §1.9)** | **Bukan N/A.** T1 mengaktifkan kolom yang hari ini mati, T2/T6 mengubah siklus hidup `status`, T3/T4 mengubah arti `KeyFailureClass` yang merupakan kontrak §7.5, dan T8 menambahkan field ke `settings_routing`. `SYSTEM_MAP.md` harus diubah pada commit yang mengubahnya, dan SPEC-API §7.5 perlu dibaca ulang sebelum D3 dikerjakan |
@@ -981,3 +981,41 @@ Dua hal yang hampir bikin pass ini menyimpang dari dirinya sendiri, dan keduanya
   `Update` dan `Status()` di semua test service, `RetryDue` selalu `true`, dan worker akan revisit setiap tick
   persis seperti bug yang barusan diperbaiki sementara seluruh test tetap hijau. Ini jebakan yang sama dengan
   "komentar dan peta yang inert" di grup C, tapi kali ini alat tesnya yang jadi korban, bukan dok.
+
+## Lingkungan: SYSTEM_MAP.md dan scratch DB, 2026-10-13
+
+### Artefak encoding di SYSTEM_MAP sudah diperbaiki, dan ini alasannya bisa dinyatakan, bukan ditebak
+
+File itu dilaporkan tidak valid UTF-8, dan perbaikan tidak saya kerjakan sebelumnya karena menebak karakter asli pada
+dokumen governance adalah cara yang bagus untuk menyisipkan salah baca permanen. Bukunya sekarang ada:
+
+- `git show f647a61:SYSTEM_MAP.md` = versi valid UTF-8 terakhir; `d001cf9` adalah commit pertama yang cacat.
+- Versi valid itu punya **22** karakter `→`; file saat ini punya **22** slot `e2 86 3f`. Satu byte bedanya, dan byte
+  ketiganya adalah `?` (0x3F), yaitu placeholder yang ditinggalkan konversi lossy.
+- Dari 22 slot itu, **20** barisnya cocok byte-for-byte dengan baris di `f647a61` begitu `→` dikembalikan. Dua sisanya
+  adalah baris yang isinya memang berubah di pass ini (baris Status dan baris worker "Quota terbit"), dan slot panah di
+  dalamnya tetap panah yang sama.
+
+Jadi `e2 86 3f` → `→` adalah **pemulihan**, bukan terkaan. Jumlahnya 22↔22 dan 20 di antaranya terbukti oleh baris induk.
+
+Dua slot lagi tidak punya induk: `a1 aa` dan `a1 fa`, masing-masing satu, keduanya di kalimat yang lahir dari commit
+promosi `d001cf9` dan tidak ada di `f647a61`. Bentuknya bukan panah yang kepotong, dan saya tidak bisa membuktikan
+karakter apa aslinya dari file ini. Konteks keduanya menuntut panah ("menerjemahkan dua arah … `:predictLongRunning`",
+"assertion RS256 … grant jwt-bearer"), dan gaya file itu memakai `→` pada bentuk kalimat yang sama, jadi keduanya
+saya kembalikan sebagai `→`. **Kalau owner ingat menulis sesuatu yang lain di dua tempat itu, itu yang perlu dikoreksi**
+Kedua-duanya baris di sekitar jalur Vertex/`tokenrouter` dan jalur service-account.
+
+Hasil: file valid UTF-8, 24 panah, 0 em/en dash, `antislop` PASS, diff 18 baris dan seluruhnya adalah pemulihan byte
+panah (dibandingkan byte-for-byte terhadap salinan sebelum perbaikan).
+
+### Scratch DB
+
+Dibuat atas izin eksplisit owner untuk membuktikan T7/T5/T1/T2 di PostgreSQL nyata, dan sekarang di-drop atas izin yang
+sama: `dropdb pannelai_health050_test`. Yang tersisa di host itu milik proyek lain dan tidak saya sentuh: `pannelai`
+(database aplikasi), `pannelai_d043`, `pannelai_d043_test`, `pannelai_local_test`, `pannelai_test`. Untuk menjalankan
+ulang suite integrasi, buat lagi dengan nama yang mengandung `test` (guard harness menolak DSN yang tidak itu):
+
+```bash
+createdb pannelai_health050_test
+export PANNELAI_TEST_POSTGRES_DSN="user=rusmanadodi dbname=pannelai_health050_test host=/var/run/postgresql sslmode=disable"
+```
