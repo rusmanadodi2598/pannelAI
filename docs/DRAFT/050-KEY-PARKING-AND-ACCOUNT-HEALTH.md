@@ -1010,8 +1010,9 @@ panah (dibandingkan byte-for-byte terhadap salinan sebelum perbaikan).
 
 ### Scratch DB
 
-Dibuat atas izin eksplisit owner untuk membuktikan T7/T5/T1/T2 di PostgreSQL nyata, dan sekarang di-drop atas izin yang
-sama: `dropdb pannelai_health050_test`. Yang tersisa di host itu milik proyek lain dan tidak saya sentuh: `pannelai`
+Dibuat atas izin eksplisit owner untuk membuktikan T7/T5/T1/T2/D2 di PostgreSQL nyata, dan **sudah di-drop** atas izin
+yang sama (`dropdb pannelai_health050_test`, terverifikasi: database aplikasi `pannelai` dan empat DB proyek lain masih
+ada dan tidak pernah disentuh). Yang tersisa di host itu milik proyek lain dan tidak saya sentuh: `pannelai`
 (database aplikasi), `pannelai_d043`, `pannelai_d043_test`, `pannelai_local_test`, `pannelai_test`. Untuk menjalankan
 ulang suite integrasi, buat lagi dengan nama yang mengandung `test` (guard harness menolak DSN yang tidak itu):
 

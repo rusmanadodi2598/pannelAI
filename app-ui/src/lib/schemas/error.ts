@@ -46,7 +46,8 @@ export const API_ERROR_FALLBACK: Record<ApiErrorCode, string> = {
 	CONFLICT: 'The gateway refused this change because something else depends on it.',
 	RATE_LIMITED: 'Too many attempts. Wait a moment, then try again.',
 	NO_PROVIDER_AVAILABLE: 'No upstream endpoint is healthy for that model right now.',
-	BILLING_EXHAUSTED: 'Every account behind the gateway for that model has used up its credit. Top one up, then retry.',
+	BILLING_EXHAUSTED:
+		'Every account behind the gateway for that model has used up its credit. Top one up, then retry.',
 	UPSTREAM_ERROR: 'The upstream provider returned an error.',
 	UPSTREAM_REJECTED: 'The upstream refused this request itself. Fix the request before retrying.',
 	UPSTREAM_TIMEOUT: 'The upstream provider did not answer in time.',
