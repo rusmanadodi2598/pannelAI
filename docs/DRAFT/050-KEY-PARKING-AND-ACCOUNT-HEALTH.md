@@ -17,7 +17,7 @@ dikoreksi di bagian Hasil masing-masing grup, dan itu tempat grup C harus mulai.
 
 | | |
 | --- | --- |
-| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. **T1(b) landed 2026-10-13** (`quota_cooldown_until`, migrasi 000017). **T2(ii) landed 2026-10-13** (ladder `oauth_retry_at`, migrasi 000018). Sepuluh temuan laporan owner: semua tertutup. **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** dan **D4 (probe)** |
+| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. **T1(b) landed 2026-10-13** (`quota_cooldown_until`, migrasi 000017). **T2(ii) landed 2026-10-13** (ladder `oauth_retry_at`, migrasi 000018). Sepuluh temuan laporan owner: semua tertutup. **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** saja; D4 sudah dijawab owner (b) dan landed di grup C |
 | **Cakupan** | `app-serv/internal/dataplane/` (`engine_failure.go`, `engine_relay.go`, `transport_call.go`, `selection.go`, `selection_health.go`, `ping.go`), `internal/domain/` (`upstream_key_health.go`, `upstream_endpoint.go`, `oauth_refresh.go`, `settings_routing.go`), `internal/repository/postgres/` (`endpoint_key_health.go`, `endpoint_parity.go`, `endpoint_oauth_batch.go`, `quota_published.go`), `internal/service/` (`endpoint_probe_use.go`, `media_perform.go`) |
 | **Tidak termasuk** | `app-ui`. Kolom `rate_limited_until` dan `test_status` dirender panel (`EndpointKeysTable.svelte`, `EndpointDetailDrawer.svelte`) dan ikut berubah bentuknya hanya jika D3/D5 memutuskan begitu; itu pass tersendiri |
 | **Struktural (AGENTS.md §1.9)** | **Bukan N/A.** T1 mengaktifkan kolom yang hari ini mati, T2/T6 mengubah siklus hidup `status`, T3/T4 mengubah arti `KeyFailureClass` yang merupakan kontrak §7.5, dan T8 menambahkan field ke `settings_routing`. `SYSTEM_MAP.md` harus diubah pada commit yang mengubahnya, dan SPEC-API §7.5 perlu dibaca ulang sebelum D3 dikerjakan |
@@ -375,7 +375,7 @@ sebelum B: T1 mengaktifkan kolom yang penulis alaminya adalah hasil dari D1/D3.
 | --- | --- | --- | --- |
 | **A** | T3, T4 (klasifikasi) | **LANDED 2026-10-12.** D1 terjawab dan bentuknya berubah dari rekomendasi (lihat D1); D2 masih terbuka dan tidak ikut dikerjakan | `engine_failure.go` (120), `upstream_key_health.go` (134), `selection_health.go` (79), tiga site service, `engine_target_failure_test.go` baru (114). `engine_relay.go` (237) sengaja tidak disentuh |
 | **B** | T7 lalu T5 (counter, race, eskalasi) | **LANDED 2026-10-13.** D3 dijawab (a); D5 selesai sebagai GREATEST satu kolom, transaksi sengaja tidak | `endpoint_key_health.go` (55), `upstream_key_health.go` (122), `selection_health.go` (77), test `-race` |
-| **C** | T1, T2, T6, T9 (level akun, probe) | butuh D3 (lagi) + D4 | `quota_published.go` (135), `oauth_refresh.go` (61), `ping.go` (72), `endpoint_probe_use.go` (180), migration kalau bentuk data berubah |
+| **C** | T1, T2, T6, T9 (level akun, probe) | **LANDED 2026-10-13**, sebagian di grup C dan sisanya lewat kolom baru: T1(b) migrasi 000017, T2(ii) migrasi 000018 | `quota_published.go`, `endpoint_parity.go`, `oauth_refresh_worker.go`, `endpoint_probe_use.go` |
 | **D** | T8, T10 (konfigurasi, tampilan) | **LANDED 2026-10-13.** T8 = tiga jendela konfigurabel per provider; T10 = display-only, keputusan dicatat di §7.5 | `settings_routing_health.go` (baru), `settings_routing_patch.go` (baru), `selection_ports.go` (baru), kontrak YAML + `openapi.json` |
 
 Aturan repo yang mengikat setiap grup di atas (`AGENTS.md`):
@@ -948,6 +948,36 @@ diperbaiki, dan seluruh test service tetap hijau karena double-nya yang bohong. 
 "the drift this double exists to avoid"; dok `domain/upstream_endpoint_parity_load_test.go` juga. Keduanya kini
 membawa tiga kolom baru, dan test load itu yang akan gagal lebih dulu kalau ada kolom keempat yang lupa.
 
-### Gerbang
+### Efek upgrade yang perlu diketahui, dan sengaja diterima
 
-Lihat bagian "Gerbang" di bawah untuk hasil `go test -race`, integrasi PostgreSQL, dan keenam gate skrip pada pass ini.
+Akun yang sudah terkubur **sebelum** migrasi 000018 tidak punya jendela, dan `RefreshRetryDue` menjawab `true` untuk
+deadline NULL. Artinya pada tick pertama setelah deploy, setiap kuburan lama dapat satu kunjungan: satu grant per akun
+yang sudah mati, sekali, lalu ia masuk ladder seperti kuburan baru. Yang menahan diri di sini bukan sebuah budget:
+jumlahnya persis sama dengan jumlah akun yang sudah terkubur, dan listing yang membacanya adalah listing yang sama
+yang sudah dibaca worker setiap tick, jadi tidak ada bentuk panggilan baru yang muncul saat upgrade. Tidak dibatasi
+lagi karena (a) akun-akun itu tidak melayani trafik apa pun, jadi menemukannya kembali memang seluruh tujuan
+perubahan ini, dan (b) menjadikannya nol kunjungan justru hadiahi kuburan pra-fix dengan keadaan yang baru saja
+dibuang. Yang ditolak di sini: menjadikannya burst lima percobaan, dan itu tidak terjadi karena jalur revisit memberi
+satu grant.
+
+### Gerbang pass T2(ii)
+
+`go test -race -count=1 ./internal/... ./cmd/...` bersih. Suite integrasi `-race` hijau terhadap PostgreSQL nyata:
+`internal/repository/postgres` 7.2s dan `migrations` 1.6s, dan log run pertama menunjukkan
+`migration applied file=000018_oauth_refresh_retry.up.sql`, jadi ladder-nya diuji pada skema yang sungguh-sungguh
+sudah berubah. Rollback `000018` diverifikasi manual di scratch DB (drop kedua kolom, lalu up lagi).
+
+Gerbang: `go-lint` PASS (vet, vet tagged, gofmt, staticcheck, golangci-lint 0 issues) **tanpa warning ukuran
+berkas**, `go-headers` 1296 berkas, `antislop` PASS, `contract-openapi` PASS setelah `go run ./tools/openapi-gen`,
+`contract-drift` PASS, `secrets` PASS, `panel-check` PASS.
+
+Dua hal yang hampir bikin pass ini menyimpang dari dirinya sendiri, dan keduanya tertangkap oleh alat, bukan oleh saya:
+
+- `oauth_refresh_worker_test.go` naik ke **243** setelah blok ladder saya taruh di ujung
+  `TestOAuthRefreshWorkerRetriesThenDeadLetters`, dan `go-lint` memberi warning ambang 220. Blok itu pindah ke
+  `TestOAuthRefreshWorkerVisitsTheGraveOnItsWindow`; berkas asal kembali 220 dan testnya justru lebih terbaca karena
+  burst dan kunjungan sekarang punya rumahnya masing-masing.
+- `service/endpoint_stub_test.go:withKeys` hampir tidak saya sentuh. Kalau tidak disentuh, ladder hilang antara
+  `Update` dan `Status()` di semua test service, `RetryDue` selalu `true`, dan worker akan revisit setiap tick
+  persis seperti bug yang barusan diperbaiki sementara seluruh test tetap hijau. Ini jebakan yang sama dengan
+  "komentar dan peta yang inert" di grup C, tapi kali ini alat tesnya yang jadi korban, bukan dok.
