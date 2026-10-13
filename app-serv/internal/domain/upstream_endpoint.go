@@ -44,6 +44,10 @@ type UpstreamEndpoint struct {
 	lastErrorMessage    string
 	lastErrorAt         *time.Time
 	proxyPoolID         string
+	// quotaCooldownUntil is the published-quota poller's wait, not a serving
+	// input: Available() never reads it. Its rule lives in
+	// upstream_endpoint_quota_cooldown.go.
+	quotaCooldownUntil *time.Time
 
 	// The service-account fields. Their rules live in
 	// upstream_endpoint_service_account.go.
@@ -116,6 +120,7 @@ func RehydrateUpstreamEndpoint(
 		lastErrorMessage:    parity.LastErrorMessage,
 		lastErrorAt:         parity.LastErrorAt,
 		proxyPoolID:         parity.ProxyPoolID,
+		quotaCooldownUntil:  parity.QuotaCooldownUntil,
 		saProjectID:         serviceAccount.ProjectID,
 		saLocation:          serviceAccount.Location,
 	}

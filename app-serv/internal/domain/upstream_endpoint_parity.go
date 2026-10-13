@@ -43,6 +43,10 @@ type EndpointParity struct {
 	LastErrorMessage    string
 	LastErrorAt         *time.Time
 	ProxyPoolID         string
+	// QuotaCooldownUntil travels with the parity block because it is read on the
+	// same load and written by the same outcome call; it is the published-quota
+	// poller's wait (§7.12), not a serving input.
+	QuotaCooldownUntil *time.Time
 }
 
 // Accessors for the parity fields. They are grouped here rather than beside the

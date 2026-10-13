@@ -25,7 +25,7 @@ import (
 const endpointColumns = `id, provider_id, label, auth_type, priority, status,
 	oauth, account, test_status, rate_limited_until, last_used_at, created_at, updated_at,
 	global_priority, default_model, consecutive_use_count,
-	last_error, last_error_at, error_code, proxy_pool_id,
+	last_error, last_error_at, error_code, proxy_pool_id, quota_cooldown_until,
 	sa_project_id, sa_location`
 
 // endpointRow is one upstream_endpoints row, kept as raw column values rather
@@ -51,6 +51,7 @@ type endpointRow struct {
 	lastErrorAt         *time.Time
 	errorCode           *string
 	proxyPoolID         *string
+	quotaCooldownUntil  *time.Time
 
 	// The service-account columns. Both are NOT NULL with an empty default,
 	// so a row created before migration 000016 reads back as empty.
@@ -67,7 +68,7 @@ func scanEndpointRow(s scanner, extra ...any) (endpointRow, error) {
 		&row.rateLimitedUntil, &row.lastUsedAt, &row.createdAt, &row.updatedAt,
 		&row.globalPriority, &row.defaultModel, &row.consecutiveUseCount,
 		&row.lastError, &row.lastErrorAt, &row.errorCode, &row.proxyPoolID,
-		&row.saProjectID, &row.saLocation,
+		&row.quotaCooldownUntil, &row.saProjectID, &row.saLocation,
 	}
 	dest = append(dest, extra...)
 	if err := s.Scan(dest...); err != nil {
@@ -112,6 +113,7 @@ func (row endpointRow) parity() domain.EndpointParity {
 		DefaultModel:        row.defaultModel,
 		ConsecutiveUseCount: row.consecutiveUseCount,
 		LastErrorAt:         row.lastErrorAt,
+		QuotaCooldownUntil:  row.quotaCooldownUntil,
 	}
 	if row.globalPriority != nil {
 		parity.GlobalPriority = *row.globalPriority

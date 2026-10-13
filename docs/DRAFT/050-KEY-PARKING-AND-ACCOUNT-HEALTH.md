@@ -17,7 +17,7 @@ dikoreksi di bagian Hasil masing-masing grup, dan itu tempat grup C harus mulai.
 
 | | |
 | --- | --- |
-| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. Yang terbuka: **T1(b) kolom cooldown poller** (arah sudah dipilih, sisa pekerjaan) dan **T2(ii) retry ber-eskalasi** (diukur salah, diundur, lihat Hasil grup C). **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Yang tersisa dari daftar awal cuma dua: **T1(b)** dan **T2(ii)**. Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** dan **D4 (probe)** |
+| **Status** | **Grup A (T3, T4) landed 2026-10-12, commit `c3d7ff1`. Grup B (T7, T5) landed 2026-10-13, commit yang sama.** Grup C landed sebagian besar 2026-10-13: T6 (guard dan target probe), koreksi komentar T1/T2, dan jalur keluar kuburan T2 lewat refresh operator; T9 diputuskan tetap menulis kesehatan. **T1(b) landed 2026-10-13** (`quota_cooldown_until`, migrasi 000017). Yang terbuka tinggal **T2(ii) retry ber-eskalasi** (diukur salah, diundur, lihat Hasil grup C). **Grup D (T8, T10) landed 2026-10-13** (T8 = jendela parkir kini konfigurasi per provider; T10 = `test_status` dinyatakan display-only di §7.5, jadi ini keputusan yang dicatat, bukan kode). Keputusan: D1 terjawab dan bentuknya berubah dari rekomendasi saya, D3 dijawab owner dengan opsi (a), D5 terjawab oleh pengerjaan (GREATEST, bukan transaksi). Yang masih menunggu putusan owner: **D2 (402)** dan **D4 (probe)** |
 | **Cakupan** | `app-serv/internal/dataplane/` (`engine_failure.go`, `engine_relay.go`, `transport_call.go`, `selection.go`, `selection_health.go`, `ping.go`), `internal/domain/` (`upstream_key_health.go`, `upstream_endpoint.go`, `oauth_refresh.go`, `settings_routing.go`), `internal/repository/postgres/` (`endpoint_key_health.go`, `endpoint_parity.go`, `endpoint_oauth_batch.go`, `quota_published.go`), `internal/service/` (`endpoint_probe_use.go`, `media_perform.go`) |
 | **Tidak termasuk** | `app-ui`. Kolom `rate_limited_until` dan `test_status` dirender panel (`EndpointKeysTable.svelte`, `EndpointDetailDrawer.svelte`) dan ikut berubah bentuknya hanya jika D3/D5 memutuskan begitu; itu pass tersendiri |
 | **Struktural (AGENTS.md §1.9)** | **Bukan N/A.** T1 mengaktifkan kolom yang hari ini mati, T2/T6 mengubah siklus hidup `status`, T3/T4 mengubah arti `KeyFailureClass` yang merupakan kontrak §7.5, dan T8 menambahkan field ke `settings_routing`. `SYSTEM_MAP.md` harus diubah pada commit yang mengubahnya, dan SPEC-API §7.5 perlu dibaca ulang sebelum D3 dikerjakan |
@@ -220,7 +220,7 @@ Dikerjakan grup B: jendela kini monotonic (`GREATEST`), dan dua harm lain (uruta
 
 ### Kelompok C (MEDIUM): level akun (T1, T2, T6, T9)
 
-#### T1 (MEDIUM) Benar, dengan koreksi: kolom ada dan ditulis, tapi tidak pernah diisi deadline
+#### T1 (MEDIUM) Benar, dengan koreksi, LANDED lewat kolom terpisah: deadline untuk poller, bukan untuk rotasi
 
 Koreksi terhadap laporan: **kolom itu bukan tidak pernah ditulis.** `updateEndpoint` meng-`UPDATE ... rate_limited_until
 = $7` (`endpoint_oauth_batch.go:88`) dari `endpoint.RateLimitedUntil()` (`:102`). Yang benar adalah tidak ada satu pun
@@ -810,7 +810,7 @@ Test baru: `domain/settings_routing_health_test.go` (resolusi, clamp, bound, ent
 `service/endpoint_probe_policy_test.go` (probe park di window konfigurabel; dua bentuk degradasi),
 `service/settings_health_policy_test.go` (resolusi per provider, baris pra-perubahan, gagal baca).
 
-Tangkapan ukuran berkas, dan ini yang ketiga kalinya: `settings_routing.go` 232 dan `selection.go` 237 kena WARNING
+Tangkapan ukuran berkas: `settings_routing.go` 232 dan `selection.go` 237 kena WARNING
 `go-lint` (ambang 220, bukan FAIL 250). Keduanya dipecah sebelum jadi utang: aturan PATCH pindah ke
 `domain/settings_routing_patch.go`, seam selection pindah ke `dataplane/selection_ports.go`. Yang masih menyimpan
 warning setelah pass ini tinggal `endpoint_key_health_integration_test.go` 226, sudah ada sejak grup B.
@@ -839,3 +839,51 @@ mengauthenticate lewat socket Unix, bukan password TCP. Berkas `.env` tidak diba
 `go test -race -count=1 ./...` bersih, integrasi `-race` hijau (7.4s), `go-lint` (vet + gofmt + staticcheck +
 golangci-lint 0 issues, tanpa warning baru), `go-headers` (1290 berkas), `antislop` PASS, `contract-openapi` PASS
 setelah `go run ./tools/openapi-gen`, `contract-drift` PASS, `secrets` PASS.
+
+## T1(b) landed, 2026-10-13 (kolom cooldown poller)
+
+Keputusan owner (b) dikerjakan penuh: **satu kolom khusus poller**, `upstream_endpoints.quota_cooldown_until`
+(migrasi `000017`), dan `rate_limited_until` tetap apa adanya karena ia input `Available()`.
+
+Rantainya:
+
+- `domain.UpstreamEndpoint.MarkQuotaThrottled(now)` menanam deadline `now + 15m`; hanya **memanjangkan**,
+  tidak pernah memperpendek, dan `Available()` tidak membacanya.
+- `dataplane.Selector.RecordFailure` memanggilnya hanya untuk kelas `RateLimit`, di jalur tulis parity yang sudah
+  ada (satu UPDATE per outcome, bukan statement kedua).
+- `repository/postgres/endpoint_parity.go` menulis kolomnya dengan
+  `CASE WHEN $7 IS NULL THEN col ELSE GREATEST(COALESCE(col, $7), $7) END`: outcome yang bukan 429 tidak menyentuh
+  kolom, dan dua tulis konkuren tidak bisa memperpendek jendela.
+- `quota_published.go:DueForRefresh` kini menyaring pada kolom baru itu. Filter yang dulu inert sekarang bekerja,
+  dan komentar yang menyatakan "inert" sudah diganti dengan yang benar.
+
+Tiga angka yang perlu keputusan dan saya putuskan sendiri (bisa dibalik owner): **15 menit** karena lebih panjang
+dari floor keluarga paling lambat (claude 10m) sehingga selalu mengubah antrian, dan setengah dari ceiling backoff
+poller (30m) sehingga satu 429 tidak membuat layar kuota basi lebih lama dari satu run kegagalan. **Tidak dibersihkan
+sukses**: permintaan yang dijawab model endpoint tidak membuktikan apa pun tentang endpoint usage.
+
+Test dan buktinya:
+
+- Domain `upstream_endpoint_quota_cooldown_test.go`: jendela, hanya-memanjang, `Available()` tidak terpengaruh, dan
+  parity reset tidak menyentuh deadline.
+- `dataplane/selection_parity_test.go`: tabel outcome yang sudah ada gains `wantCooldown`, jadi dipinned bahwa hanya
+  429 yang membuka jendela dan 401/5xx/sukses tidak.
+- `postgres/quota_published_cooldown_integration_test.go` (baru, 201): rantai penuh terhadap PostgreSQL nyata,
+  termasuk dua hal yang tidak bisa dibuktikan in-memory, bahwa GREATEST menahan deadline yang lebih panjang dari
+  tulis basi, dan bahwa `rate_limited_until` tetap NULL sedang akunnya tetap `active`.
+- Migrasi: `down` diverifikasi manual (drop kolom, lalu up lagi) terhadap scratch DB; `TestApply_IsIdempotent` hijau.
+
+### Jebakan ukuran berkas, untuk ketiga kalinya
+
+Rewrite saya atas `quota_published_schedule_integration_test.go` membuatnya **339 baris** dan `go-lint` **FAIL** sesuai §1.1. Ini jebakan yang sama tiga kali (grup A: 247/250 prediksi test, grup C: `oauth_refresh_worker_test.go`
+264, sekarang 339), dan kali ini draft-nya sudah memperingatkan saya dua kali. Yang berbeda: dua yang pertama saya
+sadari sebelum gerbang jalan; yang ini gerbang yang menemukannya. Aturan praktis untuksiapa melanjutkan: berkas test
+integrasi postgres di paket itu sudah punya lima saudara; menambah test baru ke sana nyaris selalu berarti berkas
+baru, dan itu bukan kegagalan prediksi, itu default yang benar.
+
+### Gerbang
+
+`go test -race -count=1` hijau untuk domain/dataplane/service/handler/schema; suite integrasi postgres + migrations
+`-race` hijau (9.2s / 2.0s); `go-lint` (vet, vet tagged, gofmt, staticcheck, golangci-lint 0 issues) PASS tanpa
+warning baru; `go-headers` 1292 berkas; `antislop` PASS; `contract-openapi` PASS (kontrak tidak berubah: kolom ini
+tidak naik ke wire); `contract-drift` PASS; `secrets` PASS; `panel-check` PASS.

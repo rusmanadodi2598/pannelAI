@@ -40,12 +40,13 @@ func TestSelector_ParityAccounting(t *testing.T) {
 	}
 
 	cases := []struct {
-		name        string
-		keyless     bool
-		record      func(*Selector, Selection) error
-		wantOutcome bool
-		wantCode    string
-		wantUses    int
+		name         string
+		keyless      bool
+		record       func(*Selector, Selection) error
+		wantOutcome  bool
+		wantCode     string
+		wantUses     int
+		wantCooldown bool
 	}{
 		{
 			name: "a served call clears the recorded error and the use run",
@@ -80,9 +81,10 @@ func TestSelector_ParityAccounting(t *testing.T) {
 				return s.RecordFailure(context.Background(), sel,
 					"the upstream answered 429", domain.KeyFailureRateLimit)
 			},
-			wantOutcome: true,
-			wantCode:    CodeRateLimited,
-			wantUses:    2,
+			wantOutcome:  true,
+			wantCode:     CodeRateLimited,
+			wantUses:     2,
+			wantCooldown: true,
 		},
 		{
 			name: "a request-shaped failure records nothing",
@@ -143,6 +145,11 @@ func TestSelector_ParityAccounting(t *testing.T) {
 			}
 			if at == nil {
 				t.Fatal("stored error instant = nil, want the outcome's instant")
+			}
+			// The vendor's 429 is the poller's evidence, and only a 429 is: the
+			// cooldown rides the same outcome write and nothing else opens it.
+			if got := stored.QuotaCooldownUntil() != nil; got != tc.wantCooldown {
+				t.Fatalf("quota cooldown present = %v, want %v", got, tc.wantCooldown)
 			}
 		})
 	}

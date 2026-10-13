@@ -17,16 +17,21 @@ import (
 )
 
 // RecordUpstreamOutcome persists the endpoint's connection-parity state after a
-// data-plane call: the use run and the last non-test upstream error. It touches
-// the parity columns only. A served call carries no error, so its write stores
-// NULLs, the screen's "no failure since the last success" state.
+// data-plane call: the use run, the last non-test upstream error, and the
+// quota-poller cooldown. It touches the parity columns only. A served call carries
+// no error, so its write stores NULLs, the screen's "no failure since the last
+// success" state.
 func (r *EndpointRepository) RecordUpstreamOutcome(ctx context.Context, endpoint domain.UpstreamEndpoint) error {
+	// The cooldown only ever extends: GREATEST takes the later deadline and a NULL
+	// parameter leaves the column alone.
 	const q = `
 UPDATE upstream_endpoints
    SET consecutive_use_count = CASE WHEN $1::boolean THEN 0 ELSE consecutive_use_count + 1 END,
        last_error = $2,
        last_error_at = $3,
        error_code = $4,
+       quota_cooldown_until = CASE WHEN $7::timestamptz IS NULL THEN quota_cooldown_until
+                                   ELSE GREATEST(COALESCE(quota_cooldown_until, $7), $7) END,
        updated_at = $5
  WHERE id = $6`
 
@@ -41,7 +46,7 @@ UPDATE upstream_endpoints
 		errorCode = &stored
 	}
 	tag, err := r.pool.Exec(ctx, q, endpoint.ConsecutiveUseCount() == 0,
-		lastError, at, errorCode, endpoint.UpdatedAt(), endpoint.ID())
+		lastError, at, errorCode, endpoint.UpdatedAt(), endpoint.ID(), endpoint.QuotaCooldownUntil())
 	if err != nil {
 		return translateEndpointError(err)
 	}

@@ -124,7 +124,7 @@ CLI tools (Claude Code, Codex, Cursor, ...)          Browser (app-ui)
 
 | Table                | Key columns                                                                                                                                                                          | Notes                                                                                                                        |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `upstream_endpoints` | `id, provider_id, label, auth_type, priority, status, oauth(jsonb, redacted on read), test_status(jsonb), rate_limited_until, created_at, updated_at`                                | replaces `providerConnections`; unique `(provider_id, label)`                                                                |
+| `upstream_endpoints` | `id, provider_id, label, auth_type, priority, status, oauth(jsonb, redacted on read), test_status(jsonb), rate_limited_until, quota_cooldown_until, created_at, updated_at`                                | replaces `providerConnections`; unique `(provider_id, label)`                                                                |
 | `provider_nodes`     | `id, type, name, prefix, api_type, base_url, created_at, updated_at`                                                                                                                 | custom OpenAI/Anthropic-compatible providers (§7.4); `prefix` is **UNIQUE** and must not collide with a registry id or alias |
 | `upstream_keys`      | `id, endpoint_id→upstream_endpoints, label, value_encrypted, key_hint, priority, status, last_used_at, last_error, consecutive_errors, rate_limited_until, created_at, updated_at`   | **N per endpoint**; value encrypted at rest (AES-GCM, key from env)                                                          |
 | `gateway_keys`       | `id, name, value_hash, key_hint, status, last_used_at, request_count, created_at, revoked_at`                                                                                        | SHA-256 hash lookup, plaintext shown once; `name` is **UNIQUE** (duplicate ⇒ `CONFLICT`)                                     |
@@ -388,7 +388,8 @@ reached the upstream (DNS, TLS, dial, deadline) are **target-shaped**, recorded 
 state while the chain keeps walking to the next credential, because another account may serve the model the
 first refused and a credential that was never sent cannot have failed. Any other 4xx records nothing because
 the request, not the credential, is the cause. `consecutive_errors` counts
-every parked failure and a successful call resets all of it. The health lives on the key row; only
+every parked failure and a successful call resets all of it. A 429 also stamps the endpoint's quota cooldown,
+which is read by the published-quota poller alone and never by selection (§7.12). The health lives on the key row; only
 the rotation cursor is Redis-backed. `test_status`, the endpoint's own connectivity column, is display-only: routing
 never reads it, because a probe answers when an operator last pressed the button and the parking above already carries
 every real upstream outcome.
@@ -694,6 +695,18 @@ of keys per provider: asking each provider during a page read is one outbound ca
 §1.7 of AGENTS.md blocks outright. `?force=1` is the operator's explicit press on one card and costs
 one call for that one account; any other value stays a cache read, so a stale bookmark cannot turn a
 page load into provider traffic.
+
+**A throttled account is skipped by the poller, not by the router (2026-10-13).** When the vendor
+answers 429 to real traffic, the endpoint records a quota cooldown: `quota_cooldown_until` (migration
+000017) is stamped fifteen minutes out and `DueForRefresh` excludes it in the `WHERE`, before the sweep's
+`LIMIT`, so a throttled account cannot occupy an oldest-due slot and spend budget the accounts behind it
+need. Three rules belong to it. It is a **separate column** from `rate_limited_until`, which is an input to
+`Available()`: a 429 arrives on one credential of an endpoint that holds 1..N keys (§7.5) and the key that
+took it is already parked by the health model, so withholding the whole account from serving would punish
+the keys that never failed. It only ever **extends**: a second 429 pushes the deadline out, an earlier one
+cannot pull it back, and the database takes `GREATEST`, the same shape draft 050 T7 fixed for a key's park.
+And nothing **clears** it early, not even a served call: a request the model endpoint accepted says nothing
+about whether the vendor will answer a usage read, so the window expires on its own and no sweeper exists.
 
 **A page is grouped by accounts, not by counters.** `published[]` carries one entry per account
 belonging to the provider groups on the page (the endpoints in `upstream_endpoints`) and the same
@@ -1414,3 +1427,12 @@ health model already consumes every real upstream outcome (§7.5 parking). Makin
 let one stale manual test withhold a working account, and would give the panel's own diagnostic a second, stronger
 say over routing than the traffic that actually serves customers. The column stays what it is: the panel's last
 result, and the signal an operator acts on._
+
+_Changelog 2026-10-13: §5 and §7.12 add `upstream_endpoints.quota_cooldown_until` (migration 000017) and state the
+rules it carries (draft `050` T1, owner decision b). The poller's sweep already filtered on `rate_limited_until` and
+the filter was inert, because nothing wrote a deadline into that column; the column it reads is also an input to
+`Available()`, so filling it with a vendor 429 would have withheld a whole account from serving on the strength of the
+one key that took the throttle. Two questions, two columns: the key's park decides who serves, the endpoint's cooldown
+decides who gets polled. The cooldown extends only, is taken as `GREATEST` in the database so a concurrent write
+cannot shorten it, expires on its own with no sweeper, and is not cleared even by a served call, because a model
+endpoint that answered says nothing about whether the usage endpoint will._

@@ -49,6 +49,13 @@ func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reaso
 	now := s.clock()
 	endpoint := selection.Endpoint
 	endpoint.RecordUpstreamError(parityCode(class), reason, now)
+	// A vendor 429 is also evidence for the published-quota poller, which would
+	// otherwise spend a provider call on an account the vendor is throttling. It
+	// withholds the poller only: the account keeps serving traffic on its other
+	// keys (§7.12, draft 050 T1).
+	if class == domain.KeyFailureRateLimit {
+		endpoint.MarkQuotaThrottled(now)
+	}
 	if selection.Key.ID() != "" && class.ImplicatesCredential() {
 		updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class, s.healthPolicy(ctx, endpoint.ProviderID()), now)
 		if err != nil {
