@@ -24,17 +24,14 @@ const openCodeIDClockMask = uint64(1)<<openCodeIDClockBits - 1
 // unit: the low twelve bits of the field carry a sequence counter.
 const openCodeIDClockScale = uint64(0x1000)
 
-// openCodeDescendingHex renders the clock field of a session id. OpenCode builds
-// session identifiers descending (`Identifier.descending("session")`), which packs
-// the bitwise complement of `ms*0x1000 + counter`, so the newest session sorts
-// first.
+// openCodeDescendingHex renders the clock field of a session id, which OpenCode
+// packs descending (`Identifier.descending("session")`) as the complement of
+// `ms*0x1000 + counter` so the newest session sorts first.
 //
-// The reference computes that complement on an arbitrary-precision BigInt and
-// then reads only the six low bytes of it. Those two facts are why this is a
-// mask rather than a negative number: the low 48 bits of a two's-complement
-// complement are exactly `2^48-1 - (value mod 2^48)`, which is what masking a
-// uint64 complement yields. Writing `-(value+1)` in int64 would be wrong twice
-// over: the wrong width, and an overflow once the millisecond counter passes
+// The reference computes that complement on a BigInt and reads only its six low
+// bytes, so this masks instead of negating: the low 48 bits of a two's-complement
+// complement are `2^48-1 - (value mod 2^48)`, which is what a masked uint64
+// yields. Negating in int64 would be the wrong width, and would overflow past
 // 2^63.
 func openCodeDescendingHex(ms int64, counter uint64) string {
 	return openCodeClockHex(^openCodeClockValue(ms, counter))
