@@ -43,10 +43,21 @@ type memEndpointRepo struct {
 	// assert the endpoint's own connection state is what the data plane
 	// reported.
 	outcome map[string]domain.UpstreamEndpoint
-	err     error
+	// selected records the last selection stamp per candidate id (endpoint id, or endpoint
+	// id and key id joined), and stampsSelected counts them. A rotation test reads these to
+	// prove the degraded path orders by when a key was chosen, not when it last worked.
+	selected       map[string]time.Time
+	stampsSelected int
+	// lists counts the candidate reads, so a test can pin that one leg loads the
+	// provider once however many credentials its walk ends up spending.
+	lists int
+	err   error
 	// healthErr fails every health write, so a test can drive the bookkeeping
 	// path that runs after an upstream already answered.
 	healthErr error
+	// selectErr fails every selection stamp, so a test can prove losing the stamp
+	// degrades ordering without costing the caller its request.
+	selectErr error
 }
 
 func newMemEndpointRepo() *memEndpointRepo {
@@ -54,12 +65,13 @@ func newMemEndpointRepo() *memEndpointRepo {
 		byProvider: map[string][]domain.UpstreamEndpoint{},
 		health:     map[string]domain.UpstreamKey{},
 		outcome:    map[string]domain.UpstreamEndpoint{},
+		selected:   map[string]time.Time{},
 	}
 }
-
 func (r *memEndpointRepo) List(_ context.Context, filter repository.EndpointFilter, _ repository.PageQuery) ([]domain.UpstreamEndpoint, int64, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.lists++
 	if r.err != nil {
 		return nil, 0, r.err
 	}
@@ -164,7 +176,7 @@ func buildEndpoint(t *testing.T, id string, priority int, status domain.Upstream
 	for _, fixture := range keys {
 		key := domain.RehydrateUpstreamKey(
 			fixture.id, id, "key-"+fixture.id, "v1:nonce:cipher", "abc...wxyz",
-			fixture.priority, domain.UpstreamKeyActive, nil, "", 0, nil, now, now,
+			fixture.priority, domain.UpstreamKeyActive, nil, "", 0, domain.KeyRotationState{}, nil, now, now,
 		)
 		if fixture.status != "" && fixture.status != domain.UpstreamKeyActive {
 			// reason: the transition is the domain's, so a disabled key is built

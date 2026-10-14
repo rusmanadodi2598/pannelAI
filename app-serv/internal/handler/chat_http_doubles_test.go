@@ -121,6 +121,9 @@ func (r *chatEndpointRepository) List(_ context.Context, filter repository.Endpo
 func (r *chatEndpointRepository) RecordKeyHealth(context.Context, domain.UpstreamKey) error {
 	return nil
 }
+func (r *chatEndpointRepository) MarkSelected(context.Context, string, string, time.Time) error {
+	return nil
+}
 func (r *chatEndpointRepository) RecordUpstreamOutcome(context.Context, domain.UpstreamEndpoint) error {
 	return nil
 }

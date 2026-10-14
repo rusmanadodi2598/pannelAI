@@ -84,7 +84,7 @@ func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 		stored := store.keysByEndpoint[endpoint.ID()]
 		stored[0] = domain.RehydrateUpstreamKey(stored[0].ID(), stored[0].EndpointID(),
 			stored[0].Label(), stored[0].EncryptedValue(), stored[0].Hint(), stored[0].Priority(),
-			domain.UpstreamKeyDisabled, nil, "", 0, nil, stored[0].CreatedAt(), stored[0].UpdatedAt())
+			domain.UpstreamKeyDisabled, nil, "", 0, domain.KeyRotationState{}, nil, stored[0].CreatedAt(), stored[0].UpdatedAt())
 		store.keysByEndpoint[endpoint.ID()] = stored
 
 		_, _, err := svc.Test(ctx, endpoint.ID(), "")
@@ -102,7 +102,7 @@ func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 		stored := store.keysByEndpoint[endpoint.ID()]
 		stored[0] = domain.RehydrateUpstreamKey(stored[0].ID(), stored[0].EndpointID(),
 			stored[0].Label(), stored[0].EncryptedValue(), stored[0].Hint(), stored[0].Priority(),
-			domain.UpstreamKeyError, nil, "", 1, nil, stored[0].CreatedAt(), stored[0].UpdatedAt())
+			domain.UpstreamKeyError, nil, "", 1, domain.KeyRotationState{}, nil, stored[0].CreatedAt(), stored[0].UpdatedAt())
 		store.keysByEndpoint[endpoint.ID()] = stored
 
 		if _, _, err := svc.Test(ctx, endpoint.ID(), ""); err != nil {
@@ -124,7 +124,7 @@ func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 		stored := store.keysByEndpoint[endpoint.ID()]
 		stored[0] = domain.RehydrateUpstreamKey(stored[0].ID(), stored[0].EndpointID(),
 			stored[0].Label(), "v1:AAAA:c2VhbGVk", stored[0].Hint(), stored[0].Priority(),
-			stored[0].Status(), nil, "", 0, nil, stored[0].CreatedAt(), stored[0].UpdatedAt())
+			stored[0].Status(), nil, "", 0, domain.KeyRotationState{}, nil, stored[0].CreatedAt(), stored[0].UpdatedAt())
 		store.keysByEndpoint[endpoint.ID()] = stored
 
 		_, _, err := svc.Test(ctx, endpoint.ID(), "")

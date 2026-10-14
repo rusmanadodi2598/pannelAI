@@ -12,6 +12,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -70,8 +71,18 @@ type EndpointRepository interface {
 	// RecordKeyHealth persists a key's circuit-breaker transition after an
 	// upstream call, without touching its label, priority, or credential. The
 	// error count moves inside the store (one more failure, or a clear), because
-	// two failures that loaded the same starting value must not land as one.
+	// two failures that loaded the same starting value must not land as one. The
+	// per-class runs count the same way, so a burst of one class cannot count as
+	// one strike.
 	RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error
+
+	// MarkSelected stamps the moment rotation chose a credential, a different fact from the
+	// moment it last worked and the one rotation orders by (SPEC-API-001 §7.5). A keyed stamp
+	// advances the account's column in the same statement, because choosing a credential also
+	// chose the account. An empty keyID stamps the endpoint row alone: an OAuth or no-auth
+	// account carries its credential on the row and has no key. No health column is written,
+	// because the call this announces has not been made yet.
+	MarkSelected(ctx context.Context, endpointID, keyID string, at time.Time) error
 
 	// RecordUpstreamOutcome persists the endpoint's connection-parity transition
 	// (the use run and the last non-test upstream error) after a data-plane

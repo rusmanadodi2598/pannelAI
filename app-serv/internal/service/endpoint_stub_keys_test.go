@@ -12,6 +12,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -60,6 +61,25 @@ func (s *memEndpointStore) DeleteKey(_ context.Context, endpointID, keyID string
 func (s *memEndpointStore) RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error {
 	s.healthWrites++
 	return s.UpdateKey(ctx, key)
+}
+
+// MarkSelected advances the chosen credential's selection stamp, so a probe or a
+// selection test sees the same ordering move a real row makes.
+func (s *memEndpointStore) MarkSelected(_ context.Context, endpointID, keyID string, at time.Time) error {
+	s.selectWrites++
+	if keyID == "" {
+		return nil
+	}
+	for i, key := range s.keysByEndpoint[endpointID] {
+		if key.ID() != keyID {
+			continue
+		}
+		stamped := key
+		stamped.MarkSelected(at)
+		s.keysByEndpoint[endpointID][i] = stamped
+		return nil
+	}
+	return nil
 }
 
 func (s *memEndpointStore) RecordUpstreamOutcome(_ context.Context, endpoint domain.UpstreamEndpoint) error {

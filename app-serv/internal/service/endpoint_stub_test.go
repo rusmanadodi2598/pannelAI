@@ -48,6 +48,9 @@ type memEndpointStore struct {
 	// healthWrites counts the key-health writes a caller made, so a test can pin
 	// that an outcome which must not touch the circuit really wrote nothing.
 	healthWrites int
+	// selectWrites counts the selection stamps, so a test can pin that a path
+	// which chooses without spending a credential wrote nothing.
+	selectWrites int
 }
 
 func newMemEndpointStore() *memEndpointStore {

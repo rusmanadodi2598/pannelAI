@@ -106,8 +106,12 @@ func (e UpstreamEndpoint) FirstKeySkipping(now time.Time, spent map[string]struc
 // keyIdleBefore orders candidates by idle time: a key never used beats a used
 // one, an older use beats a newer one, and equal instants fall back to the
 // stored priority then id so the order is stable across calls.
+//
+// "Idle" reads IdleAt, so it is the moment rotation last chose the key, not the moment it
+// last succeeded. Ordering by success let a burst pile onto one credential: every concurrent
+// selection saw the same timestamp and the same winner.
 func keyIdleBefore(a, b UpstreamKey) bool {
-	aUsed, bUsed := a.LastUsedAt(), b.LastUsedAt()
+	aUsed, bUsed := a.IdleAt(), b.IdleAt()
 	switch {
 	case aUsed == nil && bUsed != nil:
 		return true
@@ -120,6 +124,31 @@ func keyIdleBefore(a, b UpstreamKey) bool {
 	default:
 		return a.ID() < b.ID()
 	}
+}
+
+// KeyAtOffset is the round-robin answer: the valid key `offset` places into the endpoint's
+// own priority-ordered list, walking forward past the keys this request has already spent.
+//
+// The offset is a raw counter from one atomic arbiter, so two concurrent requests hold
+// different numbers and land on different credentials. The modulo lives here rather than in
+// Redis because the divisor is how many keys routing may spend right now: a parked key leaves
+// the rotation, and the counter stays content-free.
+func (e UpstreamEndpoint) KeyAtOffset(now time.Time, spent map[string]struct{}, offset int) (UpstreamKey, bool) {
+	valid := e.ValidKeys(now)
+	if len(valid) == 0 {
+		return UpstreamKey{}, false
+	}
+	// A negative offset comes from a counter another process reset, and Go's modulo
+	// keeps the sign: normalising first is what stops a valid index being unreachable.
+	start := ((offset % len(valid)) + len(valid)) % len(valid)
+	for step := range valid {
+		candidate := valid[(start+step)%len(valid)]
+		if _, tried := spent[candidate.ID()]; tried {
+			continue
+		}
+		return candidate, true
+	}
+	return UpstreamKey{}, false
 }
 
 // ActiveKeyCount reports how many keys are in the active status. It is exported

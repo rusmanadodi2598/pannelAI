@@ -27,7 +27,8 @@ const endpointColumns = `id, provider_id, label, auth_type, priority, status,
 	global_priority, default_model, consecutive_use_count,
 	last_error, last_error_at, error_code, proxy_pool_id, quota_cooldown_until,
 	oauth_retry_at, oauth_retry_rounds,
-	sa_project_id, sa_location`
+	sa_project_id, sa_location,
+	consecutive_errors, last_selected_at`
 
 // endpointRow is one upstream_endpoints row, kept as raw column values rather
 // than as an aggregate so the page's keys can be attached from one batched read
@@ -59,6 +60,12 @@ type endpointRow struct {
 	// The service-account columns. Both are NOT NULL with an empty default,
 	// so a row created before migration 000016 reads back as empty.
 	saProjectID, saLocation string
+
+	// The account breaker run and the rotation stamp. consecutive_errors is NOT
+	// NULL with a zero default, so a row created before migration 000020 reads
+	// back as an account that has never failed, which is what it is.
+	consecutiveErrors int
+	lastSelectedAt    *time.Time
 }
 
 // scanEndpointRow reads one endpoint row, including its window count when the
@@ -73,6 +80,7 @@ func scanEndpointRow(s scanner, extra ...any) (endpointRow, error) {
 		&row.lastError, &row.lastErrorAt, &row.errorCode, &row.proxyPoolID,
 		&row.quotaCooldownUntil, &row.oauthRetryAt, &row.oauthRetryRounds,
 		&row.saProjectID, &row.saLocation,
+		&row.consecutiveErrors, &row.lastSelectedAt,
 	}
 	dest = append(dest, extra...)
 	if err := s.Scan(dest...); err != nil {
@@ -120,6 +128,8 @@ func (row endpointRow) parity() domain.EndpointParity {
 		QuotaCooldownUntil:  row.quotaCooldownUntil,
 		RefreshRetryAt:      row.oauthRetryAt,
 		RefreshRetryRounds:  row.oauthRetryRounds,
+		ConsecutiveErrors:   row.consecutiveErrors,
+		LastSelectedAt:      row.lastSelectedAt,
 	}
 	if row.globalPriority != nil {
 		parity.GlobalPriority = *row.globalPriority

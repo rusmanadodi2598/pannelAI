@@ -139,7 +139,7 @@ func TestRelay_KeysRotateWithinAnEndpoint(t *testing.T) {
 	endpoint := relayEndpoint(t, "ep-1", "alpha")
 	endpoint.AttachKey(domain.RehydrateUpstreamKey(
 		"uky-k2", "ep-1", "key2", "sealed-k2", "…hint2",
-		1, domain.UpstreamKeyActive, nil, "", 0, nil, now, now,
+		1, domain.UpstreamKeyActive, nil, "", 0, domain.KeyRotationState{}, nil, now, now,
 	))
 	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{endpoint}
 	engine := rotatingEngine(t, server.URL, repo, 1)

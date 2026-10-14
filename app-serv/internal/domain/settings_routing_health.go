@@ -115,6 +115,15 @@ type KeyHealthPolicy struct {
 	RateLimitWindow time.Duration
 	TransientWindow time.Duration
 	BillingWindow   time.Duration
+	// RetryAfterHint is the wait the vendor itself named for this failure, or zero. It rides
+	// the budget because it answers the budget's own question: how long to stay away.
+	RetryAfterHint time.Duration
+}
+
+// WithRetryAfter returns the same budget with the vendor's own wait applied.
+func (p KeyHealthPolicy) WithRetryAfter(hint time.Duration) KeyHealthPolicy {
+	p.RetryAfterHint = hint
+	return p
 }
 
 // DefaultKeyHealthPolicy answers the §7.5 windows a provider gets when nobody
@@ -128,21 +137,41 @@ func DefaultKeyHealthPolicy() KeyHealthPolicy {
 	}
 }
 
-// WindowFor reports how long a failure of this class parks a key that has now
-// failed it n times running. Each ladder stops at its ceiling and the
-// ceilings are not configurable: a park an operator can set to never expire is
-// the one-way grave draft 050 T2 had to dig an account out of.
+// WindowFor reports how long a failure of this class parks a key that has now failed it n
+// times running. Each ladder stops at a ceiling that is not configurable: a park an operator
+// can set never to expire is the one-way grave draft 050 T2 had to dig an account out of.
+//
+// A rate limit honors the vendor's own wait where it named one: a 429 saying "come back in
+// two minutes" answered with the ladder's two-second first step is a key put back into
+// rotation to be throttled again. The ladder's ceiling bounds the hint too, because the wait
+// a vendor names for its own queue is a guess, not a promise.
 func (p KeyHealthPolicy) WindowFor(class KeyFailureClass, n int) time.Duration {
 	switch class {
 	case KeyFailureAuth:
 		return backoff(durationOr(p.AuthWindow, keyAuthBase), n, keyAuthMax)
 	case KeyFailureRateLimit:
-		return backoff(durationOr(p.RateLimitWindow, keyRateLimitBase), n, keyRateLimitMax)
+		base := durationOr(p.RateLimitWindow, keyRateLimitBase)
+		if p.RetryAfterHint > 0 {
+			return clampDuration(p.RetryAfterHint, base, keyRateLimitMax)
+		}
+		return backoff(base, n, keyRateLimitMax)
 	case KeyFailureBilling:
 		return backoff(durationOr(p.BillingWindow, keyBillingBase), n, keyBillingMax)
 	default:
 		return durationOr(p.TransientWindow, keyTransientCooldown)
 	}
+}
+
+// clampDuration pulls a vendor's named wait inside the ladder it belongs to: never
+// shorter than that ladder's first step, never longer than its ceiling.
+func clampDuration(wait, floor, ceiling time.Duration) time.Duration {
+	if wait < floor {
+		return floor
+	}
+	if wait > ceiling {
+		return ceiling
+	}
+	return wait
 }
 
 // durationOr keeps the documented default for a window the policy does not name.

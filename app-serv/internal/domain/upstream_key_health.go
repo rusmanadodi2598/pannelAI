@@ -48,6 +48,28 @@ func (c KeyFailureClass) ImplicatesCredential() bool {
 	return c == KeyFailureAuth || c == KeyFailureRateLimit || c == KeyFailureTransient || c == KeyFailureBilling
 }
 
+// String names the class for a store that has to route one increment by it, and
+// for a log line. The values are stable: the key-health statement compares
+// against them, so a rename here is a migration, not a cosmetic edit.
+func (c KeyFailureClass) String() string {
+	switch c {
+	case KeyFailureAuth:
+		return "auth"
+	case KeyFailureRateLimit:
+		return "ratelimit"
+	case KeyFailureTransient:
+		return "transient"
+	case KeyFailureRequest:
+		return "request"
+	case KeyFailureTarget:
+		return "target"
+	case KeyFailureBilling:
+		return "billing"
+	default:
+		return "unknown"
+	}
+}
+
 // keyTransientCooldown is the §7.5 flat window for an outage-shaped failure: long
 // enough to skip the overloaded instance, short enough that a recovered one is
 // picked up by the next request. It stays flat because a target that answered 5xx
@@ -67,6 +89,12 @@ const (
 	keyBillingMax    = 6 * time.Hour
 	keyLadderMaxN    = 15
 )
+
+// RateLimitCeiling is the §7.5 ceiling the rate-limit ladder stops at. The wait a client is
+// told to wait is bounded by the same number the credential is parked for: a gateway saying
+// "come back in a day" that returns the key to rotation in five minutes is lying about its
+// own health model.
+const RateLimitCeiling = keyRateLimitMax
 
 // backoff reports the window the n-th consecutive failure of a ladder parks a
 // key for. The shift is guarded: a level past the cap, or a shift that
@@ -110,25 +138,69 @@ func (k UpstreamKey) Available(now time.Time) bool {
 // the reason but parks nothing, because the key is not what failed. The
 // credential and rate-limit windows grow with the streak and stop at their
 // ceilings; the transient one stays flat.
+//
+// The streak is the class's own run, not the total: one shared counter let a run of 429s
+// raise the credential ladder, so a throttled account was parked for strikes it never earned.
 func (k *UpstreamKey) RecordFailure(reason string, class KeyFailureClass, policy KeyHealthPolicy, now time.Time) {
 	k.lastError = reason
+	k.lastErrorClass = class.String()
 	k.updatedAt = now
 	if !class.ImplicatesCredential() {
 		return
 	}
 	k.consecutiveErrors++
-	window := policy.WindowFor(class, k.consecutiveErrors)
+	k.bumpRun(class)
+	window := policy.WindowFor(class, k.runFor(class))
 	k.status = UpstreamKeyError
 	until := now.Add(window)
 	k.rateLimitedUntil = &until
 }
 
+// bumpRun advances the streak of the class that just failed. Transient stays outside the
+// set because its window is flat: counting a target's 5xx run would escalate a window the
+// ladder exists to keep fixed (draft 050 D3a).
+func (k *UpstreamKey) bumpRun(class KeyFailureClass) {
+	switch class {
+	case KeyFailureAuth:
+		k.consecutiveAuth++
+	case KeyFailureRateLimit:
+		k.consecutiveRateLimit++
+	case KeyFailureBilling:
+		k.consecutiveBilling++
+	}
+}
+
+// runFor reports the streak a failure of this class parks against. Auth, rate limit and
+// billing keep their own; every other class answers the total, whose window is flat anyway.
+func (k UpstreamKey) runFor(class KeyFailureClass) int {
+	switch class {
+	case KeyFailureAuth:
+		return k.consecutiveAuth
+	case KeyFailureRateLimit:
+		return k.consecutiveRateLimit
+	case KeyFailureBilling:
+		return k.consecutiveBilling
+	default:
+		return k.consecutiveErrors
+	}
+}
+
+// RunFor reports the streak of one class, for the persistence layer and the panel.
+func (k UpstreamKey) RunFor(class KeyFailureClass) int { return k.runFor(class) }
+
 // RecordSuccess clears the health state after a request the upstream accepted:
 // the counter, the recorded error, and the park all reset, and a key that was
 // parked returns to active.
+//
+// Every class run resets, not only the served one: a credential that just answered is
+// demonstrably whole, and a stale run would park its next failure at the old length.
 func (k *UpstreamKey) RecordSuccess(now time.Time) {
 	k.consecutiveErrors = 0
+	k.consecutiveAuth = 0
+	k.consecutiveRateLimit = 0
+	k.consecutiveBilling = 0
 	k.lastError = ""
+	k.lastErrorClass = ""
 	k.rateLimitedUntil = nil
 	if k.status == UpstreamKeyError {
 		k.status = UpstreamKeyActive

@@ -52,6 +52,11 @@ type UpstreamEndpoint struct {
 	// rule lives in upstream_endpoint_oauth_retry.go.
 	refreshRetryAt     *time.Time
 	refreshRetryRounds int
+	// consecutiveErrors and lastSelectedAt are the account's own breaker run and
+	// its rotation stamp, the keyless pair to the key columns migration 000019 adds.
+	// Their rule lives in upstream_endpoint_account_health.go.
+	consecutiveErrors int
+	lastSelectedAt    *time.Time
 
 	// The service-account fields. Their rules live in
 	// upstream_endpoint_service_account.go.
@@ -127,6 +132,8 @@ func RehydrateUpstreamEndpoint(
 		quotaCooldownUntil:  parity.QuotaCooldownUntil,
 		refreshRetryAt:      parity.RefreshRetryAt,
 		refreshRetryRounds:  parity.RefreshRetryRounds,
+		consecutiveErrors:   parity.ConsecutiveErrors,
+		lastSelectedAt:      parity.LastSelectedAt,
 		saProjectID:         serviceAccount.ProjectID,
 		saLocation:          serviceAccount.Location,
 	}

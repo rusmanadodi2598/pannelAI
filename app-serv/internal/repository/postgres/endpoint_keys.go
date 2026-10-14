@@ -20,9 +20,15 @@ import (
 )
 
 // upstreamKeyColumns is the projection every key read uses, in scan order.
+//
+// The rotation columns are appended rather than woven in: they are read on the
+// same load the selection already performs, and a second query for four scalar
+// columns would be the N+1 shape AGENTS.md §1.7 forbids.
 const upstreamKeyColumns = `id, endpoint_id, label, value_encrypted, key_hint,
 	priority, status, last_used_at, last_error, consecutive_errors,
-	rate_limited_until, created_at, updated_at`
+	rate_limited_until, created_at, updated_at,
+	last_selected_at, consecutive_auth, consecutive_ratelimit, consecutive_billing,
+	last_error_class`
 
 // upstreamKeyCopyColumns is the insert column list, which must match
 // keyCopyRow's argument order exactly.
@@ -30,6 +36,8 @@ var upstreamKeyCopyColumns = []string{
 	"id", "endpoint_id", "label", "value_encrypted", "key_hint", "priority",
 	"status", "last_used_at", "last_error", "consecutive_errors",
 	"rate_limited_until", "created_at", "updated_at",
+	"last_selected_at", "consecutive_auth", "consecutive_ratelimit",
+	"consecutive_billing", "last_error_class",
 }
 
 // scanUpstreamKey reads one key row into a rehydrated entity.
@@ -37,15 +45,17 @@ func scanUpstreamKey(s scanner, extra ...any) (domain.UpstreamKey, error) {
 	var (
 		id, endpointID, label, valueEncrypted, keyHint string
 		priority, consecutiveErrors                    int
+		authRuns, rateRuns, billRuns                   int
 		status                                         string
-		lastUsedAt, rateLimitedUntil                   *time.Time
-		lastError                                      *string
+		lastUsedAt, lastSelectedAt, rateLimitedUntil   *time.Time
+		lastError, lastErrorClass                      *string
 		createdAt, updatedAt                           time.Time
 	)
 	dest := []any{
 		&id, &endpointID, &label, &valueEncrypted, &keyHint, &priority, &status,
 		&lastUsedAt, &lastError, &consecutiveErrors, &rateLimitedUntil,
 		&createdAt, &updatedAt,
+		&lastSelectedAt, &authRuns, &rateRuns, &billRuns, &lastErrorClass,
 	}
 	dest = append(dest, extra...)
 	if err := s.Scan(dest...); err != nil {
@@ -55,24 +65,42 @@ func scanUpstreamKey(s scanner, extra ...any) (domain.UpstreamKey, error) {
 	if lastError != nil {
 		message = *lastError
 	}
+	class := ""
+	if lastErrorClass != nil {
+		class = *lastErrorClass
+	}
 	return domain.RehydrateUpstreamKey(id, endpointID, label, valueEncrypted,
 		keyHint, priority, domain.UpstreamKeyStatus(status), lastUsedAt, message,
-		consecutiveErrors, rateLimitedUntil, createdAt, updatedAt), nil
+		consecutiveErrors,
+		domain.KeyRotationState{
+			LastSelectedAt:       lastSelectedAt,
+			ConsecutiveAuth:      authRuns,
+			ConsecutiveRateLimit: rateRuns,
+			ConsecutiveBilling:   billRuns,
+			LastErrorClass:       class,
+		},
+		rateLimitedUntil, createdAt, updatedAt), nil
 }
 
 // keyCopyRow renders one key as a COPY row. A null column is encoded as nil
 // rather than an empty string, so "no last error" and "an empty last error"
 // stay distinguishable in storage as they are in the entity.
 func keyCopyRow(key domain.UpstreamKey) []any {
-	var lastError *string
+	var lastError, lastErrorClass *string
 	if key.LastError() != "" {
 		message := key.LastError()
 		lastError = &message
+	}
+	if key.LastErrorClass() != "" {
+		class := key.LastErrorClass()
+		lastErrorClass = &class
 	}
 	return []any{
 		key.ID(), key.EndpointID(), key.Label(), key.EncryptedValue(), key.Hint(),
 		key.Priority(), string(key.Status()), key.LastUsedAt(), lastError,
 		key.ConsecutiveErrors(), key.RateLimitedUntil(), key.CreatedAt(), key.UpdatedAt(),
+		key.LastSelectedAt(), key.ConsecutiveAuth(), key.ConsecutiveRateLimit(),
+		key.ConsecutiveBilling(), lastErrorClass,
 	}
 }
 
