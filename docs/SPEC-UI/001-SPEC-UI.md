@@ -390,12 +390,20 @@ absent.
     to keep in the URL.
   - **Detail drawer** for one endpoint: label, priority, status. Priority edits reorder siblings, so the UI
     refreshes the list after a successful save and shows the new order rather than assuming it.
-  - **Keys table:** label, `key_hint`, priority, status, last used, consecutive errors, `rate_limited_until`
+  - **Keys table:** label, `key_hint`, priority, status, last chosen (`last_selected_at`), last served
+    (`last_used_at`), consecutive errors, `rate_limited_until`
     countdown. Row actions: test this key, enable or disable, delete, each an icon-only button whose
-    accessible name is the action verb (owner decision, 2026-09-24).
+    accessible name is the action verb (owner decision, 2026-09-24). Chosen and served are two columns and
+    not one, because they come apart: rotation picks a credential and the call may then be lost to a
+    failover or to the network, so the gap between the two is the operator's evidence that a key is being
+    selected without carrying load. Both are read against the drawer's own clock, so a row never shows a
+    countdown ticking beside a stale absolute time.
   - **Which key would route now:** the key the router would pick, computed from priority plus health, and
     labelled as such. This is the panel's answer to "why did my request fail over", and it is derived from
-    the fields the API returns, not re-simulated in the panel.
+    the fields the API returns, not re-simulated in the panel. The claim holds only for a provider walking
+    `fill-first`: under `round-robin` the next key is decided by a counter in Redis that the panel cannot
+    read and must not guess, so this row answers the priority question it actually can and the chosen column
+    above is where the operator sees what rotation really spent.
   - **Add key:** one form, plus a repeatable row mode for adding several keys in one submit loop, since
     multi-key per endpoint is the point of this surface.
   - **Delete last active key:** the API returns `CONFLICT` (SPEC-API §7.5). The panel disables the delete
@@ -935,7 +943,7 @@ Tabs, each mapping to one group of keys in SPEC-API §7.14.
 | Tab         | Fields                                                                                                                             | Notes                                                                                                                                                  |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Security    | `security.require_login`, `security.require_api_key`, change password, logout all sessions if the API exposes it                   | Turning `require_login` off shows a warning that the panel becomes open on the network. Change password asks for current and new password.             |
-| Routing     | `routing.combo_strategy`, `routing.combo_sticky_limit`, `routing.sticky_limit`, `routing.fallback_strategy`                        | Defaults for new combos and for the credential walk; per-combo values win, and a provider overrides the rotation on its own screen. The tab says both. |
+| Routing     | `routing.combo_strategy`, `routing.combo_sticky_limit`, `routing.sticky_limit`, `routing.fallback_strategy`, `routing.key_park.*`, `routing.failover.total_ms`, `routing.failover.max_attempts` | Defaults for new combos and for the credential walk; per-combo values win, and a provider overrides the rotation on its own screen. The tab says both. The park windows and the walk budget are group-level (SPEC-API §7.14) and editable here: a blank park window means inherit rather than zero, so an empty box is sent as absent and not coerced to a number that would park for nothing, and the failover pair is required because the read always names the effective bound. |
 | Network     | `network.outbound_proxy_enabled`, `network.outbound_proxy_url`, `network.outbound_no_proxy`, `network.outbound_proxy_strategy`     | Shared surface with `/proxy-pools`; both read the same endpoint, and the tab links there instead of duplicating the form.                              |
 | Logging     | `logging.request_capture_enabled`, `logging.retention_days`, `logging.capture_body_max_bytes`, `logging.observability_max_records` | Capture sets a privacy cost, so the toggle carries the warning that request bodies will be stored.                                                     |
 | Token Saver | Read-only summary plus a link to `/token-saver`                                                                                    | One editor for one config. A second editor is how configs drift.                                                                                       |
@@ -2590,3 +2598,5 @@ only mentioned it._
 _Changelog 2026-10-07: §6.3's delete confirmation states what the action takes (draft `046`). It used to print the gateway's refusal inside its own sentence about the same refusal and then instruct the operator to move connections, a capability the product never had. The dialog now says, before the button is pressed, that the provider's stored connections and the keys saved on them go with it; the count comes from a read taken when the dialog opens rather than from the page's provider total, which no connection write below refreshes, and the sentence drops the number when that read fails rather than printing one the panel did not measure. The `CONFLICT` that remains is the combo one, rendered as the gateway's own sentence naming the combo, with the membership screen linked beside it._
 
 _Changelog 2026-10-08: §6.3's delete confirmation names the model rows too, and no longer has a silent branch. The sentence states the connection count when it has one, and drops to naming the model rows when the provider holds no connection, because a node with no connection can still have declared models and those go with it. The refusal line covers the second blocker the same screen edits: a combo member or an alias target, each rendered in the gateway's own words._
+
+_Changelog 2026-10-14: the Routing tab edits the two budget groups it used to only inherit, and the keys table splits one timestamp into two. `routing.key_park.*` and `routing.failover.total_ms` / `max_attempts` were already writable on the API (SPEC-API §7.14) with their bounds validated server-side, but the panel had no control for them, so retuning a provider's parking length or a request's walk budget meant an operator typing at the API rather than using the screen they were on. A blank park window is sent as absent, not as `0`: zero would coerce past the "inherit" meaning and park a credential for nothing. The keys table now shows `last_selected_at` beside `last_used_at` because rotation orders by the former and the two come apart whenever a chosen key loses the call to a failover or to the network; that gap is the operator's only view of a key being selected without carrying load. §6.2's "which key would route now" is narrowed to the question the panel can actually answer: under `round-robin` the next credential comes from a Redis counter the panel cannot read and must not guess, so the row states the priority answer and the new column shows what rotation really spent._

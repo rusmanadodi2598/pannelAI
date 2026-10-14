@@ -124,9 +124,9 @@ CLI tools (Claude Code, Codex, Cursor, ...)          Browser (app-ui)
 
 | Table                | Key columns                                                                                                                                                                          | Notes                                                                                                                        |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `upstream_endpoints` | `id, provider_id, label, auth_type, priority, status, oauth(jsonb, redacted on read), test_status(jsonb), rate_limited_until, quota_cooldown_until, created_at, updated_at`                                | replaces `providerConnections`; unique `(provider_id, label)`                                                                |
+| `upstream_endpoints` | `id, provider_id, label, auth_type, priority, status, oauth(jsonb, redacted on read), test_status(jsonb), rate_limited_until, consecutive_errors, last_selected_at, quota_cooldown_until, created_at, updated_at`                                | replaces `providerConnections`; unique `(provider_id, label)`. `rate_limited_until` is this account's OWN breaker and is written only for an endpoint that holds no key row (§7.5)                                                                |
 | `provider_nodes`     | `id, type, name, prefix, api_type, base_url, created_at, updated_at`                                                                                                                 | custom OpenAI/Anthropic-compatible providers (§7.4); `prefix` is **UNIQUE** and must not collide with a registry id or alias |
-| `upstream_keys`      | `id, endpoint_id→upstream_endpoints, label, value_encrypted, key_hint, priority, status, last_used_at, last_error, consecutive_errors, rate_limited_until, created_at, updated_at`   | **N per endpoint**; value encrypted at rest (AES-GCM, key from env)                                                          |
+| `upstream_keys`      | `id, endpoint_id→upstream_endpoints, label, value_encrypted, key_hint, priority, status, last_used_at, last_selected_at, last_error, last_error_class, consecutive_errors, consecutive_auth, consecutive_ratelimit, consecutive_billing, rate_limited_until, created_at, updated_at`   | **N per endpoint**; value encrypted at rest (AES-GCM, key from env). `last_selected_at` is when rotation CHOSE the credential and `last_used_at` when it last SERVED; rotation orders by the former                                                       |
 | `gateway_keys`       | `id, name, value_hash, key_hint, status, last_used_at, request_count, created_at, revoked_at`                                                                                        | SHA-256 hash lookup, plaintext shown once; `name` is **UNIQUE** (duplicate ⇒ `CONFLICT`)                                     |
 | `combos`             | `id, name, strategy, sticky_limit, judge_model, models(jsonb), created_at, updated_at`                                                                                               | `models`: `[{ref, priority}]`                                                                                                |
 | `model_aliases`      | `alias, target, created_at`                                                                                                                                                          | alias → `provider/model` or combo name                                                                                       |
@@ -343,13 +343,24 @@ An **upstream endpoint** holds **1..N API keys**. Routing walks the provider's e
 that provider's **credential rotation policy** fixes (§7.14): `fill-first` (the default) walks
 priority order and starts every request from the first usable endpoint, `round-robin` advances the
 shared cursor and keeps one endpoint for `sticky_limit` consecutive requests. Inside the chosen
-endpoint it picks a healthy key, least-recently-used first under `round-robin` and in priority order
-under `fill-first`, skipping parked keys and breaking ties by priority then id. The policy is a
+endpoint `round-robin` asks a second counter, one per account, for the position to start at and walks
+forward over the keys it may spend; `fill-first` takes the first healthy key by priority and reads no
+counter at all. Both skip parked keys. The position is a bare integer in Redis and the modulo is taken
+by the router, because the divisor is how many keys are spendable RIGHT NOW, a fact the domain owns and
+the store has no business knowing; a key that gets parked leaves the rotation and the counter stays
+valid. Each selection also stamps the credential's `last_selected_at`, and that stamp is the fallback
+order when Redis cannot answer: it advances on every choice, including a choice whose call then failed
+at the network, so a degraded deployment still spreads a burst within one round instead of
+re-choosing the key that has never succeeded. Ordering by `last_used_at` alone was the defect this
+replaced: a success-only stamp is identical across concurrent requests, so a burst of N requests picked
+one credential, and a key refused before it could answer stayed the oldest key forever. The policy is a
 per-provider override over a global default (`routing.fallback_strategy` plus
 `routing.provider_strategies`), and a policy that cannot be read degrades to `fill-first`, because
 rotation is an optimisation and not a correctness input. Within one request a
 failed credential is followed by the provider's next healthy credential before the next model is
-tried (credential-first failover, §7.7). This generalizes the reference 1-connection-1-key model.
+tried (credential-first failover, §7.7). A leg reads the provider's accounts, its policy and its
+budget ONCE and walks that snapshot, so neither a reload nor a cursor step happens per attempt. This
+generalizes the reference 1-connection-1-key model.
 
 | Method | Path                                   | Auth | Description                                                                                            | Phase |
 | ------ | -------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------ | ----- |
@@ -360,7 +371,7 @@ tried (credential-first failover, §7.7). This generalizes the reference 1-conne
 | DELETE | `/api/v1/endpoints/{id}`               | S    | Delete endpoint + its keys                                                                             | P1    |
 | POST   | `/api/v1/endpoints/{id}/test`          | S    | Connectivity test; `{key_id?}` targets one key else the first key the operator has not disabled (a key inside its backoff is testable on purpose); updates `test_status` and the key's circuit | P1    |
 | POST   | `/api/v1/endpoints/{id}/keys`          | S    | Add key `{label?, value}`                                                                              | P1    |
-| GET    | `/api/v1/endpoints/{id}/keys`          | S    | List keys (hints only) with health fields                                                              | P1    |
+| GET    | `/api/v1/endpoints/{id}/keys`          | S    | List keys (hints only) with health fields: `last_selected_at` (when rotation chose it) beside `last_used_at` (when it last served), `consecutive_errors` with the per-class runs it sums, and `rate_limited_until` | P1    |
 | PATCH  | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | `{label?, value?, priority?, status?}`: value is write-only                                            | P1    |
 | DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | Remove key (endpoint must keep ≥1 key the operator has not disabled if the auth type stores keys: `api_key` or `service_account`; a parked key counts, because its window ends by itself) | P1    |
 
@@ -401,10 +412,30 @@ so its key leaves rotation while the chain walks on to the next account): an ups
 reached the upstream (DNS, TLS, dial, deadline) are **target-shaped**, recorded on the endpoint's connection
 state while the chain keeps walking to the next credential, because another account may serve the model the
 first refused and a credential that was never sent cannot have failed. Any other 4xx records nothing because
-the request, not the credential, is the cause. `consecutive_errors` counts
-every parked failure and a successful call resets all of it. The write runs after the client's answer is on the wire and under its own bounded context, so a client that closes the connection the moment the answer lands cannot erase the health row its call produced; the same rule the usage rows already follow. A 429 also stamps the endpoint's quota cooldown,
+the request, not the credential, is the cause. `consecutive_errors` counts every parked failure for
+display, and it is NOT the ladder's step: each class keeps its own run
+(`consecutive_auth`, `consecutive_ratelimit`, `consecutive_billing`) and only that run advances, so a
+run of 429s lengthens the rate-limit ladder and leaves the credential ladder counting the strikes it
+actually took. One shared counter for all classes was the defect this replaced. A successful call resets
+every run. Where the vendor names its own wait in `Retry-After`, a rate limit parks for that wait rather
+than for the ladder step, clamped into the class's own floor and ceiling: a 429 that says "come back in
+two minutes" and is answered with a two-second park is a credential put straight back into a limiter, and
+a vendor that asks for a day is heard for five minutes because the ceiling is what keeps one header from
+burying an account. The same bounded number is handed back to the client as its `Retry-After`, so the
+wait a caller plans around and the wait the gateway really parks for cannot disagree. The write runs after
+the client's answer is on the wire and under its own bounded context, so a client that closes the
+connection the moment the answer lands cannot erase the health row its call produced; the same rule the
+usage rows already follow. The opposite case is just as bounded: a stream the caller abandoned MID-answer
+records neither a success nor a failure, because a leg that stopped arriving proved nothing about the
+credential, and treating it as served would clear a park another request had just earned. A 429 also
+stamps the endpoint's quota cooldown,
 which is read by the published-quota poller alone and never by selection (§7.12). The health lives on the key row; only
-the rotation cursor is Redis-backed. `test_status`, the endpoint's own connectivity column, is display-only: routing
+the rotation cursors are Redis-backed. A keyed endpoint parks its key and never its account, because a
+throttle on one credential must not withhold the healthy ones beside it. An endpoint that owns NO key row
+is its own credential: an OAuth or no-auth account parks on its own `rate_limited_until` with its own
+failure run, which is the breaker such an account never had, and whose absence kept a dead token in
+rotation being chosen over and over. `test_status`, the endpoint's own connectivity column, is
+display-only: routing
 never reads it, because a probe answers when an operator last pressed the button and the parking above already carries
 every real upstream outcome.
 
@@ -912,13 +943,27 @@ v1 settings surface (subset of reference `DEFAULT_SETTINGS`):
 ```json
 {
   "security": { "require_login": true, "require_api_key": true },
-  "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {}, "key_park": { "auth_seconds": 120, "rate_limit_seconds": 2, "transient_seconds": 30 } },
+  "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {}, "key_park": { "auth_seconds": 120, "rate_limit_seconds": 2, "transient_seconds": 30 }, "failover": { "total_ms": 30000, "max_attempts": 8 } },
   "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "", "outbound_proxy_strategy": "fallback", "provider_proxies": {} },
   "token_saver": { "see §7.9" },
   "reasoning": { "provider_thinking": {} },
   "logging":  { "request_capture_enabled": false, "retention_days": 7, "capture_body_max_bytes": 65536, "observability_max_records": 1000 }
 }
 ```
+
+`routing.failover` bounds one client request's whole credential walk: `total_ms` is the wall clock the
+PRE-COMMIT walk may spend (default 30000, stored bounds 1000..120000) and `max_attempts` how many
+credentials it may spend (default 8, bounds 1..200). Both exist because the chain is a product, not a
+sum: a combo of 64 members, 100 accounts each, 100 keys each, each with a transport retry above it, and
+every one of those steps carried its own per-call deadline with nothing above it. The attempt count is
+the bound a deadline cannot give, for an upstream that answers instantly with an error on every key it
+holds. Neither bound ever turns an answer the caller received into a failure: once a frame has reached
+the client the stream is committed and the idle guard owns it. A walk cut short after it had reached an
+upstream is `UPSTREAM_TIMEOUT`; one stopped before it reached any is `NO_PROVIDER_AVAILABLE`, and no new
+§8 code is added for either. A budget that cannot be read applies the documented one, the same rule
+rotation follows, because a settings outage must not hand a caller an unbounded walk and must not refuse
+a request it could serve. Env knobs are not offered for either bound, the rule `DATA_PLANE_STICKY_LIMIT`
+already established: this settings document is the only source.
 
 `routing.fallback_strategy` (`fill-first` | `round-robin`, default `fill-first`) is the credential
 rotation default for every provider, and `routing.provider_strategies` overrides it per provider id,

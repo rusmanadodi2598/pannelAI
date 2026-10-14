@@ -190,6 +190,8 @@ sekali, bukan string kosong. Aturan lengkapnya di `docs/SPEC-API/001-SPEC-API.md
 
 `POST /endpoints` menerima `auth_type` `api_key`, `oauth`, `no_auth`, atau `service_account`. Endpoint dengan `api_key` dapat memiliki beberapa key; endpoint `service_account` menyimpan JSON service account di tabel key yang sama dan membawa `sa_project_id`/`sa_location` sebagai alamat panggilannya. Nilai key bersifat write-only.
 
+Satu schema `EndpointKeyResponse` dipakai list, detail, dan create; field health-nya `last_used_at`, `last_selected_at`, `last_error`, `consecutive_errors`, dan `rate_limited_until`. `last_selected_at` adalah kapan rotasi MEMILIH kredensial tersebut, fakta yang berbeda dari `last_used_at` (kapan ia terakhir melayani) dan justru yang dipakai urutan rotasi, sehingga sebuah key yang dipilih lalu ditolak jaringan tetap maju. `EndpointResponse` membawa `last_selected_at` yang sama untuk akun itu sendiri: endpoint OAuth dan no-auth tidak memiliki baris key, jadi kolom di baris endpoint adalah satu-satunya state rotasi yang mereka punya. Keduanya `omitempty`: key yang belum pernah dipilih tidak mengirim apa pun. Kolom `last_error_class` hidup di agregat domain dan PostgreSQL saja, tidak dikirim ke klien; `SYSTEM_MAP.md` dan SPEC-API yang memilikinya.
+
 Bulk endpoint dan bulk key bersifat all-or-nothing. Batch divalidasi penuh lalu diterapkan dalam satu transaksi.
 
 ### 3.7 Models
@@ -277,6 +279,8 @@ Override disimpan per provider dan kind. `base_url` tidak boleh kosong setelah r
 | PATCH | `/api/v1/settings` | Session | `200 SettingsResponse` |
 
 List usage dan log memakai pagination. Filter waktu menggunakan RFC3339. Query tanpa range memakai bounded default window service.
+
+`routing.failover` membatasi satu request saat berjalan ke seluruh rantai credential: `total_ms` (batas 1000-120000, default 30000) dan `max_attempts` (batas 1-200, default 8). PATCH mengirim tiap batas secara terpisah, jadi batas yang tidak ikut dikirim menjaga nilai tersimpan dan melebarkan jumlah percobaan tidak mereset jam. Response selalu menjawab kedua nilai efektif yang dipakai router, bukan nol, termasuk untuk dokumen yang tersimpan sebelum key ini ada.
 
 ### 3.13 Skills, OpenAPI, dan changelog
 
