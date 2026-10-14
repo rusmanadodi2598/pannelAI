@@ -101,7 +101,7 @@ func (r *stubMediaRouter) RecordSuccess(context.Context, dataplane.Selection) er
 	return nil
 }
 
-func (r *stubMediaRouter) RecordFailure(_ context.Context, _ dataplane.Selection, reason string, _ domain.KeyFailureClass) error {
+func (r *stubMediaRouter) RecordFailure(_ context.Context, _ dataplane.Selection, reason string, _ domain.KeyFailureClass, _ time.Duration) error {
 	r.failures = append(r.failures, reason)
 	return nil
 }

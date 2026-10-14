@@ -36,9 +36,13 @@ type Selection struct {
 
 // Selector picks the endpoint and key for a provider (SPEC-API-001 §7.5).
 type Selector struct {
-	endpoints  repository.EndpointRepository
-	opener     SecretOpener
-	cursor     CursorStore
+	endpoints repository.EndpointRepository
+	opener    SecretOpener
+	cursor    CursorStore
+	// keyCursor is the per-account credential counter, the arbiter that makes two
+	// concurrent selections choose different keys. Optional: without it a
+	// round-robin walk orders by the selection stamp instead.
+	keyCursor  KeyCursorStore
 	gates      BudgetGate
 	strategies CredentialStrategy
 	// health answers the parking windows the provider's operator configured
@@ -59,6 +63,7 @@ type SelectorDeps struct {
 	Endpoints  repository.EndpointRepository
 	Opener     SecretOpener
 	Cursor     CursorStore
+	KeyCursor  KeyCursorStore
 	Strategies CredentialStrategy
 	// Health is the optional §7.14 key-park window read. A nil one parks at the
 	// documented defaults.
@@ -86,8 +91,9 @@ func NewSelector(deps SelectorDeps) (*Selector, error) {
 		return nil, domain.NewValidationError("endpoint repository is required")
 	}
 	return &Selector{
-		endpoints: deps.Endpoints, opener: deps.Opener, cursor: deps.Cursor, gates: deps.Gate,
-		strategies: deps.Strategies, health: deps.Health, registry: deps.Registry, logger: deps.Logger, clock: time.Now,
+		endpoints: deps.Endpoints, opener: deps.Opener, cursor: deps.Cursor, keyCursor: deps.KeyCursor,
+		gates: deps.Gate, strategies: deps.Strategies, health: deps.Health, registry: deps.Registry,
+		logger: deps.Logger, clock: time.Now,
 	}, nil
 }
 

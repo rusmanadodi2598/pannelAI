@@ -15,7 +15,9 @@ package dataplane
 import (
 	"bytes"
 	"io"
+	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -94,7 +96,17 @@ func newIdleGuard(body io.ReadCloser, timeout time.Duration, cancel func()) io.R
 
 // expire cancels the outbound request. It runs on the timer's goroutine, so it
 // takes the lock before touching state and calls cancel outside it.
+//
+// The recover is AGENTS.md §1.6 at a goroutine boundary nobody owns: a panic raised on the
+// runtime's timer goroutine has nothing above it to catch it, and an unrecovered one takes
+// the whole process rather than one stream. Losing the window on one body is a stalled read
+// the transport's own deadlines still bound.
 func (g *idleGuard) expire() {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("idle guard panic recovered", "panic", r, "stack", string(debug.Stack()))
+		}
+	}()
 	g.mu.Lock()
 	g.fired = true
 	g.mu.Unlock()

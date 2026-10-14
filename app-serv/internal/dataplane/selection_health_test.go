@@ -76,11 +76,11 @@ func TestSelector_HealthAccounting(t *testing.T) {
 			case "success":
 				err = selector.RecordSuccess(context.Background(), selection)
 			case "auth-failure":
-				err = selector.RecordFailure(context.Background(), selection, "upstream rejected", domain.KeyFailureAuth)
+				err = selector.RecordFailure(context.Background(), selection, "upstream rejected", domain.KeyFailureAuth, 0)
 			case "rate-limit-failure":
-				err = selector.RecordFailure(context.Background(), selection, "rate limited", domain.KeyFailureRateLimit)
+				err = selector.RecordFailure(context.Background(), selection, "rate limited", domain.KeyFailureRateLimit, 0)
 			case "request-failure":
-				err = selector.RecordFailure(context.Background(), selection, "upstream rejected the request", domain.KeyFailureRequest)
+				err = selector.RecordFailure(context.Background(), selection, "upstream rejected the request", domain.KeyFailureRequest, 0)
 			}
 			if err != nil {
 				t.Fatalf("recording %s: %v", tc.outcome, err)

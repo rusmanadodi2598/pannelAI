@@ -44,9 +44,16 @@ func (e *Engine) relayStream(
 	// The counter is what lets the combo walk tell a member that never started
 	// from one the client is already reading, so it wraps the sink for the whole
 	// leg and reports on every exit, the error exits included.
+	//
+	// The abort flag is read the same way on every exit: a cancelled caller means
+	// the answer stopped arriving, and an answer that stopped arriving is not
+	// evidence the credential works.
 	counted := &countedSink{FrameSink: sink}
 	sink = counted
-	defer func() { outcome.FramesWritten = counted.wrote }()
+	defer func() {
+		outcome.FramesWritten = counted.wrote
+		outcome.StreamAborted = ctx.Err() != nil
+	}()
 
 	switch in.ClientFormat {
 	case schema.FormatAnthropic:

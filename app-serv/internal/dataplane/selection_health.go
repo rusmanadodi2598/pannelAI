@@ -2,7 +2,7 @@
 //
 // @file      internal/dataplane/selection_health.go
 // @for       The health accounting a selection produces: the key circuit a served or failed call updates, the parking budget it applies, and its persistence.
-// @uses      internal/domain, internal/logx, context, time.
+// @uses      internal/domain, internal/logx, context, strings, time.
 // @reason    Selection and accounting are two jobs: Select decides who serves the next request from the endpoint's current state, while these writes change that state afterwards. Keeping them apart also keeps the keyless rule readable, because a no_auth selection has no key circuit to write and must not fail the request on a bookkeeping error (G15 in the P2 register).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -12,6 +12,7 @@ package dataplane
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -26,6 +27,28 @@ const healthWriteTimeout = 5 * time.Second
 // lands must not erase it (draft 021 F6's rule for the usage rows, applied here).
 func accountingCtx(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.WithoutCancel(ctx), healthWriteTimeout)
+}
+
+// markSelected records that rotation chose this credential for one call. It claims
+// no health outcome and parks nothing: the call it announces has not happened.
+//
+// It runs detached like the outcome writes (draft 050 L1), so a client that hangs up
+// cannot erase the step rotation took. A lost stamp costs the next selector one
+// ordering guess, not the caller's request, so a failure is logged and dropped.
+//
+// A virtual endpoint is skipped: the lane synthesizes its account, so no row exists
+// to stamp and every request would pay a primary-key update that changes nothing.
+func (s *Selector) markSelected(ctx context.Context, selection Selection) {
+	if strings.HasPrefix(selection.Endpoint.ID(), VirtualEndpointIDPrefix) {
+		return
+	}
+	writeCtx, cancel := accountingCtx(ctx)
+	defer cancel()
+
+	if err := s.endpoints.MarkSelected(writeCtx, selection.Endpoint.ID(), selection.Key.ID(), s.clock()); err != nil {
+		logx.Degraded(s.logger, "rotation could not stamp the chosen credential", err,
+			"endpoint_id", selection.Endpoint.ID(), "key_id", selection.Key.ID())
+	}
 }
 
 // RecordSuccess applies a served request to the endpoint's parity state and the
@@ -52,11 +75,21 @@ func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error
 }
 
 // RecordFailure applies a failed attempt to the endpoint's parity state and the
-// key's circuit. Request writes nothing, because the same body fails on any key
-// and no operator needs to see that as a connection state. Target writes the
-// connection state and stops there, because the credential was never sent. A
-// keyless selection still records the parity error.
-func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass) error {
+// key's circuit. Request writes nothing: the same body fails on any key. Target
+// writes the connection state only: the credential was never sent.
+//
+// The unit parked is the unit spent: a key for a keyed endpoint, the account itself
+// for one that owns no keys, which is the breaker an OAuth account never had. A 429
+// on one key must still not withhold its healthy siblings (draft 050 T1). retryAfter
+// is the wait the vendor named, so a 429 saying "come back in two minutes" is not
+// answered with a two-second park.
+func (s *Selector) RecordFailure(
+	ctx context.Context,
+	selection Selection,
+	reason string,
+	class domain.KeyFailureClass,
+	retryAfter time.Duration,
+) error {
 	if class == domain.KeyFailureRequest {
 		return nil
 	}
@@ -67,22 +100,28 @@ func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reaso
 	endpoint := selection.Endpoint
 	endpoint.RecordUpstreamError(parityCode(class), reason, now)
 	// A vendor 429 is also evidence for the published-quota poller, which would
-	// otherwise spend a provider call on an account the vendor is throttling. It
-	// withholds the poller only: the account keeps serving traffic on its other
-	// keys (§7.12, draft 050 T1).
+	// otherwise spend a provider call on an account the vendor is throttling. The
+	// poller withholds only: the account keeps serving on its other keys (§7.12).
 	if class == domain.KeyFailureRateLimit {
 		endpoint.MarkQuotaThrottled(now)
 	}
-	if selection.Key.ID() != "" && class.ImplicatesCredential() {
+	switch {
+	case selection.Key.ID() != "" && class.ImplicatesCredential():
 		// The budget read is detached too: a client that left must not silently
 		// trade the operator's configured window for the documented default.
-		updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class, s.healthPolicy(writeCtx, endpoint.ProviderID()), now)
+		updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class,
+			s.healthPolicy(writeCtx, endpoint.ProviderID()).WithRetryAfter(retryAfter), now)
 		if err != nil {
 			return err
 		}
 		if err := s.endpoints.RecordKeyHealth(writeCtx, updated); err != nil {
 			return err
 		}
+	case endpoint.ServesItsOwnCredential() && class.ImplicatesCredential():
+		// An account that owns no credential row parks as one. The class test gates
+		// the settings read too: a network failure cannot produce a park anyway.
+		endpoint.RecordAccountFailure(class,
+			s.healthPolicy(writeCtx, endpoint.ProviderID()).WithRetryAfter(retryAfter), now)
 	}
 	return s.endpoints.RecordUpstreamOutcome(writeCtx, endpoint)
 }

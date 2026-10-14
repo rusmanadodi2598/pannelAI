@@ -1,8 +1,8 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_ports.go
-// @for       The seams selection reads: the rotation cursor and its key space, the candidate bound, the budget gate, and the two policy readers.
-// @uses      context, crypto/sha256, encoding/hex, internal/domain.
+// @for       The seams selection reads: the two rotation cursors, the candidate bound, the budget gate, and the two policy readers.
+// @uses      context, internal/domain.
 // @reason    AGENTS.md §1.5 keeps a Redis driver and the quota repository out of the data plane through one-method interfaces. Naming those seams together, with the degradations each one documents, is what makes an unwired or failing seam one read rather than five scattered above the selector.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -12,17 +12,9 @@ package dataplane
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
-
-// CursorKeyPrefix is the Redis key space for the round-robin endpoint cursor.
-// The cursor is the only selection state Redis holds: endpoint availability and
-// key health live in the domain and in PostgreSQL, so losing this namespace
-// degrades rotation to priority order without changing which account is usable.
-const CursorKeyPrefix = "pannelai:dataplane:endpoint-cursor:"
 
 // MaxEndpointsPerProvider bounds the candidate list. A provider with more
 // accounts than this is a configuration mistake, and the bound keeps selection
@@ -32,7 +24,10 @@ const MaxEndpointsPerProvider = 100
 // CursorStore advances the round-robin position over one provider's endpoints.
 // It is an interface because the data plane must not import a Redis client
 // (AGENTS.md §1.5 keeps driver access in the repository layer), so the
-// composition root adapts the Redis implementation to it.
+// composition root adapts the Redis implementation to it. The key namespace
+// lives with that implementation: the cursor is the only selection state Redis
+// holds, so losing it degrades rotation to priority order without changing
+// which account is usable.
 type CursorStore interface {
 	// NextOffset returns the zero-based offset to start selecting at, then moves
 	// the cursor on. A sticky budget keeps one offset for a bounded number of
@@ -41,12 +36,16 @@ type CursorStore interface {
 	NextOffset(ctx context.Context, providerID string, size int, stickyLimit int) (int, error)
 }
 
-// CursorKey returns the Redis key the cursor for one provider occupies. The
-// provider id is hashed so an id with odd characters cannot collide with
-// another key in the namespace.
-func CursorKey(providerID string) string {
-	digest := sha256.Sum256([]byte(providerID))
-	return CursorKeyPrefix + hex.EncodeToString(digest[:])
+// KeyCursorStore hands out the round-robin position over one endpoint's keys. A count
+// taken atomically at selection time is what makes two concurrent requests choose
+// different keys; ordering by the last success made them choose the same one.
+//
+// It is a separate seam from the endpoint cursor because the two walk different
+// things at different rates: accounts under a sticky limit, credentials without one.
+// The number is content-free; the modulo belongs to the caller, who alone knows how
+// many keys routing may spend right now.
+type KeyCursorStore interface {
+	Next(ctx context.Context, endpointID string) (int, error)
 }
 
 // BudgetGate reports whether an endpoint has already spent its budget. It is a

@@ -4,7 +4,7 @@
 //
 // @file      internal/dataplane/engine_failure.go
 // @for       How one upstream failure is classified, recorded against the key's parked-or-usable state, and reported to the client.
-// @uses      internal/domain, net/http, context.
+// @uses      internal/domain, internal/provider, net/http, context, time.
 // @reason    SPEC-API-001 §7.5 makes the health state a consequence of every call, and §7.7 fixes which failures are worth another credential and which stop the chain. Both are about one failure rather than about the pipeline, so they live together here and the relay loop stays readable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -15,9 +15,11 @@ package dataplane
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 )
 
 // FailureClass maps an upstream HTTP status onto the key-health class that
@@ -64,12 +66,30 @@ func failureReason(err error) string {
 	return "upstream call failed"
 }
 
+// failureRetryAfter is the wait the vendor named on this response, or zero: two 429s
+// share a class and rarely a wait, so the header is read rather than inferred.
+func failureRetryAfter(err error) time.Duration {
+	failure, ok := AsUpstreamError(err)
+	if !ok {
+		return 0
+	}
+	return provider.RetryAfter(failure.Header)
+}
+
 // recordFailure applies an upstream failure to the key's health. A persistence
 // failure is swallowed deliberately: the client's error is the upstream
 // failure, and reporting a bookkeeping failure instead would hide the cause it
 // came from.
+//
+// A caller that hung up writes nothing: the read died because the request died, and
+// recording it would let one client closing a tab park an account for everyone else.
 func (e *Engine) recordFailure(ctx context.Context, selection Selection, cause error) {
-	if err := e.selector.RecordFailure(ctx, selection, failureReason(cause), failureClass(cause)); err != nil {
+	if isClientCancellation(cause) {
+		return
+	}
+	err := e.selector.RecordFailure(ctx, selection, failureReason(cause),
+		failureClass(cause), failureRetryAfter(cause))
+	if err != nil {
 		logx.Degraded(e.logger, "key health could not be recorded after an upstream failure", err,
 			"endpoint_id", selection.Endpoint.ID(), "key_id", selection.Key.ID(),
 			"upstream_error", failureReason(cause))
@@ -97,9 +117,27 @@ func (e *Engine) translateCallError(err error) error {
 			// refusal.
 			code = CodeUpstreamRejected
 		}
-		return wrapDataPlaneError(code, failure.Message, err)
+		failureErr := wrapDataPlaneError(code, failure.Message, err)
+		// The vendor's wait is handed on, bounded by the same ceiling the park
+		// uses: a client told to come back in a day by a gateway that parks the
+		// credential for five minutes is being lied to twice about one number.
+		if wait := failureRetryAfter(err); wait > 0 {
+			failureErr.RetryAfter = clampRetrySeconds(wait)
+		}
+		return failureErr
 	}
 	return err
+}
+
+// clampRetrySeconds is the seconds a client is told to wait, never past the ceiling
+// the parking ladder stops at, so the advice and the real park cannot drift apart.
+func clampRetrySeconds(wait time.Duration) int {
+	ceiling := int(domain.RateLimitCeiling / time.Second)
+	seconds := int(wait.Seconds())
+	if seconds > ceiling {
+		return ceiling
+	}
+	return seconds
 }
 
 // finalError combines an exhausted chain's failures the way the reference

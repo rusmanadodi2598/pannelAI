@@ -84,7 +84,7 @@ func (routeMediaRouter) SelectEndpoint(_ context.Context, providerID, endpointID
 }
 
 func (routeMediaRouter) RecordSuccess(context.Context, dataplane.Selection) error { return nil }
-func (routeMediaRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass) error {
+func (routeMediaRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass, time.Duration) error {
 	return nil
 }
 

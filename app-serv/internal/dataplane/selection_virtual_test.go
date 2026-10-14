@@ -87,7 +87,7 @@ func TestSelector_SynthesizesTheEndpointForAKeylessProvider(t *testing.T) {
 			if err := selector.RecordSuccess(context.Background(), selection); err != nil {
 				t.Fatalf("RecordSuccess() error = %v, want a no-op", err)
 			}
-			if err := selector.RecordFailure(context.Background(), selection, "boom", domain.KeyFailureTransient); err != nil {
+			if err := selector.RecordFailure(context.Background(), selection, "boom", domain.KeyFailureTransient, 0); err != nil {
 				t.Fatalf("RecordFailure() error = %v, want a no-op", err)
 			}
 		})

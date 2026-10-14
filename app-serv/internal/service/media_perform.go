@@ -84,13 +84,18 @@ func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request 
 // The client's error is the upstream failure, and a failed health write is
 // bookkeeping that retries on the next call rather than replacing this one:
 // reason for the discarded error, at each call site.
+//
+// No Retry-After hint reaches the park from here: MediaResponse carries a status and
+// a body and no headers, so a media 429 parks on the ladder rather than on the wait
+// the vendor named. Naming that here keeps the next reader from mistaking the zero
+// for an oversight.
 func (c MediaCall) recordFailure(ctx context.Context, router MediaRouter, reason string, class domain.KeyFailureClass) {
 	if c.SkipHealth {
 		return
 	}
 	// reason: the upstream failure is the client's error; a failed health write
 	// retries on the next call rather than replacing this one.
-	_ = router.RecordFailure(ctx, c.Selection, reason, class)
+	_ = router.RecordFailure(ctx, c.Selection, reason, class, 0)
 }
 
 // served reads a 2xx answer and applies it to the endpoint's health. A reader

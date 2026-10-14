@@ -81,7 +81,7 @@ func TestSelector_RecordFailureParksThroughACancelledContext(t *testing.T) {
 	}
 
 	if err := selector.RecordFailure(cancelledContext(t), selection,
-		"the credential was refused", domain.KeyFailureAuth); err != nil {
+		"the credential was refused", domain.KeyFailureAuth, 0); err != nil {
 		t.Fatalf("RecordFailure() error = %v", err)
 	}
 	stored, ok := repo.health["uky_a"]
@@ -108,7 +108,7 @@ func TestSelector_ReadsTheParkingBudgetThroughACancelledContext(t *testing.T) {
 	}
 
 	if err := selector.RecordFailure(cancelledContext(t), selection,
-		"the credential was refused", domain.KeyFailureAuth); err != nil {
+		"the credential was refused", domain.KeyFailureAuth, 0); err != nil {
 		t.Fatalf("RecordFailure() error = %v", err)
 	}
 	stored := repo.health["uky_a"]

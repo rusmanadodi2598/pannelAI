@@ -12,6 +12,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -35,6 +36,6 @@ func (r mediaRouter) RecordSuccess(ctx context.Context, selection dataplane.Sele
 	return r.engine.RecordSuccess(ctx, selection)
 }
 
-func (r mediaRouter) RecordFailure(ctx context.Context, selection dataplane.Selection, reason string, class domain.KeyFailureClass) error {
-	return r.engine.RecordFailure(ctx, selection, reason, class)
+func (r mediaRouter) RecordFailure(ctx context.Context, selection dataplane.Selection, reason string, class domain.KeyFailureClass, retryAfter time.Duration) error {
+	return r.engine.RecordFailure(ctx, selection, reason, class, retryAfter)
 }

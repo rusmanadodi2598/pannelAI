@@ -158,3 +158,37 @@ func TestSelector_PinnedEndpointRefusals(t *testing.T) {
 		})
 	}
 }
+
+// TestSelector_PinnedAccountParkedByItsOwnBreaker states the consequence of the account
+// circuit: an async video poll names the account that started its job, and once that
+// account is parked the pin is refused the way an exhausted key set is. The job is not
+// lost, because the panel retries the poll and the window expires on its own clock.
+func TestSelector_PinnedAccountParkedByItsOwnBreaker(t *testing.T) {
+	parked := noAuthEndpoint(t, "ep_oauth", 1)
+	if !parked.ServesItsOwnCredential() {
+		t.Fatal("an account with no key row must be its own credential for this fixture to mean anything")
+	}
+	if !parked.RecordAccountFailure(domain.KeyFailureAuth, domain.DefaultKeyHealthPolicy(), now) {
+		t.Fatal("the fixture parked nothing")
+	}
+
+	repo := newMemEndpointRepo()
+	repo.byProvider["provider-a"] = []domain.UpstreamEndpoint{parked}
+	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}})
+	if err != nil {
+		t.Fatalf("NewSelector() error = %v", err)
+	}
+	selector.clock = func() time.Time { return now }
+
+	_, err = selector.SelectEndpoint(context.Background(), "provider-a", "ep_oauth")
+	if AsError(err).Code != CodeNoProvider {
+		t.Fatalf("pin on a parked account = %v, want %s", AsError(err).Code, CodeNoProvider)
+	}
+
+	// The same pin succeeds once the deadline passes: the window is the whole state,
+	// so nothing has to sweep it and no operator action releases a recovered account.
+	selector.clock = func() time.Time { return now.Add(time.Hour) }
+	if _, err := selector.SelectEndpoint(context.Background(), "provider-a", "ep_oauth"); err != nil {
+		t.Fatalf("SelectEndpoint() after the window = %v, want the account usable again", err)
+	}
+}

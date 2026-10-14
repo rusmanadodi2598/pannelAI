@@ -65,6 +65,11 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		// replica; a per-process cursor would make distribution depend on which
 		// instance answered.
 		Cursor: redisrepo.NewCursorStore(in.Redis),
+		// The credential counter, one per account, is what makes two concurrent
+		// requests choose different keys. It is a second cursor rather than a second
+		// argument on the first: accounts of a provider rotate under a sticky limit
+		// while credentials inside one account rotate plainly.
+		KeyCursor: redisrepo.NewKeyCursorStore(in.Redis),
 		// The credential rotation policy (§7.14) resolved per provider by the
 		// settings service: fill-first or round-robin with the provider's own
 		// sticky override over the global default. Rotation is an optimisation,
@@ -109,6 +114,9 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 
 	engine, err := dataplane.NewEngine(dataplane.EngineDeps{
 		Resolver: resolver, Selector: selector, Transport: transport, Vision: in.Vision,
+		// §7.7: the budget one request's credential walk may spend, read from the
+		// routing group. An unwired or failing read applies the documented budget.
+		Budgets:    in.Settings,
 		TokenSaver: saver,
 		// §7.15: the client's model string may carry a "(level)" suffix and the
 		// §7.14 settings store one thinking mode per provider; this seam resolves

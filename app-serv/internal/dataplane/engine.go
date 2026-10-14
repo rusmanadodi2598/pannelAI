@@ -34,6 +34,8 @@ type Engine struct {
 	resolver  *Resolver
 	selector  *Selector
 	transport *Transport
+	// budgets answers the failover budget. Optional: nil applies the documented one.
+	budgets FailoverBudgetReader
 	// vision is the optional §7.8 seam. A nil one means no adapter is wired,
 	// which serves every request un-augmented.
 	vision VisionAugmenter
@@ -62,6 +64,8 @@ type EngineDeps struct {
 	Resolver  *Resolver
 	Selector  *Selector
 	Transport *Transport
+	// Budgets answers the §7.7 failover budget. Optional: nil gets the documented bound.
+	Budgets FailoverBudgetReader
 	// Logger records the degraded paths the relay chooses to swallow. Optional:
 	// nil writes to slog.Default(), so no wiring can hide a failed health row.
 	Logger *slog.Logger
@@ -105,7 +109,8 @@ func NewEngine(deps EngineDeps) (*Engine, error) {
 	}
 	return &Engine{
 		resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport,
-		vision: deps.Vision, orders: deps.ComboOrder, saver: deps.TokenSaver,
+		budgets: deps.Budgets,
+		vision:  deps.Vision, orders: deps.ComboOrder, saver: deps.TokenSaver,
 		thinking: deps.Thinking, active: deps.ActiveRequests, logger: deps.Logger, clock: clock,
 	}, nil
 }
@@ -173,6 +178,8 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	var firstErr, lastErr error
 	var lastOutcome Outcome
 	var preCallErr error
+	// One budget per request, so a combo of many members shares it.
+	budget := e.newRequestBudget(ctx)
 	// A member can answer 200 with nothing the client can read, which is a success
 	// to the transport and so is not a failure to fail over *from*. It is held
 	// aside instead: a later member may answer properly, and if none does, the
@@ -181,6 +188,10 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	var truncated Outcome
 	var hasTruncated bool
 	for index, ref := range refs {
+		// A seventh leg is bought with time the caller stopped giving.
+		if budget.expired(e.clock()) {
+			return lastOutcome, budget.error(resolution.Provider.ID, lastErr)
+		}
 		member, resolveErr := e.resolver.Resolve(ctx, ref)
 		if resolveErr != nil {
 			preCallErr = resolveErr
@@ -188,7 +199,7 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 		}
 		member.Combo = resolution.Combo
 		member.Requested = resolution.Requested
-		outcome, relayErr := e.relayOnce(ctx, in, member, sink)
+		outcome, relayErr := e.relayOnce(ctx, in, member, sink, budget)
 		if relayErr == nil {
 			// An adapter model the request did not address is not the model that
 			// billed, and the usage row belongs to the one the client asked for.
