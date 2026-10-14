@@ -14,7 +14,14 @@ export function settingsDocument(overrides: Record<string, unknown> = {}): Recor
 			combo_sticky_limit: 1,
 			sticky_limit: 3,
 			fallback_strategy: 'fill-first',
-			provider_strategies: {}
+			provider_strategies: {},
+			key_park: {
+				auth_seconds: 120,
+				rate_limit_seconds: 60,
+				transient_seconds: 15,
+				billing_seconds: 900
+			},
+			failover: { total_ms: 30000, max_attempts: 8 }
 		},
 		network: {
 			outbound_proxy_enabled: false,
@@ -57,23 +64,4 @@ export function networkGroup(overrides: Record<string, unknown> = {}): Record<st
 export function reasoningGroup(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	const reasoning = settingsDocument().reasoning as Record<string, unknown>;
 	return { ...reasoning, ...overrides };
-}
-
-/**
- * The routing group as the Settings Routing tab's form carries it: the four keys that tab owns.
- *
- * `provider_strategies` belongs to the provider screen's switch, and the form is strict, so a fixture
- * that handed the tab the whole routing group would fail the tab's own validation rather than test it.
- */
-export function routingFormDocument(
-	overrides: Record<string, unknown> = {}
-): Record<string, unknown> {
-	const routing = settingsDocument().routing as Record<string, unknown>;
-	return {
-		combo_strategy: routing.combo_strategy,
-		combo_sticky_limit: routing.combo_sticky_limit,
-		sticky_limit: routing.sticky_limit,
-		fallback_strategy: routing.fallback_strategy,
-		...overrides
-	};
 }

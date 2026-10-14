@@ -59,6 +59,9 @@ export const schemaEndpointKey = z.object({
 	priority,
 	status: z.string().min(1),
 	available: z.boolean(),
+	// `last_selected_at` is when rotation chose this credential; `last_used_at` is when it last served a
+	// request. They differ for a key picked but then overtaken by a failover, so the two stay separate.
+	last_selected_at: optionalTimestamp,
 	last_used_at: optionalTimestamp,
 	last_error: z.string().optional(),
 	consecutive_errors: z.number().int().min(0),

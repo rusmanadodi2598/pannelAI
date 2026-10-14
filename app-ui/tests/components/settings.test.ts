@@ -126,7 +126,14 @@ describe('SettingsPage', () => {
 			combo_strategy: 'fallback',
 			combo_sticky_limit: 1,
 			sticky_limit: 5,
-			fallback_strategy: 'fill-first'
+			fallback_strategy: 'fill-first',
+			key_park: {
+				auth_seconds: 120,
+				rate_limit_seconds: 60,
+				transient_seconds: 15,
+				billing_seconds: 900
+			},
+			failover: { total_ms: 30000, max_attempts: 8 }
 		});
 	});
 

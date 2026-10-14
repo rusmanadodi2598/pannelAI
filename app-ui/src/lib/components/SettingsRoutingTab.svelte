@@ -19,14 +19,17 @@
 		COMBO_STRATEGY_LABELS,
 		CREDENTIAL_ROTATIONS,
 		CREDENTIAL_ROTATION_LABELS,
+		FAILOVER_DEFAULT_MAX_ATTEMPTS,
+		FAILOVER_DEFAULT_TOTAL_MS,
 		schemaRoutingSettingsForm,
 		settingsGroupDirty,
+		type RoutingSettings,
 		type RoutingSettingsForm
 	} from '$lib/schemas/settings';
 
 	type Props = {
-		/** The routing group as the page last read it. */
-		loaded: RoutingSettingsForm;
+		/** The routing group as the page last read it, before this tab narrows it to its own keys. */
+		loaded: RoutingSettings;
 		/** Asks the page to re-read the whole settings document after a successful write (§8.6.3). */
 		onrefresh: () => Promise<void>;
 	};
@@ -39,18 +42,43 @@
 	// `untrack` marks the initial read as deliberate: the prop supplies the first value, and the save
 	// response is what updates it afterwards.
 	//
-	// The tab owns four keys and nothing else. `provider_strategies` belongs to the provider screen's own
+	// The tab owns six keys and nothing else. `provider_strategies` belongs to the provider screen's own
 	// switch, and carrying it here would put it in a strict form that refuses it and in a PATCH body the
-	// tab has no business writing.
-	const ownKeys = (group: RoutingSettingsForm & Record<string, unknown>): RoutingSettingsForm => ({
+	// tab has no business writing. `key_park` windows are narrowed to what is actually stored: a zero or
+	// absent window is the gateway default, not a value the operator chose, so it is held blank.
+	const parkSeconds = (value: number | undefined): number | undefined =>
+		value && value > 0 ? value : undefined;
+	const ownKeys = (group: RoutingSettings): RoutingSettingsForm => ({
 		combo_strategy: group.combo_strategy,
 		combo_sticky_limit: group.combo_sticky_limit,
 		sticky_limit: group.sticky_limit,
-		fallback_strategy: group.fallback_strategy
+		fallback_strategy: group.fallback_strategy,
+		key_park: {
+			auth_seconds: parkSeconds(group.key_park?.auth_seconds),
+			rate_limit_seconds: parkSeconds(group.key_park?.rate_limit_seconds),
+			transient_seconds: parkSeconds(group.key_park?.transient_seconds),
+			billing_seconds: parkSeconds(group.key_park?.billing_seconds)
+		},
+		failover: {
+			total_ms: group.failover?.total_ms ?? FAILOVER_DEFAULT_TOTAL_MS,
+			max_attempts: group.failover?.max_attempts ?? FAILOVER_DEFAULT_MAX_ATTEMPTS
+		}
 	});
+
+	// The two copies must be independent objects: `key_park` and `failover` are nested, so a shallow copy
+	// would hand `draft` and `server` the same sub-object, and editing one would silently edit the other.
+	const cloneForm = (form: RoutingSettingsForm): RoutingSettingsForm => ({
+		combo_strategy: form.combo_strategy,
+		combo_sticky_limit: form.combo_sticky_limit,
+		sticky_limit: form.sticky_limit,
+		fallback_strategy: form.fallback_strategy,
+		key_park: { ...form.key_park },
+		failover: { ...form.failover }
+	});
+
 	const initial = untrack(() => ownKeys(loaded));
-	let draft = $state<RoutingSettingsForm>({ ...initial });
-	let server = $state<RoutingSettingsForm>({ ...initial });
+	let draft = $state<RoutingSettingsForm>(initial);
+	let server = $state<RoutingSettingsForm>(cloneForm(initial));
 
 	let message = $state<string | ApiError | null>(null);
 	let saving = $state(false);
@@ -59,6 +87,49 @@
 
 	// §8.4.4: the shared guard asks before a navigation takes this draft away.
 	$effect(() => registerDirtyForm(() => dirty));
+
+	// A park is blank by design when it inherits, and a number input hands back an empty string,
+	// which a coerced field would turn into 0 and refuse. Storing `undefined` for blank keeps inherit as
+	// "send nothing", which is exactly what the gateway reads as its own default.
+	function setPark(field: keyof RoutingSettingsForm['key_park'], raw: string): void {
+		const trimmed = raw.trim();
+		draft.key_park[field] = trimmed === '' ? undefined : Number(trimmed);
+	}
+
+	// The four park windows share one control shape and differ only in the failure class they park after,
+	// so they are data rather than four copies of the same markup. The bound text names what each window
+	// actually measures, not the field name.
+	const PARK_WINDOWS: ReadonlyArray<{
+		field: keyof RoutingSettingsForm['key_park'];
+		id: string;
+		label: string;
+		help: string;
+	}> = [
+		{
+			field: 'auth_seconds',
+			id: 'settings-park-auth',
+			label: 'Auth park window',
+			help: 'Seconds a credential waits after the gateway rejected its key as bad or expired. 1 to 900.'
+		},
+		{
+			field: 'rate_limit_seconds',
+			id: 'settings-park-rate',
+			label: 'Rate-limit park window',
+			help: 'Seconds a credential waits after the upstream answered 429. 1 to 300.'
+		},
+		{
+			field: 'transient_seconds',
+			id: 'settings-park-transient',
+			label: 'Transient park window',
+			help: 'Seconds a credential waits after a temporary upstream fault. 1 to 300.'
+		},
+		{
+			field: 'billing_seconds',
+			id: 'settings-park-billing',
+			label: 'Billing park window',
+			help: 'Seconds a credential waits after a quota or billing refusal. 1 to 3600.'
+		}
+	];
 
 	async function save(): Promise<void> {
 		message = null;
@@ -79,16 +150,16 @@
 
 		// The response is the whole stored document, so its routing group is what the gateway kept. Both
 		// copies take it: the draft stops being dirty, and Discard returns to the stored value rather
-		// than to a stale read (§8.6.3).
+		// than to a stale read (§8.6.3). The draft gets a fresh copy so a later edit cannot touch server.
 		const saved = ownKeys(result.data.routing);
 		server = saved;
-		draft = saved;
+		draft = cloneForm(saved);
 		message = 'Saved. Applies to new combos and decisions.';
 		await onrefresh();
 	}
 
 	function discard(): void {
-		draft = { ...server };
+		draft = cloneForm(server);
 		message = null;
 	}
 
@@ -162,6 +233,62 @@
 		/>
 		<span id="settings-routing-sticky-help" class="text-xs text-[var(--color-text-muted)]">
 			Requests per account before rotating. Round-robin only. At least 1.
+		</span>
+	</div>
+
+	<h3 class="pt-1 text-sm font-semibold">Key park</h3>
+	<p class="text-sm text-[var(--color-text-muted)]">
+		How long a credential is set aside after each kind of failure. A parked credential reopens on
+		its own when its window passes; blank means the gateway default applies.
+	</p>
+
+	{#each PARK_WINDOWS as window (window.field)}
+		<div class="flex flex-col gap-1 text-sm">
+			<label for={window.id}>{window.label}</label>
+			<input
+				id={window.id}
+				type="number"
+				value={draft.key_park[window.field] ?? ''}
+				oninput={(event) => setPark(window.field, event.currentTarget.value)}
+				aria-describedby={`${window.id}-help`}
+				class={fieldClass}
+			/>
+			<span id={`${window.id}-help`} class="text-xs text-[var(--color-text-muted)]">
+				{window.help}
+			</span>
+		</div>
+	{/each}
+
+	<h3 class="pt-1 text-sm font-semibold">Failover budget</h3>
+	<p class="text-sm text-[var(--color-text-muted)]">
+		How far one client request may go trying credentials before it gives up.
+	</p>
+
+	<div class="flex flex-col gap-1 text-sm">
+		<label for="settings-failover-total">Failover time budget</label>
+		<input
+			id="settings-failover-total"
+			type="number"
+			bind:value={draft.failover.total_ms}
+			aria-describedby="settings-failover-total-help"
+			class={fieldClass}
+		/>
+		<span id="settings-failover-total-help" class="text-xs text-[var(--color-text-muted)]">
+			Milliseconds one request spends failing over before it stops. 1000 to 120000.
+		</span>
+	</div>
+
+	<div class="flex flex-col gap-1 text-sm">
+		<label for="settings-failover-attempts">Failover attempt cap</label>
+		<input
+			id="settings-failover-attempts"
+			type="number"
+			bind:value={draft.failover.max_attempts}
+			aria-describedby="settings-failover-attempts-help"
+			class={fieldClass}
+		/>
+		<span id="settings-failover-attempts-help" class="text-xs text-[var(--color-text-muted)]">
+			Credentials one request may try before it stops. 1 to 200.
 		</span>
 	</div>
 

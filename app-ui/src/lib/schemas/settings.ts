@@ -127,13 +127,42 @@ export const schemaReasoningSettings = z.object({
 	provider_thinking: z.record(z.string(), schemaProviderThinking)
 });
 
+// The key-park windows (SPEC-API §7.14 `routing.key_park`): how long a credential stays parked per
+// failure class, in seconds. Each is optional on the wire, because zero or absent means the gateway's
+// own default still applies; the form keeps an empty box as inherit rather than forcing a number.
+export const schemaKeyParkSettings = z.object({
+	auth_seconds: z.number().int().min(0).optional(),
+	rate_limit_seconds: z.number().int().min(0).optional(),
+	transient_seconds: z.number().int().min(0).optional(),
+	billing_seconds: z.number().int().min(0).optional()
+});
+
+export type KeyParkSettings = z.infer<typeof schemaKeyParkSettings>;
+
+// The failover budget (SPEC-API §7.14 `routing.failover`): how long, and how many credentials, one
+// client request may spend before it gives up. The gateway answers the effective value and never zero,
+// so the read names both ints; these are the defaults a document predating the keys resolves to.
+export const FAILOVER_DEFAULT_TOTAL_MS = 30000;
+export const FAILOVER_DEFAULT_MAX_ATTEMPTS = 8;
+
+export const schemaFailoverSettings = z.object({
+	total_ms: z.number().int(),
+	max_attempts: z.number().int()
+});
+
+export type FailoverSettings = z.infer<typeof schemaFailoverSettings>;
+
 export const schemaRoutingSettings = z.object({
 	combo_strategy: z.enum(COMBO_STRATEGIES),
 	combo_sticky_limit: z.number().int().min(1),
 	sticky_limit: z.number().int().min(1),
 	fallback_strategy: z.enum(CREDENTIAL_ROTATIONS),
-	provider_strategies: z.record(z.string(), schemaProviderStrategy)
+	provider_strategies: z.record(z.string(), schemaProviderStrategy),
+	key_park: schemaKeyParkSettings.optional(),
+	failover: schemaFailoverSettings.optional()
 });
+
+export type RoutingSettings = z.infer<typeof schemaRoutingSettings>;
 
 export const schemaNetworkSettings = z.object({
 	outbound_proxy_enabled: z.boolean(),
@@ -179,6 +208,38 @@ export type SecuritySettingsForm = z.infer<typeof schemaSecuritySettingsForm>;
 // writable on the wire and invisible in the form, or the reverse. A count is coerced because a number
 // input hands back a string, and the coercion is what turns an empty box into a validation message
 // rather than a NaN that reaches the API.
+// One park window on the form side. Blank means inherit, so an empty box is kept as `undefined` rather
+// than coerced to a number: a coerced 0 would trip the min bound and refuse the very value that means
+// "use the gateway default". This is why it carries no `z.coerce`, unlike the counts that are required.
+function schemaParkWindow(max: number, label: string) {
+	return z
+		.number()
+		.int({ message: `${label} must be a whole number of seconds.` })
+		.min(1, { message: `${label} must be at least 1 second.` })
+		.max(max, { message: `${label} must be ${max} seconds or fewer.` })
+		.optional();
+}
+
+export const schemaKeyParkSettingsForm = z.strictObject({
+	auth_seconds: schemaParkWindow(900, 'The auth park window'),
+	rate_limit_seconds: schemaParkWindow(300, 'The rate-limit park window'),
+	transient_seconds: schemaParkWindow(300, 'The transient park window'),
+	billing_seconds: schemaParkWindow(3600, 'The billing park window')
+});
+
+export const schemaFailoverSettingsForm = z.strictObject({
+	total_ms: z.coerce
+		.number()
+		.int({ message: 'Use a whole number of milliseconds for the failover budget.' })
+		.min(1000, { message: 'The failover budget must be at least 1000 ms.' })
+		.max(120000, { message: 'The failover budget must be 120000 ms or fewer.' }),
+	max_attempts: z.coerce
+		.number()
+		.int({ message: 'Use a whole number of attempts for the failover.' })
+		.min(1, { message: 'The failover must try at least 1 credential.' })
+		.max(200, { message: 'The failover must try 200 credentials or fewer.' })
+});
+
 export const schemaRoutingSettingsForm = z.strictObject({
 	combo_strategy: z.enum(COMBO_STRATEGIES, { message: 'Pick one of the three strategies.' }),
 	combo_sticky_limit: z.coerce
@@ -191,7 +252,9 @@ export const schemaRoutingSettingsForm = z.strictObject({
 		.min(1, { message: 'The routing sticky limit must be at least 1.' }),
 	fallback_strategy: z.enum(CREDENTIAL_ROTATIONS, {
 		message: 'Pick the credential rotation mode.'
-	})
+	}),
+	key_park: schemaKeyParkSettingsForm,
+	failover: schemaFailoverSettingsForm
 });
 
 export type RoutingSettingsForm = z.infer<typeof schemaRoutingSettingsForm>;
@@ -293,6 +356,27 @@ export type CredentialRotation = (typeof CREDENTIAL_ROTATIONS)[number];
 export type ProviderProxyStrategy = (typeof PROXY_STRATEGIES)[number];
 
 /**
+ * Whether one draft value equals the loaded value.
+ *
+ * A nested group such as `key_park` lives in its own object, so a reference compare would call it dirty
+ * on every render even when nothing changed. Objects are compared by their entries instead; every scalar
+ * still falls through to `===`.
+ */
+function sameValue(loaded: unknown, draft: unknown): boolean {
+	if (loaded === draft) return true;
+
+	if (loaded === null || draft === null) return false;
+	if (typeof loaded !== 'object' || typeof draft !== 'object') return false;
+
+	const left = loaded as Record<string, unknown>;
+	const right = draft as Record<string, unknown>;
+	const names = Object.keys(left);
+	if (names.length !== Object.keys(right).length) return false;
+
+	return names.every((name) => sameValue(left[name], right[name]));
+}
+
+/**
  * Whether a draft group differs from the group that was loaded.
  *
  * §6.13 asks for a dirty indicator and a discard action, and both need one answer to "has this
@@ -307,7 +391,7 @@ export function settingsGroupDirty(
 
 	const keys = new Set([...Object.keys(loaded), ...Object.keys(draft)]);
 	for (const key of keys) {
-		if (loaded[key] !== draft[key]) return true;
+		if (!sameValue(loaded[key], draft[key])) return true;
 	}
 
 	return false;

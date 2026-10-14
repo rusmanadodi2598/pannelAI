@@ -1,7 +1,7 @@
 <script lang="ts">
 	// The keys table inside the endpoint detail drawer (docs/SPEC-UI/001-SPEC-UI.md §6.2).
 	//
-	// Split out of the drawer because the row carries seven fields and three actions, which is enough on
+	// Split out of the drawer because the row carries eight fields and three actions, which is enough on
 	// its own to push one file past the project line limit. The delete control is disabled when the API
 	// would refuse the call, and the note beside it says why, so the operator is not left guessing at a
 	// greyed-out button (R-26).
@@ -9,15 +9,20 @@
 	// The three actions are icon-only: each glyph comes from the one icon
 	// map and the button carries the action's name as its accessible name and its title.
 	//
+	// Chosen and served are two separate columns on purpose. A key can be picked by rotation and then
+	// lose the race to a failover, so "last chosen" and "last served" come apart, and the gap between
+	// them is what the fix was for: it tells the operator a key is being selected but not carrying load.
+	//
 	// `rate_limited_until` is the one field here whose value is a duration rather than a fact: §6.2 asks for
 	// a countdown, and a countdown needs a clock. The drawer owns `now` and passes it in, so the table stays
-	// a renderer and the ticking lives with the thing that is open.
+	// a renderer and the ticking lives with the thing that is open. The chosen and served times are read
+	// against that same clock, so a row does not show a wait ticking down beside a stale absolute timestamp.
 	import { ENDPOINT_STATUS_ACTIVE, type EndpointKey } from '$lib/schemas/endpoint';
 	import { pageOf } from '$lib/schemas/local-page';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { isLastActiveApiKey } from '$lib/utils/routing';
-	import { countdownText, formatTimestamp } from '$lib/utils/time';
+	import { countdownText, elapsedText, formatTimestamp } from '$lib/utils/time';
 
 	let {
 		keys,
@@ -70,7 +75,8 @@
 				<th scope="col" class="px-3 py-2 font-medium">Key</th>
 				<th scope="col" class="px-3 py-2 font-medium">Priority</th>
 				<th scope="col" class="px-3 py-2 font-medium">Status</th>
-				<th scope="col" class="px-3 py-2 font-medium">Last used</th>
+				<th scope="col" class="px-3 py-2 font-medium">Last chosen</th>
+				<th scope="col" class="px-3 py-2 font-medium">Last served</th>
 				<th scope="col" class="px-3 py-2 font-medium">Errors</th>
 				<th scope="col" class="px-3 py-2 font-medium">Actions</th>
 			</tr>
@@ -93,7 +99,12 @@
 							</span>
 						{/if}
 					</td>
-					<td data-label="Last used" class="px-3 py-2">{key.last_used_at ?? 'Never'}</td>
+					<td data-label="Last chosen" class="px-3 py-2">
+						{key.last_selected_at ? elapsedText(key.last_selected_at, now) : 'Never chosen'}
+					</td>
+					<td data-label="Last served" class="px-3 py-2">
+						{key.last_used_at ? elapsedText(key.last_used_at, now) : 'Never served'}
+					</td>
 					<td data-label="Errors" class="px-3 py-2 tabular-nums">{key.consecutive_errors}</td>
 					<td data-label="Actions" class="px-3 py-2">
 						<div class="flex flex-wrap items-center gap-1">
