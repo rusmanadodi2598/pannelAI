@@ -27,16 +27,16 @@ func opencodeEntry(baseURL, format string) registry.Provider {
 			BaseURL: baseURL,
 			Format:  format,
 			NoAuth:  true,
-			Headers: map[string]string{"x-opencode-client": "desktop"},
+			Headers: map[string]string{"x-opencode-client": "cli"},
 		},
 	}
 }
 
 // TestOpenCode_EndpointRoutesPerModelWire pins the URL rule the connector exists
 // to apply: the model's own wire decides the path, and every base shape an
-// operator can store (a bare host, the documented /zen/v1 base, a full path, and
-// a trailing slash) composes into one correct URL rather than a doubled segment
-// or a request sent to the host root.
+// operator can store (a bare host, the inference base, the legacy Zen base, a
+// full path, and a trailing slash) composes into one correct URL rather than a
+// doubled segment or a request sent to the host root.
 func TestOpenCode_EndpointRoutesPerModelWire(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -46,58 +46,76 @@ func TestOpenCode_EndpointRoutesPerModelWire(t *testing.T) {
 		wantURL string
 	}{
 		{
-			name: "a bare host routes a Responses model to /zen/v1/responses",
+			name: "a bare host routes a Responses model to /inference/v1/responses",
 			base: "https://opencode.ai", format: "openai",
 			model:   registry.Model{ID: "muse-spark-1.3-contributor-free", TargetFormat: "openai-responses"},
-			wantURL: "https://opencode.ai/zen/v1/responses",
+			wantURL: "https://opencode.ai/inference/v1/responses",
 		},
 		{
-			name: "a bare host routes a chat model to /zen/v1/chat/completions",
+			name: "a bare host routes a chat model to /inference/v1/chat/completions",
 			base: "https://opencode.ai", format: "openai",
 			model:   registry.Model{ID: "big-pickle"},
-			wantURL: "https://opencode.ai/zen/v1/chat/completions",
+			wantURL: "https://opencode.ai/inference/v1/chat/completions",
 		},
 		{
-			name: "the documented /zen/v1 base is not doubled",
+			name: "the documented /inference/v1 base is not doubled",
+			base: "https://opencode.ai/inference/v1", format: "openai",
+			model:   registry.Model{ID: "muse-spark-1.2-contributor-free", TargetFormat: "openai-responses"},
+			wantURL: "https://opencode.ai/inference/v1/responses",
+		},
+		{
+			name: "a stored legacy /zen/v1 base is rewritten onto the new prefix",
 			base: "https://opencode.ai/zen/v1", format: "openai",
 			model:   registry.Model{ID: "muse-spark-1.2-contributor-free", TargetFormat: "openai-responses"},
-			wantURL: "https://opencode.ai/zen/v1/responses",
+			wantURL: "https://opencode.ai/inference/v1/responses",
 		},
 		{
 			name: "a trailing slash on the base is not doubled",
-			base: "https://opencode.ai/zen/v1/", format: "openai",
+			base: "https://opencode.ai/inference/v1/", format: "openai",
 			model:   registry.Model{ID: "big-pickle"},
-			wantURL: "https://opencode.ai/zen/v1/chat/completions",
+			wantURL: "https://opencode.ai/inference/v1/chat/completions",
 		},
 		{
 			name: "a base that already names the leaf is used as written",
-			base: "https://opencode.ai/zen/v1/responses", format: "openai",
+			base: "https://opencode.ai/inference/v1/responses", format: "openai",
 			model:   registry.Model{ID: "muse-spark-1.3-contributor-free", TargetFormat: "openai-responses"},
-			wantURL: "https://opencode.ai/zen/v1/responses",
+			wantURL: "https://opencode.ai/inference/v1/responses",
 		},
 		{
-			name: "a Claude-wire model routes to /zen/v1/messages",
+			name: "a stored legacy full URL is rewritten onto the new prefix",
+			base: "https://opencode.ai/zen/v1/responses", format: "openai",
+			model:   registry.Model{ID: "muse-spark-1.3-contributor-free", TargetFormat: "openai-responses"},
+			wantURL: "https://opencode.ai/inference/v1/responses",
+		},
+		{
+			name: "a Claude-wire model routes to /inference/v1/messages",
 			base: "https://opencode.ai", format: "openai",
 			model:   registry.Model{ID: "union-alpha", TargetFormat: "claude"},
-			wantURL: "https://opencode.ai/zen/v1/messages",
+			wantURL: "https://opencode.ai/inference/v1/messages",
 		},
 		{
 			name: "the provider's own format decides when the model declares none",
 			base: "https://opencode.ai", format: "openai-responses",
 			model:   registry.Model{ID: "an-undocumented-model"},
-			wantURL: "https://opencode.ai/zen/v1/responses",
+			wantURL: "https://opencode.ai/inference/v1/responses",
 		},
 		{
 			name: "a host with a port keeps it",
 			base: "http://127.0.0.1:8898", format: "openai",
 			model:   registry.Model{ID: "big-pickle"},
-			wantURL: "http://127.0.0.1:8898/zen/v1/chat/completions",
+			wantURL: "http://127.0.0.1:8898/inference/v1/chat/completions",
 		},
 		{
 			name: "a base with a non-zen path keeps that path",
 			base: "https://gateway.example.test/opencode", format: "openai",
 			model:   registry.Model{ID: "big-pickle"},
-			wantURL: "https://gateway.example.test/opencode/zen/v1/chat/completions",
+			wantURL: "https://gateway.example.test/opencode/inference/v1/chat/completions",
+		},
+		{
+			name: "the subscription lane's /zen/go/v1 base is never rewritten",
+			base: "https://opencode.ai/zen/go/v1", format: "openai",
+			model:   registry.Model{ID: "deepseek-flash"},
+			wantURL: "https://opencode.ai/zen/go/v1/inference/v1/chat/completions",
 		},
 	}
 

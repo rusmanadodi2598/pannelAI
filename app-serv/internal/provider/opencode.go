@@ -18,30 +18,63 @@ package provider
 import (
 	"fmt"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// OpenCodeUserAgent is the client identity the free tier checks. It has to name
-// the CLI with a version at or above 1.17, because a bare or absent agent is
-// refused with 403 (the reference's own OPENCODE_UA).
-const OpenCodeUserAgent = "opencode/1.19.0"
+// OpenCodeUserAgent is the client identity the free tier checks. It names the
+// v2 CLI, because the v1 `opencode/<major>.<minor>` form is refused with 403
+// FreeTierError since 2026-10-14 (the reference's own OPENCODE_UA).
+const OpenCodeUserAgent = "opencode/latest/2.0.27/cli"
+
+// openCodeUserAgentRE is the v2 identity shape: opencode/<channel>/<semver>/
+// <client>. The match is anchored so a browser string carrying an incidental
+// `opencode/...` token is not mistaken for the CLI's own agent.
+var openCodeUserAgentRE = regexp.MustCompile(`(?i)^opencode/[a-z0-9-]+/(\d+)\.\d+\.\d+/[a-z0-9-]+$`)
+
+// openCodeValidUserAgent reports whether a downstream User-Agent is one the
+// upstream accepts as the official client's own: the v2 shape with a major at
+// or above 2. A v1-style, bare, or absent agent is replaced with
+// OpenCodeUserAgent before the request leaves.
+func openCodeValidUserAgent(userAgent string) bool {
+	match := openCodeUserAgentRE.FindStringSubmatch(strings.TrimSpace(userAgent))
+	if match == nil {
+		return false
+	}
+	major, err := strconv.Atoi(match[1])
+	return err == nil && major >= 2
+}
 
 // The identity headers the free tier reads, and the value the CLI sends for the
-// project. They are constants because the upstream compares them literally.
+// project. They are constants because the upstream compares them literally. The
+// v2 CLI presents the session under three more names beside x-opencode-session,
+// and no longer sends the v1 turn header at all.
 const (
-	openCodeClientHeader  = "x-opencode-client"
-	openCodeSessionHeader = "x-opencode-session"
-	openCodeProjectHeader = "x-opencode-project"
-	openCodeProjectValue  = "global"
-	openCodeClientDefault = "desktop"
+	openCodeClientHeader          = "x-opencode-client"
+	openCodeSessionHeader         = "x-opencode-session"
+	openCodeSessionIDHeader       = "x-opencode-session-id"
+	openCodeSessionAffinityHeader = "x-session-affinity"
+	openCodeSessionShortHeader    = "x-session-id"
+	openCodeProjectHeader         = "x-opencode-project"
+	openCodeProjectValue          = "global"
+	openCodeClientDefault         = "cli"
 )
 
-// openCodeZenPrefix is the path segment the Zen API lives under. A base that
-// already carries it is joined with the leaf alone, so an operator who stored
-// the documented `https://opencode.ai/zen/v1` base does not get a doubled path.
-const openCodeZenPrefix = "/zen/v1"
+// openCodeInferencePrefix is the path segment the free tier lives under since
+// OpenCode v2. A base that already carries it is joined with the leaf alone, so
+// an operator who stored the documented `https://opencode.ai/inference/v1` base
+// does not get a doubled path.
+const openCodeInferencePrefix = "/inference/v1"
+
+// openCodeLegacyZenPrefix is the v1 path the free tier answered on before the
+// move; /zen/v1 now answers every free request with 403 FreeTierError. A base
+// an operator stored with it is rewritten onto the new prefix rather than
+// composed into a path the upstream no longer serves. It never matches the
+// subscription lane's /zen/go/v1 base.
+const openCodeLegacyZenPrefix = "/zen/v1"
 
 // The leaves each wire answers on. The Responses API and the Anthropic Messages
 // wire have their own paths; everything else is chat completions.
@@ -102,8 +135,8 @@ func (c *OpenCode) entryFor(req Request) registry.Provider {
 // URL from its base, with the model's wire deciding the path: the provider's
 // declared format cannot express it, because a `muse-spark-*` model answers on the
 // Responses API while the provider itself speaks chat completions. The base is
-// read in every shape an operator stores it in (bare host, Zen base, full path,
-// trailing slash) and composes into one correct URL.
+// read in every shape an operator stores it in (bare host, inference base, the
+// legacy Zen base, full path, trailing slash) and composes into one correct URL.
 func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 	entry := c.entryFor(req)
 	wire := opencodeWire(req, entry)
@@ -131,7 +164,8 @@ func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 // multi-endpoint entry stores a complete URL in base_url, so it is used as written:
 // appending a leaf would build a path nothing serves. A single-endpoint entry may
 // store either a complete URL or a base, so the leaf is composed only when the base
-// does not already name it.
+// does not already name it, and a base still carrying the v1 /zen/v1 prefix is
+// rewritten onto the /inference/v1 prefix the free tier moved to.
 func openCodeDefaultURL(entry registry.Provider, wire string) (string, error) {
 	base := strings.TrimSpace(entry.Transport.BaseURL)
 	if base == "" && len(entry.Transport.BaseURLs) > 0 {
@@ -149,16 +183,19 @@ func openCodeDefaultURL(entry registry.Provider, wire string) (string, error) {
 		return base, nil
 	}
 
+	if strings.Contains(base, openCodeLegacyZenPrefix) {
+		base = strings.Replace(base, openCodeLegacyZenPrefix, openCodeInferencePrefix, 1)
+	}
 	leaf := openCodeLeaf(wire)
 	if strings.HasSuffix(base, leaf) {
 		// The base already names the endpoint, so it is used as written.
 		return base, nil
 	}
-	if strings.HasSuffix(base, openCodeZenPrefix) || strings.Contains(base, openCodeZenPrefix+"/") {
-		// The base already carries the Zen prefix, so only the leaf is missing.
+	if strings.HasSuffix(base, openCodeInferencePrefix) || strings.Contains(base, openCodeInferencePrefix+"/") {
+		// The base already carries the prefix, so only the leaf is missing.
 		return base + leaf, nil
 	}
-	return base + openCodeZenPrefix + leaf, nil
+	return base + openCodeInferencePrefix + leaf, nil
 }
 
 // opencodeWire reports the wire the request is being sent in. The translation's own

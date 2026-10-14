@@ -19,9 +19,11 @@ import (
 )
 
 // ApplyAuth places the free tier's credential and identity on the request: the
-// literal public bearer (the lane pools anonymous traffic), one remembered
-// session per client and endpoint, and the turn named in `x-opencode-request`
-// from that session plus the last user message of the body about to leave, // which is why the id is read here rather than where the body was shaped.
+// literal public bearer (the lane pools anonymous traffic), the v2 CLI's
+// User-Agent, one remembered session per client and endpoint under the four
+// names the CLI presents it with, and the project the CLI names. The v1
+// `x-opencode-request` turn header is not sent: the v2 upstream refuses any
+// request that carries it with 403 FreeTierError.
 // A request on the Anthropic Messages leaf also names that wire's API version,
 // decided from the URL rather than the model; a version the entry declared is kept.
 func (c *OpenCode) ApplyAuth(req *http.Request, cred Credential) error {
@@ -44,13 +46,19 @@ func (c *OpenCode) ApplyAuth(req *http.Request, cred Credential) error {
 		}
 	}
 	req.Header.Set("Authorization", "Bearer public")
-	req.Header.Set("User-Agent", OpenCodeUserAgent)
+	// A downstream agent that already presents the v2 CLI identity keeps its
+	// own agent string; anything else is replaced with the one the gate reads.
+	if userAgent := req.Header.Get("User-Agent"); !openCodeValidUserAgent(userAgent) {
+		req.Header.Set("User-Agent", OpenCodeUserAgent)
+	}
 	client := c.clientValue(req)
 	session := OpenCodeSessionFor(client, cred.EndpointID())
 	req.Header.Set(openCodeClientHeader, client)
 	req.Header.Set(openCodeSessionHeader, session)
+	req.Header.Set(openCodeSessionIDHeader, session)
+	req.Header.Set(openCodeSessionAffinityHeader, session)
+	req.Header.Set(openCodeSessionShortHeader, session)
 	req.Header.Set(openCodeProjectHeader, openCodeProjectValue)
-	req.Header.Set(openCodeRequestHeader, OpenCodeRequestID(session, req))
 	if isOpenCodeMessagesURL(req.URL.Path) && req.Header.Get(openCodeAnthropicVersionHeader) == "" {
 		req.Header.Set(openCodeAnthropicVersionHeader, OpenCodeAnthropicVersion)
 	}

@@ -4,7 +4,7 @@
 // @file      internal/provider/opencode_responses_tools.go
 // @for       The tool declarations the OpenCode Responses wire will accept.
 // @uses      encoding/json, strings.
-// @reason    /zen/v1/responses reads a tool name as `^[a-zA-Z0-9_-]+$` and answers anything else, an MCP name like `mcp:fs:read` is the common case, with 400 invalid_request_error. Renaming the declaration is only half the job: a `tool_choice` still naming the old spelling points at a tool that no longer exists, which the same backend also refuses, so the two decisions belong to the one pass that knows the surviving names.
+// @reason    /inference/v1/responses reads a tool name as `^[a-zA-Z0-9_-]+$` and answers anything else, an MCP name like `mcp:fs:read` is the common case, with 400 invalid_request_error. Renaming the declaration is only half the job: a `tool_choice` still naming the old spelling points at a tool that no longer exists, which the same backend also refuses, so the two decisions belong to the one pass that knows the surviving names.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

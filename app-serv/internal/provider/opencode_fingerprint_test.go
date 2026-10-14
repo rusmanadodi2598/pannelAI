@@ -2,148 +2,256 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_fingerprint_test.go
-// @for       The tool-name rule the OpenCode free tier enforces: every declared name is unique, and the decoy tools the gate reads are lowercase.
-// @uses      testing, internal/registry.
-// @reason    Measured against the live upstream on 2026-09-24: a body declaring the same tool name twice is refused 400 for any name, not only for the decoy quartet, and a body whose only bash/read are capitalised is refused 403 because the gate matches the lowercase spelling. Both failures surface as a provider error with no field named, so the connector has to hold the rule rather than forward it. The rules live in their own file because opencode_body_test.go already covers the field-name rules, and AGENTS.md §1.1 asks for the split.
+// @for       The tool-level fingerprint rules: exact read/shell names, aliasing a conflicting caller tool, and the canonical declarations that are appended.
+// @uses      encoding/json, testing.
+// @reason    The upstream compares the description and parameter schema of the declared read/shell tools literally and answers 403 FreeTierError when they differ, so both the canonical definitions and the alias rule that keeps a caller's own tool of the same name are pinned here. The body-level rules (choice retarget, history rename, placeholder note) are pinned in opencode_fingerprint_body_test.go for the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
-// @since     2026-09-24
+// @since     2026-10-15
 package provider
 
 import (
+	"encoding/json"
 	"testing"
-
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// TestOpenCode_TransformDeduplicatesToolNames pins the duplicate rule: the
-// upstream refuses a body that declares one name twice with 400, whichever name
-// it is, so the connector keeps the first declaration and drops the repeats.
-//
-// The first declaration wins rather than the last because a client that repeats
-// a name is stating the same tool twice, and reordering the client's own list to
-// prefer a later copy would change a body the upstream never asked to have
-// changed.
-func TestOpenCode_TransformDeduplicatesToolNames(t *testing.T) {
-	connector := NewOpenCode(opencodeEntry("https://opencode.ai", "openai"))
+// flatTools builds flat Responses-shaped declarations with just a name.
+func flatTools(names ...string) []json.RawMessage {
+	tools := make([]json.RawMessage, 0, len(names))
+	for _, name := range names {
+		tools = append(tools, json.RawMessage(`{"type":"function","name":`+string(mustRawString(name))+`}`))
+	}
+	return tools
+}
 
+// chatTools builds chat-shaped declarations with just a name.
+func chatTools(names ...string) []json.RawMessage {
+	tools := make([]json.RawMessage, 0, len(names))
+	for _, name := range names {
+		tools = append(tools, json.RawMessage(`{"type":"function","function":{"name":`+string(mustRawString(name))+`}}`))
+	}
+	return tools
+}
+
+// toolNamesOf reads the names a tool list declares in either shape.
+func toolNamesOf(tools []json.RawMessage) []string {
+	names := make([]string, 0, len(tools))
+	for _, raw := range tools {
+		names = append(names, openCodeToolName(raw))
+	}
+	return names
+}
+
+func TestOpenCodeFingerprintKey_MatchesExactNamesOnly(t *testing.T) {
 	cases := []struct {
-		name  string
-		tools string
-		want  []string
+		name string
+		want string
+	}{
+		{"read", "read"},
+		{" shell ", "shell"},
+		{"Read", ""},
+		{"bash", ""},
+		{"glob", ""},
+		{"", ""},
+	}
+	for _, tc := range cases {
+		if got := openCodeFingerprintKey(tc.name); got != tc.want {
+			t.Fatalf("openCodeFingerprintKey(%q) = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestConcealOpenCodeFingerprintTools(t *testing.T) {
+	cases := []struct {
+		name      string
+		tools     []json.RawMessage
+		wantNames []string
+		wantAlias map[string]string
 	}{
 		{
-			name:  "an exact repeat of the decoy",
-			tools: `[{"type":"function","function":{"name":"bash"}},{"type":"function","function":{"name":"bash"}}]`,
-			want:  []string{"bash", "read"},
+			name:      "a caller tool on a fingerprint name with its own definition is aliased",
+			tools:     flatTools("read", "Edit"),
+			wantNames: []string{"read_client", "Edit"},
+			wantAlias: map[string]string{"read_client": "read"},
 		},
 		{
-			name:  "an exact repeat of a client tool",
-			tools: `[{"type":"function","function":{"name":"glob"}},{"type":"function","function":{"name":"glob"}}]`,
-			want:  []string{"glob", "bash", "read"},
+			name:      "a taken alias steps aside",
+			tools:     flatTools("read", "read_client"),
+			wantNames: []string{"read_client2", "read_client"},
+			wantAlias: map[string]string{"read_client2": "read"},
 		},
 		{
-			name:  "a repeat of read after the decoys were appended",
-			tools: `[{"type":"function","function":{"name":"read"}},{"type":"function","function":{"name":"read"}}]`,
-			want:  []string{"read", "bash"},
+			name:      "case variants are caller tools and travel verbatim",
+			tools:     chatTools("Read", "Bash"),
+			wantNames: []string{"Read", "Bash"},
+			wantAlias: map[string]string{},
 		},
 		{
-			name:  "the same name in both declaration shapes",
-			tools: `[{"type":"function","function":{"name":"bash"}},{"type":"function","name":"bash"}]`,
-			want:  []string{"bash", "read"},
+			name:      "a repeated fingerprint name is dropped after the first",
+			tools:     chatTools("shell", "shell"),
+			wantNames: []string{"shell_client"},
+			wantAlias: map[string]string{"shell_client": "shell"},
 		},
 		{
-			name:  "no duplicates at all",
-			tools: `[{"type":"function","function":{"name":"glob"}},{"type":"function","function":{"name":"bash"}},{"type":"function","function":{"name":"read"}}]`,
-			want:  []string{"glob", "bash", "read"},
-		},
-		{
-			name:  "a distinct name that only differs by case is kept",
-			tools: `[{"type":"function","function":{"name":"Bash"}},{"type":"function","function":{"name":"bash"}}]`,
-			want:  []string{"Bash", "bash", "read"},
-		},
-		{
-			name:  "an empty list still gains both decoys",
-			tools: `[]`,
-			want:  []string{"bash", "read"},
+			name:      "a repeated caller name is dropped after the first",
+			tools:     chatTools("glob", "glob"),
+			wantNames: []string{"glob"},
+			wantAlias: map[string]string{},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			request := Request{
-				Model: registry.Model{ID: "big-pickle"},
-				Body:  []byte(`{"model":"big-pickle","messages":[],"tools":` + tc.tools + `}`),
+			kept, aliases := concealOpenCodeFingerprintTools(tc.tools)
+			got := toolNamesOf(kept)
+			if len(got) != len(tc.wantNames) {
+				t.Fatalf("names = %v, want %v", got, tc.wantNames)
 			}
-			if err := connector.TransformRequest(&request); err != nil {
-				t.Fatalf("TransformRequest() error = %v", err)
+			for index := range tc.wantNames {
+				if got[index] != tc.wantNames[index] {
+					t.Fatalf("names = %v, want %v", got, tc.wantNames)
+				}
 			}
-			got := toolNames(t, decodeBody(t, request.Body))
-			if len(got) != len(tc.want) {
-				t.Fatalf("tool names = %v, want %v", got, tc.want)
+			if len(aliases) != len(tc.wantAlias) {
+				t.Fatalf("aliases = %v, want %v", aliases, tc.wantAlias)
 			}
-			for i := range tc.want {
-				if got[i] != tc.want[i] {
-					t.Fatalf("tool names = %v, want %v", got, tc.want)
+			for alias, original := range tc.wantAlias {
+				if aliases[alias] != original {
+					t.Fatalf("aliases = %v, want %s -> %s", aliases, alias, original)
 				}
 			}
 		})
 	}
 }
 
-// TestOpenCode_TransformKeepsTheLowercaseGateSpelling pins the other half of the
-// measured rule: the gate matches `bash` and `read` in lowercase, so a body whose
-// only spelling of them is capitalised is refused 403 even though the duplicate
-// rule accepts the mixture. The connector therefore has to make sure the
-// lowercase pair is present without renaming what the client declared, because
-// renaming would change the name the client dispatches on when the model calls it.
-func TestOpenCode_TransformKeepsTheLowercaseGateSpelling(t *testing.T) {
-	connector := NewOpenCode(opencodeEntry("https://opencode.ai", "openai"))
+// TestConcealOpenCodeFingerprintTools_KeepsTheCanonicalDefinition pins the other
+// half of the rule: a caller tool that already carries OpenCode's exact
+// declaration is left exactly as written, so no alias is needed and nothing is
+// appended beside it.
+func TestConcealOpenCodeFingerprintTools_KeepsTheCanonicalDefinition(t *testing.T) {
+	canonical := []json.RawMessage{
+		openCodeFingerprintTool("read", true),
+		openCodeFingerprintTool("shell", false),
+	}
+	kept, aliases := concealOpenCodeFingerprintTools(canonical)
+	if len(aliases) != 0 {
+		t.Fatalf("aliases = %v, want none for canonical definitions", aliases)
+	}
+	if got := toolNamesOf(kept); len(got) != 2 || got[0] != "read" || got[1] != "shell" {
+		t.Fatalf("names = %v, want the canonical pair kept verbatim", got)
+	}
+	if string(kept[0]) != string(canonical[0]) {
+		t.Fatalf("the canonical declaration was rewritten:\n %s\nwant\n %s", kept[0], canonical[0])
+	}
+}
 
+// TestOpenCodeJSONEqual_ComparesByValue pins the canonical-schema comparison:
+// the same members in any order and formatting count as OpenCode's own, because
+// a JSON API compares the decoded value (and the standard marshaller re-escapes
+// `&`, `<` and `>` inside the declaration the connector appends, which a byte
+// comparison would misread even against itself).
+func TestOpenCodeJSONEqual_ComparesByValue(t *testing.T) {
+	if !openCodeJSONEqual(json.RawMessage(`{"a":1,"b":2}`), json.RawMessage(`{ "b": 2, "a": 1 }`)) {
+		t.Fatal("the same members in a different order and formatting must compare equal")
+	}
+	if openCodeJSONEqual(json.RawMessage(`{"a":1,"b":2}`), json.RawMessage(`{"a":1,"b":3}`)) {
+		t.Fatal("a different member value must compare unequal")
+	}
+}
+
+// TestOpenCodeFingerprintTool_CarriesTheVerbatimDefinition pins the declarations
+// the upstream compares against: the reference's own wording, the required
+// members, and the wire's own shape.
+func TestOpenCodeFingerprintTool_CarriesTheVerbatimDefinition(t *testing.T) {
+	flat := decodeRaw(t, openCodeFingerprintTool("read", true))
+	if flat["strict"] != false {
+		t.Fatalf("flat strict = %v, want false", flat["strict"])
+	}
+	if _, nested := flat["function"]; nested {
+		t.Fatal("the flat declaration nests its function, want it named on the tool")
+	}
+	parameters, _ := flat["parameters"].(map[string]any)
+	if got, _ := parameters["required"].([]any); len(got) != 1 || got[0] != "path" {
+		t.Fatalf("read required = %v, want [path]", parameters["required"])
+	}
+	if properties, _ := parameters["properties"].(map[string]any); len(properties) != 3 {
+		t.Fatalf("read properties = %v, want path, offset, and limit", parameters["properties"])
+	}
+
+	nested := decodeRaw(t, openCodeFingerprintTool("shell", false))
+	function, ok := nested["function"].(map[string]any)
+	if !ok {
+		t.Fatalf("chat declaration = %v, want a nested function", nested)
+	}
+	if function["description"] != openCodeFingerprintDefinitions["shell"].description {
+		t.Fatal("the shell description is not the verbatim reference text")
+	}
+	shellParameters, _ := function["parameters"].(map[string]any)
+	if got, _ := shellParameters["required"].([]any); len(got) != 1 || got[0] != "command" {
+		t.Fatalf("shell required = %v, want [command]", shellParameters["required"])
+	}
+}
+
+func TestAppendOpenCodeFingerprintTools(t *testing.T) {
 	cases := []struct {
-		name  string
-		tools string
-		want  []string
+		name        string
+		tools       []json.RawMessage
+		responses   bool
+		wantNames   []string
+		wantAppends []string
 	}{
 		{
-			name:  "only capitalised spellings",
-			tools: `[{"type":"function","function":{"name":"Bash"}},{"type":"function","function":{"name":"Read"}}]`,
-			want:  []string{"Bash", "Read", "bash", "read"},
+			name:        "an empty list gains both, in the reference's order",
+			tools:       nil,
+			responses:   true,
+			wantNames:   []string{"read", "shell"},
+			wantAppends: []string{"read", "shell"},
 		},
 		{
-			name:  "one capitalised and one lowercase",
-			tools: `[{"type":"function","function":{"name":"Bash"}},{"type":"function","function":{"name":"read"}}]`,
-			want:  []string{"Bash", "read", "bash"},
+			name:        "a declared canonical read is not duplicated",
+			tools:       []json.RawMessage{openCodeFingerprintTool("read", false)},
+			responses:   false,
+			wantNames:   []string{"read", "shell"},
+			wantAppends: []string{"shell"},
 		},
 		{
-			name:  "already lowercase, so nothing is added",
-			tools: `[{"type":"function","function":{"name":"bash"}},{"type":"function","function":{"name":"read"}}]`,
-			want:  []string{"bash", "read"},
-		},
-		{
-			name:  "a client tool that merely starts with the same letters",
-			tools: `[{"type":"function","function":{"name":"bashful"}}]`,
-			want:  []string{"bashful", "bash", "read"},
+			name:        "an aliased caller tool leaves the canonical name missing",
+			tools:       flatTools("read_client"),
+			responses:   true,
+			wantNames:   []string{"read_client", "read", "shell"},
+			wantAppends: []string{"read", "shell"},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			request := Request{
-				Model: registry.Model{ID: "big-pickle"},
-				Body:  []byte(`{"model":"big-pickle","messages":[],"tools":` + tc.tools + `}`),
+			tools, appended := appendOpenCodeFingerprintTools(tc.tools, tc.responses)
+			if got := toolNamesOf(tools); len(got) != len(tc.wantNames) {
+				t.Fatalf("names = %v, want %v", got, tc.wantNames)
+			} else {
+				for index := range tc.wantNames {
+					if got[index] != tc.wantNames[index] {
+						t.Fatalf("names = %v, want %v", got, tc.wantNames)
+					}
+				}
 			}
-			if err := connector.TransformRequest(&request); err != nil {
-				t.Fatalf("TransformRequest() error = %v", err)
+			if len(appended) != len(tc.wantAppends) {
+				t.Fatalf("appended = %v, want %v", appended, tc.wantAppends)
 			}
-			got := toolNames(t, decodeBody(t, request.Body))
-			if len(got) != len(tc.want) {
-				t.Fatalf("tool names = %v, want %v", got, tc.want)
-			}
-			for i := range tc.want {
-				if got[i] != tc.want[i] {
-					t.Fatalf("tool names = %v, want %v", got, tc.want)
+			for index := range tc.wantAppends {
+				if appended[index] != tc.wantAppends[index] {
+					t.Fatalf("appended = %v, want %v", appended, tc.wantAppends)
 				}
 			}
 		})
 	}
+}
+
+// decodeRaw decodes one encoded member for the shape checks above.
+func decodeRaw(t *testing.T, raw json.RawMessage) map[string]any {
+	t.Helper()
+	var decoded map[string]any
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("decoding %s: %v", raw, err)
+	}
+	return decoded
 }

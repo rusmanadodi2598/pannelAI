@@ -122,7 +122,7 @@ func TestOpenCodeFree_NoCredentialMaterialLeavesTheGateway(t *testing.T) {
 // TestOpenCodeFree_DeclaredResponsesModelTakesTheResponsesWire pins the per-model
 // rule the port restored: muse-spark-1.3-contributor-free is declared
 // with target_format openai-responses, so a chat client's request must be
-// translated and POSTed to /zen/v1/responses rather than forwarded to the chat
+// translated and POSTed to /inference/v1/responses rather than forwarded to the chat
 // path. The stand-in refuses the wrong path, so this fails loudly on a regression.
 func TestOpenCodeFree_DeclaredResponsesModelTakesTheResponsesWire(t *testing.T) {
 	seen := []openCodeFreeCall{}
@@ -138,7 +138,7 @@ func TestOpenCodeFree_DeclaredResponsesModelTakesTheResponsesWire(t *testing.T) 
 	if len(seen) != 1 {
 		t.Fatalf("upstream calls = %d, want 1", len(seen))
 	}
-	if seen[0].Path != "/zen/v1/responses" {
+	if seen[0].Path != "/inference/v1/responses" {
 		t.Fatalf("path = %q, want the Responses leaf the model declares", seen[0].Path)
 	}
 	var body map[string]any

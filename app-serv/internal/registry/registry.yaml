@@ -963,7 +963,7 @@ providers:
       format: openai
       base_url: https://opencode.ai
       headers:
-        x-opencode-client: desktop
+        x-opencode-client: cli
       force_stream: true
       no_auth: true
       quirks:
@@ -987,10 +987,10 @@ providers:
       - llm
       - systemone
     systemone:
-      base_url: https://opencode.ai/zen/v1/systemone
+      base_url: https://opencode.ai/inference/v1/systemone
       headers:
         x-opencode-client: desktop
-        User-Agent: opencode/1.19.0
+        User-Agent: opencode/latest/2.0.27/cli
   - id: vertex
     priority: 40
     alias: vertex
@@ -2275,7 +2275,7 @@ providers:
         api_key_url: https://opencode.ai/auth
     transport:
       format: openai
-      base_url: https://opencode.ai/zen/v1/chat/completions
+      base_url: https://opencode.ai/inference/v1/chat/completions
       usage:
         url: https://opencode.ai/zen/v1/usage
     models:
@@ -2607,20 +2607,20 @@ providers:
       usageApikey: true
     transports:
       - format: openai
-        base_url: https://opencode.ai/zen/v1/chat/completions
+        base_url: https://opencode.ai/inference/v1/chat/completions
         auth:
           header: Authorization
           scheme: bearer
           combined: true
       - format: claude
-        base_url: https://opencode.ai/zen/v1/messages
+        base_url: https://opencode.ai/inference/v1/messages
         auth:
           header: x-api-key
           scheme: raw
           anthropic_version: true
           combined: true
       - format: openai-responses
-        base_url: https://opencode.ai/zen/v1/responses
+        base_url: https://opencode.ai/inference/v1/responses
         auth:
           header: Authorization
           scheme: bearer
@@ -2629,10 +2629,10 @@ providers:
       - llm
       - systemone
     systemone:
-      base_url: https://opencode.ai/zen/v1/systemone
+      base_url: https://opencode.ai/inference/v1/systemone
       headers:
         x-opencode-client: desktop
-        User-Agent: opencode/1.19.0
+        User-Agent: opencode/latest/2.0.27/cli
   - id: opencode-go
     priority: 210
     alias: opencode-go

@@ -118,11 +118,12 @@ func TestEmbeddedOpenCode_SystemOneEndpoint(t *testing.T) {
 	if provider.SystemOne == nil {
 		t.Fatal("opencode declares no systemone endpoint")
 	}
-	if got, want := provider.SystemOne.BaseURL, "https://opencode.ai/zen/v1/systemone"; got != want {
+	if got, want := provider.SystemOne.BaseURL, "https://opencode.ai/inference/v1/systemone"; got != want {
 		t.Fatalf("systemone base_url = %q, want %q", got, want)
 	}
 	// The client identity travels with the block in the reference, because the
-	// decision endpoint reads the same headers the chat lane does.
+	// decision endpoint reads the same headers the chat lane does. The reference
+	// keeps `desktop` here even after the v2 move (PR #4840's registry hunk).
 	if got := provider.SystemOne.Headers["x-opencode-client"]; got != "desktop" {
 		t.Fatalf("systemone x-opencode-client = %q, want desktop", got)
 	}

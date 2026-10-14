@@ -28,6 +28,21 @@ func stringMember(body map[string]json.RawMessage, key string) string {
 	return value
 }
 
+// openCodeStringMember reads a string member and reports whether it was one,
+// which a rule that rewrites the member needs: "" is a legitimate value, so
+// absence and the empty string cannot be told apart otherwise.
+func openCodeStringMember(members map[string]json.RawMessage, key string) (string, bool) {
+	raw, present := members[key]
+	if !present {
+		return "", false
+	}
+	var value string
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return "", false
+	}
+	return value, true
+}
+
 // mustRaw marshals a member map the connector built itself. A map of already
 // encoded values cannot fail to marshal, so a failure would be a programming
 // error rather than a request-path condition, and null is the harmless answer.

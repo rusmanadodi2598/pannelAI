@@ -4,7 +4,7 @@
 // @file      internal/provider/opencode_responses_pairing.go
 // @for       The call/output pairing the OpenCode Responses wire insists a conversation carries.
 // @uses      encoding/json.
-// @reason    /zen/v1/responses rejects a `function_call` with no matching `function_call_output` with 400 "No tool output found for function call ...", and a compacted or interrupted Claude Code turn leaves exactly that behind in the history it replays. An answer the client never got an answer to still has to be closed, so the pairing is completed here rather than dropped at the upstream.
+// @reason    /inference/v1/responses rejects a `function_call` with no matching `function_call_output` with 400 "No tool output found for function call ...", and a compacted or interrupted Claude Code turn leaves exactly that behind in the history it replays. An answer the client never got an answer to still has to be closed, so the pairing is completed here rather than dropped at the upstream.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

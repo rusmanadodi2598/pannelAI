@@ -4,7 +4,7 @@
 // @file      internal/provider/opencode_body.go
 // @for       The request shape the OpenCode Free tier accepts.
 // @uses      encoding/json.
-// @reason    The free tier answers 403 unless the outbound body both streams and carries the bash and read decoy tools, and the Responses wire answers 400 to `max_tokens`, to a `tool_choice` other than `auto`, and to an output ceiling below 16. Those rules are the provider's, so they are applied here rather than by a branch on the provider id in the translation layer. Everything is a set union or a rename over the client's own body: the client's tools, ceiling, and items all survive, because a gateway that dropped them would answer a different question than the one it was asked. A ceiling that survives is still raised to the minimum the model declares, because a reasoning model spends a smaller one on thinking and returns an empty body the upstream counts as success.
+// @reason    The free tier answers 403 unless the outbound body both streams and carries the read/shell fingerprint tools, and the Responses wire answers 400 to `max_tokens`, to a `tool_choice` other than `auto`, and to an output ceiling below 16. Those rules are the provider's, so they are applied here rather than by a branch on the provider id in the translation layer. Everything is a set union or a rename over the client's own body: the client's tools, ceiling, and items all survive, because a gateway that dropped them would answer a different question than the one it was asked. A ceiling that survives is still raised to the minimum the model declares, because a reasoning model spends a smaller one on thinking and returns an empty body the upstream counts as success.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -18,20 +18,6 @@ import (
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
-
-// The decoy tools the free tier requires. It answers 403 unless the payload
-// declares both `bash` and `read`, so the connector injects whichever is
-// missing. The description is the reference's own text: it tells the model the
-// tool is unavailable, which keeps a decoy from being called.
-const (
-	openCodeDecoyToolDescription = "This tool is currently unavailable and must not be used."
-	openCodeDecoyBash            = "bash"
-	openCodeDecoyRead            = "read"
-)
-
-// openCodeDecoyNames are the tools the gate checks for, in the order they are
-// injected so the outbound body is byte-stable across calls.
-var openCodeDecoyNames = []string{openCodeDecoyBash, openCodeDecoyRead}
 
 // The Responses item type that carries a prior turn's reasoning. It is dropped
 // because the free tier pools anonymous credentials and a reasoning item is
@@ -50,24 +36,20 @@ func (c *OpenCode) TransformRequest(req *Request) error {
 
 	entry := c.entryFor(*req)
 	wire := opencodeWire(*req, entry)
-	// The client's own tool declarations are read before the decoys are added,
-	// because afterwards the two are indistinguishable.
-	clientDeclaredTools := openCodeDeclaresClientTools(body)
 	// The free tier refuses a non-streaming request on either wire, so the body
 	// always streams and the core is told to read one.
 	body["stream"] = json.RawMessage("true")
 	req.Stream = true
 
+	// The fingerprint pass runs last on either wire: the Responses rules
+	// flatten and correct the client's own declarations first, and only then is
+	// a caller tool that reuses a fingerprint name concealed and the canonical
+	// read/shell declarations appended beside the survivors.
 	if wire == registry.FormatOpenAIResponses {
 		transformOpenCodeResponses(body, req.Model, entry)
-	}
-	ensureOpenCodeDecoys(body, wire)
-	// A chat request that declared no tools gets `none`, so the decoys the gate
-	// requires can never be selected: the model is told not to call a function
-	// at all, rather than being left free to call one whose own description
-	// says it is unavailable (opencodeFingerprint.js:146-147).
-	if wire != registry.FormatOpenAIResponses {
-		forbidOpenCodeDecoysWithoutClientTools(body, clientDeclaredTools)
+		applyOpenCodeFingerprintTools(body, true)
+	} else {
+		applyOpenCodeFingerprintTools(body, false)
 	}
 
 	encoded, err := json.Marshal(body)

@@ -56,7 +56,8 @@ func transformOpenCodeResponses(body map[string]json.RawMessage, model registry.
 // normalizeOpenCodeToolChoice demotes a client's explicit choice to `auto` only
 // for the models the entry declares the quirk for, and writes `auto` when the
 // client named none, which is the reference's own behaviour for this wire
-// (opencodeFingerprint.js:145-147).
+// (opencodeFingerprint.js applyFingerprintTools). It never writes `none`: the
+// upstream answers tool_choice "none" with 403 FreeTierError.
 //
 // Forcing it on every model was the measured delta: a client that asked for a
 // specific function on a model without the quirk had its request silently

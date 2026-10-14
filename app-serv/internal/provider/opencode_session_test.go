@@ -3,8 +3,8 @@
 //
 // @file      internal/provider/opencode_session_test.go
 // @for       The session identity one endpoint presents to the OpenCode free tier.
-// @uses      regexp, strconv, strings, testing, time.
-// @reason    Two properties keep the free tier working: the id is stable per identity, so one account is not charged for a fresh session on every request, and its first twelve characters decode as a clock reading, which is what OpenCode 1.19.0 validates and refuses with 403 when they are only hex-shaped. The shape was pinned before; the decodable clock is what the outage was missing.
+// @uses      crypto/sha256, math/big, regexp, strconv, testing.
+// @reason    Two properties keep the free tier working: the id is stable per identity, so one account is not charged for a fresh session on every request, and its first twelve characters decode as `~(time*0x1000 + counter)` with a counter the upstream accepts, which is what OpenCode v2 validates and refuses with 403 when the counter is not the small value the CLI sends. The shape and the stability were pinned before; the pinned counter is what the outage was missing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable
@@ -12,23 +12,19 @@
 package provider
 
 import (
+	"crypto/sha256"
+	"math/big"
 	"regexp"
 	"strconv"
 	"testing"
-	"time"
 )
-
-// openCodeClockDriftMs is how far a remembered session may legitimately sit from
-// "now" in a test run that just started: a minute is generous, six years is what
-// a random prefix would give.
-const openCodeClockDriftMs = 60_000
 
 // openCodeClockFieldRE cuts an id down to the twelve characters the upstream
 // decodes, leaving the base62 identity tail behind.
-var openCodeClockFieldRE = regexp.MustCompile(`^(?:ses|msg)_([0-9a-f]{12})[0-9A-Za-z]{14}$`)
+var openCodeClockFieldRE = regexp.MustCompile(`^ses_([0-9a-f]{12})[0-9A-Za-z]{14}$`)
 
-// openCodeClockOf decodes an id's clock field back into the millisecond it
-// carries, which is only the low 36 bits because the field is 48 wide.
+// openCodeClockOf decodes an id's clock field back into the value the upstream
+// reads: `~(field)` carries `time*0x1000 + counter`.
 func openCodeClockOf(t *testing.T, id string) uint64 {
 	t.Helper()
 	parts := openCodeClockFieldRE.FindStringSubmatch(id)
@@ -39,7 +35,7 @@ func openCodeClockOf(t *testing.T, id string) uint64 {
 	if err != nil {
 		t.Fatalf("decoding the clock field of %q: %v", id, err)
 	}
-	return (^field & openCodeIDClockMask) / openCodeIDClockScale
+	return ^field & openCodeIDClockMask
 }
 
 func TestOpenCodeSession_GivesTheCanonicalShape(t *testing.T) {
@@ -63,21 +59,23 @@ func TestOpenCodeSession_GivesTheCanonicalShape(t *testing.T) {
 	}
 }
 
-func TestOpenCodeSession_ClockFieldDecodesToTheMintTime(t *testing.T) {
-	now := time.Now().UnixMilli()
-	id := OpenCodeSessionFor("desktop", "virtual:opencode")
-	decoded := int64(openCodeClockOf(t, id))
-	wanted := now & (1<<36 - 1)
+// TestOpenCodeSession_PinsTheCounterAndTheDigestTime pins the fix: the upstream
+// decodes the prefix as `~(time*0x1000 + counter)` and answers a non-small
+// counter with 403 FreeTierError, which a digest-filled 48-bit prefix produced
+// about 97% of the time. The port pins the counter to the one the CLI sends and
+// derives the time from the identity digest, so the id is a pure function of
+// the identity pair.
+func TestOpenCodeSession_PinsTheCounterAndTheDigestTime(t *testing.T) {
+	id := OpenCodeSessionFor("cli", "virtual:opencode")
+	clock := openCodeClockOf(t, id)
 
-	// The session may have been minted by an earlier request in this process, 	// that is the point of remembering it, so the test asks that the decoded
-	// clock sit inside the last minute rather than at this exact millisecond. A
-	// SHA-256 byte string, which is what this field carried before the fix,
-	// lands anywhere across the 2^36 milliseconds the field can hold: roughly
-	// six years away from now, and read by the upstream as a timestamp from no
-	// plausible era.
-	if drift := wanted - decoded; drift > openCodeClockDriftMs || drift < -openCodeClockDriftMs {
-		t.Fatalf("session %q decodes to a clock %d ms from now, want it minted within the last minute",
-			id, drift)
+	if counter := clock % openCodeIDClockScale; counter != 1 {
+		t.Fatalf("session %q decodes to counter %d, want the pinned 1", id, counter)
+	}
+	digest := sha256.Sum256([]byte("opencode\x00cli\x00virtual:opencode"))
+	want := new(big.Int).SetUint64(openCodeDigestTime(digest))
+	if got := new(big.Int).SetUint64(clock / openCodeIDClockScale); got.Cmp(want) != 0 {
+		t.Fatalf("session %q decodes to time %s, want the digest's %s", id, got, want)
 	}
 }
 

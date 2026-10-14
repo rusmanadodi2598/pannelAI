@@ -2,9 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_choice_test.go
-// @for       The tool_choice rule the OpenCode Responses wire enforces.
+// @for       The tool_choice rule the OpenCode chat wire enforces.
 // @uses      testing, internal/registry.
-// @reason    The Responses wire answers 400 to any tool_choice other than auto, so the connector normalises whatever a client sent rather than forwarding it to be rejected. The chat wire accepts `none`, so the rule is per-wire and pinned on its own.
+// @reason    The chat wire forwards whatever a client chose, including `none`: the connector only ever avoids *defaulting* to none, which upstream answers with 403 FreeTierError. The Responses half moved to opencode_responses_test.go when the reference's quirk list was ported, because the wire only refuses a non-auto choice on the models that declare the quirk.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -20,8 +20,10 @@ import (
 )
 
 // TestOpenCode_TransformKeepsAChatWiresOwnToolChoice pins the half of the rule
-// that is still unconditional: the chat wire accepts every value, so the
-// connector must not rewrite one. The Responses half moved to
+// that is still unconditional: the connector never rewrites a choice the client
+// wrote, so every value survives the transform. It never *defaults* to "none"
+// either (opencode_fingerprint_body_test.go), because upstream answers a
+// defaulted none with 403 FreeTierError. The Responses half moved to
 // opencode_responses_test.go when the reference's quirk list was ported, because
 // the wire only refuses a non-auto choice on the models that declare the quirk.
 func TestOpenCode_TransformKeepsAChatWiresOwnToolChoice(t *testing.T) {
