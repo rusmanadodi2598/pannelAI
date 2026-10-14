@@ -110,7 +110,11 @@ func TestRoutingSettings_NormalizedBackfillsPreChangeRows(t *testing.T) {
 	}
 
 	stored := RoutingSettings{StickyLimit: 7, FallbackStrategy: RotationRoundRobin,
-		ProviderStrategies: map[string]ProviderStrategy{"alpha": {FallbackStrategy: RotationFillFirst}}}
+		ProviderStrategies: map[string]ProviderStrategy{"alpha": {FallbackStrategy: RotationFillFirst}},
+		// The walk budget is part of "every key" now, so a complete row names it:
+		// the rule under test is that a stored value is left alone, not that a
+		// missing one is.
+		Failover: FailoverBudget{TotalMS: DefaultFailoverTotalMS, MaxAttempts: DefaultFailoverAttempts}}
 	if !reflect.DeepEqual(stored.Normalized(), stored) {
 		t.Fatal("Normalized() rewrote a row that already carried every key")
 	}

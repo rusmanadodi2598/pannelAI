@@ -32,6 +32,7 @@ func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 			FallbackStrategy:   string(s.Routing.FallbackStrategy),
 			ProviderStrategies: strategiesOrEmpty(s.Routing.ProviderStrategies),
 			KeyPark:            effectiveKeyPark(s.Routing.KeyPark),
+			Failover:           effectiveFailover(s.Routing.Failover),
 		},
 		Network: NetworkSettingsResponse{
 			OutboundProxyEnabled:  s.Network.OutboundProxyEnabled,

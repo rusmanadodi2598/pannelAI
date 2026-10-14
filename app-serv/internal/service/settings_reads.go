@@ -28,6 +28,17 @@ func (s *SettingsService) RotationPolicy(ctx context.Context, providerID string)
 	return settings.Routing.RotationFor(providerID), nil
 }
 
+// FailoverBudget resolves the walk budget one client request gets, the routing group's global
+// bound rather than a per-provider one because the chain it cuts belongs to the request. A read
+// that fails answers the documented budget: an outage must not grant an unbounded walk.
+func (s *SettingsService) FailoverBudget(ctx context.Context) (domain.FailoverBudget, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return domain.FailoverBudget{}.Normalized(), err
+	}
+	return settings.Routing.Failover.Normalized(), nil
+}
+
 // KeyHealthPolicy resolves the parking windows configured for one provider
 // (§7.5, §7.14): the provider's own override over the group default. Both readers
 // of the health model ask it, so the Test button and a live request park the same

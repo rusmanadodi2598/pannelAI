@@ -28,6 +28,20 @@ type RoutingSettingsPatch struct {
 	FallbackStrategy   *string                           `json:"fallback_strategy,omitempty" validate:"omitempty,oneof=fill-first round-robin"`
 	ProviderStrategies *map[string]ProviderStrategyPatch `json:"provider_strategies,omitempty" validate:"omitempty,dive"`
 	KeyPark            *KeyParkPatch                     `json:"key_park,omitempty"`
+	// Failover bounds one request's whole credential walk. The bounds sit here
+	// rather than in a provider entry because the chain it cuts belongs to the
+	// request: a combo, its accounts, and their keys.
+	Failover *FailoverBudgetPatch `json:"failover,omitempty"`
+}
+
+// FailoverBudgetPatch is the walk budget as the wire carries it. Each bound is
+// optional on its own, because widening the attempt count must not reset the clock.
+// The ceilings match the domain's: the total stops where one transport call is
+// already allowed to run, and an attempt count that could walk every account of
+// every provider is not a bound.
+type FailoverBudgetPatch struct {
+	TotalMS     *int `json:"total_ms,omitempty" validate:"omitempty,min=1000,max=120000"`
+	MaxAttempts *int `json:"max_attempts,omitempty" validate:"omitempty,min=1,max=200"`
 }
 
 // KeyParkPatch is one level of the parking budget: the group's own windows or a
@@ -104,6 +118,12 @@ func routingPtr(in *RoutingSettingsPatch) *domain.RoutingSettingsPatch {
 		parked := keyParkPatch(*in.KeyPark)
 		patch.KeyPark = &parked
 	}
+	if in.Failover != nil {
+		patch.Failover = &domain.FailoverBudgetPatch{
+			TotalMS:     in.Failover.TotalMS,
+			MaxAttempts: in.Failover.MaxAttempts,
+		}
+	}
 	return patch
 }
 
@@ -178,5 +198,16 @@ func effectiveKeyPark(in domain.KeyParkWindows) KeyParkResponse {
 		RateLimitSeconds: int(policy.RateLimitWindow / time.Second),
 		TransientSeconds: int(policy.TransientWindow / time.Second),
 		BillingSeconds:   int(policy.BillingWindow / time.Second),
+	}
+}
+
+// effectiveFailover answers the walk budget the router really applies, so a read of
+// a document that predates the keys names the bound rather than a zero an operator
+// would read as "no walk is allowed".
+func effectiveFailover(in domain.FailoverBudget) FailoverBudgetResponse {
+	budget := in.Normalized()
+	return FailoverBudgetResponse{
+		TotalMS:     budget.TotalMS,
+		MaxAttempts: budget.MaxAttempts,
 	}
 }

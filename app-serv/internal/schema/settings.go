@@ -40,6 +40,17 @@ type RoutingSettingsResponse struct {
 	// KeyPark answers the windows the group resolves to, so a read of a document
 	// that predates the knobs still names the lengths the router parks with.
 	KeyPark KeyParkResponse `json:"key_park"`
+	// Failover answers the budget one request's credential walk gets, effective
+	// rather than stored: a document that predates the keys still names the budget
+	// the router actually applies.
+	Failover FailoverBudgetResponse `json:"failover"`
+}
+
+// FailoverBudgetResponse is the walk budget in the units the walk measures: the
+// clock in milliseconds and the count of credentials one request may spend.
+type FailoverBudgetResponse struct {
+	TotalMS     int `json:"total_ms"`
+	MaxAttempts int `json:"max_attempts"`
 }
 
 // KeyParkResponse is one level of the parking budget, in seconds. A provider

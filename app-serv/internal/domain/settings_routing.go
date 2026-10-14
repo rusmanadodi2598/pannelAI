@@ -11,7 +11,10 @@
 // @since     2026-09-24
 package domain
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 // CredentialRotation is how a provider's credential walk orders its endpoints
 // and the keys inside them. The set is closed and mirrors the reference's
@@ -84,6 +87,54 @@ type RotationPolicy struct {
 // UsesRotation reports whether the policy advances the shared cursor.
 func (p RotationPolicy) UsesRotation() bool { return p.Strategy.UsesRotation() }
 
+// FailoverBudget bounds one client request's whole walk over the credentials it may try.
+// The chain is combinatorial: a combo of 64 members, each with up to 100 accounts, each
+// holding up to 100 keys. Each attempt carried its own 120-second budget with no total
+// above it, so a request could outlive its client by hours.
+//
+// Both bounds stop the walk and report what it already learned; neither turns an answer
+// the client received into a failure, because a stream that has spoken is committed.
+type FailoverBudget struct {
+	// TotalMS is the wall clock the PRE-COMMIT walk may spend.
+	TotalMS int `json:"total_ms"`
+	// MaxAttempts is how many credentials one request may spend, the bound a deadline
+	// cannot give: a provider that answers instantly with an error on every one of its keys.
+	MaxAttempts int `json:"max_attempts"`
+}
+
+// The §7.14 failover defaults and their stored bounds. The total ceiling is the transport's
+// own per-credential budget, so one request never gets more time than a single call may take;
+// the attempt ceiling walks a large provider without ever permitting the full chain.
+const (
+	DefaultFailoverTotalMS  = 30_000
+	MinFailoverTotalMS      = 1_000
+	MaxFailoverTotalMS      = 120_000
+	DefaultFailoverAttempts = 8
+	MinFailoverAttempts     = 1
+	MaxFailoverAttempts     = 200
+)
+
+// Normalized fills the two keys a stored row written before they existed cannot carry. A
+// group decode replaces the routing document wholesale, so an absent key arrives as a zero,
+// and a walk handed zero attempts answers NO_PROVIDER_AVAILABLE for a provider that has keys.
+func (b FailoverBudget) Normalized() FailoverBudget {
+	if b.TotalMS < MinFailoverTotalMS || b.TotalMS > MaxFailoverTotalMS {
+		b.TotalMS = DefaultFailoverTotalMS
+	}
+	if b.MaxAttempts < MinFailoverAttempts || b.MaxAttempts > MaxFailoverAttempts {
+		b.MaxAttempts = DefaultFailoverAttempts
+	}
+	return b
+}
+
+// Total answers the budget as the duration a walk measures against.
+func (b FailoverBudget) Total() time.Duration {
+	return time.Duration(b.Normalized().TotalMS) * time.Millisecond
+}
+
+// Attempts answers the budget as a count.
+func (b FailoverBudget) Attempts() int { return b.Normalized().MaxAttempts }
+
 // RoutingSettings is the §7.14 routing group. The combo keys are the defaults a
 // new combo starts from; the credential keys are the policy the data plane's
 // selector resolves per provider.
@@ -100,6 +151,9 @@ type RoutingSettings struct {
 	// KeyPark holds the global key-parking windows. It is the §7.5 budget the
 	// ladder starts from before any provider override.
 	KeyPark KeyParkWindows `json:"key_park,omitempty"`
+	// Failover bounds one request's whole credential walk: global rather than per-provider,
+	// because the chain it cuts belongs to the request (a combo, its accounts, their keys).
+	Failover FailoverBudget `json:"failover,omitempty"`
 }
 
 // defaultRoutingSettings is the §7.14 routing default: combo fallback with a
@@ -111,6 +165,10 @@ func defaultRoutingSettings() RoutingSettings {
 		StickyLimit:        DefaultStickyLimit,
 		FallbackStrategy:   RotationFillFirst,
 		ProviderStrategies: map[string]ProviderStrategy{},
+		Failover: FailoverBudget{
+			TotalMS:     DefaultFailoverTotalMS,
+			MaxAttempts: DefaultFailoverAttempts,
+		},
 	}
 }
 
@@ -128,6 +186,7 @@ func (s RoutingSettings) Normalized() RoutingSettings {
 	if s.StickyLimit < 1 {
 		s.StickyLimit = DefaultStickyLimit
 	}
+	s.Failover = s.Failover.Normalized()
 	return s
 }
 

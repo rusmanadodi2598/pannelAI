@@ -24,6 +24,21 @@ type RoutingSettingsPatch struct {
 	// KeyPark retunes the group's parking windows. Each window is optional on
 	// its own, because a PATCH that names one must not reset the other two.
 	KeyPark *KeyParkPatch
+	// Failover retunes the walk budget, each bound on its own for the same reason.
+	Failover *FailoverBudgetPatch
+}
+
+// FailoverBudgetPatch is the walk-budget group of a routing PATCH: one pointer per
+// bound, so an operator widening the attempt count leaves the clock alone.
+type FailoverBudgetPatch struct {
+	TotalMS     *int
+	MaxAttempts *int
+}
+
+// applyTo writes the bounds the patch names, and only those.
+func (p FailoverBudgetPatch) applyTo(dst *FailoverBudget) {
+	applyInt(&dst.TotalMS, p.TotalMS)
+	applyInt(&dst.MaxAttempts, p.MaxAttempts)
 }
 
 // applyRouting writes the routing group from a patch.
@@ -46,6 +61,9 @@ func applyRouting(dst *RoutingSettings, p *RoutingSettingsPatch) {
 	if p.KeyPark != nil {
 		p.KeyPark.applyTo(&dst.KeyPark)
 	}
+	if p.Failover != nil {
+		p.Failover.applyTo(&dst.Failover)
+	}
 }
 
 // validateRouting checks the routing group's rules. The per-field bounds live
@@ -60,6 +78,18 @@ func validateRouting(s RoutingSettings) error {
 	}
 	if s.StickyLimit > MaxStickyLimit {
 		return NewValidationError("routing.sticky_limit must be at most 100")
+	}
+	// An unset failover block is legal and normalizes to the documented budget; a
+	// stored one outside its bounds is refused rather than quietly re-read as the
+	// default, because a walk whose operator typed 5000 and got 8 has been told a
+	// different story than the one it wrote.
+	if s.Failover.TotalMS != 0 &&
+		(s.Failover.TotalMS < MinFailoverTotalMS || s.Failover.TotalMS > MaxFailoverTotalMS) {
+		return NewValidationError("routing.failover.total_ms must be between 1000 and 120000, or unset")
+	}
+	if s.Failover.MaxAttempts != 0 &&
+		(s.Failover.MaxAttempts < MinFailoverAttempts || s.Failover.MaxAttempts > MaxFailoverAttempts) {
+		return NewValidationError("routing.failover.max_attempts must be between 1 and 200, or unset")
 	}
 	if !s.ComboStrategy.IsValid() {
 		return NewValidationError("routing.combo_strategy is invalid")
