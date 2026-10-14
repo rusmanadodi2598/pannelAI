@@ -37,6 +37,9 @@ func toKeyResponse(key domain.UpstreamKey, now time.Time) schema.EndpointKeyResp
 	if used := key.LastUsedAt(); used != nil {
 		resp.LastUsedAt = ptr(schema.Timestamp(*used))
 	}
+	if chosen := key.LastSelectedAt(); chosen != nil {
+		resp.LastSelectedAt = ptr(schema.Timestamp(*chosen))
+	}
 	if until := key.RateLimitedUntil(); until != nil {
 		resp.RateLimitedUntil = ptr(schema.Timestamp(*until))
 	}
@@ -98,6 +101,9 @@ func toEndpointResponse(endpoint domain.UpstreamEndpoint, now time.Time, withKey
 	}
 	if used := endpoint.LastUsedAt(); used != nil {
 		resp.LastUsedAt = ptr(schema.Timestamp(*used))
+	}
+	if chosen := endpoint.LastSelectedAt(); chosen != nil {
+		resp.LastSelectedAt = ptr(schema.Timestamp(*chosen))
 	}
 	if withKeys {
 		resp.Keys = toKeyResponses(endpoint.Keys(), now)

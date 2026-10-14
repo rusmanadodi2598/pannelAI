@@ -1674,6 +1674,11 @@
             "type": "string",
             "format": "date-time"
           },
+          "last_selected_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When rotation last CHOSE this credential or account, distinct from when it last served a call (SPEC-API-001 7.5). Absent for one that has never been chosen."
+          },
           "last_error": {
             "type": "string"
           },
@@ -1759,6 +1764,11 @@
           "last_used_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "last_selected_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When rotation last CHOSE this credential or account, distinct from when it last served a call (SPEC-API-001 7.5). Absent for one that has never been chosen."
           },
           "key_count": {
             "type": "integer",
@@ -3656,6 +3666,9 @@
           },
           "key_park": {
             "$ref": "#/components/schemas/KeyParkPatch"
+          },
+          "failover": {
+            "$ref": "#/components/schemas/FailoverBudgetPatch"
           }
         },
         "additionalProperties": false
@@ -3691,6 +3704,27 @@
             "minimum": 1,
             "maximum": 3600,
             "description": "The first upstream 402 parks the account's key this long, then doubles up to six hours."
+          }
+        },
+        "additionalProperties": false
+      },
+      "FailoverBudgetPatch": {
+        "type": "object",
+        "description": "The bounds on one client request's credential walk (SPEC-API-001 §7.14). Each bound is optional on its own: widening the attempt count must not reset the clock. The walk is global rather than per provider because the chain it cuts belongs to the request, a combo, its accounts and their keys.",
+        "properties": {
+          "total_ms": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1000,
+            "maximum": 120000,
+            "description": "The wall clock one request's failover walk may spend, in milliseconds. Unset keeps the stored value. The default is 30000, the ceiling a single transport call already gets (SPEC-API-001 §7.7 and §7.14)."
+          },
+          "max_attempts": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "How many credentials one request may spend before the walk reports what it already learned. The default is 8."
           }
         },
         "additionalProperties": false
@@ -4923,6 +4957,9 @@
           },
           "key_park": {
             "$ref": "#/components/schemas/KeyParkResponse"
+          },
+          "failover": {
+            "$ref": "#/components/schemas/FailoverBudgetResponse"
           }
         },
         "required": [
@@ -4931,7 +4968,8 @@
           "sticky_limit",
           "fallback_strategy",
           "provider_strategies",
-          "key_park"
+          "key_park",
+          "failover"
         ],
         "additionalProperties": false
       },
@@ -4956,6 +4994,31 @@
             "format": "int64"
           }
         },
+        "additionalProperties": false
+      },
+      "FailoverBudgetResponse": {
+        "type": "object",
+        "description": "The effective credential-walk budget the router applies (SPEC-API-001 §7.14). Both bounds are always named, so a document stored before the keys existed answers 30000 and 8 rather than the zeros an operator would read as no walk allowed.",
+        "properties": {
+          "total_ms": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1000,
+            "maximum": 120000,
+            "description": "The milliseconds one request's credential walk may spend, as the router applies it."
+          },
+          "max_attempts": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "The credentials one request may spend before the walk reports what it already learned, as the router applies it."
+          }
+        },
+        "required": [
+          "total_ms",
+          "max_attempts"
+        ],
         "additionalProperties": false
       },
       "ProviderStrategyResponse": {

@@ -13,14 +13,18 @@ package schema
 // EndpointKeyResponse is the key shape for list, detail, and create. It carries
 // key_hint and health only: the stored value is never present (§7.5).
 type EndpointKeyResponse struct {
-	ID                string  `json:"id"`
-	EndpointID        string  `json:"endpoint_id"`
-	Label             string  `json:"label"`
-	KeyHint           string  `json:"key_hint"`
-	Priority          int     `json:"priority"`
-	Status            string  `json:"status"`
-	Available         bool    `json:"available"`
-	LastUsedAt        *string `json:"last_used_at,omitempty"`
+	ID         string  `json:"id"`
+	EndpointID string  `json:"endpoint_id"`
+	Label      string  `json:"label"`
+	KeyHint    string  `json:"key_hint"`
+	Priority   int     `json:"priority"`
+	Status     string  `json:"status"`
+	Available  bool    `json:"available"`
+	LastUsedAt *string `json:"last_used_at,omitempty"`
+	// LastSelectedAt names when rotation last chose this account. For an endpoint
+	// holding keys its turn is recorded on the key; for an OAuth or no-auth account,
+	// which owns no key row, this is the only rotation state it carries.
+	LastSelectedAt    *string `json:"last_selected_at,omitempty"`
 	LastError         string  `json:"last_error,omitempty"`
 	ConsecutiveErrors int     `json:"consecutive_errors"`
 	RateLimitedUntil  *string `json:"rate_limited_until,omitempty"`
@@ -65,12 +69,16 @@ type EndpointResponse struct {
 	TestStatus       *EndpointTestStatusResponse `json:"test_status,omitempty"`
 	RateLimitedUntil *string                     `json:"rate_limited_until,omitempty"`
 	LastUsedAt       *string                     `json:"last_used_at,omitempty"`
-	KeyCount         int                         `json:"key_count"`
-	ActiveKeyCount   int                         `json:"active_key_count"`
-	Available        bool                        `json:"available"`
-	Keys             []EndpointKeyResponse       `json:"keys,omitempty"`
-	CreatedAt        string                      `json:"created_at"`
-	UpdatedAt        string                      `json:"updated_at"`
+	// LastSelectedAt is when rotation last chose this credential, a different fact from
+	// last_used_at, which names the last time it served, and the one rotation orders by: a
+	// key chosen then refused at the network advanced here and not there (SPEC-API-001 §7.5).
+	LastSelectedAt *string               `json:"last_selected_at,omitempty"`
+	KeyCount       int                   `json:"key_count"`
+	ActiveKeyCount int                   `json:"active_key_count"`
+	Available      bool                  `json:"available"`
+	Keys           []EndpointKeyResponse `json:"keys,omitempty"`
+	CreatedAt      string                `json:"created_at"`
+	UpdatedAt      string                `json:"updated_at"`
 
 	// The connection-parity fields. GlobalPriority is 0 when
 	// unset; DefaultModel and ProxyPoolID are empty when unset. LastError is
