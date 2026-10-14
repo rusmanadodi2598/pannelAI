@@ -2,7 +2,7 @@
 //
 // @file      internal/repository/redis/endpoint_cursor.go
 // @for       The round-robin cursor over one provider's upstream endpoints.
-// @uses      github.com/redis/go-redis/v9, context, crypto/sha256, encoding/hex, time.
+// @uses      github.com/redis/go-redis/v9, context, time.
 // @reason    SPEC-API-001 §4 puts sticky round-robin state in Redis, and it has to live there rather than in the process: a per-instance cursor makes distribution depend on which replica answered, which is not distribution at all. It is also the one piece the data plane's `CursorStore` port has no implementation for, so this is that implementation rather than a second copy of anything.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
@@ -12,8 +12,6 @@ package redisrepo
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -86,7 +84,7 @@ func (s *CursorStore) NextOffset(ctx context.Context, providerID string, size in
 	callCtx, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
-	key := cursorKeyPrefix + cursorProviderKey(providerID)
+	key := cursorKeyPrefix + cursorSegment(providerID)
 	offset, err := advanceScript.Run(callCtx, s.client,
 		[]string{key, key + ":used"},
 		size, stickyLimit, int64(cursorTTL/time.Second)).Int64()
@@ -94,15 +92,4 @@ func (s *CursorStore) NextOffset(ctx context.Context, providerID string, size in
 		return 0, err
 	}
 	return int(offset), nil
-}
-
-// cursorProviderKey derives the key segment from a provider id.
-//
-// The id is hashed because it arrives from a request: a provider id containing a
-// colon or a newline could otherwise fabricate a key that collides with another
-// namespace, so the derived segment is fixed-width hex rather than anything the
-// caller controls.
-func cursorProviderKey(providerID string) string {
-	digest := sha256.Sum256([]byte(providerID))
-	return hex.EncodeToString(digest[:])
 }
