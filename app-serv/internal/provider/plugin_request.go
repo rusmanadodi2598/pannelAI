@@ -63,6 +63,15 @@ type Request struct {
 	// request it was made for. The data plane sets it; a connector treats a nil
 	// value as a caller that is not watching.
 	Context context.Context
+
+	// ToolAliases maps a tool name this request sends upstream back to the
+	// name the caller declared. A connector that had to rename a tool to get
+	// the body past its upstream records each pair here (OpenCode's
+	// fingerprint pass conceals a caller tool that reuses one of its own
+	// names), and the core restores those names in the answer so the caller
+	// reads back the tools it asked with. Nil or empty means nothing was
+	// renamed, which is what keeps the answer path a passthrough.
+	ToolAliases map[string]string
 }
 
 // Response is what a connector returns. The body is streamed rather than

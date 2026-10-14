@@ -182,10 +182,12 @@ func noteOpenCodePlaceholderTools(body map[string]json.RawMessage, responses boo
 // OpenCode's own read/shell declarations, point a choice at the alias, rename
 // prior calls, and tell the model the appended tools are placeholders.
 //
+// It returns the alias map (sent name -> caller's name) for the response side.
+//
 // responses selects the wire's tool vocabulary. The Responses wire keeps its
 // explicit auto default; neither wire ever defaults to "none", which the
 // upstream answers with 403 FreeTierError.
-func applyOpenCodeFingerprintTools(body map[string]json.RawMessage, responses bool) {
+func applyOpenCodeFingerprintTools(body map[string]json.RawMessage, responses bool) map[string]string {
 	tools, _ := decodeOpenCodeItems(body["tools"])
 	concealed, aliases := concealOpenCodeFingerprintTools(tools)
 	tools, appended := appendOpenCodeFingerprintTools(concealed, responses)
@@ -198,4 +200,5 @@ func applyOpenCodeFingerprintTools(body map[string]json.RawMessage, responses bo
 	if _, present := body["tool_choice"]; !present && responses {
 		body["tool_choice"] = json.RawMessage(`"auto"`)
 	}
+	return aliases
 }

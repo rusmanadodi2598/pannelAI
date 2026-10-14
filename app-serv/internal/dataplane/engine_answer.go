@@ -34,6 +34,10 @@ func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in R
 	if err != nil {
 		return nil, nil, err
 	}
+	// The fold produced the upstream's own non-streamed wire, so the caller's
+	// tool names are restored here, before any client-wire translation reads
+	// the body. A request that renamed nothing is handed back as folded.
+	raw = restoreToolNames(raw, upstream.ToolAliases)
 	if usage == nil {
 		usage = readUsage(raw, resolution.Target)
 	}
@@ -88,6 +92,10 @@ func (e *Engine) translateAnswer(upstream *Upstream, resolution Resolution, in R
 	if err != nil {
 		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream response could not be read", err)
 	}
+	// The answer names the tools the request sent upstream, so the caller's own
+	// names are restored before anything reads the body. A request that renamed
+	// nothing is handed back byte-identically.
+	raw = restoreToolNames(raw, upstream.ToolAliases)
 	usage := readUsage(raw, resolution.Target)
 	outcome.Truncated = emptyTruncatedAnswer(raw, resolution)
 

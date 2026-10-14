@@ -59,7 +59,8 @@ func (e *Engine) relayStream(
 	case schema.FormatAnthropic:
 		state := NewClaudeStreamState("", answerModel(resolution, resolution.UpstreamID)).
 			WithStopSequences(in.stopSequences())
-		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
+		translate := restoreToolNamesStream(upstream.ToolAliases, state.Frames)
+		if err := e.pump(ctx, upstream, sink, resolution.Target, translate); err != nil {
 			return err
 		}
 		if err := writeFrames(sink, state.Finish()); err != nil {
@@ -72,7 +73,8 @@ func (e *Engine) relayStream(
 		// that convention's case: the caller addressed a name it can re-send, so
 		// the combo name overrides it and a plain model keeps what it had.
 		state := NewResponsesStreamState("", answerModel(resolution, resolution.UpstreamID), e.clock().Unix())
-		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
+		translate := restoreToolNamesStream(upstream.ToolAliases, state.Frames)
+		if err := e.pump(ctx, upstream, sink, resolution.Target, translate); err != nil {
 			return err
 		}
 		if err := writeFrames(sink, state.Finish()); err != nil {
@@ -82,7 +84,8 @@ func (e *Engine) relayStream(
 	default:
 		state := NewStreamState("", answerModel(resolution, resolution.UpstreamID), e.clock().Unix(), in.IncludeUsage).
 			WithStopSequences(in.stopSequences())
-		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
+		translate := restoreToolNamesStream(upstream.ToolAliases, state.Frames)
+		if err := e.pump(ctx, upstream, sink, resolution.Target, translate); err != nil {
 			return err
 		}
 		if err := writeFrames(sink, state.Finish()); err != nil {

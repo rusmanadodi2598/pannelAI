@@ -45,11 +45,15 @@ func (c *OpenCode) TransformRequest(req *Request) error {
 	// flatten and correct the client's own declarations first, and only then is
 	// a caller tool that reuses a fingerprint name concealed and the canonical
 	// read/shell declarations appended beside the survivors.
+	//
+	// The alias map the pass reports travels on the request: the core restores
+	// those names in the answer, so a caller that declared its own `read` reads
+	// back calls to `read` rather than to the alias it was concealed under.
 	if wire == registry.FormatOpenAIResponses {
 		transformOpenCodeResponses(body, req.Model, entry)
-		applyOpenCodeFingerprintTools(body, true)
+		req.ToolAliases = applyOpenCodeFingerprintTools(body, true)
 	} else {
-		applyOpenCodeFingerprintTools(body, false)
+		req.ToolAliases = applyOpenCodeFingerprintTools(body, false)
 	}
 
 	encoded, err := json.Marshal(body)

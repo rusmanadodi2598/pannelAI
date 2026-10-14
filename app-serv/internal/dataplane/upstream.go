@@ -56,6 +56,11 @@ type Upstream struct {
 	Header http.Header
 	Usage  provider.Usage
 	Body   io.ReadCloser
+	// ToolAliases maps the tool names the request sent upstream back to the
+	// names the caller declared, so the answer can be restored before it is
+	// translated. It is the connector's own record, copied from the shaped
+	// request, and is nil when the request renamed nothing.
+	ToolAliases map[string]string
 }
 
 // Close releases the body. A nil body is a no-op, so a caller can defer this

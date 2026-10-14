@@ -108,6 +108,11 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 				return nil, timeoutError(waitErr)
 			}
 		default:
+			// The connector's rename record travels with the answer: a tool
+			// it had to conceal on the way out is restored to the caller's
+			// own name on the way back. It is the same shaped request every
+			// attempt sent, so it is read once, here.
+			upstream.ToolAliases = request.ToolAliases
 			return upstream, nil
 		}
 	}
