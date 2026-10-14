@@ -26,7 +26,7 @@ import (
 // OpenCodeUserAgent is the client identity the free tier checks. It has to name
 // the CLI with a version at or above 1.17, because a bare or absent agent is
 // refused with 403 (the reference's own OPENCODE_UA).
-const OpenCodeUserAgent = "opencode/1.18.31"
+const OpenCodeUserAgent = "opencode/1.19.0"
 
 // The identity headers the free tier reads, and the value the CLI sends for the
 // project. They are constants because the upstream compares them literally.

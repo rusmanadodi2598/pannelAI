@@ -13,6 +13,7 @@ package provider
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -119,6 +120,42 @@ func requestWithAuth(t *testing.T, connector *OpenCode, endpointID string) *http
 		t.Fatalf("building request: %v", err)
 	}
 	if err := connector.ApplyAuth(request, NoCredential(endpointID)); err != nil {
+		t.Fatalf("ApplyAuth() error = %v", err)
+	}
+	return request
+}
+
+// TestOpenCode_ApplyAuthNamesTheTurn pins x-opencode-request on the path a real
+// request takes: the id is read off the body that is about to leave, so a retry
+// of one turn carries the name the first attempt carried and a different turn
+// carries a different one.
+func TestOpenCode_ApplyAuthNamesTheTurn(t *testing.T) {
+	connector := NewOpenCode(opencodeEntry("https://opencode.ai", "openai"))
+	turn := `{"model":"opencode/muse-spark-1.3-contributor-free","messages":[{"role":"user","content":"pong"}]}`
+	other := `{"model":"opencode/muse-spark-1.3-contributor-free","messages":[{"role":"user","content":"ping"}]}`
+
+	first := authedOpenCodeTurn(t, connector, turn)
+	got := first.Header.Get(openCodeRequestHeader)
+	if !OpenCodeRequestRE.MatchString(got) {
+		t.Fatalf("%s = %q, want the canonical message id", openCodeRequestHeader, got)
+	}
+	if again := authedOpenCodeTurn(t, connector, turn).Header.Get(openCodeRequestHeader); again != got {
+		t.Fatalf("one turn was named twice: %q then %q", got, again)
+	}
+	if changed := authedOpenCodeTurn(t, connector, other).Header.Get(openCodeRequestHeader); changed == got {
+		t.Fatalf("two different turns share the request id %q", got)
+	}
+}
+
+// authedOpenCodeTurn applies the connector's identity to a request that carries
+// a body, which is the shape ApplyAuth sees after the transport has shaped it.
+func authedOpenCodeTurn(t *testing.T, connector *OpenCode, body string) *http.Request {
+	t.Helper()
+	request, err := http.NewRequest(http.MethodPost, "https://opencode.ai/zen/v1/responses", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("building request: %v", err)
+	}
+	if err := connector.ApplyAuth(request, NoCredential("virtual:opencode")); err != nil {
 		t.Fatalf("ApplyAuth() error = %v", err)
 	}
 	return request

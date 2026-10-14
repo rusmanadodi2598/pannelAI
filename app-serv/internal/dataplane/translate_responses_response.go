@@ -83,7 +83,7 @@ func ResponsesToClaudeResponse(raw []byte, model string) (schema.MessagesRespons
 			Type:  schema.BlockToolUse,
 			ID:    call.ID,
 			Name:  call.Function.Name,
-			Input: argumentObject(call.Function.Arguments),
+			Input: normalizeClaudeToolInput(call.Function.Name, argumentObject(call.Function.Arguments)),
 		})
 	}
 

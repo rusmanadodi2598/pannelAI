@@ -34,6 +34,9 @@ type ClaudeStreamState struct {
 	// toolIndex maps an OpenAI tool-call index onto the Anthropic block index it
 	// was opened as, so argument fragments land on the right block.
 	toolIndex map[int]int
+	// tools holds those blocks' argument fragments until the block closes, so a
+	// tool input is corrected once as a whole object rather than per fragment.
+	tools *claudeToolBlocks
 
 	// responses maps Responses API events onto the OpenAI chunks this state
 	// frames, when the upstream speaks that format.
@@ -63,7 +66,7 @@ func (s *ClaudeStreamState) WithStopSequences(sequences []string) *ClaudeStreamS
 func NewClaudeStreamState(id, model string) *ClaudeStreamState {
 	return &ClaudeStreamState{
 		ID: id, Model: model, textIndex: -1, thinkingIndex: -1,
-		toolIndex: make(map[int]int, 4),
+		toolIndex: make(map[int]int, 4), tools: newClaudeToolBlocks(),
 	}
 }
 
@@ -139,41 +142,6 @@ func (s *ClaudeStreamState) Finish() [][]byte {
 		eventFrame(schema.EventMessageStop, mustFrame(map[string]any{"type": schema.EventMessageStop})),
 	)
 	return frames
-}
-
-// Usage reports the accounting the stream observed, or nil when the upstream
-// reported none.
-func (s *ClaudeStreamState) Usage() *schema.Usage { return s.usage }
-
-// mergeUsage folds one Anthropic usage block into the passthrough stream's
-// accounting, so a message_delta that names only the output side keeps the
-// prompt the message_start reported.
-func (s *ClaudeStreamState) mergeUsage(usage object) {
-	s.usage = mergedClaudeUsage(s.usage, usage)
-}
-
-// forwardClaude re-emits an Anthropic event the upstream already framed, keeping
-// the client's identity for the opening message.
-func (s *ClaudeStreamState) forwardClaude(chunk object) [][]byte {
-	if eventType := stringField(chunk, "type"); eventType != "" {
-		if message, ok := objectField(chunk, "message"); ok {
-			if id := stringField(message, "id"); id != "" && s.ID == "" {
-				s.ID = id
-			}
-			// message_start carries its numbers inside the message; message_delta
-			// carries them at the top level. The passthrough must read both
-			// places or the prompt side is never accounted for at all.
-			if usage, ok := objectField(message, "usage"); ok {
-				s.mergeUsage(usage)
-			}
-		}
-		if usage, ok := objectField(chunk, "usage"); ok {
-			s.mergeUsage(usage)
-		}
-		s.started = true
-		return [][]byte{eventFrame(eventType, mustJSON(chunk))}
-	}
-	return nil
 }
 
 // fromOpenAI converts one OpenAI chunk into the Anthropic events it stands for.

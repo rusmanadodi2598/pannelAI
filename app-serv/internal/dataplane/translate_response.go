@@ -131,11 +131,12 @@ func openAIChoiceBlocks(message object) []schema.Block {
 			if !ok {
 				continue
 			}
+			name := stringField(fn, "name")
 			blocks = append(blocks, schema.Block{
 				Type:  schema.BlockToolUse,
 				ID:    responseID(stringField(call, "id"), "toolu_pannelai"),
-				Name:  stringField(fn, "name"),
-				Input: rawOrObjectField(fn, "arguments"),
+				Name:  name,
+				Input: normalizeClaudeToolInput(name, rawOrObjectField(fn, "arguments")),
 			})
 		}
 	}

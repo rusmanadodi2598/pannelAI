@@ -990,7 +990,7 @@ providers:
       base_url: https://opencode.ai/zen/v1/systemone
       headers:
         x-opencode-client: desktop
-        User-Agent: opencode/1.18.31
+        User-Agent: opencode/1.19.0
   - id: vertex
     priority: 40
     alias: vertex
@@ -2632,7 +2632,7 @@ providers:
       base_url: https://opencode.ai/zen/v1/systemone
       headers:
         x-opencode-client: desktop
-        User-Agent: opencode/1.18.31
+        User-Agent: opencode/1.19.0
   - id: opencode-go
     priority: 210
     alias: opencode-go

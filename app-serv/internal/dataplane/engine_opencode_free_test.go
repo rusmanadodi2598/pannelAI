@@ -25,8 +25,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // openCodeFreeModels is the owner's acceptance list: the free-tier models that
@@ -70,6 +72,7 @@ func openCodeFreeUpstream(t *testing.T, seen *[]openCodeFreeCall) *httptest.Serv
 			Authorization: r.Header.Get("Authorization"),
 			UserAgent:     r.Header.Get("User-Agent"),
 			Session:       r.Header.Get("x-opencode-session"),
+			Request:       r.Header.Get("x-opencode-request"),
 			Client:        r.Header.Get("x-opencode-client"),
 			Body:          raw,
 			Tools:         openCodeToolNames(body),
@@ -93,6 +96,10 @@ func openCodeFreeUpstream(t *testing.T, seen *[]openCodeFreeCall) *httptest.Serv
 				refuse("the free tier requires the CLI user agent")
 			case call.Session == "":
 				refuse("the free tier requires a canonical session")
+			case !openCodeSessionClockIsCurrent(call.Session):
+				refuse("the session carries no clock the upstream can decode")
+			case call.Request == "":
+				refuse("the free tier requires the turn identity")
 			case !stream:
 				refuse("the free tier refuses a non-streaming request")
 			}
@@ -126,10 +133,37 @@ type openCodeFreeCall struct {
 	Authorization string
 	UserAgent     string
 	Session       string
+	Request       string
 	Client        string
 	Stream        bool
 	Tools         []string
 	Body          []byte
+}
+
+// openCodeFreeClockWindowMs is how far behind the present a remembered session
+// may sit: a session is minted once and reused, so the window has to cover a
+// conversation rather than a request.
+const openCodeFreeClockWindowMs = 10 * 60 * 1000
+
+// openCodeSessionClockIsCurrent reads the field OpenCode 1.19.0 decodes: the
+// twelve hex characters after `ses_` are the low 48 bits of the complement of
+// `ms*0x1000 + sequence`. It is written from the upstream's rule and not from the
+// connector's helper, so the stand-in cannot pass a bug in the code it gates, // which is exactly how a SHA-256 byte string, the value this lane sent before the
+// fix, was accepted for as long as it was.
+func openCodeSessionClockIsCurrent(session string) bool {
+	if !strings.HasPrefix(session, "ses_") || len(session) < 16 {
+		return false
+	}
+	field, err := strconv.ParseUint(session[4:16], 16, 64)
+	if err != nil {
+		return false
+	}
+	const mask48, mask36 = uint64(1<<48) - 1, uint64(1<<36) - 1
+	clock := (^field & mask48) / 0x1000
+	// The field is 48 bits wide and a millisecond counter has outgrown it, so both
+	// sides are compared inside the window the field can actually hold.
+	now := uint64(time.Now().UnixMilli()) & mask36
+	return now >= clock && now-clock <= openCodeFreeClockWindowMs
 }
 
 // openCodeToolNames reads every declared tool name in either wire shape, which

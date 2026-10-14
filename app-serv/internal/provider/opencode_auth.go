@@ -18,14 +18,12 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// ApplyAuth places the free tier's credential and identity on the request. The
-// credential is always the literal public bearer, because the free tier pools
-// anonymous traffic: a configured key would be ignored and would leak to an
-// endpoint that has no use for it. The session is derived from the endpoint, so
-// one account presents one stable identity. A request on the Anthropic Messages
-// leaf also names the API version that wire requires, decided from the URL rather
-// than the model, so a claude-target model on the go lane gets it at
-// /zen/go/v1/messages too. A version the entry declared is kept.
+// ApplyAuth places the free tier's credential and identity on the request: the
+// literal public bearer (the lane pools anonymous traffic), one remembered
+// session per client and endpoint, and the turn named in `x-opencode-request`
+// from that session plus the last user message of the body about to leave, // which is why the id is read here rather than where the body was shaped.
+// A request on the Anthropic Messages leaf also names that wire's API version,
+// decided from the URL rather than the model; a version the entry declared is kept.
 func (c *OpenCode) ApplyAuth(req *http.Request, cred Credential) error {
 	// The auth path has no model to read a provider override from, so it uses
 	// the entry the connector was built for.
@@ -47,9 +45,12 @@ func (c *OpenCode) ApplyAuth(req *http.Request, cred Credential) error {
 	}
 	req.Header.Set("Authorization", "Bearer public")
 	req.Header.Set("User-Agent", OpenCodeUserAgent)
-	req.Header.Set(openCodeClientHeader, c.clientValue(req))
-	req.Header.Set(openCodeSessionHeader, OpenCodeSession(cred.EndpointID()))
+	client := c.clientValue(req)
+	session := OpenCodeSessionFor(client, cred.EndpointID())
+	req.Header.Set(openCodeClientHeader, client)
+	req.Header.Set(openCodeSessionHeader, session)
 	req.Header.Set(openCodeProjectHeader, openCodeProjectValue)
+	req.Header.Set(openCodeRequestHeader, OpenCodeRequestID(session, req))
 	if isOpenCodeMessagesURL(req.URL.Path) && req.Header.Get(openCodeAnthropicVersionHeader) == "" {
 		req.Header.Set(openCodeAnthropicVersionHeader, OpenCodeAnthropicVersion)
 	}
