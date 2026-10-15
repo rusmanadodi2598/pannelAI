@@ -24,8 +24,10 @@ type ProxyRouteStore interface {
 	// order": rotation is an optimisation, not a correctness input.
 	Next(ctx context.Context, poolKey string, ids []string) ([]string, error)
 
-	// Park records a connect-stage failure against one candidate for ttl. A
-	// parked candidate is skipped while an unparked one remains.
+	// Park takes one candidate out of rotation for ttl. The walk reports both
+	// kinds of failure here: a connect stage that died, and an upstream that
+	// refused that particular address. A parked candidate is skipped while an
+	// unparked one remains.
 	Park(ctx context.Context, proxyID string, ttl time.Duration) error
 
 	// ParkedAll reports which candidates are inside their failure cooldown, for a

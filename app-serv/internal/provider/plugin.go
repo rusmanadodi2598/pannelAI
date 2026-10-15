@@ -98,11 +98,13 @@ type StreamForcer interface {
 }
 
 // SessionSerializer is the optional seam a connector implements when its
-// upstream throttles per session: the connector knows which session a call
-// presents, and the transport runs one call at a time for that session rather
-// than letting parallel requests stack upstream and be released together. A
-// connector that declares none is unchanged, exactly as with the other optional
-// seams.
+// upstream counts a session's concurrent usage: the connector knows which
+// session a call presents, and the transport runs one call at a time for that
+// session rather than letting parallel requests stack upstream and be released
+// together. The refusal an overloaded lane answers with is a separate question:
+// for OpenCode's free tier it is keyed on the egress address, not the session
+// (SPEC-API-001 §7.11). A connector that declares none is unchanged, exactly as
+// with the other optional seams.
 //
 // An implementation must be safe for concurrent use and must not keep
 // per-request state, as Plugin requires: the session is a pure function of the

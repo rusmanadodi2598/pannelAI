@@ -13,6 +13,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -83,8 +84,8 @@ func (p guardedProxyPlanner) Plan(ctx context.Context, providerID, host string) 
 	return plan, nil
 }
 
-// ReportFailure parks one candidate for the cooldown, through to the service
-// that owns the rule.
-func (p guardedProxyPlanner) ReportFailure(ctx context.Context, proxyID string) {
-	p.routes.ReportFailure(ctx, proxyID)
+// ReportFailure takes one candidate out of rotation for the stated wait, through
+// to the service that owns the rule.
+func (p guardedProxyPlanner) ReportFailure(ctx context.Context, proxyID string, ttl time.Duration) {
+	p.routes.ReportFailure(ctx, proxyID, ttl)
 }

@@ -4,7 +4,7 @@
 // @file      internal/provider/opencode_session.go
 // @for       The canonical OpenCode session identity a free-tier request carries.
 // @uses      crypto/sha256, regexp, strings.
-// @reason    The free tier accounts quota per session and refuses any value that is not the CLI's own canonical shape. The twelve hex characters are decoded as `~(time*0x1000 + counter)`, and the upstream rejects a counter past the small values the CLI sends with 403 FreeTierError, which a digest-filled 48-bit prefix produced about 97% of the time. The port pins the counter to the one the CLI sends and derives the 36-bit time from the identity digest (the reference's translateSessionId fix, PR #4842), so one identity still presents one stable session.
+// @reason    The free tier refuses any value that is not the CLI's own canonical shape; its quota is counted per egress address rather than per session (measured 2026-10-15, SPEC-API-001 §7.11), so this file is about the shape alone. The twelve hex characters are decoded as `~(time*0x1000 + counter)`, and the upstream rejects a counter past the small values the CLI sends with 403 FreeTierError, which a digest-filled 48-bit prefix produced about 97% of the time. The port pins the counter to the one the CLI sends and derives the 36-bit time from the identity digest (the reference's translateSessionId fix, PR #4842), so one identity still presents one stable session.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

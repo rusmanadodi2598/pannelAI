@@ -35,15 +35,19 @@ type plannerProxyLister struct{ rows []domain.Proxy }
 
 func (l plannerProxyLister) List(context.Context) ([]domain.Proxy, error) { return l.rows, nil }
 
-// plannerRouteStore records what the adapter reports.
-type plannerRouteStore struct{ parked []string }
+// plannerRouteStore records what the adapter reports, including the wait it was told.
+type plannerRouteStore struct {
+	parked []string
+	waits  []time.Duration
+}
 
 func (s *plannerRouteStore) Next(_ context.Context, _ string, ids []string) ([]string, error) {
 	return ids, nil
 }
 
-func (s *plannerRouteStore) Park(_ context.Context, proxyID string, _ time.Duration) error {
+func (s *plannerRouteStore) Park(_ context.Context, proxyID string, ttl time.Duration) error {
 	s.parked = append(s.parked, proxyID)
+	s.waits = append(s.waits, ttl)
 	return nil
 }
 
@@ -129,12 +133,16 @@ func TestGuardedProxyPlanner_EmptyPlanSkipsTheCheck(t *testing.T) {
 	}
 }
 
-// TestGuardedProxyPlanner_ReportFailureReachesTheStore pins that the adapter is
-// a pass-through for the parking half too, so a dead candidate is remembered.
+// TestGuardedProxyPlanner_ReportFailureReachesTheStore pins that the adapter is a
+// pass-through for the parking half too, including the wait the walk decided on, so
+// a dead candidate and a refusing one are both remembered for as long as they said.
 func TestGuardedProxyPlanner_ReportFailureReachesTheStore(t *testing.T) {
 	adapter, store := plannerAdapter(t, "127.0.0.1", []string{"127.0.0.0/8"}, true)
-	adapter.ReportFailure(context.Background(), "prx_a")
+	adapter.ReportFailure(context.Background(), "prx_a", 90*time.Second)
 	if len(store.parked) != 1 || store.parked[0] != "prx_a" {
 		t.Fatalf("parked = %v, want [prx_a]", store.parked)
+	}
+	if len(store.waits) != 1 || store.waits[0] != 90*time.Second {
+		t.Fatalf("parked for %v, want the wait the walk handed over", store.waits)
 	}
 }

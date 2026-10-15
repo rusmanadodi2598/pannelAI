@@ -127,13 +127,13 @@ func TestProxyRouteService_ReportFailure(t *testing.T) {
 	svc := routeFixture(nil, planDocument("", ""))
 	store := svc.routes.(*fakeRouteStore)
 
-	svc.ReportFailure(context.Background(), "prx_a")
+	svc.ReportFailure(context.Background(), "prx_a", domain.ProxyFailureCooldown)
 	if len(store.parkedIDs) != 1 || store.parkedIDs[0] != "prx_a" {
 		t.Fatalf("ReportFailure parked %v, want [prx_a]", store.parkedIDs)
 	}
 
 	// The static member carries no id: parking nothing is the correct report.
-	svc.ReportFailure(context.Background(), "")
+	svc.ReportFailure(context.Background(), "", domain.ProxyFailureCooldown)
 	if len(store.parkedIDs) != 1 {
 		t.Fatalf("ReportFailure parked %v, want no second entry", store.parkedIDs)
 	}
