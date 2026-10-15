@@ -75,6 +75,10 @@ type ProviderStrategy struct {
 	// KeyPark retunes the parking windows for this provider alone. An empty entry
 	// inherits every window from the group.
 	KeyPark KeyParkWindows `json:"key_park,omitempty"`
+	// FailureClasses retunes what one recognised failure class does for this
+	// provider alone: its action, its ceiling, its cooldown. An empty entry
+	// inherits every class from the group.
+	FailureClasses FailureClassPolicies `json:"failure_classes,omitempty"`
 }
 
 // RotationPolicy is the credential walk resolved for one provider: the mode the
@@ -151,6 +155,9 @@ type RoutingSettings struct {
 	// KeyPark holds the global key-parking windows. It is the §7.5 budget the
 	// ladder starts from before any provider override.
 	KeyPark KeyParkWindows `json:"key_park,omitempty"`
+	// FailureClasses holds the global per-class action and windows: what the
+	// router does with a recognised failure, before any provider override.
+	FailureClasses FailureClassPolicies `json:"failure_classes,omitempty"`
 	// Failover bounds one request's whole credential walk: global rather than per-provider,
 	// because the chain it cuts belongs to the request (a combo, its accounts, their keys).
 	Failover FailoverBudget `json:"failover,omitempty"`

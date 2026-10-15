@@ -28,7 +28,7 @@ const upstreamKeyColumns = `id, endpoint_id, label, value_encrypted, key_hint,
 	priority, status, last_used_at, last_error, consecutive_errors,
 	rate_limited_until, created_at, updated_at,
 	last_selected_at, consecutive_auth, consecutive_ratelimit, consecutive_billing,
-	last_error_class`
+	last_error_class, reset_source, signature_id`
 
 // upstreamKeyCopyColumns is the insert column list, which must match
 // keyCopyRow's argument order exactly.
@@ -49,6 +49,7 @@ func scanUpstreamKey(s scanner, extra ...any) (domain.UpstreamKey, error) {
 		status                                         string
 		lastUsedAt, lastSelectedAt, rateLimitedUntil   *time.Time
 		lastError, lastErrorClass                      *string
+		resetSource, signatureID                       *string
 		createdAt, updatedAt                           time.Time
 	)
 	dest := []any{
@@ -56,6 +57,7 @@ func scanUpstreamKey(s scanner, extra ...any) (domain.UpstreamKey, error) {
 		&lastUsedAt, &lastError, &consecutiveErrors, &rateLimitedUntil,
 		&createdAt, &updatedAt,
 		&lastSelectedAt, &authRuns, &rateRuns, &billRuns, &lastErrorClass,
+		&resetSource, &signatureID,
 	}
 	dest = append(dest, extra...)
 	if err := s.Scan(dest...); err != nil {
@@ -78,6 +80,8 @@ func scanUpstreamKey(s scanner, extra ...any) (domain.UpstreamKey, error) {
 			ConsecutiveRateLimit: rateRuns,
 			ConsecutiveBilling:   billRuns,
 			LastErrorClass:       class,
+			ResetSource:          derefText(resetSource),
+			SignatureID:          derefText(signatureID),
 		},
 		rateLimitedUntil, createdAt, updatedAt), nil
 }

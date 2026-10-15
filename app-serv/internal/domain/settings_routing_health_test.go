@@ -21,7 +21,9 @@ import (
 func TestRoutingSettings_HealthForDefaults(t *testing.T) {
 	settings := RoutingSettings{ProviderStrategies: map[string]ProviderStrategy{}}
 	got := settings.HealthFor("openai")
-	if want := DefaultKeyHealthPolicy(); got != want {
+	want := DefaultKeyHealthPolicy()
+	if got.AuthWindow != want.AuthWindow || got.RateLimitWindow != want.RateLimitWindow ||
+		got.TransientWindow != want.TransientWindow || got.BillingWindow != want.BillingWindow {
 		t.Fatalf("HealthFor(unconfigured) = %+v, want %+v", got, want)
 	}
 	if got.AuthWindow != 2*time.Minute || got.RateLimitWindow != 2*time.Second ||

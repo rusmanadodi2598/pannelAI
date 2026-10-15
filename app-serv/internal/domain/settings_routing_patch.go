@@ -24,6 +24,10 @@ type RoutingSettingsPatch struct {
 	// KeyPark retunes the group's parking windows. Each window is optional on
 	// its own, because a PATCH that names one must not reset the other two.
 	KeyPark *KeyParkPatch
+	// FailureClasses retunes what a recognised failure class does. It merges
+	// over what is stored, so a PATCH that names one class leaves the others
+	// where an earlier write put them.
+	FailureClasses *FailureClassPolicies
 	// Failover retunes the walk budget, each bound on its own for the same reason.
 	Failover *FailoverBudgetPatch
 }
@@ -60,6 +64,9 @@ func applyRouting(dst *RoutingSettings, p *RoutingSettingsPatch) {
 	}
 	if p.KeyPark != nil {
 		p.KeyPark.applyTo(&dst.KeyPark)
+	}
+	if p.FailureClasses != nil {
+		dst.FailureClasses = dst.FailureClasses.Merged(*p.FailureClasses)
 	}
 	if p.Failover != nil {
 		p.Failover.applyTo(&dst.Failover)
@@ -99,9 +106,10 @@ func validateRouting(s RoutingSettings) error {
 	}
 	for id, override := range s.ProviderStrategies {
 		scope := "routing.provider_strategies[" + id + "]"
-		if override.FallbackStrategy == "" && override.StickyLimit == nil && override.KeyPark.IsEmpty() {
+		if override.FallbackStrategy == "" && override.StickyLimit == nil &&
+			override.KeyPark.IsEmpty() && override.FailureClasses.IsEmpty() {
 			return NewValidationError(scope +
-				" must set fallback_strategy, sticky_limit, or key_park; delete the entry to inherit the default")
+				" must set fallback_strategy, sticky_limit, key_park, or failure_classes; delete the entry to inherit the default")
 		}
 		if override.FallbackStrategy != "" && !override.FallbackStrategy.IsValid() {
 			return NewValidationError(scope +
@@ -113,6 +121,12 @@ func validateRouting(s RoutingSettings) error {
 		if err := validateKeyPark(scope, override.KeyPark); err != nil {
 			return err
 		}
+		if err := validateFailureClasses(scope, override.FailureClasses); err != nil {
+			return err
+		}
 	}
-	return validateKeyPark("routing", s.KeyPark)
+	if err := validateKeyPark("routing", s.KeyPark); err != nil {
+		return err
+	}
+	return validateFailureClasses("routing", s.FailureClasses)
 }

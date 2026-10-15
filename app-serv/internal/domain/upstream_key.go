@@ -60,6 +60,13 @@ type KeyRotationState struct {
 	// names itself. The health write needs it to choose its column and the panel needs it
 	// because last_error holds the vendor's sentence, not the fact that it was a 429.
 	LastErrorClass string
+	// ResetSource and SignatureID are the provenance of the park that is on the row:
+	// which statement of the vendor's produced the wait, and which signature
+	// recognised the failure. They read out to an operator only; nothing in the
+	// router decides anything from them, and a row parked before the classifier
+	// existed carries neither.
+	ResetSource string
+	SignatureID string
 }
 
 // UpstreamKey is one credential under an upstream endpoint. Fields are
@@ -82,8 +89,15 @@ type UpstreamKey struct {
 	consecutiveBilling   int
 	lastErrorClass       string
 	rateLimitedUntil     *time.Time
-	createdAt            time.Time
-	updatedAt            time.Time
+	// resetSource and signatureID record how a park's rest was arrived at: which
+	// of the vendor's own statements produced it, and which signature recognised
+	// the failure. They are diagnostics for an operator reading a parked key, not
+	// inputs to the health model, so nothing decides a window from them and a park
+	// written by an older binary simply carries neither.
+	resetSource string
+	signatureID string
+	createdAt   time.Time
+	updatedAt   time.Time
 }
 
 // NewUpstreamKey is the only constructor for a freshly added key. The value
@@ -155,6 +169,8 @@ func RehydrateUpstreamKey(
 		consecutiveRateLimit: rotation.ConsecutiveRateLimit,
 		consecutiveBilling:   rotation.ConsecutiveBilling,
 		lastErrorClass:       rotation.LastErrorClass,
+		resetSource:          rotation.ResetSource,
+		signatureID:          rotation.SignatureID,
 		rateLimitedUntil:     rateLimitedUntil,
 		createdAt:            createdAt,
 		updatedAt:            updatedAt,

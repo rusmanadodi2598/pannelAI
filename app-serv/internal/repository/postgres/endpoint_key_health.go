@@ -36,18 +36,28 @@ UPDATE upstream_keys
        last_used_at = $2,
        last_error = $3,
        consecutive_errors = CASE WHEN $4::boolean THEN 0 ELSE consecutive_errors + 1 END,
+       -- Each run is named two ways now: the parking class's own token ('auth')
+       -- and the finer failure class the recogniser stamped ('AUTH_INVALID'), because
+       -- last_error_class carries whichever the write was handed and a ladder that
+       -- counted only one of them would stop escalating the moment a signature
+       -- matched. A spent allowance advances the billing run: it is the same
+       -- account-level condition, measured on the same column.
        consecutive_auth = CASE WHEN $4::boolean THEN 0
-                               WHEN $9::text = 'auth' THEN consecutive_auth + 1
+                               WHEN $9::text IN ('auth', 'AUTH_INVALID') THEN consecutive_auth + 1
                                ELSE consecutive_auth END,
        consecutive_ratelimit = CASE WHEN $4::boolean THEN 0
-                                    WHEN $9::text = 'ratelimit' THEN consecutive_ratelimit + 1
+                                    WHEN $9::text IN ('ratelimit', 'RATE_LIMIT_TEMPORARY')
+                                         THEN consecutive_ratelimit + 1
                                     ELSE consecutive_ratelimit END,
        consecutive_billing = CASE WHEN $4::boolean THEN 0
-                                  WHEN $9::text = 'billing' THEN consecutive_billing + 1
+                                  WHEN $9::text IN ('billing', 'quota', 'BILLING_EXHAUSTED',
+                                                    'QUOTA_EXHAUSTED') THEN consecutive_billing + 1
                                   ELSE consecutive_billing END,
        last_error_class = $9,
        rate_limited_until = CASE WHEN $4::boolean THEN $5::timestamptz
                                  ELSE GREATEST(rate_limited_until, $5::timestamptz) END,
+       reset_source = $10,
+       signature_id = $11,
        updated_at = $6
  WHERE id = $7 AND endpoint_id = $8`
 
@@ -59,7 +69,8 @@ UPDATE upstream_keys
 	class := failureClassParam(key)
 	tag, err := r.pool.Exec(ctx, q, string(key.Status()), key.LastUsedAt(), lastError,
 		key.ConsecutiveErrors() == 0, key.RateLimitedUntil(), key.UpdatedAt(),
-		key.ID(), key.EndpointID(), class)
+		key.ID(), key.EndpointID(), class, nullableString(key.ResetSource()),
+		nullableString(key.SignatureID()))
 	if err != nil {
 		return translateKeyError(err)
 	}
@@ -67,6 +78,17 @@ UPDATE upstream_keys
 		return domain.NewNotFoundError("upstream key not found")
 	}
 	return nil
+}
+
+// nullableString is the NULL shape last_error uses, applied to a diagnostic that
+// is absent rather than empty: a park written before the classifier existed
+// carries neither a source nor a signature, and an empty string would read as a
+// value an operator has to interpret.
+func nullableString(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 // failureClassParam names the run this transition advances, or nothing at all when

@@ -118,11 +118,29 @@ type KeyHealthPolicy struct {
 	// RetryAfterHint is the wait the vendor itself named for this failure, or zero. It rides
 	// the budget because it answers the budget's own question: how long to stay away.
 	RetryAfterHint time.Duration
+	// Rest is what the classifier recognised about this one failure: the class, the
+	// vendor's own reset and wait, and where each came from. It rides the budget for
+	// the same reason the hint does, and the zero value is the pre-classification
+	// behaviour every caller that has nothing to report still gets.
+	Rest RestDirective
+	// FailureClasses is the per-class action and windows resolved for this provider:
+	// the provider's override over the group's over the documented defaults. A nil
+	// map answers the documented default for every class.
+	FailureClasses FailureClassPolicies
 }
 
 // WithRetryAfter returns the same budget with the vendor's own wait applied.
 func (p KeyHealthPolicy) WithRetryAfter(hint time.Duration) KeyHealthPolicy {
 	p.RetryAfterHint = hint
+	return p
+}
+
+// WithRest returns the same budget with one classified failure applied: the
+// vendor's wait, so the ladder still reads what it always read, and the rest
+// the classification earned, which outranks it.
+func (p KeyHealthPolicy) WithRest(rest RestDirective) KeyHealthPolicy {
+	p.Rest = rest
+	p.RetryAfterHint = rest.RetryAfter
 	return p
 }
 
@@ -157,6 +175,8 @@ func (p KeyHealthPolicy) WindowFor(class KeyFailureClass, n int) time.Duration {
 		return backoff(base, n, keyRateLimitMax)
 	case KeyFailureBilling:
 		return backoff(durationOr(p.BillingWindow, keyBillingBase), n, keyBillingMax)
+	case KeyFailureQuota:
+		return quotaStep(n)
 	default:
 		return durationOr(p.TransientWindow, keyTransientCooldown)
 	}
@@ -187,10 +207,14 @@ func durationOr(set, def time.Duration) time.Duration {
 // unvalidated document still has to answer a usable policy.
 func (s RoutingSettings) HealthFor(providerID string) KeyHealthPolicy {
 	windows := s.KeyPark
+	classes := s.FailureClasses
 	if override, ok := s.ProviderStrategies[providerID]; ok {
 		windows = windows.Merged(override.KeyPark)
+		classes = classes.Merged(override.FailureClasses)
 	}
-	return windows.Policy()
+	policy := windows.Policy()
+	policy.FailureClasses = classes
+	return policy
 }
 
 // validateKeyPark checks one entry's windows against the stored bounds. An unset

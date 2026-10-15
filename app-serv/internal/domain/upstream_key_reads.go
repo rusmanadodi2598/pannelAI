@@ -29,5 +29,7 @@ func (k UpstreamKey) ConsecutiveAuth() int         { return k.consecutiveAuth }
 func (k UpstreamKey) ConsecutiveRateLimit() int    { return k.consecutiveRateLimit }
 func (k UpstreamKey) ConsecutiveBilling() int      { return k.consecutiveBilling }
 func (k UpstreamKey) RateLimitedUntil() *time.Time { return k.rateLimitedUntil }
+func (k UpstreamKey) ResetSource() string          { return k.resetSource }
+func (k UpstreamKey) SignatureID() string          { return k.signatureID }
 func (k UpstreamKey) CreatedAt() time.Time         { return k.createdAt }
 func (k UpstreamKey) UpdatedAt() time.Time         { return k.updatedAt }

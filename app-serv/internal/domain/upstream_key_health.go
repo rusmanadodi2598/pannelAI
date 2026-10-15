@@ -13,63 +13,6 @@ package domain
 
 import "time"
 
-// KeyFailureClass is the class an upstream failure belongs to. The class decides
-// how long the key is parked (SPEC-API-001 §7.5), following the reference's
-// classification: a credential-shaped failure parks long, a rate limit backs
-// off exponentially, a transient outage parks briefly, and a failure the
-// credential did not cause parks nothing.
-type KeyFailureClass int
-
-const (
-	// KeyFailureAuth covers 401/403: the credential itself was refused.
-	KeyFailureAuth KeyFailureClass = iota
-	// KeyFailureRateLimit covers 429.
-	KeyFailureRateLimit
-	// KeyFailureTransient covers an upstream 5xx: the target is unhealthy.
-	KeyFailureTransient
-	// KeyFailureRequest covers every other 4xx: the request is the cause.
-	KeyFailureRequest
-	// KeyFailureTarget covers an upstream 404 and a call that never reached the
-	// upstream: the target or the network caused it, and another credential on
-	// the same body could still succeed.
-	KeyFailureTarget
-	// KeyFailureBilling covers an upstream 402: the credential is valid and the
-	// account behind it has no credit, a condition measured in hours rather than
-	// in minutes, and one the operator fixes by topping the account up.
-	KeyFailureBilling
-)
-
-// ImplicatesCredential reports whether a failure of this class says anything
-// about the credential that served it. A new class opts in here rather than by
-// being absent from a blacklist, because the default for a class nobody thought
-// about is to leave the credential alone. A bill does implicate it: the account
-// behind that key cannot serve, so the key leaves rotation on its own ladder.
-func (c KeyFailureClass) ImplicatesCredential() bool {
-	return c == KeyFailureAuth || c == KeyFailureRateLimit || c == KeyFailureTransient || c == KeyFailureBilling
-}
-
-// String names the class for a store that has to route one increment by it, and
-// for a log line. The values are stable: the key-health statement compares
-// against them, so a rename here is a migration, not a cosmetic edit.
-func (c KeyFailureClass) String() string {
-	switch c {
-	case KeyFailureAuth:
-		return "auth"
-	case KeyFailureRateLimit:
-		return "ratelimit"
-	case KeyFailureTransient:
-		return "transient"
-	case KeyFailureRequest:
-		return "request"
-	case KeyFailureTarget:
-		return "target"
-	case KeyFailureBilling:
-		return "billing"
-	default:
-		return "unknown"
-	}
-}
-
 // keyTransientCooldown is the §7.5 flat window for an outage-shaped failure: long
 // enough to skip the overloaded instance, short enough that a recovered one is
 // picked up by the next request. It stays flat because a target that answered 5xx
@@ -89,6 +32,29 @@ const (
 	keyBillingMax    = 6 * time.Hour
 	keyLadderMaxN    = 15
 )
+
+// quotaLadder is the park a spent allowance earns, walked in steps rather than
+// by doubling. Doubling from fifteen minutes needs eight strikes to reach a day,
+// and every strike is a walk leg the gateway already knows cannot be served;
+// a vendor's period is a known length, so the park grows to it in four.
+var quotaLadder = []time.Duration{
+	15 * time.Minute,
+	time.Hour,
+	6 * time.Hour,
+	24 * time.Hour,
+}
+
+// quotaStep answers the n-th step of that ladder, holding to the last one past
+// the end rather than escalating beyond a day.
+func quotaStep(n int) time.Duration {
+	if n < 1 {
+		n = 1
+	}
+	if n > len(quotaLadder) {
+		n = len(quotaLadder)
+	}
+	return quotaLadder[n-1]
+}
 
 // RateLimitCeiling is the §7.5 ceiling the rate-limit ladder stops at. The wait a client is
 // told to wait is bounded by the same number the credential is parked for: a gateway saying
@@ -143,16 +109,24 @@ func (k UpstreamKey) Available(now time.Time) bool {
 // raise the credential ladder, so a throttled account was parked for strikes it never earned.
 func (k *UpstreamKey) RecordFailure(reason string, class KeyFailureClass, policy KeyHealthPolicy, now time.Time) {
 	k.lastError = reason
-	k.lastErrorClass = class.String()
+	k.lastErrorClass = policy.Rest.Label(class)
+	k.resetSource = policy.Rest.SourceLabel()
+	k.signatureID = policy.Rest.SignatureID
 	k.updatedAt = now
 	if !class.ImplicatesCredential() {
 		return
 	}
 	k.consecutiveErrors++
 	k.bumpRun(class)
-	window := policy.WindowFor(class, k.runFor(class))
+	// The rest is absolute where the vendor stated one, so a spent allowance
+	// stays out of rotation until its own reset instead of re-entering it every
+	// cycle to be refused again. A class an operator retuned to rotate rather
+	// than park answers the zero time and parks nothing at all.
+	until := policy.RestUntil(class, k.runFor(class), now)
+	if until.IsZero() {
+		return
+	}
 	k.status = UpstreamKeyError
-	until := now.Add(window)
 	k.rateLimitedUntil = &until
 }
 
@@ -165,7 +139,11 @@ func (k *UpstreamKey) bumpRun(class KeyFailureClass) {
 		k.consecutiveAuth++
 	case KeyFailureRateLimit:
 		k.consecutiveRateLimit++
-	case KeyFailureBilling:
+	case KeyFailureBilling, KeyFailureQuota:
+		// A spent allowance advances the account's own run: it is the same
+		// account-level condition a 402 names, measured on the same column, and
+		// giving it a counter of its own would need a column this table does not
+		// have for a condition that is no different to act on.
 		k.consecutiveBilling++
 	}
 }
@@ -178,7 +156,7 @@ func (k UpstreamKey) runFor(class KeyFailureClass) int {
 		return k.consecutiveAuth
 	case KeyFailureRateLimit:
 		return k.consecutiveRateLimit
-	case KeyFailureBilling:
+	case KeyFailureBilling, KeyFailureQuota:
 		return k.consecutiveBilling
 	default:
 		return k.consecutiveErrors
@@ -201,6 +179,8 @@ func (k *UpstreamKey) RecordSuccess(now time.Time) {
 	k.consecutiveBilling = 0
 	k.lastError = ""
 	k.lastErrorClass = ""
+	k.resetSource = ""
+	k.signatureID = ""
 	k.rateLimitedUntil = nil
 	if k.status == UpstreamKeyError {
 		k.status = UpstreamKeyActive
