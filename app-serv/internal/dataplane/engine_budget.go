@@ -83,6 +83,17 @@ func (b *RequestBudget) spend() bool {
 // ran out of accounts from one that ran out of time.
 func (b *RequestBudget) markCalled() { b.called = true }
 
+// pause pushes the walk's clock out by d: time spent waiting on a local
+// resource (the per-session queue a throttled upstream needs) is not upstream
+// time, so it must not be charged to the walk that bounds the upstream calls.
+// The clock is the walk's own; the request's wall clock still includes the
+// wait, which is the caller's price for being serialized rather than refused.
+func (b *RequestBudget) pause(d time.Duration) {
+	if d > 0 {
+		b.deadline = b.deadline.Add(d)
+	}
+}
+
 // error reports the cut short by what ran out: a walk that had already called upstream
 // is a timeout, one that never reached an account is unavailability. Both are codes the
 // client already knows, and Retry-After carries the budget's own length.

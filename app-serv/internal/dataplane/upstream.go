@@ -47,6 +47,11 @@ type Call struct {
 	// Idempotent reports whether repeating the request is safe. A chat
 	// completion is not: the upstream may have started the work.
 	Idempotent bool
+	// Budget is the walk this call runs inside. The transport reads it to clamp
+	// its own waits and its first-byte cap to what the walk has left, so one
+	// credential cannot outlive the request. Nil means no walk bound, which is
+	// what a direct call from a test carries.
+	Budget *RequestBudget
 }
 
 // Upstream is a successful answer: the status, the headers, the accounting a

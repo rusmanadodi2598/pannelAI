@@ -21,6 +21,7 @@
 package dataplane
 
 import (
+	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -31,6 +32,14 @@ import (
 // one recognizable in a log or an error message, and it cannot collide with a
 // stored row because a ULID never starts with it.
 const VirtualEndpointIDPrefix = "virtual:"
+
+// isVirtualEndpoint reports whether an endpoint id names a synthesized endpoint.
+// No row exists for one, so every write keyed by its id would match zero rows:
+// the health writes skip it rather than pay a statement that changes nothing and
+// report the empty result as a bookkeeping failure.
+func isVirtualEndpoint(id string) bool {
+	return strings.HasPrefix(id, VirtualEndpointIDPrefix)
+}
 
 // VirtualEndpointLabel is the label a synthesized endpoint carries.
 const VirtualEndpointLabel = "Public (no credential)"

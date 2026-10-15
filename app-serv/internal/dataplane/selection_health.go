@@ -12,7 +12,6 @@ package dataplane
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -39,7 +38,7 @@ func accountingCtx(ctx context.Context) (context.Context, context.CancelFunc) {
 // A virtual endpoint is skipped: the lane synthesizes its account, so no row exists
 // to stamp and every request would pay a primary-key update that changes nothing.
 func (s *Selector) markSelected(ctx context.Context, selection Selection) {
-	if strings.HasPrefix(selection.Endpoint.ID(), VirtualEndpointIDPrefix) {
+	if isVirtualEndpoint(selection.Endpoint.ID()) {
 		return
 	}
 	writeCtx, cancel := accountingCtx(ctx)
@@ -55,7 +54,16 @@ func (s *Selector) markSelected(ctx context.Context, selection Selection) {
 // key's circuit, persisting both. A keyless selection (a no_auth endpoint) has
 // no key circuit to write, but its upstream was still reached and served, so the
 // endpoint's own connection state is recorded for it too.
+//
+// A virtual endpoint is skipped, as markSelected skips it: the lane synthesized
+// its account, so the parity update matches no row and the driver answers
+// NOT_FOUND, which the caller would report as a bookkeeping failure for a call
+// that actually served. The synthesized account is also rebuilt per request, so
+// there is no state a write could carry forward.
 func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error {
+	if isVirtualEndpoint(selection.Endpoint.ID()) {
+		return nil
+	}
 	writeCtx, cancel := accountingCtx(ctx)
 	defer cancel()
 
@@ -91,6 +99,12 @@ func (s *Selector) RecordFailure(
 	retryAfter time.Duration,
 ) error {
 	if class == domain.KeyFailureRequest {
+		return nil
+	}
+	// A virtual endpoint is skipped for the same reason RecordSuccess skips it:
+	// no row exists, so the write would answer NOT_FOUND for a real upstream
+	// failure and log a bookkeeping error that hides the cause.
+	if isVirtualEndpoint(selection.Endpoint.ID()) {
 		return nil
 	}
 	writeCtx, cancel := accountingCtx(ctx)

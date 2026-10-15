@@ -131,6 +131,35 @@ providers:
 	}
 }
 
+// TestIndex_SynthesizeGivesACustomNodeItsAttemptTimeout pins the per-attempt
+// bound a synthesized node carries. An undeclared entry inherits the 120s total,
+// which is longer than the whole default failover walk: one credential against a
+// node like TH Harbor (all keys rate-limited) spent that long inside the
+// transport and the walk reported a timeout instead of the RATE_LIMITED the
+// upstream had already sent. A node declares no timeout of its own, so the
+// synthesis is where the sane one lives.
+func TestIndex_SynthesizeGivesACustomNodeItsAttemptTimeout(t *testing.T) {
+	base, err := loadFixture(t, `
+providers:
+  - id: deepseek
+    category: apikey
+`)
+	if err != nil {
+		t.Fatalf("load error = %v", err)
+	}
+	node := CustomNode{
+		ID: OpenAICompatiblePrefix + "harbor", Name: "TH Harbor", Prefix: "harbor",
+		APIType: "chat", BaseURL: "https://tokenharbor.ai/v1",
+	}
+	got, err := base.Synthesize(node)
+	if err != nil {
+		t.Fatalf("Synthesize() error = %v", err)
+	}
+	if got.Transport.TimeoutMS != CustomNodeTimeoutMS {
+		t.Fatalf("TimeoutMS = %d, want the custom-node bound %d", got.Transport.TimeoutMS, CustomNodeTimeoutMS)
+	}
+}
+
 // TestIndex_WithCustomLeavesTheReceiverUntouched pins the immutability the
 // request path depends on: adding a node for one request must not change what
 // another request resolves.

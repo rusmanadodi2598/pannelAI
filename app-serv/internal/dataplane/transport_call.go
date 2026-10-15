@@ -61,33 +61,78 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	// caller asked for.
 	call.Body = request.Body
 	call.Stream = request.Stream
+
+	// The session slot is taken before the attempt's clock starts, and the wait
+	// is handed back to the walk's budget, so a request that queued behind
+	// another on the same upstream session still gets its full bound. The slot
+	// travels with the answer body: the upstream request is in flight until the
+	// caller closes it.
+	release, err := t.acquireSession(ctx, plugin, call)
+	if err != nil {
+		return nil, timeoutError(err)
+	}
+	handedOff := false
+	defer func() {
+		if !handedOff {
+			release()
+		}
+	}()
+
 	deadline := attemptDeadline(clientStream, call.Provider)
 	// TotalTimeout is documented as bounding one non-streamed call end to end, so
 	// the budget is measured once here and each attempt gets what is left of it.
 	// Passing the full deadline per attempt let one call run twice the bound plus
 	// the backoff between them, and hold a handler goroutine that much longer than
-	// the contract says.
-	budgetEnds := time.Time{}
+	// the contract says. The walk's own clock is the tighter bound wherever it
+	// reaches: one credential may not outlive the request's walk, which is what
+	// keeps a rate-limited upstream's honored Retry-After from swallowing it.
+	ends := time.Time{}
 	if deadline > 0 {
-		budgetEnds = time.Now().Add(deadline)
+		ends = time.Now().Add(deadline)
+	}
+	if call.Budget != nil && (ends.IsZero() || call.Budget.deadline.Before(ends)) {
+		ends = call.Budget.deadline
 	}
 
 	for retries := 0; ; retries++ {
 		attemptDeadlineLeft := deadline
-		if !budgetEnds.IsZero() {
-			attemptDeadlineLeft = time.Until(budgetEnds)
-			if attemptDeadlineLeft <= 0 {
+		if !ends.IsZero() {
+			left := time.Until(ends)
+			if left <= 0 {
 				return nil, timeoutError(context.DeadlineExceeded)
 			}
+			// A streamed client keeps no context deadline: the idle guard owns
+			// the stream once it has spoken, and the walk must not cut an answer
+			// the caller is already reading. Only its pre-commit wait below is
+			// bounded by the walk.
+			if deadline > 0 && left < attemptDeadlineLeft {
+				attemptDeadlineLeft = left
+			}
 		}
-		upstream, failure, err := t.attempt(ctx, plugin, call, url, attemptDeadlineLeft)
+		// The first-byte wait is part of the pre-commit phase, so the walk's
+		// clock clamps it too.
+		firstByte := firstByteTimeout(call.Provider)
+		if !ends.IsZero() {
+			if left := time.Until(ends); left < firstByte {
+				firstByte = left
+			}
+		}
+		upstream, failure, err := t.attempt(ctx, plugin, call, url, attemptDeadlineLeft, firstByte)
 		switch {
 		case err != nil:
 			decision := DecideRetry(call.Provider, plugin, Attempt{Retries: retries, Idempotent: call.Idempotent})
 			if !decision.Retry {
 				return nil, err
 			}
-			if waitErr := sleep(ctx, decision.After); waitErr != nil {
+			wait, ok := boundedWait(decision.After, ends)
+			if !ok {
+				// The wait cannot fit in what is left of the walk, so the retry
+				// would begin after the walk's own clock expired. The failure in
+				// hand is the real cause, so it is reported now rather than as
+				// the timeout the sleep would have earned.
+				return nil, err
+			}
+			if waitErr := sleep(ctx, wait); waitErr != nil {
 				return nil, timeoutError(waitErr)
 			}
 		case failure != nil:
@@ -104,7 +149,11 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 			if !decision.Retry {
 				return nil, failure
 			}
-			if waitErr := sleep(ctx, decision.After); waitErr != nil {
+			wait, ok := boundedWait(decision.After, ends)
+			if !ok {
+				return nil, failure
+			}
+			if waitErr := sleep(ctx, wait); waitErr != nil {
 				return nil, timeoutError(waitErr)
 			}
 		default:
@@ -113,6 +162,8 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 			// own name on the way back. It is the same shaped request every
 			// attempt sent, so it is read once, here.
 			upstream.ToolAliases = request.ToolAliases
+			upstream.Body = &sessionBody{ReadCloser: upstream.Body, release: release}
+			handedOff = true
 			return upstream, nil
 		}
 	}
@@ -121,7 +172,10 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 // attempt performs exactly one outbound call and classifies its outcome, so Do
 // only has to decide. deadline is what attemptDeadline reported: zero for a
 // streamed client, which SPEC-API-001 §4 bounds by the idle read instead.
-func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Call, url string, deadline time.Duration) (*Upstream, *UpstreamError, error) {
+// firstByte bounds how long a streamed answer may stay silent before its first
+// byte; zero disables the wait (a connector whose provider is known to answer
+// promptly never needs it, and a test may pin the other bounds alone).
+func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Call, url string, deadline, firstByte time.Duration) (*Upstream, *UpstreamError, error) {
 	var (
 		attemptCtx context.Context
 		cancel     context.CancelFunc
@@ -186,6 +240,21 @@ func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Ca
 			}
 			stream = unwrapped
 		}
+		// The first byte is awaited here, inside the attempt, because only the
+		// transport can turn a silent upstream into a retry against the same
+		// target and a failover to the next credential: once a body is handed
+		// out, a read that stalls is the caller's to report, not the walk's.
+		if firstByte > 0 {
+			guarded, err := firstByteWithin(stream, firstByte, cancel)
+			if err != nil {
+				cancel()
+				// reason: the read already failed, so a close error adds
+				// nothing to the timeout being reported.
+				_ = stream.Close()
+				return nil, nil, err
+			}
+			stream = guarded
+		}
 		// The guard owns the cancel: it fires when reads stall, and it releases
 		// the context when the caller closes the body.
 		return &Upstream{
@@ -230,4 +299,29 @@ func sleep(ctx context.Context, wait time.Duration) error {
 	case <-timer.C:
 		return nil
 	}
+}
+
+// clampWait bounds a wait to what is left of the walk's clock. The second
+// answer is false when the wait cannot fit: sleeping it would spend the rest of
+// the walk and leave nothing for the retry it was waiting for, so the caller
+// reports the failure it already has instead of the timeout the sleep would
+// earn. That is what turns a rate-limited upstream's honored Retry-After
+// (minutes) into an immediate RATE_LIMITED rather than a masked timeout.
+func clampWait(wait, remaining time.Duration) (time.Duration, bool) {
+	if wait <= 0 {
+		return 0, true
+	}
+	if remaining <= 0 || wait >= remaining {
+		return 0, false
+	}
+	return wait, true
+}
+
+// boundedWait applies clampWait to a walk clock. A zero ends means no walk
+// bound reaches this call, which is the case for a direct Do a test drives.
+func boundedWait(wait time.Duration, ends time.Time) (time.Duration, bool) {
+	if ends.IsZero() {
+		return wait, true
+	}
+	return clampWait(wait, time.Until(ends))
 }

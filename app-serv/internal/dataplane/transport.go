@@ -22,8 +22,9 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 )
 
-// Deadlines fixed by SPEC-API-001 §4. A registry entry may override the total
-// and the idle read through timeout_ms and stall_timeout_ms; the connect deadline
+// Deadlines fixed by SPEC-API-001 §4. A registry entry may override the total,
+// the idle read, and the wait for a streamed answer's first byte through
+// timeout_ms, stall_timeout_ms, and first_byte_timeout_ms; the connect deadline
 // has no override because a TCP handshake has no provider-specific shape.
 const (
 	// ConnectTimeout bounds the TCP and TLS handshake.
@@ -34,6 +35,12 @@ const (
 	// has no total cap because a long answer is not a failure, so the gap is
 	// what detects a dead upstream.
 	IdleTimeout = 300 * time.Second
+	// FirstByteTimeout bounds how long a streamed attempt may stay silent before
+	// its first byte. A stream has no total deadline, so without this bound a
+	// provider that accepts the call and never starts answering holds the
+	// request until the client gives up. It is generous next to the observed
+	// 1-7.4s first byte: the cap exists to cut a silent upstream, not a slow one.
+	FirstByteTimeout = 20 * time.Second
 	// maxUpstreamBodyBytes bounds a non-streamed response body, which is
 	// buffered so the context can be released before the caller reads it.
 	maxUpstreamBodyBytes = 32 << 20
@@ -55,6 +62,11 @@ type Transport struct {
 	connectors *provider.Connectors
 	client     *http.Client
 	dialer     *ProxyDialer
+	// sessions serializes the calls that share one upstream session, for a
+	// connector that declares one (the OpenCode free tier throttles per
+	// session). It is built with the transport, so every wired transport has
+	// one.
+	sessions *sessionQueue
 }
 
 // TransportDeps holds the collaborators the transport needs.
@@ -90,6 +102,7 @@ func NewTransport(deps TransportDeps) (*Transport, error) {
 		connectors: deps.Connectors,
 		client:     deps.Client,
 		dialer:     &ProxyDialer{client: deps.Client, routes: deps.Routes},
+		sessions:   newSessionQueue(),
 	}, nil
 }
 

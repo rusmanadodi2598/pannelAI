@@ -48,3 +48,14 @@ func idleTimeout(entry registry.Provider) time.Duration {
 	}
 	return IdleTimeout
 }
+
+// firstByteTimeout reports how long a streamed attempt may stay silent before
+// its first byte, honouring a registry override. The idle timeout above bounds
+// the gaps after the stream has spoken; this one bounds the wait before it says
+// anything at all, which is the state a throttled upstream leaves a request in.
+func firstByteTimeout(entry registry.Provider) time.Duration {
+	if ms := entry.Transport.FirstByteTimeoutMS; ms > 0 {
+		return time.Duration(ms) * time.Millisecond
+	}
+	return FirstByteTimeout
+}

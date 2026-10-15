@@ -150,6 +150,11 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 			// A chat completion is never idempotent: the upstream may have begun
 			// generating, so the transport caps its retries.
 			Idempotent: false,
+			// The walk's clock travels with the call: the transport clamps its
+			// in-attempt waits and its first-byte cap to what is left of it, so
+			// one credential cannot spend the whole walk before the next is
+			// tried.
+			Budget: budget,
 		})
 		if callErr != nil {
 			release()

@@ -245,10 +245,40 @@ func (c *OpenCode) clientValue(req *http.Request) string {
 	if declared := strings.TrimSpace(req.Header.Get(openCodeClientHeader)); declared != "" {
 		return declared
 	}
+	return c.clientValueFor(c.entry)
+}
+
+// clientValueFor answers the client identity an entry declares, falling back to
+// the CLI's own, so the session ApplyAuth presents and the session SessionKey
+// names cannot drift apart.
+func (c *OpenCode) clientValueFor(entry registry.Provider) string {
+	if declared := strings.TrimSpace(entry.Transport.Headers[openCodeClientHeader]); declared != "" {
+		return declared
+	}
 	if declared := strings.TrimSpace(c.entry.Transport.Headers[openCodeClientHeader]); declared != "" {
 		return declared
 	}
 	return openCodeClientDefault
+}
+
+// SessionKey implements provider.SessionSerializer: it names the session one
+// call presents, so the transport keeps a single request in flight per session.
+// The value is minted from the same pair ApplyAuth derives the identity headers
+// from, the entry's client identity and the endpoint's id, so the key and the
+// header agree by construction.
+//
+// A keyed lane presents no session at all: ApplyAuth places the credential and
+// returns before the identity headers, so the upstream accounts that traffic by
+// key rather than by session. Naming a session there would serialize a lane that
+// has no session to protect, so the key is empty exactly when the headers are.
+func (c *OpenCode) SessionKey(req Request) string {
+	entry := c.entry
+	if !entry.NoAuth && entry.AuthType != registry.AuthNone {
+		if _, value, err := req.Credential.Secret(); err == nil && value != "" {
+			return ""
+		}
+	}
+	return OpenCodeSessionFor(c.clientValueFor(c.entryFor(req)), req.Credential.EndpointID())
 }
 
 // ForcesStream reports that this provider only answers a streamed request. The
