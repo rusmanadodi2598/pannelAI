@@ -4,8 +4,8 @@ This file is the entry point for AI coding agents working in this repository. Re
 
 ## Mandatory rules
 
-- [OWASP security rules](./rules/OWASP.md) — security requirements, prohibited patterns, and security testing.
-- [TDD rules](./rules/TDD.md) — test-driven development, regression coverage, and testing discipline.
+- [OWASP security rules](./rulles/OWASP.md) — security requirements, prohibited patterns, and security testing.
+- [TDD rules](./rulles/TDD.md) — test-driven development, regression coverage, and testing discipline.
 
 ## Stack guidance
 
@@ -27,12 +27,12 @@ Apply language- and framework-specific guidance only to the component being chan
 
 ```text
 .agents/
-├── AGENTS.md          # This index
-└── rules/
+├── AGENTS.md          # This index map
+└── rulles/
     ├── OWASP.md       # Security rules
     └── TDD.md         # Test-driven development rules
 ```
 
 ## Maintenance
 
-Add new mandatory policies under `.agents/rules/` and link them here with a short description. Keep the source documents under `docs/RULLES/` unchanged unless separately requested.
+Add new mandatory policies under `.agents/rulles/` and link them here with a short description. Keep the source documents under `docs/RULLES/` unchanged unless separately requested.
