@@ -1,34 +1,36 @@
-# Agent Rules Index
+# AGENTS.md — Index Map
 
-This directory is the central index for AI-agent guidance and engineering policies in this repository.
+This file is the central index for AI-agent instructions and mandatory engineering policies in this repository.
 
-## Required reading
+## Mandatory rules
 
-Before planning, editing, reviewing, or testing code, read:
+- [OWASP.md](./rulles/OWASP.md) — security requirements, prohibited patterns, and security testing.
+- [TDD.md](./rulles/TDD.md) — test-driven development, regression coverage, and testing discipline.
 
-1. [Agent rules](./rules/AGENT-RULES.md) — workflow, architecture, coding conventions, stack-specific guidance, and PR checklist.
-2. [OWASP security rules](./rules/OWASP.md) — security requirements, prohibited patterns, and security test cases.
-3. [Strict TDD rules](./rules/TDD.md) — anti-hardcoding requirements, implementation analysis, and testing discipline.
+## Stack guidance
 
-## How to apply these rules
+Apply language- and framework-specific guidance only to the component being changed. Preserve existing architecture and manifests; do not impose Go-only rules on Rust/Python components or Rust/Python rules on Go/Svelte/TypeScript components.
 
-- Treat the rules above as mandatory unless a higher-priority instruction or an explicit repository policy says otherwise.
-- Apply language-specific requirements only to the stack/component being changed; do not impose Go-only rules on Rust or Python code, or vice versa.
-- Preserve the existing architecture and package/toolchain choices. Do not introduce migrations or unrelated refactors merely to satisfy generic guidance.
-- If a rule conflicts with the actual project manifests or source layout, document the conflict and follow the concrete project configuration while keeping security and correctness requirements intact.
-- Never report a test, lint, build, or security check as passing unless it was actually run and the result observed.
+- **Rust:** follow the repository's pinned toolchain and Cargo configuration; prefer typed errors and safe ownership/borrowing; narrowly scope and document any `unsafe` code.
+- **Python:** follow the configured Python version and environment/package manager; use type hints for public interfaces, validate inputs at boundaries, and use parameterized SQL and safe subprocess argument arrays.
+- **Go / TypeScript / Svelte:** follow the existing project conventions and manifests for the affected component.
+
+## Execution policy
+
+- Inspect relevant source and project configuration before changing code.
+- Add or update regression tests for behavior changes.
+- Never claim a build, test, lint, or security check passed unless it was run and the result observed.
+- If a rule conflicts with the actual project configuration, document the conflict and follow the concrete configuration without weakening security or correctness.
+- Keep changes focused and avoid unrelated refactors.
 
 ## Directory map
 
 ```text
 .agents/
-├── AGENT.md                 # This index / entry point
-└── rules/
-    ├── AGENT-RULES.md       # Coding-agent workflow and stack guidance
-    ├── OWASP.md             # Security policy
-    └── TDD.md               # Test-driven development policy
+├── AGENTS.md          # This index map
+└── rulles/
+    ├── OWASP.md       # Security rules
+    └── TDD.md         # Test-driven development rules
 ```
 
-## Maintenance
-
-When adding a new agent policy, place it in the appropriate subdirectory under `.agents/` and add a link plus a short description here. Keep canonical source documents under `docs/RULLES/` unchanged unless a separate change explicitly updates those sources.
+Keep source documents under `docs/RULLES/` unchanged unless separately requested. Add future mandatory policies under `.agents/rulles/` and link them here.
