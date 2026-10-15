@@ -1,0 +1,9 @@
+{
+	"name": "pannelai-app-ui-e2e",
+	"private": true,
+	"version": "1.0.0",
+	"description": "Browser smoke tests for the app-ui panel against a contract-shaped API stub.",
+	"devDependencies": {
+		"@playwright/test": "1.56.1"
+	}
+}
