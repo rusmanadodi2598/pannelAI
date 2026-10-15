@@ -12,6 +12,11 @@
 
 import { z } from 'zod';
 import { noProxyList, optionalAbsoluteUrl } from './primitives';
+import {
+	namedFailureClasses,
+	schemaFailureClassesForm,
+	schemaFailureClassesTable
+} from './settings-failure-classes';
 
 export const COMBO_STRATEGIES = ['fallback', 'round_robin', 'fusion'] as const;
 
@@ -159,7 +164,11 @@ export const schemaRoutingSettings = z.object({
 	fallback_strategy: z.enum(CREDENTIAL_ROTATIONS),
 	provider_strategies: z.record(z.string(), schemaProviderStrategy),
 	key_park: schemaKeyParkSettings.optional(),
-	failover: schemaFailoverSettings.optional()
+	failover: schemaFailoverSettings.optional(),
+	// What an operator retuned, class by class. The response answers only the classes an operator
+	// actually stored, so an absent class is its documented behaviour rather than a decision, and the
+	// editor renders what is held instead of a filled-in copy of nine defaults.
+	failure_classes: schemaFailureClassesTable.optional()
 });
 
 export type RoutingSettings = z.infer<typeof schemaRoutingSettings>;
@@ -254,10 +263,29 @@ export const schemaRoutingSettingsForm = z.strictObject({
 		message: 'Pick the credential rotation mode.'
 	}),
 	key_park: schemaKeyParkSettingsForm,
-	failover: schemaFailoverSettingsForm
+	failover: schemaFailoverSettingsForm,
+	// The class table the routing tab edits. Optional because a tab that named no class has nothing to
+	// say about the table, and the body builder leaves the key off entirely rather than sending one it
+	// has not read.
+	failure_classes: schemaFailureClassesForm.optional()
 });
 
 export type RoutingSettingsForm = z.infer<typeof schemaRoutingSettingsForm>;
+
+// The routing tab's draft as the body it puts on the wire.
+//
+// The class table merges field by field, so a named class overwrites what it names and an unnamed class
+// keeps what an earlier write left there. That makes an empty table and an absent one the same
+// instruction to the gateway, and the body takes the one that cannot be misread under either rule the
+// contract states for this key ("sent whole" and "an absent class keeps what it has"): no key at all.
+// A field the operator blanked is dropped the same way, which is what lets a blank box mean inherit.
+export function buildRoutingSettingsBody(form: RoutingSettingsForm): RoutingSettingsForm {
+	const named = namedFailureClasses(form.failure_classes);
+	if (Object.keys(named).length > 0) return { ...form, failure_classes: named };
+
+	const { failure_classes: _unset, ...withoutTable } = form;
+	return withoutTable;
+}
 
 // Proxying on with an empty URL is a real state the pool engine made useful (docs/PORT/
 // 008-PORT-PROXY-ENGINE.md D1): the pool rows are the route and the URL is the last-resort attempt

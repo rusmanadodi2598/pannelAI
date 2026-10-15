@@ -10,6 +10,7 @@
 // them.
 
 import { describe, expect, it } from 'vitest';
+import { forEachCase } from '../support/tables';
 import { schemaEndpoint, schemaEndpointKey, schemaEndpointList } from '$lib/schemas/endpoint';
 
 // A complete endpoint as the API returns it, so a case only states the field it is about.
@@ -131,6 +132,32 @@ describe('schemaEndpointKey', () => {
 
 	it('rejects a negative consecutive error count', () => {
 		expect(schemaEndpointKey.safeParse(key({ consecutive_errors: -1 })).success).toBe(false);
+	});
+
+	// The three provenance fields are `omitempty` on the wire, so a key that never failed and a key parked
+	// before the classifier existed both answer nothing, and the row has to parse either way. A legacy
+	// parking token is a real value the column holds, and an unrecognised source must parse too: this is the
+	// read side, and a value the panel cannot name renders rather than dropping the row.
+	const provenanceCases = [
+		{
+			name: 'accepts a key parked on a class the router named',
+			input: { last_error_class: 'QUOTA_EXHAUSTED' }
+		},
+		{
+			name: 'accepts the whole provenance trio',
+			input: {
+				last_error_class: 'QUOTA_EXHAUSTED',
+				reset_source: 'body',
+				signature_id: 'tokenharbor.free-allowance'
+			}
+		},
+		{ name: 'accepts a legacy parking token', input: { last_error_class: 'ratelimit' } },
+		{ name: 'accepts a source the panel has never seen', input: { reset_source: 'sideways' } },
+		{ name: 'accepts all three absent', input: {} }
+	];
+
+	forEachCase(provenanceCases, (testCase) => {
+		expect(schemaEndpointKey.safeParse(key(testCase.input)).success, testCase.name).toBe(true);
 	});
 });
 

@@ -11,6 +11,7 @@
 	// validator the panel cannot keep in English.
 	import { untrack } from 'svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import SettingsFailureClassesEditor from '$lib/components/SettingsFailureClassesEditor.svelte';
 	import { patchRoutingSettings } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
@@ -21,11 +22,13 @@
 		CREDENTIAL_ROTATION_LABELS,
 		FAILOVER_DEFAULT_MAX_ATTEMPTS,
 		FAILOVER_DEFAULT_TOTAL_MS,
+		buildRoutingSettingsBody,
 		schemaRoutingSettingsForm,
 		settingsGroupDirty,
 		type RoutingSettings,
 		type RoutingSettingsForm
 	} from '$lib/schemas/settings';
+	import { failureClassesToForm, namedFailureClasses } from '$lib/schemas/settings-failure-classes';
 
 	type Props = {
 		/** The routing group as the page last read it, before this tab narrows it to its own keys. */
@@ -42,10 +45,12 @@
 	// `untrack` marks the initial read as deliberate: the prop supplies the first value, and the save
 	// response is what updates it afterwards.
 	//
-	// The tab owns six keys and nothing else. `provider_strategies` belongs to the provider screen's own
-	// switch, and carrying it here would put it in a strict form that refuses it and in a PATCH body the
-	// tab has no business writing. `key_park` windows are narrowed to what is actually stored: a zero or
-	// absent window is the gateway default, not a value the operator chose, so it is held blank.
+	// The tab owns the group's global keys and nothing else. `provider_strategies` belongs to the provider
+	// screen's own switch, and carrying it here would put it in a strict form that refuses it and in a
+	// PATCH body the tab has no business writing. `key_park` windows are narrowed to what is actually
+	// stored: a zero or absent window is the gateway default, not a value the operator chose, so it is held
+	// blank. The class table follows the same rule from the other side, because the response answers only
+	// the classes an operator stored and a class it does not name is still running its documented default.
 	const parkSeconds = (value: number | undefined): number | undefined =>
 		value && value > 0 ? value : undefined;
 	const ownKeys = (group: RoutingSettings): RoutingSettingsForm => ({
@@ -62,18 +67,21 @@
 		failover: {
 			total_ms: group.failover?.total_ms ?? FAILOVER_DEFAULT_TOTAL_MS,
 			max_attempts: group.failover?.max_attempts ?? FAILOVER_DEFAULT_MAX_ATTEMPTS
-		}
+		},
+		failure_classes: failureClassesToForm(group.failure_classes)
 	});
 
-	// The two copies must be independent objects: `key_park` and `failover` are nested, so a shallow copy
-	// would hand `draft` and `server` the same sub-object, and editing one would silently edit the other.
+	// The two copies must be independent objects: `key_park`, `failover` and each class entry are nested, so
+	// a shallow copy would hand `draft` and `server` the same sub-object, and editing one would silently
+	// edit the other.
 	const cloneForm = (form: RoutingSettingsForm): RoutingSettingsForm => ({
 		combo_strategy: form.combo_strategy,
 		combo_sticky_limit: form.combo_sticky_limit,
 		sticky_limit: form.sticky_limit,
 		fallback_strategy: form.fallback_strategy,
 		key_park: { ...form.key_park },
-		failover: { ...form.failover }
+		failover: { ...form.failover },
+		failure_classes: namedFailureClasses(form.failure_classes)
 	});
 
 	const initial = untrack(() => ownKeys(loaded));
@@ -140,7 +148,7 @@
 		}
 
 		saving = true;
-		const result = await patchRoutingSettings(parsed.data);
+		const result = await patchRoutingSettings(buildRoutingSettingsBody(parsed.data));
 		saving = false;
 
 		if (!result.ok) {
@@ -258,6 +266,8 @@
 			</span>
 		</div>
 	{/each}
+
+	<SettingsFailureClassesEditor bind:classes={draft.failure_classes} />
 
 	<h3 class="pt-1 text-sm font-semibold">Failover budget</h3>
 	<p class="text-sm text-[var(--color-text-muted)]">

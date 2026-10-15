@@ -17,11 +17,15 @@
 	// a countdown, and a countdown needs a clock. The drawer owns `now` and passes it in, so the table stays
 	// a renderer and the ticking lives with the thing that is open. The chosen and served times are read
 	// against that same clock, so a row does not show a wait ticking down beside a stale absolute timestamp.
+	//
+	// The wait's provenance reads inside that same cell rather than in a column of its own, per §8.7: under
+	// 768px every cell becomes a labelled line of the row card, so a ninth column is a ninth line in every
+	// card on a phone, while a wait and the failure that caused it are one fact that belongs side by side.
 	import { ENDPOINT_STATUS_ACTIVE, type EndpointKey } from '$lib/schemas/endpoint';
 	import { pageOf } from '$lib/schemas/local-page';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
-	import { isLastActiveApiKey } from '$lib/utils/routing';
+	import { isLastActiveApiKey, parkProvenance } from '$lib/utils/routing';
 	import { countdownText, elapsedText, formatTimestamp } from '$lib/utils/time';
 
 	let {
@@ -85,6 +89,7 @@
 			{#each view.rows as key (key.id)}
 				{@const blocked = isLastActiveApiKey(keys, key.id, authType)}
 				{@const isActive = key.status === ENDPOINT_STATUS_ACTIVE}
+				{@const provenance = parkProvenance(key)}
 				<tr class="border-t border-[var(--color-border)]">
 					<td data-label="Label" class="px-3 py-2">{key.label || 'Unlabelled'}</td>
 					<td data-label="Key" class="px-3 py-2">{key.key_hint}</td>
@@ -96,6 +101,10 @@
 							<span class="text-[var(--color-text-muted)]">
 								rate limited until {formatTimestamp(key.rate_limited_until)}
 								({countdownText(key.rate_limited_until, now)})
+								{#if provenance !== ''}
+									<br />
+									<span>{provenance}</span>
+								{/if}
 							</span>
 						{/if}
 					</td>

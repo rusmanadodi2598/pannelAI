@@ -42,6 +42,20 @@ export function settingsDocument(overrides: Record<string, unknown> = {}): Recor
 }
 
 /**
+ * The routing group as the API answers it: the keys the Routing tab edits, plus the per-provider override
+ * map that tab does not render.
+ *
+ * `failure_classes` is left out of the base document on purpose, because that is what the response carries
+ * for a group nobody tuned: the gateway answers only the classes an operator stored, and a class it does not
+ * name is still running its documented default. A test that needs a stored table passes one here rather than
+ * writing the group's four required keys out again.
+ */
+export function routingGroup(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+	const routing = settingsDocument().routing as Record<string, unknown>;
+	return { ...routing, ...overrides };
+}
+
+/**
  * The network group as the API answers it: the four keys the outbound form owns plus the
  * per-provider binding map (docs/PORT/009-PORT-PROVIDER-PROXY.md D1).
  *
