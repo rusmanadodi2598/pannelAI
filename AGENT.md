@@ -1,8 +1,8 @@
-# AGENT.md: Mandatory Rules for AI Coding Agents (Go)
+# AGENT.md: Mandatory Rules for AI Coding Agents
 
 > > Applies to Rust and Python source code in this repository. AI coding agents MUST read this file before generating, editing, or reviewing code. Preserve existing architecture and conventions; do not apply language-specific rules to an incompatible stack.
 
-**Stack:** Rust · Python · PostgreSQL · Redis (plus existing frontend/tooling as defined by project manifests)
+**Stack:** Rust · Python · PostgreSQL · Redis (plus existing Go/Svelte/TypeScript tooling documented below and in project manifests)
 
 **Version:** 1.1 · **Last Updated:** 2026-10-05 · **Status:** Active
 
@@ -240,6 +240,8 @@ Untuk mendukung stabilitas microservices dan mempercepat delivery, codebase ini 
 
 ## Stack
 
+### Existing Go/Svelte/TypeScript stack guidance (preserved from the source rules)
+
 - **Go (Golang)**, latest stable release (currently 1.26.5), pinned via the `toolchain` directive in `go.mod`.
 - **PostgreSQL**, primary datastore. Connection-pool limits set explicitly per service (see §1.7).
 - **Redis**: replay guard, rate limiter, cache, idempotence store.
@@ -247,6 +249,12 @@ Untuk mendukung stabilitas microservices dan mempercepat delivery, codebase ini 
 - **VALIDATION**, go-playground/validator/v10 (Up)
 
 Prefer the Go standard library over third-party frameworks by default (`net/http`, `database/sql`, `encoding/json`, `log/slog`, `context`, `crypto/hmac`, `crypto/sha256`). Reach for a third-party dependency only when the standard library genuinely can't do the job cleanly (struct-tag validation and a PostgreSQL driver being the two unavoidable exceptions) and document the choice in that service's `README.md`.
+
+### Additional Rust and Python stack
+
+- **Rust:** use the repository's pinned toolchain and existing Cargo workspace. Where applicable, validate with `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test --workspace`. Prefer safe ownership/borrowing and typed errors; avoid production `unwrap()`/`expect()` unless a documented invariant guarantees safety. Document and narrowly scope any `unsafe` code.
+- **Python:** use the repository's existing supported Python version and environment/package manager. Add type hints to public interfaces, validate untrusted inputs at boundaries, and use the project's configured formatter, linter, type checker, and tests. Use parameterized SQL and subprocess argument arrays; keep secrets out of source, logs, exceptions, and test output.
+- **Cross-stack:** preserve each component's existing architecture and manifests; do not introduce migrations or unrelated refactors just to align stacks. Add/update regression tests for behavior changes. Never claim checks passed unless they were executed and observed; report unavailable checks explicitly.
 
 ---
 
