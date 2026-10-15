@@ -3,8 +3,8 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/transport_call.go
-// @for       The outbound call itself: the retry loop, one attempt with its classification, and the §4 deadlines the attempt runs under.
-// @uses      internal/provider, bytes, context, errors, io, net/http, time.
+// @for       The retry loop around one upstream target: what the transport decides after an attempt, and how long it waits before deciding again.
+// @uses      context, time, internal/dataplane/retry.go for the attempt budget.
 // @reason    SPEC-API-001 §4 fixes the deadlines (connect 10s, total 120s, no total cap while streaming with a 300s idle read) and AGENTS.md §1.1 asks for the split before the limit forces it. The loop owns the decision rather than the plugin: the plugin only says whether an outcome is worth repeating and the registry entry only says how many attempts the provider allows, so neither can multiply a request on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -13,14 +13,8 @@
 package dataplane
 
 import (
-	"bytes"
 	"context"
-	"errors"
-	"io"
-	"net/http"
 	"time"
-
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 )
 
 // Do performs one call, retrying the same target per SPEC-API-001 §4. The
@@ -136,10 +130,12 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 				return nil, timeoutError(waitErr)
 			}
 		case failure != nil:
-			// A quota rejection parks the account instead of retrying it:
-			// repeating a request the account cannot pay for only delays the
-			// failover to an account that can serve it.
-			if plugin.IsQuotaError(failure.Status, failure.Body) {
+			// A refusal the class or the signature says cannot answer differently
+			// a moment later is not asked again on this key: a spent allowance, a
+			// refused credential and a gate that closes on this gateway all spend
+			// the walk instead of the retry budget. The answer is stamped where the
+			// refusal was recognised, so the retry and the park read one verdict.
+			if !failure.Retryable {
 				return nil, failure
 			}
 			decision := DecideRetry(call.Provider, plugin, Attempt{
@@ -167,123 +163,6 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 			return upstream, nil
 		}
 	}
-}
-
-// attempt performs exactly one outbound call and classifies its outcome, so Do
-// only has to decide. deadline is what attemptDeadline reported: zero for a
-// streamed client, which SPEC-API-001 §4 bounds by the idle read instead.
-// firstByte bounds how long a streamed answer may stay silent before its first
-// byte; zero disables the wait (a connector whose provider is known to answer
-// promptly never needs it, and a test may pin the other bounds alone).
-func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Call, url string, deadline, firstByte time.Duration) (*Upstream, *UpstreamError, error) {
-	var (
-		attemptCtx context.Context
-		cancel     context.CancelFunc
-	)
-	if deadline > 0 {
-		attemptCtx, cancel = context.WithTimeout(ctx, deadline)
-	} else {
-		attemptCtx, cancel = context.WithCancel(ctx)
-	}
-
-	request, err := http.NewRequestWithContext(attemptCtx, http.MethodPost, url, bytes.NewReader(call.Body))
-	if err != nil {
-		cancel()
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "upstream request could not be built", err)
-	}
-	applyHeaders(request.Header, call)
-	if err := plugin.ApplyAuth(request, call.Credential); err != nil {
-		cancel()
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "upstream credential could not be applied", err)
-	}
-
-	// The attempt's context travels with the request: a proxy walk clones the
-	// request with the context it is handed, so passing the caller's context
-	// here would replace the attempt deadline (and the idle guard's cancel)
-	// with one that has neither.
-	response, err := t.dialer.Do(attemptCtx, request, call.Provider.ID)
-	if err != nil {
-		cancel()
-		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-			return nil, nil, timeoutError(err)
-		}
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream could not be reached", err)
-	}
-
-	usage := plugin.DecodeUsage(response.StatusCode, response.Header)
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		failure := readUpstreamError(response)
-		cancel()
-		return nil, failure, nil
-	}
-
-	if call.Stream {
-		// A provider that wraps its answer in an envelope states its real status
-		// inside the body, so the first frame is read before anything is piped:
-		// a refusal there is an upstream failure the router can act on, not a
-		// served answer that gets billed.
-		stream := response.Body
-		if envelope, ok := plugin.(provider.StreamEnvelope); ok {
-			unwrapped, failure := envelope.OpenStream(response.Body)
-			if failure != nil {
-				cancel()
-				// Nothing was piped: the refusal was read out of the first frame
-				// precisely so that nothing could be. Repeating the call is
-				// therefore safe, which is what the budget below is told.
-				return nil, &UpstreamError{
-					Status:     failure.Status,
-					Header:     response.Header,
-					Message:    failure.Message,
-					Body:       []byte(failure.Message),
-					Replayable: true,
-				}, nil
-			}
-			stream = unwrapped
-		}
-		// The first byte is awaited here, inside the attempt, because only the
-		// transport can turn a silent upstream into a retry against the same
-		// target and a failover to the next credential: once a body is handed
-		// out, a read that stalls is the caller's to report, not the walk's.
-		if firstByte > 0 {
-			guarded, err := firstByteWithin(stream, firstByte, cancel)
-			if err != nil {
-				cancel()
-				// reason: the read already failed, so a close error adds
-				// nothing to the timeout being reported.
-				_ = stream.Close()
-				return nil, nil, err
-			}
-			stream = guarded
-		}
-		// The guard owns the cancel: it fires when reads stall, and it releases
-		// the context when the caller closes the body.
-		return &Upstream{
-			Status: response.StatusCode,
-			Header: response.Header,
-			Usage:  usage,
-			Body:   newIdleGuard(stream, idleTimeout(call.Provider), cancel),
-		}, nil, nil
-	}
-
-	// A non-streamed body is buffered so the context can be released before the
-	// caller reads it, which lets the total deadline bound the whole exchange.
-	body, readErr := readBounded(response.Body, maxUpstreamBodyBytes)
-	cancel()
-	if readErr != nil {
-		// reason: the body is fully consumed or the limit was hit, so a close
-		// error adds nothing to the read error already reported.
-		_ = response.Body.Close()
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream response could not be read", readErr)
-	}
-	if closeErr := response.Body.Close(); closeErr != nil {
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream response could not be read", closeErr)
-	}
-	return &Upstream{
-		Status: response.StatusCode,
-		Header: response.Header,
-		Usage:  usage,
-		Body:   io.NopCloser(bytes.NewReader(body)),
-	}, nil, nil
 }
 
 // sleep waits, or returns early when the caller's context ends.

@@ -14,7 +14,6 @@ package dataplane
 
 import (
 	"context"
-	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -54,11 +53,14 @@ func (e *Engine) RecordSuccess(ctx context.Context, selection Selection) error {
 	return e.selector.RecordSuccess(ctx, selection)
 }
 
-// RecordFailure applies a failed call to a key's health. retryAfter is the wait the
-// upstream named for this response, or zero when it named none, and it is the same
-// number the client is handed back.
-func (e *Engine) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass, retryAfter time.Duration) error {
-	return e.selector.RecordFailure(ctx, selection, reason, class, retryAfter)
+// RecordFailure applies a failed call to a key's health. rest is what the
+// classification of that failure says about how long the key stays out of
+// rotation; the zero value parks it on the class ladder alone, which is what a
+// caller with nothing classified to hand still gets. The walk honors the action
+// that classification resolved through its own recordFailure, which owns the chain.
+func (e *Engine) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass, rest domain.RestDirective) error {
+	_, err := e.selector.RecordFailure(ctx, selection, reason, class, rest)
+	return err
 }
 
 // ErrUnauthorized is the data plane's answer to a missing or invalid credential,

@@ -205,7 +205,6 @@ type Plugin interface {
 	ApplyAuth(req *http.Request, cred Credential) error
 	DecodeUsage(status int, header http.Header) Usage
 	ShouldRetry(status int, header http.Header) RetryDecision
-	IsQuotaError(status int, body []byte) bool
 }
 ```
 

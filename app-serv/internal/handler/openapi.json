@@ -1690,6 +1690,23 @@
             "type": "string",
             "format": "date-time"
           },
+          "last_error_class": {
+            "type": "string",
+            "description": "Which failure the last refusal was classified as, in the router's own vocabulary (SPEC-API-001 7.5). Absent for a key that never failed or served since."
+          },
+          "reset_source": {
+            "type": "string",
+            "enum": [
+              "header",
+              "body",
+              "default"
+            ],
+            "description": "How the wait on the parked key was arrived at. header is a Retry-After the vendor sent, body a reset the vendor stated in its own text, default a window the gateway chose. Absent for a key parked before classification existed."
+          },
+          "signature_id": {
+            "type": "string",
+            "description": "The recogniser that named this failure, so an operator can tell a park the vendor warranted from one the gateway guessed. Absent when no signature claimed it."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -3667,8 +3684,45 @@
           "key_park": {
             "$ref": "#/components/schemas/KeyParkPatch"
           },
+          "failure_classes": {
+            "type": "object",
+            "description": "Per-class overrides the whole group inherits, keyed by class name. Sent whole; an absent class keeps the documented action and windows. A class that implicates no credential is refused, because the router reads no window for it.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FailureClassPolicyPatch"
+            }
+          },
           "failover": {
             "$ref": "#/components/schemas/FailoverBudgetPatch"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FailureClassPolicyPatch": {
+        "type": "object",
+        "description": "What one recognised failure class does (SPEC-API-001 7.5). Each field is optional on its own: an entry that names only the action leaves the ceiling and cooldown it inherits. A provider entry merges over the group, and the group over the documented default.",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "park",
+              "rotate",
+              "stop"
+            ],
+            "description": "park withholds the credential for its rest and moves on, rotate moves on without withholding, stop ends the request on this failure because no other credential answers it differently."
+          },
+          "ceiling_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 2592000,
+            "description": "The longest rest a wait the gateway computed may produce, measured from the failure. A reset the vendor stated itself is only bounded by this, never shortened below what the vendor promised."
+          },
+          "default_cooldown_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 2592000,
+            "description": "The flat park used when neither a stated reset nor a Retry-After was found. Unset keeps the class's own ladder, which is how a rate limit still escalates."
           }
         },
         "additionalProperties": false
@@ -3747,6 +3801,13 @@
           },
           "key_park": {
             "$ref": "#/components/schemas/KeyParkPatch"
+          },
+          "failure_classes": {
+            "type": "object",
+            "description": "This provider's per-class overrides, merged over the group's. An absent class inherits.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FailureClassPolicyPatch"
+            }
           }
         },
         "additionalProperties": false
@@ -4960,6 +5021,13 @@
           },
           "failover": {
             "$ref": "#/components/schemas/FailoverBudgetResponse"
+          },
+          "failure_classes": {
+            "type": "object",
+            "description": "The stored per-class overrides, not the effective table. A class with no entry is absent, because the documented default is the build's answer rather than something an operator decided.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FailureClassPolicyResponse"
+            }
           }
         },
         "required": [
@@ -4971,6 +5039,29 @@
           "key_park",
           "failover"
         ],
+        "additionalProperties": false
+      },
+      "FailureClassPolicyResponse": {
+        "type": "object",
+        "description": "One stored class override, in the units the wire carries. Fields an entry leaves unset are absent, so the panel renders what was decided rather than a filled-in copy.",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "park",
+              "rotate",
+              "stop"
+            ]
+          },
+          "ceiling_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "default_cooldown_seconds": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
         "additionalProperties": false
       },
       "KeyParkResponse": {
@@ -5038,6 +5129,13 @@
           },
           "key_park": {
             "$ref": "#/components/schemas/KeyParkResponse"
+          },
+          "failure_classes": {
+            "type": "object",
+            "description": "The classes this provider's entry overrides, and only those.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FailureClassPolicyResponse"
+            }
           }
         },
         "additionalProperties": false

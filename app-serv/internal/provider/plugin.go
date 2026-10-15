@@ -62,11 +62,6 @@ type Plugin interface {
 	// against the same target, and how long to wait. The core handles moving to
 	// the next endpoint; this decides whether the same one deserves a retry.
 	ShouldRetry(status int, header http.Header) RetryDecision
-
-	// IsQuotaError reports whether an upstream rejection means this account has
-	// exhausted its quota, as opposed to a transient failure. A quota rejection
-	// parks the account; a transient one only backs off the key.
-	IsQuotaError(status int, body []byte) bool
 }
 
 // Transformer is the optional seam a connector implements when a provider needs

@@ -83,30 +83,46 @@ func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error
 }
 
 // RecordFailure applies a failed attempt to the endpoint's parity state and the
-// key's circuit. Request writes nothing: the same body fails on any key. Target
-// writes the connection state only: the credential was never sent.
+// key's circuit, and answers what the walk does next: park the credential and
+// move on, rotate without parking, or stop the chain. Request writes nothing: the
+// same body fails on any key. Target writes the connection state only: the
+// credential was never sent.
 //
 // The unit parked is the unit spent: a key for a keyed endpoint, the account itself
 // for one that owns no keys, which is the breaker an OAuth account never had. A 429
-// on one key must still not withhold its healthy siblings (draft 050 T1). retryAfter
-// is the wait the vendor named, so a 429 saying "come back in two minutes" is not
-// answered with a two-second park.
+// on one key must still not withhold its healthy siblings (draft 050 T1). rest is
+// what the classification recognised, so a 429 saying "come back in two minutes" is
+// not answered with a two-second park, and a spent allowance is not answered with
+// one park per request.
 func (s *Selector) RecordFailure(
 	ctx context.Context,
 	selection Selection,
 	reason string,
 	class domain.KeyFailureClass,
-	retryAfter time.Duration,
-) error {
+	rest domain.RestDirective,
+) (domain.FailureAction, error) {
+	// The signature's own answer decides the walk where nothing parks, so a
+	// failure no credential caused costs no settings read (draft 050's rule for a
+	// network failure). A class that does park resolves the operator's table below.
+	action := rest.ActionFor(class)
 	if class == domain.KeyFailureRequest {
-		return nil
+		return action, nil
+	}
+	// A gate refused this gateway rather than this credential. Nothing here can
+	// change it and no key on the account can serve it, so the provider is named
+	// in the log rather than parked: an operator has to fix the route, not wait.
+	if class == domain.KeyFailureGate {
+		logx.Degraded(s.logger, "an upstream refused this gateway rather than the credential", nil,
+			"provider_id", selection.Endpoint.ProviderID(), "endpoint_id", selection.Endpoint.ID(),
+			"signature_id", rest.SignatureID, "status", reason)
 	}
 	// A virtual endpoint is skipped for the same reason RecordSuccess skips it:
 	// no row exists, so the write would answer NOT_FOUND for a real upstream
 	// failure and log a bookkeeping error that hides the cause.
 	if isVirtualEndpoint(selection.Endpoint.ID()) {
-		return nil
+		return action, nil
 	}
+
 	writeCtx, cancel := accountingCtx(ctx)
 	defer cancel()
 
@@ -119,25 +135,29 @@ func (s *Selector) RecordFailure(
 	if class == domain.KeyFailureRateLimit {
 		endpoint.MarkQuotaThrottled(now)
 	}
-	switch {
-	case selection.Key.ID() != "" && class.ImplicatesCredential():
+	if class.ImplicatesCredential() {
 		// The budget read is detached too: a client that left must not silently
-		// trade the operator's configured window for the documented default.
-		updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class,
-			s.healthPolicy(writeCtx, endpoint.ProviderID()).WithRetryAfter(retryAfter), now)
-		if err != nil {
-			return err
+		// trade the operator's configured window for the documented default. One
+		// read answers both halves of the failure, so the park and the walk cannot
+		// disagree about it.
+		policy := s.healthPolicy(writeCtx, endpoint.ProviderID()).WithRest(rest)
+		action = policy.ActionFor(class)
+		switch {
+		case selection.Key.ID() != "":
+			updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class, policy, now)
+			if err != nil {
+				return action, err
+			}
+			if err := s.endpoints.RecordKeyHealth(writeCtx, updated); err != nil {
+				return action, err
+			}
+		case endpoint.ServesItsOwnCredential():
+			// An account that owns no credential row parks as one: the breaker an
+			// OAuth account never had.
+			endpoint.RecordAccountFailure(class, policy, now)
 		}
-		if err := s.endpoints.RecordKeyHealth(writeCtx, updated); err != nil {
-			return err
-		}
-	case endpoint.ServesItsOwnCredential() && class.ImplicatesCredential():
-		// An account that owns no credential row parks as one. The class test gates
-		// the settings read too: a network failure cannot produce a park anyway.
-		endpoint.RecordAccountFailure(class,
-			s.healthPolicy(writeCtx, endpoint.ProviderID()).WithRetryAfter(retryAfter), now)
 	}
-	return s.endpoints.RecordUpstreamOutcome(writeCtx, endpoint)
+	return action, s.endpoints.RecordUpstreamOutcome(writeCtx, endpoint)
 }
 
 // healthPolicy resolves the parking budget for one provider. A nil seam and a

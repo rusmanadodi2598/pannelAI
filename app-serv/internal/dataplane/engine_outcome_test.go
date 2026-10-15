@@ -34,8 +34,8 @@ func parkedKeyEngine(t *testing.T) (*Engine, *memEndpointRepo, Selection) {
 	if err != nil {
 		t.Fatalf("Select() error = %v", err)
 	}
-	if err := selector.RecordFailure(context.Background(), selection, "the credential was refused",
-		domain.KeyFailureAuth, 0); err != nil {
+	if _, err := selector.RecordFailure(context.Background(), selection, "the credential was refused",
+		domain.KeyFailureAuth, domain.RestDirective{}); err != nil {
 		t.Fatalf("RecordFailure() error = %v", err)
 	}
 	parked := repo.health[selection.Key.ID()]

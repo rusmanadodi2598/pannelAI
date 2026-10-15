@@ -38,6 +38,12 @@ type Outcome struct {
 	// bytes would stream a second answer behind the first, and bill a second
 	// upstream for one request.
 	FramesWritten bool
+	// ChainStopped reports that the credential walk ended on the failure class's
+	// own instruction to stop rather than on an exhausted chain. The combo walk
+	// reads it as the end of the request: a class stopped is one the operator (or
+	// the signature) says no other credential answers differently, and walking the
+	// next member would spend an account to be refused again.
+	ChainStopped bool
 	// Truncated reports a non-streamed answer that stopped at its own output
 	// ceiling with nothing in it for the client to show. It is not a failure:
 	// the upstream answered 200 and the credential served the call. The combo

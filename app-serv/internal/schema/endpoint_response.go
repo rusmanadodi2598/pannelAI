@@ -28,8 +28,16 @@ type EndpointKeyResponse struct {
 	LastError         string  `json:"last_error,omitempty"`
 	ConsecutiveErrors int     `json:"consecutive_errors"`
 	RateLimitedUntil  *string `json:"rate_limited_until,omitempty"`
-	CreatedAt         string  `json:"created_at"`
-	UpdatedAt         string  `json:"updated_at"`
+	// LastErrorClass names what the last failure was, not the sentence the vendor
+	// wrote: the panel sorts a parked key by this and shows it beside the window.
+	LastErrorClass string `json:"last_error_class,omitempty"`
+	// ResetSource and SignatureID say how the park's rest was arrived at, so an
+	// operator can tell a wait the vendor warranted from one the gateway guessed.
+	// Both are absent for a key parked before the classifier existed.
+	ResetSource string `json:"reset_source,omitempty"`
+	SignatureID string `json:"signature_id,omitempty"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 }
 
 // EndpointOAuthResponse is the redacted OAuth state (§6: oauth is redacted on

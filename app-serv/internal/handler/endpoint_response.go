@@ -31,6 +31,9 @@ func toKeyResponse(key domain.UpstreamKey, now time.Time) schema.EndpointKeyResp
 		Available:         key.Available(now),
 		LastError:         key.LastError(),
 		ConsecutiveErrors: key.ConsecutiveErrors(),
+		LastErrorClass:    key.LastErrorClass(),
+		ResetSource:       key.ResetSource(),
+		SignatureID:       key.SignatureID(),
 		CreatedAt:         schema.Timestamp(key.CreatedAt()),
 		UpdatedAt:         schema.Timestamp(key.UpdatedAt()),
 	}

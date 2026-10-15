@@ -95,7 +95,7 @@ func (c MediaCall) recordFailure(ctx context.Context, router MediaRouter, reason
 	}
 	// reason: the upstream failure is the client's error; a failed health write
 	// retries on the next call rather than replacing this one.
-	_ = router.RecordFailure(ctx, c.Selection, reason, class, 0)
+	_ = router.RecordFailure(ctx, c.Selection, reason, class, domain.RestDirective{})
 }
 
 // served reads a 2xx answer and applies it to the endpoint's health. A reader

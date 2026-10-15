@@ -69,7 +69,7 @@ func TestSelector_RecordFailureAppliesTheProvidersWindow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("selecting: %v", err)
 	}
-	if err := selector.RecordFailure(context.Background(), selection, "upstream rejected", domain.KeyFailureAuth, 0); err != nil {
+	if _, err := selector.RecordFailure(context.Background(), selection, "upstream rejected", domain.KeyFailureAuth, domain.RestDirective{}); err != nil {
 		t.Fatalf("recording: %v", err)
 	}
 	if got := parkWindow(t, repo.health["uky_a"]); got != 15*time.Second {
@@ -113,7 +113,7 @@ func TestSelector_RecordFailureDegradesToTheDocumentedWindow(t *testing.T) {
 			if err != nil {
 				t.Fatalf("selecting: %v", err)
 			}
-			if err := selector.RecordFailure(context.Background(), selection, "upstream rejected", domain.KeyFailureAuth, 0); err != nil {
+			if _, err := selector.RecordFailure(context.Background(), selection, "upstream rejected", domain.KeyFailureAuth, domain.RestDirective{}); err != nil {
 				t.Fatalf("recording: %v", err)
 			}
 			if got := parkWindow(t, repo.health["uky_a"]); got != 2*time.Minute {
@@ -156,7 +156,7 @@ func TestSelector_KeylessSelectionParksTheAccount(t *testing.T) {
 			if err != nil {
 				t.Fatalf("selecting: %v", err)
 			}
-			if err := selector.RecordFailure(context.Background(), selection, "the upstream is overloaded", tc.class, 0); err != nil {
+			if _, err := selector.RecordFailure(context.Background(), selection, "the upstream is overloaded", tc.class, domain.RestDirective{}); err != nil {
 				t.Fatalf("recording: %v", err)
 			}
 			if len(health.asked) != tc.wantAsked {
@@ -200,7 +200,7 @@ func TestSelector_KeyedSelectionNeverParksTheAccount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("selecting: %v", err)
 	}
-	if err := selector.RecordFailure(context.Background(), selection, "too many requests", domain.KeyFailureRateLimit, 0); err != nil {
+	if _, err := selector.RecordFailure(context.Background(), selection, "too many requests", domain.KeyFailureRateLimit, domain.RestDirective{}); err != nil {
 		t.Fatalf("recording: %v", err)
 	}
 	if got := parkWindow(t, repo.health["uky_a"]); got != 2*time.Second {

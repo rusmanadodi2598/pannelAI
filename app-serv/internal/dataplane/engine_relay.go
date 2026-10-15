@@ -158,13 +158,14 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		})
 		if callErr != nil {
 			release()
-			e.recordFailure(ctx, selection, callErr)
+			action := e.recordFailure(ctx, selection, callErr)
 			outcome.LatencyMS = e.elapsedMS(started)
 			failure := e.translateCallError(callErr)
-			if failoverWorthy(AsError(failure).Code) {
+			if keepsWalking(action, AsError(failure).Code) {
 				memberErr = failure
 				continue
 			}
+			outcome.ChainStopped = action == domain.FailureActionStop
 			return outcome, failure
 		}
 		return finish(upstream, release, selection, started)

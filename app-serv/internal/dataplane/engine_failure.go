@@ -48,13 +48,29 @@ func FailureClass(status int) domain.KeyFailureClass {
 }
 
 // failureClass maps a call failure onto its class. An upstream rejection
-// carries the status; a failure that never produced an upstream answer never
-// reached the credential, so it cannot say anything about it.
+// carries the status, and the class the transport already recognised where it
+// recognised one; a failure that never produced an upstream answer never reached
+// the credential, so it cannot say anything about it.
 func failureClass(err error) domain.KeyFailureClass {
 	if failure, ok := AsUpstreamError(err); ok {
+		if failure.Class != "" {
+			return failure.Class.KeyClass()
+		}
 		return FailureClass(failure.Status)
 	}
 	return domain.KeyFailureTarget
+}
+
+// failureRest is what the classified failure tells the health model: the wait the
+// vendor named, the reset it stated, and which signature recognised it. A call
+// that never reached the upstream is a target failure and parks nothing, which
+// is what it did before this classification existed.
+func failureRest(err error) domain.RestDirective {
+	failure, ok := AsUpstreamError(err)
+	if !ok {
+		return domain.RestDirective{Class: domain.FailureTargetUnreachable, Source: domain.ResetSourceDefault}
+	}
+	return failure.Rest()
 }
 
 // failureReason is the text recorded against the key: the upstream's own
@@ -76,23 +92,42 @@ func failureRetryAfter(err error) time.Duration {
 	return provider.RetryAfter(failure.Header)
 }
 
-// recordFailure applies an upstream failure to the key's health. A persistence
-// failure is swallowed deliberately: the client's error is the upstream
-// failure, and reporting a bookkeeping failure instead would hide the cause it
-// came from.
+// recordFailure applies an upstream failure to the key's health and answers what
+// the walk does next. A persistence failure is swallowed deliberately: the
+// client's error is the upstream failure, and reporting a bookkeeping failure
+// instead would hide the cause it came from.
 //
 // A caller that hung up writes nothing: the read died because the request died, and
 // recording it would let one client closing a tab park an account for everyone else.
-func (e *Engine) recordFailure(ctx context.Context, selection Selection, cause error) {
+// It answers no action, leaving the walk to the code's own rule.
+func (e *Engine) recordFailure(ctx context.Context, selection Selection, cause error) domain.FailureAction {
 	if isClientCancellation(cause) {
-		return
+		return ""
 	}
-	err := e.selector.RecordFailure(ctx, selection, failureReason(cause),
-		failureClass(cause), failureRetryAfter(cause))
+	action, err := e.selector.RecordFailure(ctx, selection, failureReason(cause),
+		failureClass(cause), failureRest(cause))
 	if err != nil {
 		logx.Degraded(e.logger, "key health could not be recorded after an upstream failure", err,
 			"endpoint_id", selection.Endpoint.ID(), "key_id", selection.Key.ID(),
 			"upstream_error", failureReason(cause))
+	}
+	return action
+}
+
+// keepsWalking reports whether the chain spends another credential on a failed
+// call. The classified failure answers first, so an operator who set a class to
+// stop is not walked over: stop ends the chain, rotate keeps it going whatever the
+// code says. A call with nothing classified (a network failure, a client that hung
+// up) falls back to the code's own rule, which is what decided the walk before the
+// classes existed.
+func keepsWalking(action domain.FailureAction, code string) bool {
+	switch action {
+	case domain.FailureActionStop:
+		return false
+	case domain.FailureActionRotate:
+		return true
+	default:
+		return failoverWorthy(code)
 	}
 }
 
@@ -103,14 +138,21 @@ func (e *Engine) recordFailure(ctx context.Context, selection Selection, cause e
 func (e *Engine) translateCallError(err error) error {
 	if failure, ok := AsUpstreamError(err); ok {
 		code := CodeUpstreamError
+		class := failureClass(err)
 		switch {
+		case class == domain.KeyFailureQuota:
+			// A spent allowance is reported as the account's own condition and
+			// not as the throttle its status claims: a client that backs off for
+			// five minutes and retries is spending a request the vendor has
+			// already refused for the rest of the period.
+			code = CodeBillingExhausted
 		case failure.Status == http.StatusTooManyRequests:
 			code = CodeRateLimited
-		case FailureClass(failure.Status) == domain.KeyFailureBilling:
+		case class == domain.KeyFailureBilling:
 			// Named rather than folded into UPSTREAM_ERROR, so a client's retry policy
 			// and the panel both see nothing can serve until credit is bought.
 			code = CodeBillingExhausted
-		case FailureClass(failure.Status) == domain.KeyFailureRequest:
+		case class == domain.KeyFailureRequest:
 			// The upstream refused this request itself (context overflow, an
 			// unsupported parameter): the same body would be refused by every
 			// other credential, so the chain stops and the client sees the

@@ -49,8 +49,8 @@ func TestSelector_VirtualEndpointSkipsTheHealthWrites(t *testing.T) {
 	if err := selector.RecordSuccess(context.Background(), selection); err != nil {
 		t.Fatalf("RecordSuccess() error = %v, want the virtual endpoint skipped", err)
 	}
-	if err := selector.RecordFailure(context.Background(), selection, "rate limited",
-		domain.KeyFailureRateLimit, 0); err != nil {
+	if _, err := selector.RecordFailure(context.Background(), selection, "rate limited",
+		domain.KeyFailureRateLimit, domain.RestDirective{}); err != nil {
 		t.Fatalf("RecordFailure() error = %v, want the virtual endpoint skipped", err)
 	}
 	selector.markSelected(context.Background(), selection)

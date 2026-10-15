@@ -17,7 +17,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
@@ -92,6 +94,44 @@ type UpstreamError struct {
 	// the client already saw. A provider that states its real status inside the
 	// first frame of a 200 (Qoder's envelope) answers through this path.
 	Replayable bool
+	// Quota reports that the connector read a spent account out of the vendor's
+	// own envelope. It is the connector's own finding rather than something the
+	// status carries, so it is handed to the classifier rather than decided on.
+	Quota bool
+	// Class is what this refusal was recognised as. It is stamped once, where the
+	// body and the headers are still in hand, so the park and the client's error
+	// cannot disagree about one failure.
+	Class domain.FailureClass
+	// ResetAt is the instant the vendor said this key may serve again, or zero.
+	ResetAt time.Time
+	// RetryAfter is the wait the vendor named on the response, or zero. It is read
+	// once, by the classification, so the retry and the park use one number.
+	RetryAfter time.Duration
+	// ResetSource says whether that came from the body, the header, or nowhere.
+	ResetSource domain.ResetSource
+	// SignatureID names the signature that recognised the refusal.
+	SignatureID string
+	// Policy is the recognising signature's own action and windows, or empty. It
+	// sits under the operator's setting because a pattern in code is a guess about
+	// a vendor and a setting is a decision about it.
+	Policy domain.FailureClassPolicy
+	// Retryable is whether this same key may be asked again inside one call: the
+	// signature's own answer when it gives one, the class's otherwise. It is
+	// stamped by the classification, so the walk never re-guesses it.
+	Retryable bool
+}
+
+// Rest is what this failure tells the health model: how long the key stays out
+// of rotation and why.
+func (e *UpstreamError) Rest() domain.RestDirective {
+	return domain.RestDirective{
+		Class:       e.Class,
+		RetryAfter:  e.RetryAfter,
+		ResetAt:     e.ResetAt,
+		Source:      e.ResetSource,
+		SignatureID: e.SignatureID,
+		Policy:      e.Policy,
+	}
 }
 
 // Error renders the status and the upstream message.

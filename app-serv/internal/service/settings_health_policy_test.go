@@ -44,7 +44,8 @@ func TestSettingsService_KeyHealthPolicyResolvesPerProvider(t *testing.T) {
 			if err != nil {
 				t.Fatalf("KeyHealthPolicy(%s) error = %v", tc.provider, err)
 			}
-			if got != tc.want {
+			if got.AuthWindow != tc.want.AuthWindow || got.RateLimitWindow != tc.want.RateLimitWindow ||
+				got.TransientWindow != tc.want.TransientWindow || got.BillingWindow != tc.want.BillingWindow {
 				t.Fatalf("KeyHealthPolicy(%s) = %+v, want %+v", tc.provider, got, tc.want)
 			}
 		})
@@ -67,7 +68,9 @@ func TestSettingsService_KeyHealthPolicyAnswersDefaultsForAPreChangeRow(t *testi
 	if err != nil {
 		t.Fatalf("KeyHealthPolicy() error = %v", err)
 	}
-	if want := domain.DefaultKeyHealthPolicy(); got != want {
+	want := domain.DefaultKeyHealthPolicy()
+	if got.AuthWindow != want.AuthWindow || got.RateLimitWindow != want.RateLimitWindow ||
+		got.TransientWindow != want.TransientWindow || got.BillingWindow != want.BillingWindow {
 		t.Fatalf("KeyHealthPolicy() = %+v, want %+v", got, want)
 	}
 }

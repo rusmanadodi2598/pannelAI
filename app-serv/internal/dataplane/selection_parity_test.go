@@ -68,8 +68,9 @@ func TestSelector_ParityAccounting(t *testing.T) {
 		{
 			name: "a transient failure is recorded under the wire's upstream code",
 			record: func(s *Selector, sel Selection) error {
-				return s.RecordFailure(context.Background(), sel,
-					"the upstream answered 500", domain.KeyFailureTransient, 0)
+				_, err := s.RecordFailure(context.Background(), sel,
+					"the upstream answered 500", domain.KeyFailureTransient, domain.RestDirective{})
+				return err
 			},
 			wantOutcome: true,
 			wantCode:    CodeUpstreamError,
@@ -78,8 +79,9 @@ func TestSelector_ParityAccounting(t *testing.T) {
 		{
 			name: "a rate limit is recorded under the wire's rate-limit code",
 			record: func(s *Selector, sel Selection) error {
-				return s.RecordFailure(context.Background(), sel,
-					"the upstream answered 429", domain.KeyFailureRateLimit, 0)
+				_, err := s.RecordFailure(context.Background(), sel,
+					"the upstream answered 429", domain.KeyFailureRateLimit, domain.RestDirective{})
+				return err
 			},
 			wantOutcome:  true,
 			wantCode:     CodeRateLimited,
@@ -89,8 +91,9 @@ func TestSelector_ParityAccounting(t *testing.T) {
 		{
 			name: "a request-shaped failure records nothing",
 			record: func(s *Selector, sel Selection) error {
-				return s.RecordFailure(context.Background(), sel,
-					"upstream rejected the request", domain.KeyFailureRequest, 0)
+				_, err := s.RecordFailure(context.Background(), sel,
+					"upstream rejected the request", domain.KeyFailureRequest, domain.RestDirective{})
+				return err
 			},
 			wantUses: 2,
 		},

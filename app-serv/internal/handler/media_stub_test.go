@@ -59,7 +59,7 @@ func (stubMediaRouter) SelectEndpoint(_ context.Context, providerID, endpointID 
 }
 
 func (stubMediaRouter) RecordSuccess(context.Context, dataplane.Selection) error { return nil }
-func (stubMediaRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass, time.Duration) error {
+func (stubMediaRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass, domain.RestDirective) error {
 	return nil
 }
 

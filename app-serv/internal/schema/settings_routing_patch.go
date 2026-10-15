@@ -28,6 +28,9 @@ type RoutingSettingsPatch struct {
 	FallbackStrategy   *string                           `json:"fallback_strategy,omitempty" validate:"omitempty,oneof=fill-first round-robin"`
 	ProviderStrategies *map[string]ProviderStrategyPatch `json:"provider_strategies,omitempty" validate:"omitempty,dive"`
 	KeyPark            *KeyParkPatch                     `json:"key_park,omitempty"`
+	// FailureClasses retunes what a recognised failure class does, at the group
+	// level every provider inherits before its own override.
+	FailureClasses *map[string]FailureClassPolicyPatch `json:"failure_classes,omitempty" validate:"omitempty,dive"`
 	// Failover bounds one request's whole credential walk. The bounds sit here
 	// rather than in a provider entry because the chain it cuts belongs to the
 	// request: a combo, its accounts, and their keys.
@@ -61,6 +64,20 @@ type ProviderStrategyPatch struct {
 	FallbackStrategy *string       `json:"fallback_strategy,omitempty" validate:"omitempty,oneof=fill-first round-robin"`
 	StickyLimit      *int          `json:"sticky_limit,omitempty" validate:"omitempty,min=1,max=100"`
 	KeyPark          *KeyParkPatch `json:"key_park,omitempty"`
+	// FailureClasses retunes what one recognised failure class does on this
+	// provider: park, rotate or stop, with its own ceiling and cooldown. The
+	// bounds mirror the domain's, which is the authority a stored document is
+	// checked against.
+	FailureClasses *map[string]FailureClassPolicyPatch `json:"failure_classes,omitempty" validate:"omitempty,dive"`
+}
+
+// FailureClassPolicyPatch is one class's action and windows as the wire carries
+// them, in seconds like every other window in this group. Each field is optional
+// on its own, so retuning an action leaves the ceiling it inherited alone.
+type FailureClassPolicyPatch struct {
+	Action          *string `json:"action,omitempty" validate:"omitempty,oneof=park rotate stop"`
+	CeilingSeconds  *int    `json:"ceiling_seconds,omitempty" validate:"omitempty,min=1,max=2592000"`
+	CooldownSeconds *int    `json:"default_cooldown_seconds,omitempty" validate:"omitempty,min=1,max=2592000"`
 }
 
 // validateProviderStrategies applies the entry rules the struct tags cannot
@@ -72,9 +89,10 @@ func validateProviderStrategies(in *RoutingSettingsPatch) error {
 		return nil
 	}
 	for id, override := range *in.ProviderStrategies {
-		if override.FallbackStrategy == nil && override.StickyLimit == nil && override.KeyPark == nil {
+		if override.FallbackStrategy == nil && override.StickyLimit == nil && override.KeyPark == nil &&
+			override.FailureClasses == nil {
 			return domain.NewValidationError("provider_strategies[" + id +
-				"] must set fallback_strategy, sticky_limit, or key_park; delete the entry to inherit the default")
+				"] must set fallback_strategy, sticky_limit, key_park, or failure_classes; delete the entry to inherit the default")
 		}
 	}
 	return nil
@@ -104,7 +122,11 @@ func routingPtr(in *RoutingSettingsPatch) *domain.RoutingSettingsPatch {
 	if in.ProviderStrategies != nil {
 		replaced := make(map[string]domain.ProviderStrategy, len(*in.ProviderStrategies))
 		for id, override := range *in.ProviderStrategies {
-			entry := domain.ProviderStrategy{StickyLimit: override.StickyLimit, KeyPark: keyPark(override.KeyPark)}
+			entry := domain.ProviderStrategy{
+				StickyLimit:    override.StickyLimit,
+				KeyPark:        keyPark(override.KeyPark),
+				FailureClasses: failureClasses(override.FailureClasses),
+			}
 			if override.FallbackStrategy != nil {
 				if parsed, err := domain.ParseCredentialRotation(*override.FallbackStrategy); err == nil {
 					entry.FallbackStrategy = parsed
@@ -117,6 +139,10 @@ func routingPtr(in *RoutingSettingsPatch) *domain.RoutingSettingsPatch {
 	if in.KeyPark != nil {
 		parked := keyParkPatch(*in.KeyPark)
 		patch.KeyPark = &parked
+	}
+	if in.FailureClasses != nil {
+		classes := failureClasses(in.FailureClasses)
+		patch.FailureClasses = &classes
 	}
 	if in.Failover != nil {
 		patch.Failover = &domain.FailoverBudgetPatch{
@@ -171,6 +197,9 @@ func strategiesOrEmpty(in map[string]domain.ProviderStrategy) map[string]Provide
 		if !override.KeyPark.IsEmpty() {
 			parked := keyParkResponse(override.KeyPark)
 			entry.KeyPark = &parked
+		}
+		if !override.FailureClasses.IsEmpty() {
+			entry.FailureClasses = failureClassesResponse(override.FailureClasses)
 		}
 		out[id] = entry
 	}
