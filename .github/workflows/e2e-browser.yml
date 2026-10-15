@@ -72,6 +72,15 @@ jobs:
           PANEL_BASE_URL: http://127.0.0.1:5173
         run: app-ui/e2e/node_modules/.bin/playwright test --config app-ui/e2e/playwright.config.cjs
 
+      - name: Upload dashboard visual audit screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dashboard-visual-audit
+          path: app-ui/test-results/
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Print server logs on failure
         if: failure()
         run: |
