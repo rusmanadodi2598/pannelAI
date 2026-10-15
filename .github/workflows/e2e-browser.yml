@@ -1,0 +1,81 @@
+name: app-ui-browser-e2e
+
+on:
+  pull_request:
+    paths:
+      - 'app-ui/**'
+      - '.github/workflows/e2e-browser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-e2e:
+    name: Chromium browser smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install the pinned Bun
+        run: |
+          set -euo pipefail
+          version=1.3.0
+          sha256=77336611905b9e876e52924f8b1a57e72669cf10541dc1e11269d2c9371f9e45
+          curl -sSfL -o /tmp/bun.zip \
+            "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-x64-baseline.zip"
+          printf '%s  %s\n' "$sha256" /tmp/bun.zip | sha256sum --check --quiet
+          unzip -q /tmp/bun.zip -d /tmp
+          install -m 755 /tmp/bun-linux-x64-baseline/bun /usr/local/bin/bun
+          bun --version
+
+      - name: Install app-ui dependencies
+        working-directory: app-ui
+        run: bun install --frozen-lockfile
+
+      - name: Install the pinned Playwright runner
+        run: npm install --prefix app-ui/e2e --no-save --package-lock=false @playwright/test@1.56.1
+
+      - name: Install Chromium
+        run: app-ui/e2e/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Start the API fixture
+        run: |
+          set -euo pipefail
+          node app-ui/e2e/mock-api.cjs > /tmp/pannelai-e2e-api.log 2>&1 &
+          echo $! > /tmp/pannelai-e2e-api.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4179/api/v1/auth/status >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/pannelai-e2e-api.log
+          exit 1
+
+      - name: Start app-ui
+        run: |
+          set -euo pipefail
+          cd app-ui
+          PANEL_API_TARGET=http://127.0.0.1:4179 bun run dev -- --host 127.0.0.1 > /tmp/pannelai-e2e-panel.log 2>&1 &
+          echo $! > /tmp/pannelai-e2e-panel.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:5173/login >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/pannelai-e2e-panel.log
+          exit 1
+
+      - name: Run browser E2E smoke tests
+        env:
+          CI: 'true'
+          PANEL_BASE_URL: http://127.0.0.1:5173
+        run: app-ui/e2e/node_modules/.bin/playwright test --config app-ui/e2e/playwright.config.cjs
+
+      - name: Print server logs on failure
+        if: failure()
+        run: |
+          echo '--- API fixture ---'
+          cat /tmp/pannelai-e2e-api.log || true
+          echo '--- app-ui ---'
+          cat /tmp/pannelai-e2e-panel.log || true
