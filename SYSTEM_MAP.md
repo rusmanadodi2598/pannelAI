@@ -351,6 +351,49 @@ angka yang sama diserahkan ke klien. Endpoint yang tidak punya baris key (OAuth,
 barisnya sendiri; itu breaker yang belum pernah ada, dan absennya membuat token mati terus dipilih.
 Stream yang ditinggalkan klien di tengah jawaban tidak mencatat sukses maupun gagal.
 
+### 3.5c Klasifikasi kegagalan: apa yang memarkir kunci dan apa yang menggerakkan walk
+
+Status HTTP tidak cukup untuk memutuskan park, karena satu status menyimpan dua kegagalan yang berbeda
+panjang umurnya. `FailureClass` (sembilan nilai, `internal/domain/failure_class.go`) duduk DI ATAS
+`KeyFailureClass`: yang kedua tetap memilih anak tangga ladder, yang pertama memilih apa yang sebenarnya
+terjadi. Rekognisi tinggal di connector (`internal/provider/failure_signature.go`): registry signature berisi
+pola yang diukur dari produksi (TH Harbor `heavy load` vs `free allowance`, envelope kuota Qoder, gerbang
+free-tier OpenCode) plus dua parser reset generik yang berjalan di atas body vendor mana pun. Domain memiliki
+vocabulary, connector memiliki kalimat vendor, dan itu alasan keduanya tidak berada di satu berkas.
+
+Satu `Classify()` menghasilkan kelas, reset, sumber, signature, dan jawaban retry; jawaban itu di-stamp SEKALI
+ke `UpstreamError` di tempat status, header, dan body masih lengkap. Park (`KeyHealthPolicy.RestUntil`) dan
+transport (`Do`) membaca stamp yang sama, sehingga tidak mungkin keduanya berbeda pendapat tentang satu
+kegagalan. Presedennya:
+
+```
+COALESCE(reset yang dinyatakan vendor, now + clamp(Retry-After, ceiling kelas), now + cooldown kelas)
+```
+
+Reset vendor menang atas apa pun yang dihitung gateway; ceiling hanya menjaga dari tanggal yang tidak mungkin.
+Quota memakai ladder empat langkah (15 menit → 1 jam → 6 jam → 24 jam), bukan doubling, karena setiap strike
+adalah satu leg walk yang sudah diketahui akan ditolak; run-nya menaikkan `consecutive_billing` karena bagi
+ akun keduanya kondisi yang sama.
+
+Aksi kelas (`park` / `rotate` / `stop`) tidak lagi hanya menentukan panjang park: `keepsWalking()`
+(`engine_relay.go`) membacanya: `stop` mengakhiri rantai dan `Outcome.ChainStopped` menghentikan walk di level
+combo juga, `rotate` berjalan terus tanpa menahan kunci, `park` mengikuti aturan `failoverWorthy` yang lama.
+`Selector.RecordFailure` mengembalikan aksi itu dari SATU pembacaan policy, supaya park dan failover menjawab
+pertanyaan yang sama. Default per kelas dipertahankan persis seperti perilaku sebelumnya (request → stop,
+target/gate → rotate, sisanya → park), jadi tabel konfigurasi tidak mengubah satu request pun yang hari ini
+sudah benar. Pembacaan settings tetap TIDAK di-hoist: kegagalan jaringan dan seleksi virtual sengaja tidak
+membayarnya.
+
+`routing.failure_classes` (global) dan `provider_strategies.<id>.failure_classes` (override per provider, merge
+field-per-field) adalah permukaan operator untuk aksi + ceiling + cooldown. Yang boleh di-tune hanya kelas yang
+memarkir kunci; `TARGET_UNREACHABLE`, `GATE_BLOCKED`, dan `REQUEST_INVALID` ditolak saat tulis karena router tidak
+membaca budget untuk kelas yang tidak memparkir apa pun; entry untuk ketiganya adalah konfigurasi mati.
+
+Setiap park menyimpan asal-usulnya (`upstream_keys.reset_source` = `header`/`body`/`default`,
+`upstream_keys.signature_id`, migrasi `000021`). Keduanya ditulis oleh health write dan TIDAK dibaca router;
+fungsinya satu: operator yang membuka kunci yang dipark bisa membedakan rest yang dijamin vendor dari rest yang
+ditebak gateway. Baris dari binary lama tetap terbaca karena keduanya nullable. Draft 052.
+
 ### 3.5a Provider tanpa kredensial (satu aturan, tiga pembaca)
 
 Provider yang menjawab tanpa kredensial (`no_auth` tingkat provider atau transport, atau
@@ -568,6 +611,14 @@ Migrasi `000014_request_path_indexes` tidak menambah kolom sama sekali: ia menam
 Migrasi `000015_oauth_email_index_expression` mengganti index email yang `000014` bangun. Query dedupnya memfilter `lower(account->>'email')` (`endpoint_batch.go`), dan index di atas ekspresi tanpa `lower()` tidak bisa menjawab predikat itu: `EXPLAIN` menempatkannya sebagai Filter, bukan Index Cond, bahkan dengan `enable_seqscan` dimatikan, jadi pembacaan yang seharusnya memakai index tetap memindai tabel. Nama index dipertahankan agar database yang sudah menjalankan `000014` dan database baru berakhir pada bentuk yang sama. Dua index tabel log sengaja dibiarkan apa adanya: `CREATE INDEX CONCURRENTLY` ditolak di dalam transaksi runner, dan dijalankan di luar `pg_advisory_lock` membuat build menunggu transaksi replica lain yang justru menunggu lock yang sama, sehingga start bersamaan deadlock (`SQLSTATE 40P01`, terbukti di `TestApply_ConcurrentCallsBothSucceed`). Window lock saat boot di tabel berisi karenanya diterima dan tercatat di file migrasinya, bukan disembunyikan.
 
 Migrasi `000017_endpoint_quota_cooldown` dan `000018_oauth_refresh_retry` menambah tiga kolom waktu pada `upstream_endpoints`, dan keduanya lahir dari temuan yang sama: sebuah deadline ditulis ke kolom yang pembacanya salah. Yang pertama (`quota_cooldown_until`) khusus untuk poller kuota terbit, karena `rate_limited_until` yang selama ini disaring poller adalah input `Available()`; memarkuhnya dengan 429 dari satu kunci akan menahan seluruh akun dari rotasi. Dua lainnya (`oauth_retry_at`, `oauth_retry_rounds`) adalah ladder kunjungan ulang untuk akun OAuth yang sudah di-dead-letter: token kuburan selalu `due`, jadi menyertakan akun `error` tanpa jendela mengulang budget lima percobaan setiap tick (terukur: `grant calls = 6` saat pin-nya 5). Ketiganya dibaca lewat proyeksi parity yang sama dan tidak di-index karena pembacanya sudah dibatasi halaman (§1.7). Rollback kedua migrasi hanya menjatuhkan kolom: tidak ada baris yang hilang, dan akun kuburan kembali ke keadaan sebelum fix, yaitu menunggu operator (draft 050 T1 keputusan b, T2 keputusan ii).
+
+Migrasi `000021_key_rest_classification` menambah dua kolom teks nullable (`reset_source`, `signature_id`) di
+`upstream_keys`: catatan bagaimana sebuah rest diperoleh, bukan input bagi router. Tidak ada index karena
+keduanya dibaca berdampingan dengan `last_error_class` pada halaman endpoint yang sudah dibatasi
+`MaxEndpointsPerProvider` (§1.7), dan setiap penulisnya menunjuk baris lewat primary key `(id, endpoint_id)`.
+Keduanya hanya ditulis oleh health write, jadi baris yang dipark binary lama sederhana tidak membawa keduanya.
+`down` menjatuhkan kolomnya dan tidak menyentuh baris: yang hilang jawaban "kenapa selama ini", park-nya sendiri
+tetap di `rate_limited_until`. Draft 052.
 
 Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, dan aturan kepemilikan tabel. Satu catatan yang lahir dari menjalankannya terhadap PostgreSQL nyata:
 

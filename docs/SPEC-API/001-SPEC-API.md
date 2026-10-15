@@ -439,6 +439,26 @@ display-only: routing
 never reads it, because a probe answers when an operator last pressed the button and the parking above already carries
 every real upstream outcome.
 
+**Status is not the failure.** One status carries two failures only the vendor's own words can separate, and the
+park must know which it got: a 429 that says the service is "under heavy load" lifts in minutes, while a 429 that
+says "you've used this period's free allowance" does not lift until the date printed in the same sentence. The
+gateway therefore classifies each refusal into a `FailureClass` (§7.14) before it decides anything, recognising
+the vendor's wording where a connector knows it and falling back to the status alone where nobody has taught it
+yet. The class is stamped once, in the transport, where the status, the headers and the body are still in hand, so
+the park and the walk and the client's error cannot disagree about one failure. A recognised `QUOTA_EXHAUSTED`
+parks to the reset the vendor stated rather than to the five-minute rate-limit ceiling, and is reported to the
+client as the account's own condition (`BILLING_EXHAUSTED`), because a caller that backs off for five minutes is
+spending a request the vendor has already refused for the rest of the period. A refusal that closes *this gateway*
+rather than the credential (`GATE_BLOCKED`, the free tier reachable only from the vendor's own client) retries
+nothing and parks nothing, since no key on the account changes it.
+
+Rest precedence is therefore `COALESCE(reset the vendor stated, now + clamp(Retry-After, class ceiling), now +
+class ladder)`, and the class's own action decides what the chain does next: park and move on, rotate without
+withholding, or stop the request. Every key row records how its current rest was arrived at (`reset_source` is
+`header`, `body`, or `default`, and `signature_id` names the recogniser), both nullable and read by no router:
+they exist so an operator opening a parked key can tell a wait the vendor promised from one the gateway guessed.
+(draft `052`)
+
 ### 7.6 Models (catalog, custom, alias, disabled)
 
 | Method    | Path                         | Auth | Description                                                           | Phase                |
@@ -986,6 +1006,19 @@ failure, so a retune takes effect on the next parked key without a restart. The 
 doubling rule are not configurable: they are what bounds how long a dead credential can stay out of rotation
 after the last successful call.
 
+`routing.failure_classes` retunes what the router *does* with a failure it recognised (§7.5), keyed by class
+name: `action` is one of `park` (withhold the credential for its rest, then move on), `rotate` (move on and
+withhold nothing), or `stop` (end the request on this failure, because no other credential answers it
+differently); `ceiling_seconds` (1..2592000) bounds a wait the gateway computed itself, and
+`default_cooldown_seconds` (1..2592000) replaces the class ladder with a flat park. Each field is optional on
+its own, a provider entry merges over the group over the documented default, and only the six classes that
+implicate a credential may be named: `TARGET_UNREACHABLE`, `GATE_BLOCKED`, and `REQUEST_INVALID` park nothing,
+so an entry for one of them would be configuration read by nobody and the write refuses it. The classes the
+gateway recognises are `RATE_LIMIT_TEMPORARY`, `QUOTA_EXHAUSTED`, `AUTH_INVALID`, `BILLING_EXHAUSTED`,
+`SERVER_TRANSIENT`, `TARGET_UNREACHABLE`, `GATE_BLOCKED`, `REQUEST_INVALID`, `UNKNOWN`. A reset the vendor
+stated in its own body outranks every window here: the class ceiling is what bounds a misread date, not what
+shortens a promise.
+
 An emptied URL clears the stored value: `network.outbound_proxy_url: ""` and
 `token_saver.headroom.url: ""` both store the clear, because the panel sends `""` when the operator
 empties the field and the value is only writable through this PATCH. A malformed URL is still
@@ -1524,3 +1557,15 @@ the in-flight marker's release now has it too, each under a five-second bound li
 also records what the fix exposed in the test doubles: the data plane's fake endpoint repository had been ignoring the
 context its writes were handed, so three new tests passed against an unfixed build until the double was made to refuse a
 cancelled write the way the driver does._
+
+_Changelog 2026-10-15: §7.5 adds the failure classification layer and the rest precedence, §7.14 adds
+`routing.failure_classes` and a provider entry's own table (draft `052`). The trigger was measured, not theorised: TH
+Harbor answers a spent free allowance and a busy minute with the same 429, and both parked the key for five minutes
+against a reset the vendor's own body printed four days away, so the key returned to rotation to be refused again on
+every cycle of four days. Status alone cannot see that difference, so the class is now recognised where the body and
+headers are still in hand and stamped once: a spent allowance parks to the vendor's stated reset and reaches the
+client as the account's condition, a gate that refuses this gateway parks nothing, and the class's action (`park`,
+`rotate`, `stop`) decides whether the credential walk continues at all. `upstream_keys` gains `reset_source` and
+`signature_id` (migration 000021), nullable and read by no router, so a parked key can say whether its wait was
+promised or guessed. The contract gains the class table on both settings levels and the three provenance fields on
+the key response._
