@@ -94,7 +94,9 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		return dataPlane{}, err
 	}
 
-	transport, err := dataplane.NewTransport(dataplane.TransportDeps{Connectors: in.Connectors, Client: in.Client, Routes: in.Routes})
+	transport, err := dataplane.NewTransport(dataplane.TransportDeps{
+		Connectors: in.Connectors, Client: in.Client, Routes: in.Routes, Logger: slog.Default(),
+	})
 	if err != nil {
 		return dataPlane{}, err
 	}

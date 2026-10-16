@@ -3,7 +3,7 @@
 // @file      internal/service/proxy_route_order.go
 // @for       The candidate order one proxy route walk tries: the operator's stable order, the cooldown filter, rotation, and the provider's pin.
 // @uses      internal/domain, context, sort.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D4-D6 and docs/PORT/009-PORT- PROVIDER-PROXY.md D4 make the order a decision of its own, with its own tests; it lives beside the plan rather than inside it so proxy_route.go keeps one concern and stays under the file limit (AGENTS.md §1.1).
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D4-D6 and docs/PORT/009-PORT-PROVIDER-PROXY.md D4 make the order a decision of its own, with its own tests; it lives beside the plan rather than inside it so proxy_route.go keeps one concern and stays under the file limit (AGENTS.md §1.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

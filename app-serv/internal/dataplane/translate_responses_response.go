@@ -113,6 +113,7 @@ func decodeResponsesAnswer(raw []byte) (responsesAnswer, error) {
 	}
 	answer := responsesAnswer{ID: stringField(response, "id")}
 
+	calls, openCall := 0, false
 	items, _ := arrayField(response, "output")
 	for _, rawItem := range items {
 		item, ok := decodeObject(rawItem)
@@ -123,8 +124,15 @@ func decodeResponsesAnswer(raw []byte) (responsesAnswer, error) {
 		case ItemMessage:
 			answer.Texts = append(answer.Texts, responsesTextParts(item)...)
 		case ItemFunctionCall:
+			// The cut is recorded beside the call itself: the client still sees the
+			// call the upstream started, and the finish reason is what tells it the
+			// arguments never closed.
+			if responsesCallLeftOpen(item) {
+				openCall = true
+			}
 			if call, ok := responsesCall(item); ok {
 				answer.Calls = append(answer.Calls, call)
+				calls++
 			}
 		case ItemReasoning:
 			answer.reasonings = append(answer.reasonings, responsesReasoningParts(item)...)
@@ -132,7 +140,7 @@ func decodeResponsesAnswer(raw []byte) (responsesAnswer, error) {
 	}
 	answer.Reasoning = joinText(answer.reasonings)
 
-	answer.Finish = responsesFinishReason(response, len(answer.Calls) > 0)
+	answer.Finish = responsesFinishReason(response, calls > 0, openCall)
 	if usage, ok := objectField(response, "usage"); ok {
 		answer.Usage = responsesUsageFromObject(usage)
 	}

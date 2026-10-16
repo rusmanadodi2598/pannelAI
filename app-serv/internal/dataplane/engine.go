@@ -5,12 +5,7 @@
 // @file      internal/dataplane/engine.go
 // @for       The Engine itself: its seams, its dependency contract, and the resolver it hands back to catalog questions.
 // @uses      log/slog, time, internal/registry, internal/repository.
-// @reason    SPEC-API-001 §7.15 fixes the pipeline order (model resolve → format translation → endpoint and key selection → upstream call → response translation → usage recording), and §7.15 adds the reasoning injection the client's model string and the stored mode resolve to.
-//
-//	Keeping it in one place is what makes the order auditable, and
-//	keeping it out of the handler is what keeps the same path usable
-//	from a worker or a combo probe.
-//
+// @reason    SPEC-API-001 §7.15 fixes the pipeline order (model resolve → format translation → endpoint and key selection → upstream call → response translation → usage recording), and §7.15 adds the reasoning injection the client's model string and the stored mode resolve to. Keeping it in one place is what makes the order auditable, and keeping it out of the handler is what keeps the same path usable from a worker or a combo probe.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -55,7 +50,8 @@ type Engine struct {
 	clock  func() time.Time
 }
 
-// EngineDeps holds the collaborators the engine needs.
+// EngineDeps holds the collaborators the engine needs, of which Resolver,
+// Selector and Transport are the only ones NewEngine refuses to run without.
 type EngineDeps struct {
 	Resolver  *Resolver
 	Selector  *Selector
@@ -88,7 +84,8 @@ type EngineDeps struct {
 	Clock func() time.Time
 }
 
-// NewEngine validates deps and returns an engine.
+// NewEngine rejects a nil resolver, selector or transport and defaults the clock
+// to time.Now, so a wiring that states no seams still measures latency.
 func NewEngine(deps EngineDeps) (*Engine, error) {
 	if deps.Resolver == nil {
 		return nil, internalError("model resolver is required", nil)

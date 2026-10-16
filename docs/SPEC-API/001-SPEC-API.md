@@ -371,9 +371,44 @@ generalizes the reference 1-connection-1-key model.
 | DELETE | `/api/v1/endpoints/{id}`               | S    | Delete endpoint + its keys                                                                             | P1    |
 | POST   | `/api/v1/endpoints/{id}/test`          | S    | Connectivity test; `{key_id?}` targets one key else the first key the operator has not disabled (a key inside its backoff is testable on purpose); updates `test_status` and the key's circuit | P1    |
 | POST   | `/api/v1/endpoints/{id}/keys`          | S    | Add key `{label?, value}`                                                                              | P1    |
-| GET    | `/api/v1/endpoints/{id}/keys`          | S    | List keys (hints only) with health fields: `last_selected_at` (when rotation chose it) beside `last_used_at` (when it last served), `consecutive_errors` with the per-class runs it sums, and `rate_limited_until` | P1    |
+| GET    | `/api/v1/endpoints/{id}/keys`          | S    | List keys (hints only) with health fields: `last_selected_at` (when rotation chose it) beside `last_used_at` (when it last served), `consecutive_errors` with the per-class runs it sums, `rate_limited_until`, and the parking provenance triple `last_error_class` / `reset_source` / `signature_id` (failure classes, below) | P1    |
 | PATCH  | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | `{label?, value?, priority?, status?}`: value is write-only                                            | P1    |
 | DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | Remove key (endpoint must keep ≥1 key the operator has not disabled if the auth type stores keys: `api_key` or `service_account`; a parked key counts, because its window ends by itself) | P1    |
+
+**Failure classes and what each one pays.** A status alone does not say who is at fault, and that answer is
+what decides the park: one vendor's 429 lifts in minutes, another's is a spent period that does not lift
+until the date its own body prints. Nine classes (`domain.FailureClass`) sit above the parking ladders
+rather than replacing them: `KeyFailureClass` still owns the window, the class owns the meaning, and the
+mapping is one way.
+
+| Class                | What it is                                                  | Action | Park                                                                      |
+| -------------------- | ----------------------------------------------------------- | ------ | ------------------------------------------------------------------------- |
+| `RATE_LIMIT_TEMPORARY` | a throttle the vendor expects to lift on its own          | park   | 2s ladder to a 5m ceiling, honouring the vendor's `Retry-After`            |
+| `QUOTA_EXHAUSTED`      | an allowance spent for the period                         | park   | 15m → 1h → 6h → 24h; a stated reset overrides the ladder, ceiling 30d      |
+| `AUTH_INVALID`         | a credential the upstream refused, 401/403 with no quota or billing signal | park | 2m ladder to a 1h ceiling                                            |
+| `BILLING_EXHAUSTED`    | an account with no credit left                            | park   | 15m ladder to a 6h ceiling                                                 |
+| `SERVER_TRANSIENT`     | an upstream 5xx that says nothing about the credential    | park   | flat 30s                                                                   |
+| `UNKNOWN`              | no signature and no status rule recognised it             | park   | flat 30s, the transient ladder                                             |
+| `TARGET_UNREACHABLE`   | the call never reached the upstream, or a 404             | rotate | parks nothing                                                              |
+| `GATE_BLOCKED`         | the upstream refuses this gateway, not this credential    | rotate | parks nothing                                                              |
+| `REQUEST_INVALID`      | refused on the request's own shape, where every credential fails alike | stop | ends the chain                                                     |
+
+A refusal is recognised by a signature registry the connector layer owns (`internal/provider`), not by the
+core: patterns are seeded for the refusals measured in production, more can be added at boot, and the last
+registered wins. Where nothing matches, the class falls back to what the status alone can carry.
+
+The window a key is parked for resolves in one order: the reset the vendor stated in its own body, else
+`now + clamp(Retry-After, class ceiling)`, else `now + class cooldown`. `reset_source` names which of
+the three answered (`body` / `header` / `default`), so a wait the gateway guessed never reads as one the
+vendor warranted. `signature_id` names the pattern that claimed it. Both are absent on a key parked before
+the classifier existed.
+
+Two answers are deliberately coarser than the class behind them. A `QUOTA_EXHAUSTED` refusal reaches the
+client as the §8 code `BILLING_EXHAUSTED`, because both are the account's own condition and neither clears
+on a backoff the client controls. And three classes are refused as configuration in
+`routing.failure_classes`: `TARGET_UNREACHABLE`, `GATE_BLOCKED` and `REQUEST_INVALID` park nothing, so a
+window written for them is dead configuration. How an action then moves the failover walk is
+`SYSTEM_MAP.md` §3.5c.
 
 **Multi-account and bulk onboarding (owner requirement).** Every provider is multi-account: an
 account is one endpoint, so N accounts are N endpoints under one `provider_id`, distinguished by
@@ -703,11 +738,18 @@ reference assigns pools only globally was wrong on the connection half.
 outbound call walks the pool's rows in the order `outbound_proxy_strategy` picks: `fallback` (the
 default; the stored order, which is the operator's own) or `round_robin` (each request starts at the
 next row in line, with the cursor in Redis so replicas share it), and `outbound_proxy_url` is the
-**last-resort attempt after the pool**, never before a row. Only a candidate whose connection fails
-hands the call to the next one: an upstream that answered, or a caller that cancelled, ends the walk,
-because re-sending a request the wire may already have delivered is not a failover. The walk is
-bounded at three attempts per request; a candidate whose connect stage failed is parked for two
-minutes and skipped while any unparked candidate remains (a fully parked pool still serves, because a
+**last-resort attempt after the pool**, never before a row. Two things hand the call to the next
+candidate: a connect stage that failed, and an upstream that answered **429**. A 429 names the
+address rather than the request and was refused before anything was generated, so another address is
+worth the round trip: measured on OpenCode's free lane (2026-10-15), one address answered 429 while a
+second, carrying the same session and the same model, served three requests in a row and was still
+usable eleven seconds later while the first kept refusing. Every other answer, and a caller that
+cancelled, ends the walk, because re-sending a request the wire may already have delivered is not a
+failover; a request whose body cannot be rebuilt is never re-sent either, and its refusal goes back to
+the client exactly as the upstream stated it. The walk is bounded at three attempts per request; a
+candidate is parked for what its failure stated: the vendor's own `Retry-After` trimmed to the
+two-minute cooldown for a refusal, the full cooldown for a dead connect stage. A parked candidate is
+skipped while any unparked candidate remains (a fully parked pool still serves, because a
 cooldown is a hint about the past); a row whose stored test is a failure is not a candidate until it
 is re-tested; and an empty pool with no URL dials direct exactly as before. The strategy is a closed
 set (`fallback`, `round_robin`), and an empty stored value reads as `fallback`, so a document that
@@ -1051,8 +1093,10 @@ two fixed states `on` (ask for thinking, the reference's 10000-token budget) and
 thinking), and the level names `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, and
 `thinking` (z.ai's own word for the same request). The mode is normalized onto the resolved model's
 wire format when a request reaches that model (§7.15), so one stored word means the same intent
-across OpenAI, Claude, Gemini, and the vendor dialects. An absent entry follows the reasoning setting
-each request already carries; the panel's picker offers `auto` for that state and deletes the entry,
+across OpenAI, Claude, Gemini, and the vendor dialects. A level the resolved model does not accept is
+answered there with the nearest level it does, so one stored word never names a control a model was
+never offered. An absent entry follows the reasoning setting each request already carries; the panel's
+picker offers `auto` for that state and deletes the entry,
 which is the reference's own rule (`saveThinkingConfig`). The levels a picker offers are the ones the
 provider's models accept, read from the model rows rather than stored here: the provider detail
 carries their union as `thinking_levels` (§7.4) and each catalog and custom-model row carries its own
@@ -1140,9 +1184,26 @@ the client sent to that floor (and never below the wire's own minimum) instead o
 spends entirely on thinking. This is the one case the gateway writes a number the upstream would have
 accepted, so it is bounded three ways: it applies only to a ceiling the client already sent, never to an
 absent one; the floor is declared per model, so a model that does not declare one is untouched; and it
-raises rather than replaces, so a ceiling above the floor is forwarded byte for byte. Muse Spark 1.3
-Contributor Free declares 512 after answering `content: ""` with `finish_reason: length` under a 60-token
-ceiling (measured live, 2026-09-28).
+raises rather than replaces, so a ceiling above the floor is forwarded byte for byte. The raise applies on
+either wire: the Responses path renames the ceiling to `max_output_tokens` and bounds it, and the chat path
+bounds `max_completion_tokens` or `max_tokens` in place, following the same precedence between the two keys
+the upstream reads. Because a raise is the one number the gateway writes larger than the client sent, it
+stops at half the model's declared `context_length`, at its declared `max_output_tokens`, and at 4096 when
+the model declares no window at all: asking above the window is answered 400, so a floor that cannot be
+raised to is skipped and the client's own ceiling travels. Declared floors, each the smallest ceiling that
+finished a `write_file` tool call against the live upstream (measured 2026-09-28 and 2026-10-16): Muse Spark
+1.3 Contributor Free 2048, DeepSeek V4.1 Flash Free 2048, Space Bunny Free 1024. A floor is a mitigation and
+not a cure: one of those models spent 2499 of a 2500 token ceiling on thinking and answered with nothing, so
+a larger ceiling can still be consumed whole.
+
+**A tool call the ceiling cut is a length stop.** A Responses answer whose status is incomplete for
+`max_output_tokens` while a call is still open reports `finish_reason: length` (and a Responses client is
+closed with `response.incomplete` carrying that reason), not `tool_calls`: the arguments never closed, so the
+client cannot dispatch it and must be told the answer was cut. A call the answer closed before the stop is
+still reported as `tool_calls`, because dropping a complete call would discard a request the client can make.
+The stream reads the cut off the item lifecycle (`output_item.added` without its `output_item.done`) and the
+fold reads it off the arguments themselves (absent, blank, or not a JSON object), through one function, so the
+two directions cannot disagree about one answer.
 
 Authentication runs first, before the body is read or validated: an unauthenticated caller is refused
 with `401 UNAUTHORIZED` whatever its body looks like, so a malformed payload cannot be used to probe the
@@ -1159,6 +1220,12 @@ reasoning setting is never overridden by the stored mode, and a suffix always wi
 is written into the translated upstream body in the model's own format (a `thinking` object with a
 budget, a `reasoning_effort` level, Gemini's `thinkingConfig`, or a vendor dialect such as z.ai's
 `thinking` object), and the levels map onto budgets and efforts through the reference's own tables.
+One stored mode is applied to every model on that provider, so before either OpenAI shape writes a
+level the model's own accepted list (§7.6, the same list the picker reads) is asked: a level it carries
+travels unchanged, one it does not becomes the nearest accepted level below, or the nearest above when
+nothing below is accepted. `none` is never that fallback, because disabling thinking is a different
+decision from spending less of it, and a model with no declared list keeps the level as named: guessing
+vocabulary for a model the tables do not know would rewrite a control its own provider documented.
 A model the registry does not report as reasoning is left exactly as the client sent it, because a
 field its upstream does not read is a request the upstream may refuse, and so is a body the gateway
 cannot parse.
@@ -1569,3 +1636,35 @@ client as the account's condition, a gate that refuses this gateway parks nothin
 `signature_id` (migration 000021), nullable and read by no router, so a parked key can say whether its wait was
 promised or guessed. The contract gains the class table on both settings levels and the three provenance fields on
 the key response._
+
+_Changelog 2026-10-15: §7.11 lets the proxy walk fail over on an upstream **429**, not only on a connect-stage
+failure. Measured on the live OpenCode free lane: bursting one egress address produced 429 while a second address,
+carrying the same session id and the same model, served three requests in a row, and the first was still refusing
+eleven seconds later. The quota bucket is therefore the address, so a refusal of that status is the walk's business
+while capacity sits unused elsewhere; every other status still ends the walk, and a body that cannot be rebuilt is
+never re-sent. The candidate that refused now sits out the wait it stated (the vendor's `Retry-After`, trimmed to the
+two-minute cooldown) rather than the fixed cooldown alone, so `ReportFailure` carries a duration. The walk also
+records the candidate that served and how many it stepped over, because spread is the pool's whole purpose and nothing
+else in the process said which address carried a call. Measured at the same sitting: the session id is NOT the unit of
+the free tier's quota, which corrects the sentence in `internal/dataplane/transport_sessions.go` that said it was._
+
+_Changelog 2026-10-16: §7.15 extends the declared output floor to the chat wire and states the bound a raise may
+not pass, and adds the rule that a tool call the ceiling cut reports `length` rather than `tool_calls`. Measured on
+the owner's round-robin combo `pi-agent` over three OpenCode free models: a client ceiling of 2500 spent 2499 tokens
+on thinking and answered no content at all, and at 512 and 1024 Muse Spark 1.3 answered `finish_reason: tool_calls`
+with an empty `arguments`, so the coding client received a call it could not run and no signal that the answer was
+cut. The floor was applied only on the Responses path, so a chat-shaped ceiling reached the upstream unraised, and
+three floors are now declared from measurement rather than copied: 2048 for Muse Spark 1.3 (raised from the 512
+measured in September, which proved enough for a text answer and not for a tool call), 2048 for DeepSeek V4.1 Flash
+Free, 1024 for Space Bunny Free. The cause of the starvation was not in the engine: `settings.reasoning` carried a
+stored provider mode of `high` for `opencode`, and §7.15's own precedence puts that mode above an absent client
+request, so the gateway was asking the free lane to think at its highest level on every model of the provider. The
+setting is cleared and the lane now answers as the provider decides. The same reading left §7.14's stored word
+applied blind to the models behind it: only `max`/`ultra` and `none` were asked against a model's own level list, so
+`minimal` reached `nemotron-3.5-lightning-free`, which lists none of `minimal`, and `xhigh` reached the models whose
+list stops at `high`. Both OpenAI shapes now ask the list before writing (§7.15). The combo walk, the stream
+commitment rule and the failover order are unchanged by this entry. Verified live on two instances of this gateway
+against the same upstream and the same pool: at client ceilings of 512 and 256 the older binary answered with exactly
+that many completion tokens and no tool arguments at all, the current one answered 1382, 1176 and 1024 with the call
+closed, and twenty straight `pi-agent` calls at 2500, ten on each binary, every one of them answered with a tool call
+whose arguments parse or with visible text._

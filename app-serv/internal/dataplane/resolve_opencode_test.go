@@ -36,6 +36,11 @@ func opencodeResolver(t *testing.T) *Resolver {
 // TestResolver_OpenCodeFree_DeclaredModelsResolveToTheirOwnWire pins the
 // per-model target formats: a declared model resolves as declared, never as
 // passthrough, so the translation layer sees the format the model answers in.
+//
+// No free model speaks the Messages wire today: the retired `union-alpha` was
+// the last one, and upstream answers 400 for it. That wire's own rule stays
+// pinned in `provider/opencode_test.go`, which builds the model it routes rather
+// than reading this catalog.
 func TestResolver_OpenCodeFree_DeclaredModelsResolveToTheirOwnWire(t *testing.T) {
 	resolver := opencodeResolver(t)
 
@@ -45,7 +50,7 @@ func TestResolver_OpenCodeFree_DeclaredModelsResolveToTheirOwnWire(t *testing.T)
 	}{
 		{modelID: "muse-spark-1.2-contributor-free", target: TargetResponses},
 		{modelID: "muse-spark-1.3-contributor-free", target: TargetResponses},
-		{modelID: "union-alpha", target: TargetClaude},
+		{modelID: "deepseek-v4.1-flash-free", target: TargetOpenAI},
 	}
 	for _, tc := range cases {
 		t.Run(tc.modelID, func(t *testing.T) {
@@ -95,7 +100,8 @@ func TestResolver_OpenCodeFree_ModelsAreListed(t *testing.T) {
 	cases := []string{
 		"opencode/muse-spark-1.2-contributor-free",
 		"opencode/muse-spark-1.3-contributor-free",
-		"opencode/union-alpha",
+		"opencode/deepseek-v4.1-flash-free",
+		"opencode/space-bunny-free",
 	}
 	listed := make(map[string]schema.ModelObject, len(list.Data))
 	for _, model := range list.Data {

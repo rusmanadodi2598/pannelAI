@@ -116,7 +116,7 @@ func openCodeIsFingerprintDefinition(raw json.RawMessage, key string) bool {
 // schema a client serialised with a different member order or escaping still
 // counts as OpenCode's own.
 func openCodeJSONEqual(left, right json.RawMessage) bool {
-	var a, b any
+	var a, b any //nolint:forbidigo // reason: §1.4 declares a raw json.Unmarshal target as the one boundary where any is allowed.
 	if json.Unmarshal(left, &a) != nil || json.Unmarshal(right, &b) != nil {
 		return false
 	}

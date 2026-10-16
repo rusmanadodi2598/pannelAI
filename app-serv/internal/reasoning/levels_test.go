@@ -118,3 +118,32 @@ func TestNormalizeOpenAILevel(t *testing.T) {
 		}
 	}
 }
+
+// TestReasoningLevelForPinsTheModelVocabulary walks the whole ladder against a
+// list that skips levels, because the answer a stored provider mode gets is what
+// the upstream is told to spend: a level it does not enumerate is a refused call.
+func TestReasoningLevelForPinsTheModelVocabulary(t *testing.T) {
+	deepseek := []string{"none", "low", "medium", "high", "xhigh", "max"}
+	cases := []struct {
+		name      string
+		level     string
+		supported []string
+		want      string
+	}{
+		{"a level the list carries travels unchanged", "high", deepseek, "high"},
+		{"minimal is lowered to the lowest level the list carries", "minimal", deepseek, "low"},
+		{"a level below every listed one is raised to the nearest", "minimal", []string{"high"}, "high"},
+		{"none is never a fallback", "minimal", []string{"none", "high"}, "high"},
+		{"an unranked word travels as named", "auto", deepseek, "auto"},
+		{"no list means no vocabulary is known", "minimal", nil, "minimal"},
+		{"max keeps the openai clamp first", "max", []string{"low", "high"}, "high"},
+		{"a list with nothing ranked in common keeps the level", "auto", []string{"low"}, "auto"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := ReasoningLevelFor(tc.level, tc.supported); got != tc.want {
+				t.Fatalf("ReasoningLevelFor(%q, %v) = %q, want %q", tc.level, tc.supported, got, tc.want)
+			}
+		})
+	}
+}

@@ -2,12 +2,13 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode.go
-// @for       The OpenCode Free connector: its per-model URL and the identity headers the free tier gates on.
-// @uses      internal/registry, fmt, net/http, strings.
+// @for       The OpenCode Free connector: the client identity it presents and the session it names.
+// @uses      internal/registry, net/http, strings.
 // @reason    OpenCode Free is a no-auth provider whose models answer on three different paths and whose free tier refuses a request that does not carry the CLI's own identity headers. Both are upstream rules, so both belong to a connector rather than to a branch on the provider id in shared code, which is the property the plugin seam exists to give.
 //
-//	The request shape lives in opencode_body.go and the session identity
-//	in opencode_session.go, for the AGENTS.md §1.1 budget.
+//	The request shape lives in opencode_body.go, the session identity in
+//	opencode_session.go, and the per-model URL in opencode_url.go, for the
+//	AGENTS.md §1.1 budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -16,7 +17,6 @@
 package provider
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -63,31 +63,6 @@ const (
 	openCodeClientDefault         = "cli"
 )
 
-// openCodeInferencePrefix is the path segment the free tier lives under since
-// OpenCode v2. A base that already carries it is joined with the leaf alone, so
-// an operator who stored the documented `https://opencode.ai/inference/v1` base
-// does not get a doubled path.
-const openCodeInferencePrefix = "/inference/v1"
-
-// openCodeLegacyZenPrefix is the v1 path the free tier answered on before the
-// move; /zen/v1 now answers every free request with 403 FreeTierError. A base
-// an operator stored with it is rewritten onto the new prefix rather than
-// composed into a path the upstream no longer serves. It never matches the
-// subscription lane's /zen/go/v1 base.
-const openCodeLegacyZenPrefix = "/zen/v1"
-
-// The leaves each wire answers on. The Responses API and the Anthropic Messages
-// wire have their own paths; everything else is chat completions.
-const (
-	openCodeResponsesLeaf = "/responses"
-	openCodeMessagesLeaf  = "/messages"
-	openCodeChatLeaf      = "/chat/completions"
-)
-
-// openCodeClaudeWire is the Anthropic wire's name, which the registry spells
-// without exporting a constant because only its own document uses it.
-const openCodeClaudeWire = "claude"
-
 // OpenCodeAnthropicVersion is the API version the Anthropic Messages wire requires
 // on every request. It is also the value the registry declares for the anthropic
 // entry, so no new value is invented here.
@@ -127,114 +102,6 @@ func (c *OpenCode) entryFor(req Request) registry.Provider {
 		return req.Provider
 	}
 	return c.entry
-}
-
-// Endpoint builds the URL the resolved model answers on. A multi-endpoint provider
-// answers on the endpoint its model's own wire names, and that URL is used as
-// written because it is already complete. A single-endpoint provider composes the
-// URL from its base, with the model's wire deciding the path: the provider's
-// declared format cannot express it, because a `muse-spark-*` model answers on the
-// Responses API while the provider itself speaks chat completions. The base is
-// read in every shape an operator stores it in (bare host, inference base, the
-// legacy Zen base, full path, trailing slash) and composes into one correct URL.
-func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
-	entry := c.entryFor(req)
-	wire := opencodeWire(req, entry)
-
-	if endpoint, found := openCodeEndpointFor(entry, req.Model, wire); found {
-		// An endpoint may declare no URL of its own, carrying only a format and a
-		// credential placement per wire (the reference's xiaomi-tokenplan table).
-		// Such an endpoint keeps the entry's own URL; only the credential
-		// placement and headers come from the table.
-		base := strings.TrimSpace(endpoint.BaseURL)
-		if base == "" {
-			return openCodeDefaultURL(entry, wire)
-		}
-		if !strings.HasPrefix(base, "http://") && !strings.HasPrefix(base, "https://") {
-			return "", fmt.Errorf("provider %s: the %s endpoint is not absolute", entry.ID, wire)
-		}
-		return strings.TrimRight(base, "/") + strings.TrimSpace(endpoint.URLSuffix), nil
-	}
-
-	return openCodeDefaultURL(entry, wire)
-}
-
-// openCodeDefaultURL builds the URL from the entry's own base, which answers a
-// single-endpoint provider and a multi-endpoint request the table did not match. A
-// multi-endpoint entry stores a complete URL in base_url, so it is used as written:
-// appending a leaf would build a path nothing serves. A single-endpoint entry may
-// store either a complete URL or a base, so the leaf is composed only when the base
-// does not already name it, and a base still carrying the v1 /zen/v1 prefix is
-// rewritten onto the /inference/v1 prefix the free tier moved to.
-func openCodeDefaultURL(entry registry.Provider, wire string) (string, error) {
-	base := strings.TrimSpace(entry.Transport.BaseURL)
-	if base == "" && len(entry.Transport.BaseURLs) > 0 {
-		base = strings.TrimSpace(entry.Transport.BaseURLs[0])
-	}
-	if base == "" {
-		return "", fmt.Errorf("provider %s: no base_url is configured", entry.ID)
-	}
-	if !strings.HasPrefix(base, "http://") && !strings.HasPrefix(base, "https://") {
-		return "", fmt.Errorf("provider %s: base_url is not absolute", entry.ID)
-	}
-	base = strings.TrimRight(base, "/")
-
-	if len(entry.Transports) > 0 {
-		return base, nil
-	}
-
-	if strings.Contains(base, openCodeLegacyZenPrefix) {
-		base = strings.Replace(base, openCodeLegacyZenPrefix, openCodeInferencePrefix, 1)
-	}
-	leaf := openCodeLeaf(wire)
-	if strings.HasSuffix(base, leaf) {
-		// The base already names the endpoint, so it is used as written.
-		return base, nil
-	}
-	if strings.HasSuffix(base, openCodeInferencePrefix) || strings.Contains(base, openCodeInferencePrefix+"/") {
-		// The base already carries the prefix, so only the leaf is missing.
-		return base + leaf, nil
-	}
-	return base + openCodeInferencePrefix + leaf, nil
-}
-
-// opencodeWire reports the wire the request is being sent in. The translation's own
-// answer wins when present, because that is the wire the body actually is: a model
-// may declare one target format while the request was translated into another, and
-// a table keyed on the wrong value sends the body to a URL that cannot parse it.
-// The model's declared target is the fallback for a caller that resolved a model
-// without translating (the media and decision planes build their own bodies), and
-// the provider's own format is the last resort.
-func opencodeWire(req Request, entry registry.Provider) string {
-	if wire := strings.TrimSpace(req.Wire); wire != "" {
-		return wire
-	}
-	if target := strings.TrimSpace(req.Model.TargetFormat); target != "" {
-		return target
-	}
-	if format := strings.TrimSpace(entry.Transport.Format); format != "" {
-		return format
-	}
-	return strings.TrimSpace(req.Provider.Transport.Format)
-}
-
-// openCodeLeaf maps a wire onto the path leaf it answers on.
-func openCodeLeaf(wire string) string {
-	switch wire {
-	case registry.FormatOpenAIResponses:
-		return openCodeResponsesLeaf
-	case openCodeClaudeWire:
-		return openCodeMessagesLeaf
-	default:
-		return openCodeChatLeaf
-	}
-}
-
-// isOpenCodeMessagesURL reports whether a path names the Messages leaf. The
-// comparison includes the separating slash, so a nested prefix matches while a
-// path that merely ends in the same letters ("notmessages") does not.
-func isOpenCodeMessagesURL(path string) bool {
-	return strings.HasSuffix(strings.TrimRight(path, "/"), openCodeMessagesLeaf)
 }
 
 // clientValue keeps a client identity the registry declares, so an entry naming

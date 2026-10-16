@@ -23,10 +23,9 @@ import (
 // written to sink as it arrives and Outcome.Body stays nil.
 func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome, error) {
 	// A client may address a model with a trailing "(level)" reasoning suffix
-	// (SPEC-API-001 §7.15). The resolver must see the bare id, that is what
-	// the catalog and the registry declare, while the injection seam below
-	// must see the override, so the string is split once here and carried on
-	// the request for every leg of the call.
+	// (SPEC-API-001 §7.15): the resolver needs the bare id the catalog declares and
+	// the injection seam needs the override, so the string splits once here and the
+	// override travels with the request on every leg.
 	model, override := reasoning.ParseSuffix(in.Model)
 	in.ThinkingOverride = override
 
@@ -59,22 +58,18 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	refs = e.rotate(ctx, resolution, refs)
 
 	// The §7.8 decision lives beside the seam it consults (vision.go). The list the
-	// request itself produced is kept, because an adapter ref that happens to also
-	// be one of this request's own members is not a substitution: the combo chose
-	// that model on its own and the seam merely moved it. Measured live with
-	// opencode/muse-spark-1.3-contributor-free, which is both a member of the
-	// operator's combo and the configured adapter, reporting it as adapted would
-	// say the gateway reached for something the caller never named when it did not.
+	// request itself produced is kept: an adapter ref that happens to also be one of
+	// this request's own members is not a substitution, and reporting it as one would
+	// name a model the caller never addressed.
 	own := refs
 	refs, adapted := e.augmentForVision(ctx, in, refs)
 
 	// The walk tracks two failure kinds apart, because they answer the client
-	// differently: a member that reached an upstream call owns
-	// the error and the recorded identity, while a member refused before any
-	// call (unresolvable, no endpoints, an untranslatable body) is only the
-	// fallback answer when no member was called at all. The chain's error is
-	// the first called failure's status with the last one's message, which is
-	// how the reference reports an exhausted combo.
+	// differently: a member that reached an upstream call owns the error and the
+	// recorded identity, while a member refused before any call (unresolvable, no
+	// endpoints, an untranslatable body) is only the fallback answer when no member
+	// was called at all. The chain's error is the first called failure's status with
+	// the last one's message.
 	var firstErr, lastErr error
 	var lastOutcome Outcome
 	var preCallErr error
@@ -88,7 +83,7 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	var truncated Outcome
 	var hasTruncated bool
 	for index, ref := range refs {
-		// A seventh leg is bought with time the caller stopped giving.
+		// A leg started after the deadline spends time the caller stopped giving.
 		if budget.expired(e.clock()) {
 			return lastOutcome, budget.error(resolution.Provider.ID, lastErr)
 		}
@@ -102,11 +97,10 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 		outcome, relayErr := e.relayOnce(ctx, in, member, sink, budget)
 		if relayErr == nil {
 			// An adapter model the request did not address is not the model that
-			// billed, and the usage row belongs to the one the client asked for.
+			// billed: the usage row belongs to the one the client asked for.
 			// Membership of the adapter's own list answers that wherever the seam
-			// placed it, which a leading-count test could not once a capable
-			// member is allowed to go first, and the second test keeps a member
-			// the combo already addressed from being reported as borrowed.
+			// placed the member, and a member the combo already addressed is not
+			// borrowed.
 			if containsRef(adapted, ref) && !containsRef(own, ref) {
 				outcome.Model = resolution.ModelID
 				outcome.VisionAdapted = true

@@ -20,16 +20,18 @@ import (
 
 // TestOpenCodeFree_DeclaredModelFloorReachesTheUpstream sends the ceiling the live
 // combo test sent (60) through the free lane and reads what the upstream actually
-// received. Muse Spark 1.3 declares 512 because it spends a smaller ceiling on
-// thinking; the member beside it in that combo declares none, so the client's own
-// number must still arrive unchanged, the floor is per model, not a provider-wide
-// override.
+// received. The raise now covers both wires: muse-spark answers on the Responses
+// wire and deepseek-v4.1-flash on the chat one, and both carry a floor measured
+// 2026-10-16 because each spends a smaller ceiling on thinking and answers with
+// nothing. The member beside them declares none, so the client's own number must
+// still arrive unchanged: the floor is per model, not a provider-wide override.
 func TestOpenCodeFree_DeclaredModelFloorReachesTheUpstream(t *testing.T) {
 	cases := []struct {
 		model    string
 		wantCeil float64
 	}{
-		{model: "muse-spark-1.3-contributor-free", wantCeil: 512},
+		{model: "muse-spark-1.3-contributor-free", wantCeil: 2048},
+		{model: "deepseek-v4.1-flash-free", wantCeil: 2048},
 		{model: "mimo-v2.6-flash-free", wantCeil: 60},
 	}
 	for _, tc := range cases {

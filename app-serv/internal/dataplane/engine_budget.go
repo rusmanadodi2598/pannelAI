@@ -28,7 +28,7 @@ type FailoverBudgetReader interface {
 
 // RequestBudget is one client request's share of the failover walk.
 //
-// It bounds the PRE-COMMIT walk only. Once a frame has reached the client the stream
+// It bounds the pre-commit walk only. Once a frame has reached the client the stream
 // is committed and the idle guard owns the bound, because a budget that fires there
 // would stop paying for an answer the caller is already reading.
 type RequestBudget struct {

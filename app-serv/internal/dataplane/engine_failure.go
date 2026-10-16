@@ -32,7 +32,7 @@ func FailureClass(status int) domain.KeyFailureClass {
 		return domain.KeyFailureAuth
 	case http.StatusPaymentRequired:
 		// Not Auth: the credential is valid and the account behind it has no credit,
-		// a hours-long condition an operator fixes by buying credit (draft 050 D2).
+		// a hours-long condition an operator fixes by buying credit.
 		return domain.KeyFailureBilling
 	case http.StatusTooManyRequests:
 		return domain.KeyFailureRateLimit

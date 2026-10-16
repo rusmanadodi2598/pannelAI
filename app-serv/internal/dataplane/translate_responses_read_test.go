@@ -92,3 +92,56 @@ func TestResponsesTextParts_SkipsEmptyAndNonText(t *testing.T) {
 		})
 	}
 }
+
+// TestDecodeResponsesAnswer_Finish pins the body-side half of the same rule the
+// stream test pins: a call the ceiling cut before its arguments closed is a length
+// stop, and a call the answer finished is still dispatchable. The fold reads the
+// cut off the item's own arguments because a stored body carries no item lifecycle.
+func TestDecodeResponsesAnswer_Finish(t *testing.T) {
+	cases := []struct {
+		name       string
+		body       string
+		wantFinish string
+	}{
+		{
+			name: "a call cut mid-arguments at the ceiling is a length stop",
+			body: `{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},` +
+				`"output":[{"type":"function_call","call_id":"call_1","name":"read","arguments":"{\"path\""}]}`,
+			wantFinish: FinishLength,
+		},
+		{
+			name: "a call with no arguments at all is a length stop",
+			body: `{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},` +
+				`"output":[{"type":"function_call","call_id":"call_1","name":"read"}]}`,
+			wantFinish: FinishLength,
+		},
+		{
+			name: "a closed call inside an incomplete answer stays dispatchable",
+			body: `{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},` +
+				`"output":[{"type":"function_call","call_id":"call_1","name":"read",` +
+				`"arguments":"{\"path\":\"a.go\"}"}]}`,
+			wantFinish: FinishToolCalls,
+		},
+		{
+			name:       "a text answer cut at the ceiling is a length stop",
+			body:       `{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},"output":[]}`,
+			wantFinish: FinishLength,
+		},
+		{
+			name:       "a completed answer with no ceiling stop is an ordinary finish",
+			body:       `{"status":"completed","incomplete_details":{"reason":"max_output_tokens"},"output":[]}`,
+			wantFinish: FinishStop,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			answer, err := decodeResponsesAnswer([]byte(tc.body))
+			if err != nil {
+				t.Fatalf("decoding the answer: %v", err)
+			}
+			if answer.Finish != tc.wantFinish {
+				t.Fatalf("finish = %q, want %q", answer.Finish, tc.wantFinish)
+			}
+		})
+	}
+}

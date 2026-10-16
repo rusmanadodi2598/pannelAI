@@ -45,10 +45,14 @@ func (s *ResponsesStreamState) completedFrame() [][]byte {
 		return nil
 	}
 	s.completed = true
+	name, status, details := s.terminalEvent()
 	response := map[string]any{
 		"id": s.responseID(), "object": schema.ResponsesObjectResponse,
-		"created_at": s.Created, "status": schema.ResponsesStatusCompleted,
+		"created_at": s.Created, "status": status,
 		"background": false, "error": nil, "output": s.outputItems(),
+	}
+	if details != nil {
+		response["incomplete_details"] = details
 	}
 	if s.Model != "" {
 		response["model"] = s.Model
@@ -56,7 +60,19 @@ func (s *ResponsesStreamState) completedFrame() [][]byte {
 	if s.usage != nil {
 		response["usage"] = mustJSON(schema.ResponsesUsageFrom(*s.usage))
 	}
-	return [][]byte{s.event(EventResponseCompleted, map[string]any{"response": response})}
+	return [][]byte{s.event(name, map[string]any{"response": response})}
+}
+
+// terminalEvent names the closing event the answer earned. A `length` stop is a
+// ceiling stop, and the Responses wire has one shape for that: `response.incomplete`
+// carrying `incomplete_details.reason`. A client that reads only the closing event
+// would otherwise see a half-written answer as a finished turn.
+func (s *ResponsesStreamState) terminalEvent() (string, string, map[string]any) {
+	if s.finishReason == FinishLength {
+		return EventResponseIncomplete, schema.ResponsesStatusIncomplete,
+			map[string]any{"reason": ResponsesCeilingReason}
+	}
+	return EventResponseCompleted, schema.ResponsesStatusCompleted, nil
 }
 
 // event renders one named event carrying the next sequence number.

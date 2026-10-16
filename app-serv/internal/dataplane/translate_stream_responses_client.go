@@ -73,6 +73,9 @@ type ResponsesStreamState struct {
 	// usage is the accounting the upstream reported, or nil when it reported
 	// none, which is what distinguishes "said zero" from "said nothing".
 	usage *schema.Usage
+	// finishReason is the reason the upstream closed the answer, or "" when it
+	// closed without one. The terminal event is written from it.
+	finishReason string
 }
 
 // NewResponsesStreamState builds the state for one client stream.
@@ -153,6 +156,7 @@ func (s *ResponsesStreamState) chunkFrames(payload []byte) [][]byte {
 		frames = append(frames, s.deltaEvents(delta)...)
 	}
 	if reason := stringField(choice, "finish_reason"); reason != "" {
+		s.finishReason = reason
 		frames = append(frames, s.closeItems()...)
 	}
 	return frames

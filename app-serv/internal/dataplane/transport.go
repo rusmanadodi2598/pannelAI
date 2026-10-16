@@ -13,6 +13,7 @@
 package dataplane
 
 import (
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -69,7 +70,8 @@ type Transport struct {
 	sessions *sessionQueue
 }
 
-// TransportDeps holds the collaborators the transport needs.
+// TransportDeps holds the collaborators the transport needs, of which
+// Connectors and Client are the only ones NewTransport refuses to run without.
 type TransportDeps struct {
 	// Connectors resolves a provider id to the plugin that handles it.
 	Connectors *provider.Connectors
@@ -84,9 +86,12 @@ type TransportDeps struct {
 	// value keeps the shared client's own routing, which is what the hermetic
 	// tests and any wiring that has not adopted the pool rely on.
 	Routes ProxyRoutePlanner
+	// Logger records what a call waited for locally: the session queue's stalls,
+	// which no upstream ever saw. A nil value falls back to the process logger.
+	Logger *slog.Logger
 }
 
-// NewTransport validates deps and returns a transport. The upstream client is the
+// NewTransport refuses a nil connector set or client. The upstream client is the
 // caller's: it carries the egress guard on its dialer, so a nil value is refused
 // rather than defaulted. Building one here would put every proxied model call
 // behind a plain dialer and make the guard look installed when it is not
@@ -101,8 +106,8 @@ func NewTransport(deps TransportDeps) (*Transport, error) {
 	return &Transport{
 		connectors: deps.Connectors,
 		client:     deps.Client,
-		dialer:     &ProxyDialer{client: deps.Client, routes: deps.Routes},
-		sessions:   newSessionQueue(),
+		dialer:     &ProxyDialer{client: deps.Client, routes: deps.Routes, logger: deps.Logger},
+		sessions:   newSessionQueue(deps.Logger),
 	}, nil
 }
 

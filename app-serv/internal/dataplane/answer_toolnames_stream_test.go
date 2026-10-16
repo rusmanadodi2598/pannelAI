@@ -13,6 +13,7 @@
 package dataplane
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 )
@@ -144,13 +145,13 @@ func TestRestoreToolNamesStreamPassthrough(t *testing.T) {
 
 	plain := func(_ string, payload []byte) [][]byte { return [][]byte{payload} }
 	frames := restoreToolNamesStream(nil, plain)(TargetOpenAI, raw)
-	if len(frames) != 1 || string(frames[0]) != string(raw) {
+	if len(frames) != 1 || !bytes.Equal(frames[0], raw) {
 		t.Fatalf("a request that renamed nothing must keep the payload byte-identical, got %s", frames)
 	}
 
 	// An alias map that names nothing in this payload is the same passthrough.
 	frames = restoreToolNamesStream(map[string]string{"shell_client": "shell"}, plain)(TargetOpenAI, raw)
-	if len(frames) != 1 || string(frames[0]) != string(raw) {
+	if len(frames) != 1 || !bytes.Equal(frames[0], raw) {
 		t.Fatalf("a payload with no aliased name must keep its bytes, got %s", frames)
 	}
 }

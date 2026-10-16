@@ -21,25 +21,21 @@ import (
 )
 
 // relayOnce handles one resolved provider: walk its credentials, translate, call,
-// and translate the answer back. The request is translated once, before any
-// credential is spent, because a translation failure would repeat identically for
-// every credential: it fails the leg with a zero outcome, since no upstream call
-// happened and there is no identity to record. Each credential that fails in a
-// failover-worthy way is excluded and the next healthy one tried; a request-shaped
-// refusal is handed back immediately, because the same body would be refused
-// identically everywhere. When no credential remains the leg reports the last
-// in-leg failure with the last attempted identity, and when the very first selection
-// is refused it reports the refusal with no identity at all.
+// and translate the answer back. Translation runs before any credential is spent,
+// because a translation failure would repeat identically for every one: the leg
+// fails with a zero outcome, since no call happened and there is no identity to
+// record. A failover-worthy failure excludes the credential and tries the next. A
+// request-shaped refusal comes straight back, because the same body would be
+// refused identically everywhere. An exhausted leg reports the last in-leg failure
+// with the last attempted identity; a refused first selection reports none.
 func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolution, sink FrameSink, budget *RequestBudget) (Outcome, error) {
 	body, err := upstreamBody(in, resolution)
 	if err != nil {
 		return Outcome{}, err
 	}
-	// Reasoning is normalized first and the token saver second, which is the
-	// reference's own order (chatCore.js applies thinking inside translation,
-	// then runs the savers on the final body): a saver that rewrites messages
-	// must see the body the upstream will actually receive, thinking fields
-	// included.
+	// Reasoning is normalized first and the token saver second: a saver that
+	// rewrites messages must see the body the upstream will actually receive,
+	// thinking fields included.
 	if e.thinking != nil {
 		body = e.thinking.Apply(ctx, body, reasoning.Call{
 			Wire:       resolution.Target,
@@ -63,10 +59,8 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		Streamed: in.Stream,
 	}
 	// finish serves one successful call and owns its resources: the body closes
-	// and the activity marker releases when it returns, whichever way it
-	// returns. The guards live here rather than in the loop body so exactly one
-	// attempt registers them, and so the loop stays free of a defer it would
-	// otherwise carry per iteration.
+	// and the activity marker releases when it returns, whichever way it returns.
+	// The guards sit here so one attempt registers them, not a defer per loop turn.
 	finish := func(upstream *Upstream, release func(), selection Selection, started time.Time) (Outcome, error) {
 		defer func() {
 			// reason: the body is read to completion by the caller of this
@@ -84,9 +78,9 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		return outcome, nil
 	}
 	spent := make(map[string]struct{})
-	// The leg walks one snapshot. Re-asking the provider per attempt re-read every account
-	// and re-rolled the cursor mid-walk, so a failover could return to an account it had
-	// already spent (SPEC-API-001 §7.5).
+	// One snapshot per leg: the cursor advances per leg, not per attempt, so a
+	// failover cannot return to an account this request already spent
+	// (SPEC-API-001 §7.5).
 	plan, err := e.selector.BeginPlan(ctx, resolution.Provider.ID)
 	if err != nil {
 		return Outcome{}, err
@@ -123,13 +117,10 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		outcome.EndpointID = selection.Endpoint.ID()
 		outcome.Model = resolution.ModelID
 
-		// The marker opens once the credential is known and closes when this
-		// attempt ends, whichever way it ends, so the drawing lights a node for
-		// exactly as long as the provider is being called.
-		// The combo the client addressed travels with it: the member resolved here
-		// is what answered, and the combo is the stage the request entered through,
-		// so the drawing can light both. A nil seam returns a release that does
-		// nothing.
+		// The marker spans exactly the call: it opens now and releases when this
+		// attempt ends, whichever way it ends. It carries the combo the client
+		// addressed beside the member that answered, so the live drawing lights
+		// both. A nil seam returns a release that does nothing.
 		release := e.markActive(ctx, ActiveMarker{
 			ProviderID: resolution.Provider.ID,
 			EndpointID: outcome.EndpointID,
@@ -151,9 +142,8 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 			// generating, so the transport caps its retries.
 			Idempotent: false,
 			// The walk's clock travels with the call: the transport clamps its
-			// in-attempt waits and its first-byte cap to what is left of it, so
-			// one credential cannot spend the whole walk before the next is
-			// tried.
+			// in-attempt waits and its first-byte cap to what is left of it, so one
+			// credential cannot spend the whole walk before the next is tried.
 			Budget: budget,
 		})
 		if callErr != nil {

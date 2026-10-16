@@ -63,7 +63,7 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	// caller closes it.
 	release, err := t.acquireSession(ctx, plugin, call)
 	if err != nil {
-		return nil, timeoutError(err)
+		return nil, sessionWaitTimeout(err)
 	}
 	handedOff := false
 	defer func() {
@@ -73,13 +73,11 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	}()
 
 	deadline := attemptDeadline(clientStream, call.Provider)
-	// TotalTimeout is documented as bounding one non-streamed call end to end, so
-	// the budget is measured once here and each attempt gets what is left of it.
-	// Passing the full deadline per attempt let one call run twice the bound plus
-	// the backoff between them, and hold a handler goroutine that much longer than
-	// the contract says. The walk's own clock is the tighter bound wherever it
-	// reaches: one credential may not outlive the request's walk, which is what
-	// keeps a rate-limited upstream's honored Retry-After from swallowing it.
+	// TotalTimeout bounds one non-streamed call end to end, so the budget is measured
+	// once here and each attempt gets what is left of it. The walk's own clock is the
+	// tighter bound wherever it reaches: one credential may not outlive the
+	// request's walk, which is what keeps a rate-limited upstream's honored
+	// Retry-After from swallowing it.
 	ends := time.Time{}
 	if deadline > 0 {
 		ends = time.Now().Add(deadline)

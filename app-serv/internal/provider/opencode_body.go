@@ -14,7 +14,6 @@ package provider
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
@@ -53,6 +52,7 @@ func (c *OpenCode) TransformRequest(req *Request) error {
 		transformOpenCodeResponses(body, req.Model, entry)
 		req.ToolAliases = applyOpenCodeFingerprintTools(body, true)
 	} else {
+		clampOpenCodeChatCeiling(body, req.Model)
 		req.ToolAliases = applyOpenCodeFingerprintTools(body, false)
 	}
 
@@ -76,86 +76,6 @@ func decodeOpenCodeBody(raw []byte) (map[string]json.RawMessage, bool) {
 		return nil, false
 	}
 	return body, true
-}
-
-// renameOpenCodeCeiling moves a chat-shaped output ceiling onto the Responses
-// field name. The Responses wire answers 400 to `max_tokens`, and an already
-// present `max_output_tokens` wins because it is the client's own explicit
-// choice for this wire. The renamed value is then raised to the floor this
-// request's model declares, because a ceiling below it is refused by the
-// upstream rather than rounded by it, or answered with nothing at all.
-func renameOpenCodeCeiling(body map[string]json.RawMessage, model registry.Model) {
-	floor := openCodeOutputFloor(model)
-	if _, present := body["max_output_tokens"]; present {
-		delete(body, "max_tokens")
-		delete(body, "max_completion_tokens")
-		clampOpenCodeCeiling(body, floor)
-		return
-	}
-	for _, key := range []string{"max_completion_tokens", "max_tokens"} {
-		if value, present := body[key]; present {
-			body["max_output_tokens"] = value
-			break
-		}
-	}
-	delete(body, "max_tokens")
-	delete(body, "max_completion_tokens")
-	clampOpenCodeCeiling(body, floor)
-}
-
-// openCodeMinOutputTokens is the floor the OpenCode Console API accepts for a
-// Responses-wire output ceiling. A lower value is refused with
-// "max_output_tokens The number must be >= 16" (measured live, 2026-09-26),
-// which is what the combo test's one-token ping used to send.
-const openCodeMinOutputTokens = 16
-
-// openCodeMaxOutputTokens is the ceiling the wire takes for one answer. Asking
-// for more is answered with 400 "The request contains invalid parameters" once
-// the input plus the ceiling passes the model's context window, which a
-// 1M-context combo hits the moment a client asks for the whole window.
-const openCodeMaxOutputTokens = 65536
-
-// openCodeOutputFloor is the ceiling the smallest accepted request must carry:
-// the wire's own floor, raised to whatever the model declares it needs to answer
-// at all. muse-spark-1.3-contributor-free spends a small ceiling entirely on
-// reasoning and returns an empty body with finish_reason "length" (measured live,
-// 2026-09-28), which the upstream counts as a successful answer.
-func openCodeOutputFloor(model registry.Model) int {
-	if model.MinOutputTokens > openCodeMinOutputTokens {
-		return model.MinOutputTokens
-	}
-	return openCodeMinOutputTokens
-}
-
-// clampOpenCodeCeiling bounds an integer ceiling between the floor this
-// request's model needs and the largest answer the wire will take. A ceiling the
-// client never sent stays absent, raising a value that exists is the narrow
-// licence, inventing one the client did not ask for is not. A member that is not
-// a JSON integer is left exactly as the client wrote it: the upstream's own
-// validation answers for it, and rewriting a malformed value would hide the
-// client's bug instead of reporting it.
-//
-// The ceiling is applied last, so a model declaring a floor above it resolves to
-// the ceiling, the same order the reference's clamp reads.
-func clampOpenCodeCeiling(body map[string]json.RawMessage, floor int) {
-	raw, present := body["max_output_tokens"]
-	if !present {
-		return
-	}
-	var value int
-	if err := json.Unmarshal(raw, &value); err != nil {
-		return
-	}
-	bounded := value
-	if bounded < floor {
-		bounded = floor
-	}
-	if bounded > openCodeMaxOutputTokens {
-		bounded = openCodeMaxOutputTokens
-	}
-	if bounded != value {
-		body["max_output_tokens"] = json.RawMessage(strconv.Itoa(bounded))
-	}
 }
 
 // dropOpenCodeReasoning removes the prior-turn reasoning items and every

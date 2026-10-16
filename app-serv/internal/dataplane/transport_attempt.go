@@ -83,9 +83,8 @@ func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Ca
 			unwrapped, failure := envelope.OpenStream(response.Body)
 			if failure != nil {
 				cancel()
-				// Nothing was piped: the refusal was read out of the first frame
-				// precisely so that nothing could be. Repeating the call is
-				// therefore safe, which is what the budget below is told.
+				// Nothing was piped, so the call is safe to repeat: that is what
+				// Replayable below tells the budget.
 				refusal := &UpstreamError{
 					Status:     failure.Status,
 					Header:     response.Header,

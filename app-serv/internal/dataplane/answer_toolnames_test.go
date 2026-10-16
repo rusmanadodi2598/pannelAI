@@ -13,6 +13,7 @@
 package dataplane
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 )
@@ -157,13 +158,13 @@ func TestRestoreToolNamesResponsesAndClaudeShapes(t *testing.T) {
 func TestRestoreToolNamesPassthrough(t *testing.T) {
 	body := []byte(`{"choices":[{"index":0,"message":{"tool_calls":[{"id":"c1","function":{"name":"Edit","arguments":"{}"}}]},"finish_reason":"tool_calls"}]}`)
 
-	if got := restoreToolNames(body, nil); string(got) != string(body) {
+	if got := restoreToolNames(body, nil); !bytes.Equal(got, body) {
 		t.Fatalf("nil aliases: got %s, want the original bytes", got)
 	}
-	if got := restoreToolNames(body, map[string]string{}); string(got) != string(body) {
+	if got := restoreToolNames(body, map[string]string{}); !bytes.Equal(got, body) {
 		t.Fatalf("empty aliases: got %s, want the original bytes", got)
 	}
-	if got := restoreToolNames(body, map[string]string{"read_client": "read"}); string(got) != string(body) {
+	if got := restoreToolNames(body, map[string]string{"read_client": "read"}); !bytes.Equal(got, body) {
 		t.Fatalf("no matching name: got %s, want the original bytes", got)
 	}
 }

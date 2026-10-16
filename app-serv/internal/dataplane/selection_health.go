@@ -23,7 +23,7 @@ const healthWriteTimeout = 5 * time.Second
 
 // accountingCtx detaches a health write from the caller's cancellation: the write
 // describes a call that already happened, so a client hanging up as the answer
-// lands must not erase it (draft 021 F6's rule for the usage rows, applied here).
+// lands must not erase it.
 func accountingCtx(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.WithoutCancel(ctx), healthWriteTimeout)
 }
@@ -31,7 +31,7 @@ func accountingCtx(ctx context.Context) (context.Context, context.CancelFunc) {
 // markSelected records that rotation chose this credential for one call. It claims
 // no health outcome and parks nothing: the call it announces has not happened.
 //
-// It runs detached like the outcome writes (draft 050 L1), so a client that hangs up
+// It runs detached like the outcome writes, so a client that hangs up
 // cannot erase the step rotation took. A lost stamp costs the next selector one
 // ordering guess, not the caller's request, so a failure is logged and dropped.
 //
@@ -88,12 +88,10 @@ func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error
 // same body fails on any key. Target writes the connection state only: the
 // credential was never sent.
 //
-// The unit parked is the unit spent: a key for a keyed endpoint, the account itself
-// for one that owns no keys, which is the breaker an OAuth account never had. A 429
-// on one key must still not withhold its healthy siblings (draft 050 T1). rest is
-// what the classification recognised, so a 429 saying "come back in two minutes" is
-// not answered with a two-second park, and a spent allowance is not answered with
-// one park per request.
+// The unit parked is the unit spent: a key for a keyed endpoint, the account
+// itself for one that owns no keys, which is the breaker an OAuth account never
+// had. rest carries the wait the classification recognised, so a 429 saying
+// "come back in two minutes" is not answered with a two-second park.
 func (s *Selector) RecordFailure(
 	ctx context.Context,
 	selection Selection,
@@ -102,8 +100,8 @@ func (s *Selector) RecordFailure(
 	rest domain.RestDirective,
 ) (domain.FailureAction, error) {
 	// The signature's own answer decides the walk where nothing parks, so a
-	// failure no credential caused costs no settings read (draft 050's rule for a
-	// network failure). A class that does park resolves the operator's table below.
+	// failure no credential caused costs no settings read. A class that does park
+	// resolves the operator's table below.
 	action := rest.ActionFor(class)
 	if class == domain.KeyFailureRequest {
 		return action, nil

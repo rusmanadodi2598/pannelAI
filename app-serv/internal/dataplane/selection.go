@@ -58,7 +58,8 @@ type Selector struct {
 	clock  func() time.Time
 }
 
-// SelectorDeps holds the collaborators selection needs.
+// SelectorDeps holds the collaborators selection needs, of which Endpoints is the
+// only one NewSelector refuses to run without.
 type SelectorDeps struct {
 	Endpoints  repository.EndpointRepository
 	Opener     SecretOpener
@@ -81,11 +82,12 @@ type SelectorDeps struct {
 	Logger *slog.Logger
 }
 
-// NewSelector validates deps and returns a selector. The opener is optional so a
-// credential-free provider can still be routed; selecting a key that needs
-// decryption without one fails rather than sending a sealed value upstream. The
-// strategy seam is optional too: without it the walk is fill-first, the
-// documented default and the degradation a failed policy read gets.
+// NewSelector refuses a nil endpoint repository and treats every other seam as
+// optional. The opener is optional so a credential-free provider can still be
+// routed; selecting a key that needs decryption without one fails rather than
+// sending a sealed value upstream. The strategy seam is optional too: without it
+// the walk is fill-first, the documented default and the degradation a failed
+// policy read gets.
 func NewSelector(deps SelectorDeps) (*Selector, error) {
 	if deps.Endpoints == nil {
 		return nil, domain.NewValidationError("endpoint repository is required")

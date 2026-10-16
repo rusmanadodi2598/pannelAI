@@ -111,3 +111,48 @@ func NormalizeOpenAILevel(level string, supported []string) string {
 	}
 	return "xhigh"
 }
+
+// ReasoningLevelFor answers the effort an upstream is told to spend, from the
+// level the caller named and the list that model accepts. One stored mode per
+// provider reaches every model on that lane, so a level the model never lists is
+// the gateway writing a control its own vendor does not declare: it becomes the
+// nearest accepted level below, or the nearest above when nothing below is
+// accepted. "none" is never a fallback, because disabling thinking is a different
+// decision from spending less of it, and a word the ladder does not rank, like
+// "auto", or a model the tables say nothing about, keeps the level as named.
+func ReasoningLevelFor(level string, supported []string) string {
+	normalized := NormalizeOpenAILevel(level, supported)
+	if carriesLevel(supported, normalized) {
+		return normalized
+	}
+	rank := -1
+	for i, known := range EffortLevels {
+		if known == normalized {
+			rank = i
+			break
+		}
+	}
+	if rank < 0 {
+		return normalized
+	}
+	for i := rank - 1; i >= 0; i-- {
+		if carriesLevel(supported, EffortLevels[i]) {
+			return EffortLevels[i]
+		}
+	}
+	for i := rank + 1; i < len(EffortLevels); i++ {
+		if carriesLevel(supported, EffortLevels[i]) {
+			return EffortLevels[i]
+		}
+	}
+	return normalized
+}
+
+func carriesLevel(levels []string, level string) bool {
+	for _, known := range levels {
+		if known == level {
+			return true
+		}
+	}
+	return false
+}

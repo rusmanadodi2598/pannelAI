@@ -4,15 +4,20 @@
 //
 // @file      internal/dataplane/translate_responses_answer.go
 // @for       Reading a Responses API answer: its output items, finish status, and accounting.
-// @uses      internal/schema.
-// @reason    Both client directions read one decoded form, so the item readers and the usage fold are one concern. Keeping them beside the answer translator (rather than in it) holds both files inside the AGENTS.md §1.1 budget.
+// @uses      encoding/json, strings, internal/schema.
+// @reason    Both client directions read one decoded form, so the item readers and the usage fold are one concern. Keeping them beside the answer translator (rather than in it) holds both files inside the AGENTS.md §1.1 budget. The finish reason lives here too because the stream and the body have to agree about one answer, including whether a tool call was closed before the ceiling stopped it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
 // @since     2026-09-19
 package dataplane
 
-import "github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+import (
+	"encoding/json"
+	"strings"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+)
 
 // ItemReasoning is the output item that carries a model's reasoning summary.
 const ItemReasoning = "reasoning"
@@ -80,21 +85,62 @@ func responsesCall(item object) (schema.ToolCall, bool) {
 	}, true
 }
 
+// ResponsesCeilingReason is how a Responses answer names a stop on its output
+// ceiling. One spelling, because the reader and the writer of a stream both use it.
+const ResponsesCeilingReason = "max_output_tokens"
+
+// responsesStoppedAtCeiling reports whether the answer says it ran out of output.
+// One spelling for the reason, because the stream and the body-side reader ask the
+// same question of the same field.
+func responsesStoppedAtCeiling(response object) bool {
+	if stringField(response, "status") != schema.ResponsesStatusIncomplete {
+		return false
+	}
+	details, ok := objectField(response, "incomplete_details")
+	return ok && stringField(details, "reason") == ResponsesCeilingReason
+}
+
 // responsesFinishReason maps the answer's status onto the OpenAI finish reason.
-// An answer cut short by the output ceiling is a length stop, and a tool call
-// always reports as one, because the client must dispatch it.
-func responsesFinishReason(response object, hasCalls bool) string {
+// A call the ceiling cut before its arguments closed is reported as a length stop,
+// never as a dispatchable call: measured 2026-10-16 on the free tier, an answer
+// that spent its ceiling on thinking carried a call name with no arguments and was
+// reported as `tool_calls`, leaving a coding client with a call it could not run
+// and no signal that anything was missing. A call the answer closed survives the
+// ceiling stop, because dropping it would discard a request the client can make.
+//
+// The stream and the fold read the ceiling off the same function so they cannot
+// disagree about one answer.
+func responsesFinishReason(response object, hasCalls, openCall bool) string {
+	ceiling := responsesStoppedAtCeiling(response)
+	if ceiling && openCall {
+		return FinishLength
+	}
 	if hasCalls {
 		return FinishToolCalls
 	}
-	if stringField(response, "status") == "incomplete" {
-		if details, ok := objectField(response, "incomplete_details"); ok {
-			if stringField(details, "reason") == "max_output_tokens" {
-				return FinishLength
-			}
-		}
+	if ceiling {
+		return FinishLength
 	}
 	return FinishStop
+}
+
+// responsesCallLeftOpen reports whether one call item was cut before its arguments
+// were complete. A body carries no item lifecycle, so the arguments themselves are
+// the evidence: absent, blank, or not a JSON object means the call never closed.
+func responsesCallLeftOpen(item object) bool {
+	raw, present := item["arguments"]
+	if !present {
+		return true
+	}
+	var arguments string
+	if err := json.Unmarshal(raw, &arguments); err != nil {
+		return false
+	}
+	if strings.TrimSpace(arguments) == "" {
+		return true
+	}
+	var parsed map[string]json.RawMessage
+	return json.Unmarshal([]byte(arguments), &parsed) != nil
 }
 
 // responsesUsageFromObject reads the Responses accounting block. input_tokens
