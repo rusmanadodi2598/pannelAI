@@ -40,7 +40,9 @@ func flowKind(oauth *registry.OAuth) string {
 // endpoint and posts an empty body, which no encoding of the standard grant
 // reaches; every other provider answers the ordinary form or JSON grant the
 // reference sends it.
-func (s *OAuthFlowService) refreshGrant(ctx context.Context, oauth *registry.OAuth, refreshToken string) (oauthhttp.TokenResponse, error) {
+func (s *OAuthFlowService) refreshGrant(
+	ctx context.Context, providerID string, oauth *registry.OAuth, refreshToken string,
+) (oauthhttp.TokenResponse, error) {
 	if oauth.StateExchangeFlow() {
 		client, ok := s.tokens.(oauthhttp.StateRoundClient)
 		if !ok {
@@ -48,11 +50,12 @@ func (s *OAuthFlowService) refreshGrant(ctx context.Context, oauth *registry.OAu
 		}
 		return client.StateRefresh(ctx, oauth, refreshToken)
 	}
+	clientID, clientSecret := s.clientFor(providerID, oauth)
 	grant := oauthhttp.TokenGrant{
 		GrantType:    "refresh_token",
 		RefreshToken: refreshToken,
-		ClientID:     oauth.ClientID,
-		ClientSecret: oauth.ClientSecret,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
 	}
 	if oauth.Refresh != nil {
 		grant.Scope = oauth.Refresh.Scope

@@ -31,15 +31,17 @@ var coreAuthorizeParams = map[string]struct{}{
 
 // buildAuthorizeURL renders the provider's authorize endpoint with the query
 // the code flow requires. Scopes join with a space (OAuth's form encoding) and
-// the PKCE pair rides along only when a verifier exists.
-func buildAuthorizeURL(oauth *registry.OAuth, redirect, state, verifier string) (string, error) {
+// the PKCE pair rides along only when a verifier exists. The client id arrives
+// resolved rather than read off the entry, so the round a deployment configured
+// is the same round its exchange and refresh later perform.
+func buildAuthorizeURL(oauth *registry.OAuth, clientID, redirect, state, verifier string) (string, error) {
 	parsed, err := url.Parse(oauth.AuthorizeURL)
 	if err != nil {
 		return "", domain.NewInternalError("the provider's authorize URL is malformed")
 	}
 	query := parsed.Query()
 	query.Set("response_type", "code")
-	query.Set("client_id", oauth.ClientID)
+	query.Set("client_id", clientID)
 	query.Set("redirect_uri", redirect)
 	query.Set("state", state)
 	if scopes := oauth.ScopeList(); len(scopes) > 0 {

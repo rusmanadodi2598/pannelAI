@@ -127,6 +127,11 @@ func NewIndex(doc Document) (*Index, error) {
 	for _, provider := range idx.providers {
 		provider.Transport.Format = normalizeFormat(provider.Transport.Format)
 		provider.BuildAuthType()
+		// Additive, never recomputed: the reference ships the Google family's flow
+		// in full and marks none of them, deciding its own panel by category instead.
+		// Declared flags stay, so kimchi and xai keep an OAuth section the
+		// predicate cannot describe.
+		provider.HasOAuth = provider.HasOAuth || provider.OAuth.SupportsFlow()
 		idx.providers[idx.byID[provider.ID]] = provider
 
 		for _, alias := range provider.aliasNames() {

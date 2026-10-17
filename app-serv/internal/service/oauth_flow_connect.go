@@ -30,6 +30,9 @@ type connectTokens struct {
 	RefreshToken string
 	Scopes       []string
 	ExpiresAt    *time.Time
+	// ProjectID is the Cloud project a provider scopes its calls to, when the
+	// login could resolve one. Empty means unknown, not none.
+	ProjectID string
 }
 
 // connectAccount writes one account's tokens: seal, find the endpoint its
@@ -132,6 +135,7 @@ func sealConnectTokens(sealer SecretSealer, tokens connectTokens, account domain
 		RefreshTokenEncrypted: refreshSealed,
 		ExpiresAt:             tokens.ExpiresAt,
 		Scopes:                tokens.Scopes,
+		ProjectID:             tokens.ProjectID,
 		AccountEmail:          account.Email().String(),
 		AccountID:             account.WorkspaceID(),
 		LastRefreshAt:         &now,

@@ -50,6 +50,11 @@ type Config struct {
 	// to send a browser back to the panel after an authorization; leaving it
 	// empty makes the callback refuse to redirect rather than trust a header.
 	PublicBaseURL string
+	// OAuthClients is the per-provider OAuth client material the deployment
+	// supplies, keyed by registry provider id. A provider absent from it keeps
+	// the client id its registry entry declares and has no client secret at all,
+	// which is why the secret is not stored in the generated registry document.
+	OAuthClients map[string]OAuthClient
 	// EgressAllowedTargets is the operator's allowlist of outbound
 	// destinations, as CIDR prefixes or single addresses. The egress guard
 	// (internal/netguard) refuses loopback and private ranges unless they
@@ -87,6 +92,7 @@ func Load() (Config, error) {
 		ProxyTestURL:      getenv("PROXY_TEST_URL", "https://www.google.com/"),
 	}
 	cfg.EgressAllowedTargets = splitList(getenv("EGRESS_ALLOWED_TARGETS", ""))
+	cfg.OAuthClients = loadOAuthClients()
 
 	trusted, err := clientip.ParseTrusted(splitList(getenv("TRUSTED_PROXY_CIDRS", "")))
 	if err != nil {

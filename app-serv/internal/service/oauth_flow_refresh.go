@@ -141,7 +141,7 @@ func (s *OAuthFlowService) refreshEndpoint(ctx context.Context, oauth *registry.
 	if err != nil {
 		return nil, err
 	}
-	token, err := s.refreshGrant(ctx, oauth, opened)
+	token, err := s.refreshGrant(ctx, endpoint.ProviderID(), oauth, opened)
 	if err != nil {
 		return nil, err
 	}

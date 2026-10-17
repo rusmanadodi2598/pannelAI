@@ -95,7 +95,7 @@ func originFor(base, redirect string) string {
 // the account identity when the provider declares a userinfo endpoint, and
 // stores the sealed token set on the account's endpoint.
 func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) (OAuthConnect, error) {
-	_, oauth, err := s.requireCodeFlow(in.ProviderID)
+	provider, oauth, err := s.requireCodeFlow(in.ProviderID)
 	if err != nil {
 		return OAuthConnect{}, err
 	}
@@ -131,9 +131,10 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 		return OAuthConnect{}, domain.NewValidationError("the state belongs to another provider")
 	}
 
+	clientID, clientSecret := s.clientFor(providerID, oauth)
 	token, err := s.tokens.Grant(ctx, oauth.TokenURL, tokenEncoding(oauth), oauthhttp.TokenGrant{
 		GrantType: "authorization_code", Code: code,
-		ClientID: oauth.ClientID, ClientSecret: oauth.ClientSecret,
+		ClientID: clientID, ClientSecret: clientSecret,
 		RedirectURI: payload.RedirectURI, CodeVerifier: payload.Verifier,
 	})
 	if err != nil {
@@ -157,5 +158,6 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 	return s.connectAccount(ctx, providerID, connectTokens{
 		AccessToken: token.AccessToken, RefreshToken: token.RefreshToken,
 		Scopes: oauth.ScopeList(), ExpiresAt: tokenExpiry(token, now),
+		ProjectID: s.resolveProject(ctx, provider, token.AccessToken),
 	}, account, payload.Origin, now)
 }
