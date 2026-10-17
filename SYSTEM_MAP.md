@@ -158,7 +158,7 @@ sequenceDiagram
 
 The panel forwards `/api/v1` from its own server, so the browser talks to one
 origin and no CORS rule is needed. The panel never touches PostgreSQL or Redis;
-the API is its only surface (SPEC-API-001 §11.5).
+the API is its only surface (SPEC-API-001 §11.5). Audit menyeluruh UX/UI panel (`app-ui`) di atas runtime **Bun 1.3+** (`engines.bun >= 1.3.0`), matriks kepatuhan `DESIGN.md` (`R-01` s.d. `R-38`), dan 15 temuan remediasi (`F1`–`F15`: 3-breakpoint shell `44px`, operasi massal tag/status dengan `disabled_until`, transparansi `reset_source` + `signature_id` pada kredensial yang diparkir, gambar jalur request 5-tahap `Client >> Combo >> Gateway >> Upstream >> Response`, serta pengungkapan frame verbatim di Playground) didokumentasikan pada `docs/DRAFT/061-APP-UI-UX-AUDIT.md`.
 
 
 ### 3.2a Playground Chat (app-ui client over app-serv data plane)

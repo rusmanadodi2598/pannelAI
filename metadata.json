@@ -1,0 +1,8 @@
+{
+  "name": "pannelAI — AI Gateway Control Panel",
+  "description": "AI API Gateway and Operator Control Panel for managing client access, 36 upstream providers, endpoints, model combos, quota windows, token savers, and live usage routing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
