@@ -113,6 +113,11 @@ var nativeFormats = map[string]struct{}{
 	DefaultFormat:         {},
 	"claude":              {},
 	FormatOpenAIResponses: {},
+	// Gemini's generateContent payload is translated here for the API-key family.
+	// `gemini-cli` and `antigravity` are absent on purpose: they wrap that same
+	// payload in a Cloud Code Assist envelope keyed to a project, so a format the
+	// gateway can only half-write is a connector's job, not a translator's.
+	"gemini": {},
 }
 
 // ChatRoutability reports whether this provider's chat path can be served

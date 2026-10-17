@@ -1668,3 +1668,26 @@ against the same upstream and the same pool: at client ceilings of 512 and 256 t
 that many completion tokens and no tool arguments at all, the current one answered 1382, 1176 and 1024 with the call
 closed, and twenty straight `pi-agent` calls at 2500, ten on each binary, every one of them answered with a tool call
 whose arguments parse or with visible text._
+
+_Changelog 2026-10-17: §7.15 gains a fourth upstream target. `targetFormat` maps the `gemini` format onto
+`TargetGemini`, `registry.nativeFormats` accepts it, and the connector `provider.Gemini` addresses one call,
+so a `gemini/…` model string resolves, is translated, and is answered instead of being refused by name. The
+wire rules the target owns are the ones the OpenAI-shaped fallback cannot express: the model is a **path
+segment** (`{base}/{model}:generateContent`), a stream is a different **action** carrying `?alt=sse` rather
+than a body member named `stream`, the system prompt is hoisted out of `contents` into `systemInstruction`,
+and the answer arrives under keys no existing reader looks at (`candidates`, `parts`, `finishReason`,
+`usageMetadata`). Two of those are silent failures rather than loud ones, which is why they are the pinned
+ones: reading `usage` from a body that says `usageMetadata` bills every call at zero, and every per-target
+switch in the engine ends in a default that assumes an OpenAI upstream, so a target added to one list and not
+the others answers 200 with an empty completion. A model id that is not one path segment is refused at the
+connector rather than joined, because a value carrying a separator, a query or a colon would address an
+endpoint the entry never declared. `promptFeedback.blockReason` on a body with no candidate answers
+`content_filter`, because "no content" is a different claim than "refused". The credential headers are not
+restated by the connector: the entry already declares them per family (`x-goog-api-key` raw for a key,
+`Authorization: Bearer` for a token) and the fallback applies that declaration. `gemini-cli` and
+`antigravity` **stay** refused by name, and this is the entry's correction to draft 061's own plan: both wrap
+the same payload in a Cloud Code Assist envelope keyed to a project and drop the model from the path, so a
+translator alone would send a body the vendor rejects, and a project id is credential material that no
+connector may write into a body (§6, `provider.Request`). `vertex` stays out for its own reason (project and
+region in the path). Draft 061 §5 records the measurement; `SYSTEM_MAP.md` §94's example list is unchanged
+because those three formats are still reported by `Connectors.Unsupported()`._

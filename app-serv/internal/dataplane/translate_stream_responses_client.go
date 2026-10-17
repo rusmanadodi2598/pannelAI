@@ -109,6 +109,12 @@ func (s *ResponsesStreamState) Frames(upstreamTarget string, payload []byte) [][
 			return nil
 		}
 		return s.chunkFrames(chunk)
+	case TargetGemini:
+		chunk := geminiChunkToOpenAIChunk(payload)
+		if chunk == nil {
+			return nil
+		}
+		return s.chunkFrames(chunk)
 	default:
 		return s.chunkFrames(payload)
 	}

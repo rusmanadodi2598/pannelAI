@@ -91,6 +91,11 @@ func translateUpstreamBody(in Request, resolution Resolution) ([]byte, error) {
 			return encode(ClaudeToOpenAI(*in.Messages, resolution.UpstreamID, in.Stream))
 		case TargetResponses:
 			return encode(ClaudeToResponses(*in.Messages, resolution.UpstreamID, in.Stream))
+		case TargetGemini:
+			// The Anthropic wire reaches Gemini through the OpenAI request shape
+			// this package already builds and tests for it, rather than a fourth
+			// copy of the message rules.
+			return encode(OpenAIToGemini(ClaudeToOpenAI(*in.Messages, resolution.UpstreamID, in.Stream), resolution.UpstreamID))
 		}
 	case schema.FormatOpenAI:
 		if in.Chat == nil {
@@ -101,6 +106,8 @@ func translateUpstreamBody(in Request, resolution Resolution) ([]byte, error) {
 			return encode(OpenAIToClaude(*in.Chat, resolution.UpstreamID, in.Stream))
 		case TargetResponses:
 			return encode(OpenAIToResponses(*in.Chat, resolution.UpstreamID, in.Stream))
+		case TargetGemini:
+			return encode(OpenAIToGemini(*in.Chat, resolution.UpstreamID))
 		}
 	case schema.FormatOpenAIResponses:
 		if in.Responses == nil {
@@ -111,6 +118,8 @@ func translateUpstreamBody(in Request, resolution Resolution) ([]byte, error) {
 			return encode(ResponsesToOpenAI(*in.Responses, resolution.UpstreamID, in.Stream))
 		case TargetClaude:
 			return encode(ResponsesToClaude(*in.Responses, resolution.UpstreamID, in.Stream))
+		case TargetGemini:
+			return encode(OpenAIToGemini(ResponsesToOpenAI(*in.Responses, resolution.UpstreamID, in.Stream), resolution.UpstreamID))
 		}
 	}
 	return nil, dataPlaneError(CodeProviderNotRoutable,
@@ -123,6 +132,16 @@ func readUsage(raw []byte, upstreamTarget string) *schema.Usage {
 	body, ok := decodeObject(raw)
 	if !ok {
 		return nil
+	}
+	// Gemini names its accounting block usageMetadata, so reading the OpenAI key
+	// first would report no usage for a call the vendor did bill.
+	if upstreamTarget == TargetGemini {
+		metadata, found := objectField(body, "usageMetadata")
+		if !found || len(metadata) == 0 {
+			return nil
+		}
+		parsed := GeminiUsageToOpenAI(mustJSON(metadata))
+		return &parsed
 	}
 	usage, ok := objectField(body, "usage")
 	if !ok {
@@ -143,6 +162,13 @@ func readUsage(raw []byte, upstreamTarget string) *schema.Usage {
 // wire, whichever format the upstream wrote it in.
 func claudeAnswer(raw []byte, resolution Resolution) (schema.MessagesResponse, error) {
 	reported := answerModel(resolution, resolution.ModelID)
+	if resolution.Target == TargetGemini {
+		encoded, err := geminiAnswerAsOpenAI(raw, resolution, 0)
+		if err != nil {
+			return schema.MessagesResponse{}, err
+		}
+		return OpenAIToClaudeResponse(encoded, reported)
+	}
 	if resolution.Target == TargetResponses {
 		return ResponsesToClaudeResponse(raw, reported)
 	}
@@ -153,8 +179,11 @@ func claudeAnswer(raw []byte, resolution Resolution) (schema.MessagesResponse, e
 // whichever format the upstream wrote it in.
 func openAIAnswer(raw []byte, resolution Resolution, created int64) (schema.ChatCompletionResponse, error) {
 	reported := answerModel(resolution, resolution.ModelID)
-	if resolution.Target == TargetResponses {
+	switch resolution.Target {
+	case TargetResponses:
 		return ResponsesToOpenAIResponse(raw, reported, created)
+	case TargetGemini:
+		return GeminiToOpenAIResponse(raw, reported, created)
 	}
 	return ClaudeToOpenAIResponse(raw, reported, created)
 }
@@ -168,6 +197,12 @@ func responsesClientAnswer(raw []byte, resolution Resolution, created int64) (sc
 		return OpenAIToResponsesAnswer(raw, reported, created)
 	case TargetClaude:
 		return ClaudeToResponsesAnswer(raw, reported, created)
+	case TargetGemini:
+		encoded, err := geminiAnswerAsOpenAI(raw, resolution, created)
+		if err != nil {
+			return schema.ResponsesAnswer{}, err
+		}
+		return OpenAIToResponsesAnswer(encoded, reported, created)
 	default:
 		return ResponsesToResponsesAnswer(raw, reported)
 	}

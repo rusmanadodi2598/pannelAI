@@ -83,6 +83,8 @@ func (s *ClaudeStreamState) Frames(upstreamTarget string, payload []byte) [][]by
 		return s.forwardClaude(chunk)
 	case TargetResponses:
 		return s.fromResponses(payload)
+	case TargetGemini:
+		return s.fromGemini(payload)
 	default:
 		chunk, ok := decodeObject(payload)
 		if !ok {
@@ -97,6 +99,21 @@ func (s *ClaudeStreamState) Frames(upstreamTarget string, payload []byte) [][]by
 // takes, so the event mapping lives in one place.
 func (s *ClaudeStreamState) fromResponses(payload []byte) [][]byte {
 	chunk := s.responses.chunk(payload)
+	if chunk == nil {
+		return nil
+	}
+	decoded, ok := decodeObject(chunk)
+	if !ok {
+		return nil
+	}
+	return s.fromOpenAI(decoded)
+}
+
+// fromGemini maps one Gemini stream payload into the OpenAI chunk vocabulary and
+// frames it on the same path, so the Gemini stream shape is known in one place
+// rather than in each client state.
+func (s *ClaudeStreamState) fromGemini(payload []byte) [][]byte {
+	chunk := geminiChunkToOpenAIChunk(payload)
 	if chunk == nil {
 		return nil
 	}

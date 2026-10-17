@@ -70,9 +70,11 @@ func TestResolver_ModelList(t *testing.T) {
 }
 
 // TestTargetFormat pins the translator check: only a format with a translator
-// decodes as routable, so a Gemini provider is refused by name rather than sent
-// as a 502. The Responses format gained its translator in P3 (SPEC-API-001 §10),
-// so it now maps to its own target.
+// decodes as routable, so a provider on a protocol the gateway cannot write is
+// refused by name rather than sent as a 502. The Responses format gained its
+// translator in P3 (SPEC-API-001 §10) and Gemini's in draft 061, while the two
+// formats that wrap their payload in a vendor envelope stay unmapped until their
+// connector exists.
 func TestTargetFormat(t *testing.T) {
 	cases := []struct {
 		format string
@@ -80,9 +82,11 @@ func TestTargetFormat(t *testing.T) {
 	}{
 		{format: registry.DefaultFormat, want: TargetOpenAI},
 		{format: "claude", want: TargetClaude},
-		{format: "gemini", want: ""},
-		{format: "gemini-cli", want: ""},
+		{format: "gemini", want: TargetGemini},
 		{format: registry.FormatOpenAIResponses, want: TargetResponses},
+		{format: "gemini-cli", want: ""},
+		{format: "antigravity", want: ""},
+		{format: "vertex", want: ""},
 		{format: "kiro", want: ""},
 		{format: "", want: ""},
 	}

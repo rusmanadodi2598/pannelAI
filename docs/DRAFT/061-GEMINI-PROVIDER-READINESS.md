@@ -6,7 +6,7 @@ Permintaan owner: "Cek bagian Provider Gemini. Buat DRAFT lanjutan untuk patch G
 
 | | |
 | --- | --- |
-| **Status** | **Tahap 1 mendarat, Tahap 2 dan 3 belum.** Butir 1-5 §5 ada di working tree bersama testnya; `go test -race -count=1 ./...` hijau untuk seluruh app-serv, dan gate `go-headers.sh`, `antislop.sh`, `go-lint.sh`, `secrets.sh` PASS (hasil nyata di §6). Yang berubah bentuk dari rencana ada di §5.1, termasuk satu temuan yang lahir darinya (F10: YAML registry sudah bukan keluaran generatornya). Satu hal tidak bisa diukur dari sini dan tidak diklaim: round OAuth hidup terhadap Google, yang menunggu akun owner (§8 butir 2-3). Sisanya, §2, adalah hasil baca kode terhadap working tree `7636ab6` plus dua reference (`decolua/9router` @ `87a74e1b`, `luqman-v1/9router-go` @ HEAD `main`) |
+| **Status** | **Tahap 1 dan 2 mendarat; Tahap 3 terbuka.** Butir 1-5 (§5, Tahap 1) ada di `b3e2c39` dan butir 6-12 (Tahap 2) di commit setelahnya; `go test -race -count=1 ./...` hijau untuk seluruh app-serv dan gate `go-headers.sh`, `antislop.sh`, `go-lint.sh`, `secrets.sh`, `contract-drift.sh` PASS (hasil nyata di §6). Yang mendarat adalah `gemini` API-key: satu `gemini/…` model string sekarang resolve, diterjemahkan dua arah, dan dijawab, termasuk stream. `gemini-cli` **tidak** ikut, dan itu keputusan hasil pengukuran (§5.2), bukan sisa. Yang masih tidak bisa diukur dari sini dan tidak diklaim: satu round OAuth hidup terhadap Google, dan satu panggilan nyata ke `generativelanguage` dengan kunci owner (§8 butir 2-3) |
 | **Sumber** | Registry yang di-embed (`app-serv/internal/registry/registry.yaml`), generatornya (`app-serv/tools/registry-gen.mjs`), lapis OAuth (`internal/service/oauth_flow*.go`, `internal/service/oauthhttp/`), data plane chat (`internal/dataplane/`), seam konektor (`internal/provider/`), panel (`app-ui/src/lib/schemas/endpoint-credential.ts`, `app-ui/src/routes/providers/[provider_id]/`). Reference: JS `src/lib/oauth/providers/gemini-cli.js`, `open-sse/executors/{default,gemini-cli,antigravity}.js`, `open-sse/providers/registry/{gemini,gemini-cli,antigravity}.js`; Go `internal/handlers/oauth/{antigravity,authcode}.go`, `internal/proxy/gemini.go`, `internal/handlers/chat/{gemini_handler,antigravity_project}.go`, `internal/translator/gemini.go` |
 | **Lingkup** | Empat entri Google yang sudah ada di registry KEEP owner (`antigravity` `registry.yaml:228`, `gemini-cli` `:385`, `vertex` `:1014`, `gemini` `:1086`), di dua lapis: **OAuth landing** (flag, kredensial klien, project id) dan **jalur chat** (target format baru, URL per model, arah jawaban, stream). Satu keputusan owner di §4 D5 menentukan apakah lapis kedua memakai translator native atau jalur pintas OpenAI-compatible milik Google |
 | **Tidak termasuk** | Permukaan **klien** Gemini (`/v1beta/models/…:generateContent` yang gateway sajikan ke Gemini CLI yang mengarah ke mari). Itu arah terjemahan yang berlawanan dan sudah dibuka sendiri di `docs/DRAFT/027-APP-SERV-CONCEPT-PARITY.md` F1; draft ini hanya membuat gateway bisa **berbicara ke** Google. Juga tidak termasuk: envelope antigravity lengkap (`{project, model, request}`, thought signature, tabel sinonim model) yang ditaruh di Tahap 3 §5 dengan alasannya, media Gemini (TTS/STT/embedding/image, sudah jalan, lihat §3 F9), dan kuota Google (fetcher-nya sudah ada dan hijau; yang belum ada hanyalah input yang ia butuhkan, F3) |
@@ -148,17 +148,31 @@ Pekerjaan dipecah tiga tahap, dan pecahnya mengikuti batas yang bisa diuji sendi
 
 - **D3 memakai paket kuota, tidak menambah pembaca protokol.** `quotafetch` sudah punya metadata klien, enum platform, body, dan pembaca `cloudaicompanionProject` yang polymorphic; membaca endpoint itu sekali lagi di `oauthhttp` berarti satu detail protokol punya dua sumber. Yang ditambah di sana hanya `LoadProject`, yang menyusun ulang bahan yang sudah ada, dan `cmd/app-serv` yang memasangnya ke flow, jadi panggilan bootstrap ini riding egress client ter-guard yang `UseEgressClient` pasang saat boot, bukan client baru.
 
-### Tahap 2, chat Gemini bisa dijalankan (`gemini` API-key, lalu `gemini-cli` OAuth)
+### Tahap 2, chat Gemini bisa dijalankan (`gemini` API-key)
 
-| # | Berkas | Isi | Menutup |
-| --- | --- | --- | --- |
-| 6 | `internal/dataplane/target.go` + `internal/registry/index.go:112-116` | `TargetGemini` + `"gemini"` di `nativeFormats`, dua daftar bergerak satu commit | F4, F5 |
-| 7 | `internal/dataplane/translate_gemini_answer.go` (baru) | Arah jawaban non-stream: `candidates`/`parts`/`thought`/`functionCall`/`finishReason`/`usageMetadata`/`promptFeedback` (D7) | F4, F5, F7(200-block) |
-| 8 | `internal/dataplane/engine_translate.go:83-118,122-172` | Lengan Gemini di tiga switch arah dan di `claudeAnswer`/`openAIAnswer`; `readUsage` berhenti mengandalkan `default:` | F5 |
-| 9 | `internal/dataplane/translate_stream_*.go` (tiga berkas) | Lengan Gemini di tiga `Frames(upstreamTarget, …)`, penutupan stream tanpa `[DONE]` | F5, F6 |
-| 10 | `internal/provider/gemini.go` + `gemini_url.go` (baru) + `cmd/app-serv/provider_wiring.go` | Konektor: URL per model + per mode stream, auth per keluarga, `project` dari kredensial (D6) | F4, F6, F3(ruang lingkup pemakai) |
-| 11 | `internal/provider/gemini_test.go`, `internal/dataplane/engine_gemini_wire_test.go` (baru) | Unit bentuk body/URL/header; wire: body yang benar-benar keluar dari transport dan frame yang benar-benar sampai ke klien | §2.1 TDD |
-| 12 | `docs/SPEC-API/001-SPEC-API.md` §7.15/§8, `docs/SPEC-UI/001-SPEC-UI.md` §6.3, `SYSTEM_MAP.md:94` | Kontrak: daftar format yang gateway terjemahkan bertambah satu, `PROVIDER_NOT_ROUTABLE` tidak lagi menjawab `gemini`, dan daftar contoh provider ber-format khusus kehilangan `antigravity` | §1.9, F4 |
+| # | Berkas | Isi | Menutup | Status |
+| --- | --- | --- | --- | --- |
+| 6 | `internal/dataplane/target.go` + `internal/registry/index.go:112-116` | `TargetGemini` + `"gemini"` di `nativeFormats`, dua daftar bergerak satu commit | F4, F5 | **MENDARAT**, hanya untuk `gemini`, lihat §5.2 |
+| 7 | `internal/dataplane/translate_gemini_answer.go` + `translate_gemini_stream.go` (baru) | Arah jawaban non-stream dan satu frame stream: `candidates`/`parts`/`thought`/`functionCall`/`finishReason`/`usageMetadata`/`promptFeedback` (D7) | F4, F5, F7(200-block) | **MENDARAT** |
+| 8 | `internal/dataplane/engine_translate.go:83-118,131-149,153-207` | Lengan Gemini di tiga switch arah request, di `openAIAnswer`/`claudeAnswer`/`responsesClientAnswer`, dan `readUsage` berhenti membaca key `usage` untuk badan yang menulis `usageMetadata` | F5 | **MENDARAT** |
+| 9 | `internal/dataplane/translate_stream_openai.go`, `_claude.go`, `_responses_client.go` | Lengan `TargetGemini` di tiga `Frames(upstreamTarget, …)`: payload dipetakan ke kosakata chunk OpenAI lalu diframe jalur yang sudah ada, dan penutupan stream tidak menunggu `[DONE]` | F5, F6 | **MENDARAT** |
+| 10 | `internal/provider/gemini.go` (baru) + `cmd/app-serv/provider_wiring.go` | Konektor: URL per model + per mode stream, dan refusal untuk id yang bukan satu segmen path. Auth **tidak** ditulis ulang: entri sudah mendeklarasikan header per keluarga dan fallback yang menerapkan deklarasi itu | F4, F6 | **MENDARAT**, tanpa `gemini_url.go` (URL rule muat di satu berkas) dan tanpa `project` (lihat §5.2) |
+| 11 | `internal/provider/gemini_test.go`, `internal/dataplane/engine_gemini_wire_test.go`, `translate_gemini_answer_test.go`, `engine_translate_gemini_test.go` (semua baru) | Unit bentuk URL/header; wire: path yang benar-benar dituju, body yang benar-benar keluar, jawaban yang sampai ke klien **dengan usage bukan nol**, dan frame stream termasuk marker terminal yang vendor tidak pernah kirim | §2.1 TDD | **MENDARAT** |
+| 12 | `docs/SPEC-API/001-SPEC-API.md` (changelog 2026-10-17) | Kontrak: target upstream keempat, aturan path/action/usage, dan tiga format yang tetap refused beserta alasannya | §1.9, F4 | **MENDARAT** |
+
+### 5.2 Yang diukur di tengah Tahap 2 dan mempersempit cakupannya
+
+D6 menulis satu konektor melayani `gemini` **dan** `gemini-cli`, karena keduanya "membedakan kredensial dan URL saja". Itu tidak benar, dan satu baca atas executor reference membuktikannya sebelum kode apa pun ditulis: `gemini-cli` membangun URL `{base}:generateContent` **tanpa segmen model**, lalu membungkus payload Gemini di dalam amplop `{project, model, request}` (`open-sse/executors/gemini-cli.js:11-33`, bentuk yang sama dipakai `executors/antigravity.js:156-176`). Go reference mengiyakan sisi URL (`internal/proxy/gemini.go:74-91`: project diisi → `v1internal:action`, tidak → `v1beta/models/{m}:action`).
+
+Tiga hal membuat `gemini-cli` tidak ikut Tahap 2 ini:
+
+- Amplop bukan urusan translator. `OpenAIToGemini` menghasilkan badan Gemini; `project`/`model`/`request` adalah bentuk produk Cloud Code Assist, dan tempat menulisnya adalah konektor lewat seam `Transformer`, bukan lengan tambahan di `engine_translate.go` yang akan membaca provider id.
+- `project` datang dari kredensial (`Credential.ProjectID`, diisi D3), dan `plugin_request.go:38-41` melarang sebuah konektor menaruh bagian kredensial apa pun ke dalam `Body`. Untuk token itu memang benar dan harus tetap benar. Untuk project, yang bukan rahasia, aturannya perlu satu keputusan tersendiri (butir 9 §8), bukan dilonggarkan diam-diam supaya kode lolos.
+- Model keluar dari path ke dalam body, jadi aturan URL konektor yang barusan ditulis (`{base}/{model}:action`) tidak berlaku untuk keluarga itu sama sekali.
+
+Karena itu `nativeFormats` dan `targetFormat` hanya memuat `gemini`. Test yang sebelumnya memaku `gemini-cli` sebagai "butuh konektor" tetap menuntut begitu, dan `Connectors.Unsupported()` masih melaporkannya bersama `antigravity`, `vertex`, `commandcode`, tidak ada klaim yang ditutupi.
+
+Satu koreksi kecil atas §1.9 yang dokumen ini tulis sendiri: prediksi bahwa `SYSTEM_MAP.md:94` akan basi tidak terjadi. Baris itu mencontohkan `kiro`, `cursor`, `antigravity`, dan ketiganya memang masih tanpa konektor, jadi peta tidak bergerak untuk alasan itu; yang bergerak adalah SPEC-API (butir 12).
 
 ### Tahap 3, keluarga ber-envelope (`antigravity`)
 
@@ -177,18 +191,19 @@ Urutannya wajib: tiap butir di §5 dimulai dari test yang gagal, tidak ada `t.Sk
 - **F7/D8.** Signature: 429 body `RESOURCE_EXHAUSTED` → kelas quota, ladder panjang; 429 tanpa penanda → tetap `RATE_LIMIT_TEMPORARY`, supaya signature ini tidak menelan throttle yang nyata (baris penjaga yang sama yang `060` pakai untuk `qoder.queue`). 200 + `promptFeedback.blockReason` → penolakan, bukan konten kosong.
 - **Probe.** Tidak ada test khusus: `provider_model_probe.go:151-160` menjalankan `Engine` yang sama, jadi ia ikut hidup begitu butir 6-10 mendarat. Itu justru salah satu alasan D5 memilih native: probe dan panel diperbaiki oleh pekerjaan yang sama, seperti `011` §10.12 catat untuk CodeBuddy.
 
-### Gerbang (hasil nyata Tahap 1)
+### Gerbang (hasil nyata Tahap 1 dan 2)
 
 ```bash
 cd app-serv && go build ./... && go vet ./...      # bersih
 cd app-serv && go test -race -count=1 ./...        # seluruh app-serv hijau, tanpa cache
-scrypts/gates/go-headers.sh                        # PASS 1430 Go files carry a complete header
-scrypts/gates/antislop.sh                          # PASS, termasuk doc-block length atas berkas yang berubah
+scrypts/gates/go-headers.sh                        # PASS 1430+ Go files carry a complete header
+scrypts/gates/antislop.sh                          # PASS, termasuk R-02 tree-wide dan doc-block length
 scrypts/gates/go-lint.sh                           # PASS gofmt, staticcheck (+tagged), golangci-lint 0 issues
 scrypts/gates/secrets.sh                           # PASS, commit dan working tree (tidak ada nilai rahasia di git)
+scrypts/gates/contract-drift.sh                    # PASS 14 error codes agree on both sides
 ```
 
-Berkas baru yang lahir di pass ini 32-52 baris, jadi §1.1 belum tersentuh; tidak ada `t.Skip` dan tidak ada filter `-run` yang tersisa.
+Berkas baru Tahap 1 32-52 baris dan Tahap 2 68-225 baris (satu berkas test jawaban sempat menyentuh 254 dan dipecah mengikuti batas sumbernya, jawaban vs frame, sebelum gate sempat menolaknya), jadi §1.1 belum tersentuh; tidak ada `t.Skip` dan tidak ada filter `-run` yang tersisa. Tiga test lama yang memaku aturan lama **dikoreksi**, tidak dihapus atau di-skip, persis seperti `060` §6 melakukan itu untuk tangga park: `registry/routability_test.go` (bucket `gemini` pindah ke native, `gemini-cli`/`vertex` tetap connector), `dataplane/resolve_list_test.go` (target `gemini` kini terpetakan), `dataplane/catalog_list_test.go` (fixture "provider tanpa translator" tidak bisa lagi memakai format `gemini`, jadi dipindah ke `antigravity` yang memang belum punya).
 
 Plus satu pengukuran yang tidak bisa digantikan suite mana pun: satu round OAuth sungguhan terhadap Google dengan akun owner (Start → setuju di browser → callback → `oauth/status` menjawab `connected`, dan baris endpoint yang dihasilkan membawa `project_id`), lalu, sesudah Tahap 2, satu `POST /v1/chat/completions` model `gemini/gemini-2.5-flash` yang menjawab dengan isi, bukan dengan 400.
 
@@ -211,5 +226,6 @@ Plus satu pengukuran yang tidak bisa digantikan suite mana pun: satu round OAuth
 6. **`onboardUser` belum dipasang, dan ia adalah sisa yang nyata dari D3.** Entri `antigravity` mendeklarasikan `onboard_user_endpoint` (`registry.yaml:270`) dan sampai pass ini tetap tidak punya pembaca. Akun Google yang belum punya project di Cloud Code Assist karena itu menyimpan kredensial tanpa `project_id` dan tidak ada jalur yang mencobanya ulang: yang dibangun hanyalah lookup sekali jalan di depan login. Bentuk yang reference pakai adalah onboarding dengan polling `done` lalu membaca project dari jawaban akhirnya; tempatnya adalah seam `ProjectResolver` yang sekarang (satu method lagi, bukan satu pembaca baru), dan ia dibutuhkan saat Tahap 2 mulai memakai project itu untuk call sungguhan.
 7. **Satu flag body yang tidak boleh dikarang dua kali.** `loadCodeAssist` menerima `mode`; JS reference mengirim `mode: 1` pada posisi pasca-exchange ini, sementara `quotafetch` tidak pernah mengirimnya untuk jalur kuota. Pass ini sengaja mengikuti jalur kuota (satu detail protokol, satu sumber di repo ini) dan tidak menebak dua bentuk sekaligus. Kalau satu round hidup menunjukkan project hanya terbit ketika `mode` dikirim, yang berubah adalah `googleAssistBody` dan dua pemanggilnya ikut benar, bukan sebuah cabang per-provider di lapis flow.
 8. **Utang dokumen yang PR ini masih berutang.** Butir 6 §5 (`SYSTEM_MAP.md:570-572` dan `:94`, `docs/SPEC-UI/001-SPEC-UI.md` §6.3) belum ditulis, dan `AGENTS.md` §1.9 menyebutnya sebagai syarat satu PR, bukan pekerjaan susulan: `:570` kini benar sebagian (lookup ada, penulisnya ada, onboarding belum), dan `:94` baru bergerak kalau konektor Tahap 2 mendarat.
+9. **Aturan "kredit tidak boleh masuk body" perlu satu keputusan untuk project id.** `plugin_request.go:38-41` melarang konektor menaruh bagian kredensial apa pun ke dalam `Body`, dengan alasan yang benar untuk token. `Credential.ProjectID` adalah nilai yang sama telanjangnya dengan `email` dan `machine id` yang dokumen ini tulis sendiri sebagai non-secret (`SYSTEM_MAP.md` §3, fakta akun), dan amplop Cloud Code Assist mewajibkan dia ada di body. Tiga jalan yang tersedia dan belum dipilih: mempersempit kalimat larangan itu ke bahan rahasia (perlu satu baris di spec seam, dan project masuk lewat `Transformer`), memindahkan project dari `Credential` ke slot identitas lain yang bukan kredensial (perlu keputusan bentuk, karena `Credential.ProjectID` sudah punya dua pembaca), atau menolak keluarga itu permanen (bukan pilihan: itu justru permintaan owner). Keputusan ini menahan Tahap 3, bukan Tahap 2.
 
 Bukan kontrak; kontrak tetap `docs/SPEC-API/001-SPEC-API.md` dan `docs/SPEC-UI/001-SPEC-UI.md`.
