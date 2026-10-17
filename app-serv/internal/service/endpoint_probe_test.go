@@ -20,7 +20,8 @@ import (
 )
 
 // TestEndpointService_TestRecordsBothStatuses pins the recording rule: a probe outcome
-// reaches the endpoint's test_status, the key's health, and both persist.
+// reaches the endpoint's test_status, and reaches the key's health only where the
+// upstream answered with a status. Both persist.
 func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 	cases := []struct {
 		name           string
@@ -48,20 +49,16 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 			wantRateWindow: true,
 		},
 		{
-			name:           "a prober fault is recorded as a failure, not returned",
-			proberErr:      errors.New("no connector for this provider"),
-			wantState:      string(domain.EndpointTestFail),
-			wantKeyStatus:  domain.UpstreamKeyError,
-			wantErrors:     1,
-			wantRateWindow: true,
+			name:          "a prober fault is recorded as a failure, not returned",
+			proberErr:     errors.New("no connector for this provider"),
+			wantState:     string(domain.EndpointTestFail),
+			wantKeyStatus: domain.UpstreamKeyActive,
 		},
 		{
-			name:           "an unknown state reported by a connector becomes fail",
-			outcome:        ProbeOutcome{State: "maybe", LatencyMS: 5},
-			wantState:      string(domain.EndpointTestFail),
-			wantKeyStatus:  domain.UpstreamKeyError,
-			wantErrors:     1,
-			wantRateWindow: true,
+			name:          "an unknown state reported by a connector becomes fail",
+			outcome:       ProbeOutcome{State: "maybe", LatencyMS: 5},
+			wantState:     string(domain.EndpointTestFail),
+			wantKeyStatus: domain.UpstreamKeyActive,
 		},
 	}
 

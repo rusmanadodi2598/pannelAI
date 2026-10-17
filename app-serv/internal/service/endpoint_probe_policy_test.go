@@ -1,7 +1,7 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_probe_policy_test.go
-// @for       The parking window a failed connectivity test applies, resolved from the routing group's configuration for that provider.
+// @for       Which connectivity test failures park a key, and the window each applies, resolved from the routing group's configuration for that provider.
 // @uses      context, errors, testing, time, internal/domain.
 // @reason    Draft 050 T8 moved the §7.5 windows from constants to settings, and the probe is the second writer of a parked key. If it read the windows from anywhere else, the Test button and a live request would park the same credential for different lengths, which is the disagreement §7.5 exists to prevent.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
@@ -71,6 +71,48 @@ func TestEndpointService_TestParksWithTheConfiguredWindow(t *testing.T) {
 	}
 	if len(health.asked) == 0 || health.asked[0] != "deepseek" {
 		t.Fatalf("policy reads = %v, want one for deepseek", health.asked)
+	}
+}
+
+// TestEndpointService_TestWithoutAnUpstreamAnswerParksNothing covers the probe paths
+// that send nothing: no validation surface declared, a host the egress guard refused,
+// a call that never completed. They carry no status, and a call the credential never
+// saw says nothing about it, which is what routing already answers for the same fact.
+func TestEndpointService_TestWithoutAnUpstreamAnswerParksNothing(t *testing.T) {
+	for _, message := range []string{
+		"this provider does not declare a validation endpoint",
+		"the upstream could not be reached",
+		"the account identity could not be read",
+	} {
+		t.Run(message, func(t *testing.T) {
+			svc, _ := newEndpointSvc(t)
+			endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
+			svc.prober = &fakeProber{outcome: ProbeOutcome{
+				State: string(domain.EndpointTestFail), Message: message,
+			}}
+			if _, _, err := svc.Test(context.Background(), endpoint.ID(), ""); err != nil {
+				t.Fatalf("Test() error = %v", err)
+			}
+
+			reloaded, err := svc.Get(context.Background(), endpoint.ID())
+			if err != nil {
+				t.Fatalf("Get() error = %v", err)
+			}
+			key := reloaded.Keys()[0]
+			if key.RateLimitedUntil() != nil {
+				t.Fatalf("park = %v, want nothing parked for a request that was never sent",
+					key.RateLimitedUntil())
+			}
+			if !key.Available(testNow) {
+				t.Fatal("the key left rotation on a probe that sent no request")
+			}
+			if strikes := key.ConsecutiveErrors(); strikes != 0 {
+				t.Fatalf("consecutive errors = %d, want no strike recorded", strikes)
+			}
+			if reloaded.TestStatus().State() != domain.EndpointTestFail {
+				t.Fatal("the test answer itself was not recorded on the endpoint")
+			}
+		})
 	}
 }
 

@@ -65,8 +65,9 @@ func (s *EndpointService) Test(ctx context.Context, id, keyID string) (domain.Up
 // circuit breaker owns that state: a second health field would let the panel and
 // the router disagree about whether a key may be spent (§7.5). A refused probe
 // is classified from the upstream's own status, so a 401 parks the key exactly
-// as the same answer would during routing, and a 400 parks nothing for the same
-// reason.
+// as the same answer would during routing and a 400 parks nothing for the same
+// reason. A probe that never carried a status parks nothing either: the row
+// records the test's answer, not a health strike for a call that did not happen.
 func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.UpstreamEndpoint, key domain.UpstreamKey, outcome ProbeOutcome, now time.Time) (domain.UpstreamEndpoint, ProbeOutcome, error) {
 	endpoint.RecordTest(outcome.State, outcome.LatencyMS, outcome.Message, now)
 	// A request-shaped refusal is the probe's own body at fault, not the
@@ -81,6 +82,10 @@ func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.Upstr
 			if _, err := endpoint.RecordKeySuccess(key.ID(), now); err != nil {
 				return domain.UpstreamEndpoint{}, ProbeOutcome{}, err
 			}
+		case outcome.Status == 0:
+			// No status means nothing was sent or nothing answered, which routing
+			// classes as the target's own failure: it cannot park a credential.
+			recordKeyHealth = false
 		case class == domain.KeyFailureRequest:
 			recordKeyHealth = false
 		default:
