@@ -572,6 +572,16 @@ cloudcode tidak membayar satu panggilan bootstrap `loadCodeAssist` per poll untu
 disimpannya sendiri. `email` jatuh ke baris account bila kredensial tidak memilikinya, dan akun tanpa
 keduanya menghasilkan map kosong, bukan string kosong yang bisa dibaca provider sebagai nilai nyata.
 
+`projectId` ditulis di satu tempat: round OAuth yang lolos menukar code ke token menanyakan project ke
+endpoint yang dideklarasikan entri (`registry.Provider.ProjectBootstrap()`, dibaca dari blok `oauth` lalu
+blok `transport.usage`), lalu menyimpannya di kredensial lewat seam `service.ProjectResolver` yang dipasang
+`cmd/app-serv` di atas `quotafetch.LoadProject`, jadi panggilan bootstrap itu riding egress client ter-guard
+yang sama seperti poller kuota, dan satu detail protokol tidak punya dua pembaca. Lookup yang tidak
+menjawab (ditolak, tanpa project, atau resolver tidak dipasang) **tidak** membatalkan login: kredensial yang
+operator setujui disimpan juga, `project_id` dibiarkan tidak hadir di JSONB, dan panggilan berikutnya yang
+membutuhkannya bertanya ulang. Yang belum ada jalannya: `onboard_user_endpoint` milik entri `antigravity`,
+dipakai reference untuk akun yang belum punya project sama sekali (draft 061 §8 butir 6).
+
 
 ---
 

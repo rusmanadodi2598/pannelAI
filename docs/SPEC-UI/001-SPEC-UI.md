@@ -453,8 +453,8 @@ absent.
   drop it. The reference's own per-provider card (`NoAuthProxyCard.js`) renders only for a provider with
   no auth and disables its pool select while a rotation strategy is on; this card renders for every
   provider and keeps both selects editable, because here the pin and multi-pool failover coexist.
-- **OAuth section (U2, landed, OAuth providers only):** the section renders for a provider whose registry
-  entry says `has_oauth`, and the flow `GET /api/v1/providers/{id}/oauth/status` reports decides what it
+- **OAuth section (U2, landed, OAuth providers only):** the section renders for a provider whose listing
+  reports `has_oauth`, and the flow `GET /api/v1/providers/{id}/oauth/status` reports decides what it
   offers: the panel starts `code` and `device`, and for `connector` and `none` states that flow's reason
   instead of drawing a control that cannot act. `POST /api/v1/providers/{id}/oauth/start` is called with no
   body, because the gateway derives its own callback from its base URL, and the returned authorize URL is
