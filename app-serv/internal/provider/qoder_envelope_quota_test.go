@@ -76,6 +76,18 @@ func TestOpenStreamSeparatesABillingBlockFromAShortPool(t *testing.T) {
 			wantQuota: true, wantStatus: http.StatusForbidden, wantMessage: "daily limit",
 		},
 		{
+			name: "the queue code wrapped in a 403 asks for another try, it is not a spent account",
+			frame: qoderRefusalFrame(t, `{"code":"10605","message":"queue throttle"}`,
+				http.StatusForbidden, "FORBIDDEN"),
+			wantQuota: false, wantStatus: http.StatusTooManyRequests, wantMessage: "queue throttle",
+		},
+		{
+			name: "the same queue code under its own 429 keeps the 429",
+			frame: qoderRefusalFrame(t, `{"code":"10605","message":"queue throttle"}`,
+				http.StatusTooManyRequests, "TOO_MANY_REQUESTS"),
+			wantQuota: false, wantStatus: http.StatusTooManyRequests, wantMessage: "queue throttle",
+		},
+		{
 			name: "insufficient_quota nested in details keeps the retryable status",
 			frame: qoderRefusalFrame(t, qoderProviderErrorBody(t,
 				`{"error":{"message":"Workspace allocated quota exceeded, please increase your quota limit.",`+

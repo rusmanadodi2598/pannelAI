@@ -84,6 +84,34 @@ func TestClassify_RecognisesEachSeededSignature(t *testing.T) {
 			wantID:    "qoder.envelope.quota",
 		},
 		{
+			name: "a Qoder queue under a bare 403 is the short throttle, not a refused credential",
+			failure: Failure{
+				Provider: "qoder", Host: "api3.qoder.sh", Status: http.StatusForbidden,
+				Body: []byte(`{"code":"10605","message":"queue throttle"}`),
+			},
+			wantClass: domain.FailureRateLimitTemporary,
+			wantID:    "qoder.queue",
+			wantRetry: true,
+		},
+		{
+			name: "the same queue code arrives unquoted and on the CN host",
+			failure: Failure{
+				Provider: "qoder-cn", Host: "gateway.qoder.com.cn", Status: http.StatusForbidden,
+				Body: []byte(`{"code":10605,"message":"queued"}`),
+			},
+			wantClass: domain.FailureRateLimitTemporary,
+			wantID:    "qoder.queue",
+			wantRetry: true,
+		},
+		{
+			name: "a 403 naming no queue code is still a refused credential",
+			failure: Failure{
+				Provider: "qoder", Host: "api3.qoder.sh", Status: http.StatusForbidden,
+				Body: []byte(`{"code":"112","message":"quota"}`),
+			},
+			wantClass: domain.FailureAuthInvalid,
+		},
+		{
 			name: "the OpenCode gate refuses the gateway, not the key",
 			failure: Failure{
 				Provider: "opencode", Status: http.StatusBadGateway,

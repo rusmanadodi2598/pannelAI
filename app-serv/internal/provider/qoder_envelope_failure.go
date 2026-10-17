@@ -59,6 +59,11 @@ func qoderStreamFailure(envelope qoderEnvelope) *StreamFailure {
 		if payload.Message != "" {
 			message = payload.Message
 		}
+		// The vendor wraps its queue in a 403, which would class as a refused
+		// credential and park a working key for an hour, so this code picks the status.
+		if qoderFieldText(payload.Code) == "10605" {
+			return &StreamFailure{Status: http.StatusTooManyRequests, Message: clampFailureMessage(message)}
+		}
 		quota := isQoderBillingCode(qoderFieldText(payload.Code)) || strings.Contains(message, "pricingUrl")
 		// The model backend's own reason rides in `details` as a second JSON string.
 		// It is the sentence an operator can act on: "Error in upstream response"
@@ -123,8 +128,8 @@ func qoderQuotaDetail(raw string) (string, bool) {
 	return strings.TrimSpace(wrapped.Error.Message), true
 }
 
-// isQoderBillingCode recognises the codes the vendor sends when an account is spent
-// rather than transiently failing: 110 daily limit, 112 quota, 10605 queue throttle.
+// isQoderBillingCode recognises the codes that mean a spent account: 110 daily limit,
+// 112 quota. 10605 is a queue that recovers in tens of seconds and is answered above.
 func isQoderBillingCode(code string) bool {
-	return code == "110" || code == "112" || code == "10605"
+	return code == "110" || code == "112"
 }

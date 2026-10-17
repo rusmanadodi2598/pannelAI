@@ -132,27 +132,30 @@ func keepsWalking(action domain.FailureAction, code string) bool {
 }
 
 // translateCallError maps a transport failure onto the client-visible code,
-// keeping the upstream's status class: a timeout is UPSTREAM_TIMEOUT, a rate
-// limit is RATE_LIMITED, a request-shaped refusal is UPSTREAM_REJECTED, and
-// every other upstream failure is UPSTREAM_ERROR.
+// following the class the refusal was recognised as rather than the status that
+// carried it: a timeout is UPSTREAM_TIMEOUT, a rate limit is RATE_LIMITED, a
+// request-shaped refusal is UPSTREAM_REJECTED, and every other upstream failure
+// is UPSTREAM_ERROR.
 func (e *Engine) translateCallError(err error) error {
 	if failure, ok := AsUpstreamError(err); ok {
 		code := CodeUpstreamError
 		class := failureClass(err)
-		switch {
-		case class == domain.KeyFailureQuota:
+		switch class {
+		case domain.KeyFailureQuota:
 			// A spent allowance is reported as the account's own condition and
 			// not as the throttle its status claims: a client that backs off for
 			// five minutes and retries is spending a request the vendor has
 			// already refused for the rest of the period.
 			code = CodeBillingExhausted
-		case failure.Status == http.StatusTooManyRequests:
+		case domain.KeyFailureRateLimit:
+			// The class decides what the client is told: Qoder wraps its queue in a
+			// 403, and a 403 would tell the client its credential broke.
 			code = CodeRateLimited
-		case class == domain.KeyFailureBilling:
+		case domain.KeyFailureBilling:
 			// Named rather than folded into UPSTREAM_ERROR, so a client's retry policy
 			// and the panel both see nothing can serve until credit is bought.
 			code = CodeBillingExhausted
-		case class == domain.KeyFailureRequest:
+		case domain.KeyFailureRequest:
 			// The upstream refused this request itself (context overflow, an
 			// unsupported parameter): the same body would be refused by every
 			// other credential, so the chain stops and the client sees the

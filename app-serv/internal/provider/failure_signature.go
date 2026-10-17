@@ -115,6 +115,17 @@ var seedSignatures = []Signature{
 		Class: domain.FailureQuotaExhausted,
 	},
 	{
+		// The queue also arrives as a bare HTTP 403 whose body names the code, and a
+		// 403 read as an auth failure parks a working credential for an hour. Scoped
+		// to that status rather than to a host: intl sits on qoder.sh and CN on
+		// qoder.com.cn, and a numeric code this specific travels with its status.
+		ID:        "qoder.queue",
+		Status:    http.StatusForbidden,
+		Pattern:   regexp.MustCompile(`"code"\s*:\s*"?10605`),
+		Class:     domain.FailureRateLimitTemporary,
+		Retryable: RetryableAfter(true),
+	},
+	{
 		// OpenCode's free tier answers this gateway rather than this credential:
 		// no key on the account can serve it and retrying only spends the walk.
 		ID:        "opencode.free-tier-gate",
