@@ -32,7 +32,7 @@ func multiKeyRelayRepo(t *testing.T) *memEndpointRepo {
 		endpoint.AttachKey(domain.RehydrateUpstreamKey(
 			id, "ep-multi", "key-"+id, "sealed-"+id, "…hint",
 			i+1, domain.UpstreamKeyActive, nil, "", 0, domain.KeyRotationState{}, nil, now, now,
-		))
+			domain.OperatorState{}))
 	}
 	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{endpoint}
 	return repo

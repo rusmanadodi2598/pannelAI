@@ -31,6 +31,10 @@ const (
 	keyBillingBase   = 15 * time.Minute
 	keyBillingMax    = 6 * time.Hour
 	keyLadderMaxN    = 15
+	// keyQuotaCeiling is the last rung of the quota ladder and the window a provider
+	// with no stated reset period is assumed to have: the free-tier and event cadence
+	// most accounts here actually run on.
+	keyQuotaCeiling = 24 * time.Hour
 )
 
 // quotaLadder is the park a spent allowance earns, walked in steps rather than
@@ -41,19 +45,25 @@ var quotaLadder = []time.Duration{
 	15 * time.Minute,
 	time.Hour,
 	6 * time.Hour,
-	24 * time.Hour,
+	keyQuotaCeiling,
 }
 
 // quotaStep answers the n-th step of that ladder, holding to the last one past
-// the end rather than escalating beyond a day.
-func quotaStep(n int) time.Duration {
+// the end rather than escalating beyond a day. A provider whose allowance comes
+// back sooner caps the walk: parking a five-hour reset for a day would keep a
+// usable credential out of rotation for nineteen hours it never earned.
+func quotaStep(n int, ceiling time.Duration) time.Duration {
 	if n < 1 {
 		n = 1
 	}
 	if n > len(quotaLadder) {
 		n = len(quotaLadder)
 	}
-	return quotaLadder[n-1]
+	window := quotaLadder[n-1]
+	if ceiling > 0 && ceiling < window {
+		return ceiling
+	}
+	return window
 }
 
 // RateLimitCeiling is the §7.5 ceiling the rate-limit ladder stops at. The wait a client is
@@ -86,11 +96,12 @@ func backoff(base time.Duration, n int, ceiling time.Duration) time.Duration {
 // parks, and a key that recovers on its own is picked up by the next request
 // rather than sitting idle until a worker notices.
 //
-// A disabled key stays unavailable regardless of the window, because that state
-// comes from an operator rather than from health tracking.
+// An operator's disable works the same way and for the same reason, with one
+// difference: a park with no deadline is permanent, because a switched-off key
+// has no vendor reset for a window to point at.
 func (k UpstreamKey) Available(now time.Time) bool {
 	if k.status == UpstreamKeyDisabled {
-		return false
+		return k.disabledUntil != nil && !now.Before(*k.disabledUntil)
 	}
 	if k.rateLimitedUntil == nil {
 		return k.status == UpstreamKeyActive

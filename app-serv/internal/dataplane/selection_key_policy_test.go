@@ -28,7 +28,7 @@ func twoKeyEndpoint(t *testing.T) *memEndpointRepo {
 	endpoint.AttachKey(domain.RehydrateUpstreamKey(
 		"uky-1", "ep-1", "key-uky-1", "v1:nonce:cipher", "abc...wxyz",
 		1, domain.UpstreamKeyActive, &recent, "", 0, domain.KeyRotationState{}, nil, now, now,
-	))
+		domain.OperatorState{}))
 	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{endpoint}
 	return repo
 }

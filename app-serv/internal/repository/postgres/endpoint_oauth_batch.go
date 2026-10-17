@@ -23,11 +23,10 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// endpointExecer is the statement surface the endpoint UPDATE needs. Both
-// *pgxpool.Pool and pgx.Tx satisfy it, which is what lets one implementation of
-// the statement serve the single write path and the batch transaction instead of
-// two copies that drift.
-type endpointExecer interface {
+// dbExecer is the statement surface a write helper needs. Both *pgxpool.Pool and
+// pgx.Tx satisfy it, which is what lets one implementation of a statement serve
+// the single-write path and a batch transaction instead of two copies that drift.
+type dbExecer interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 }
 
@@ -62,9 +61,10 @@ func (r *EndpointRepository) ImportOAuthBatch(ctx context.Context, endpoints []d
 }
 
 // updateEndpoint persists an endpoint's own fields through any execer, including
-// its OAuth state (stored as ciphertext) and its account identity. Keys are
-// untouched: they have their own methods, a key change being a different concern.
-func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint) error {
+// its OAuth state (stored as ciphertext), its account identity, and the operator's
+// marks. Keys are untouched: they have their own methods, a key change being a
+// different concern.
+func updateEndpoint(ctx context.Context, exec dbExecer, endpoint domain.UpstreamEndpoint) error {
 	oauthJSON, err := marshalOAuth(endpoint.OAuth())
 	if err != nil {
 		return err
@@ -74,6 +74,10 @@ func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.Up
 		return err
 	}
 	testJSON, err := marshalTestStatus(endpoint.TestStatus())
+	if err != nil {
+		return err
+	}
+	tagsJSON, err := marshalTags(endpoint.Tags())
 	if err != nil {
 		return err
 	}
@@ -96,8 +100,10 @@ UPDATE upstream_endpoints
        error_code = $15,
        proxy_pool_id = $16,
        oauth_retry_at = $17,
-       oauth_retry_rounds = $18
- WHERE id = $19`
+       oauth_retry_rounds = $18,
+       tags = $19,
+       disabled_until = $20
+ WHERE id = $21`
 
 	args := []any{
 		endpoint.Label(), endpoint.Priority(), string(endpoint.Status()),
@@ -105,7 +111,7 @@ UPDATE upstream_endpoints
 		endpoint.LastUsedAt(), endpoint.UpdatedAt(),
 	}
 	args = append(args, parityColumns(endpoint)...)
-	args = append(args, endpoint.ID())
+	args = append(args, tagsJSON, endpoint.DisabledUntil(), endpoint.ID())
 	tag, err := exec.Exec(ctx, q, args...)
 	if err != nil {
 		return translateEndpointError(err)
@@ -120,7 +126,7 @@ UPDATE upstream_endpoints
 // The rotation loaded the aggregate before it went to the vendor, so re-sending the
 // other columns would restore whatever the operator changed in the meantime.
 func updateEndpointTokens(
-	ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential,
+	ctx context.Context, exec dbExecer, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential,
 ) error {
 	oauthJSON, err := marshalOAuth(endpoint.OAuth())
 	if err != nil {

@@ -34,6 +34,9 @@ func buildProxies(cfg config.Config, pool *pgxpool.Pool, sealer service.Credenti
 		Repo:   postgres.NewProxyRepository(pool),
 		Sealer: sealer,
 		Prober: newProxyProber(guard, cfg.ProxyTestURL),
+		// The endpoint repository answers which connections pin a candidate, which is the
+		// only way a bulk erase can report what it takes down instead of stranding it.
+		Pins: postgres.NewEndpointRepository(pool),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("proxy wiring: %w", err)

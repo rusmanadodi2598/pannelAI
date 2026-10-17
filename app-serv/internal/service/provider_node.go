@@ -3,7 +3,7 @@
 // @file      internal/service/provider_node.go
 // @for       The custom provider node lifecycle: create, list, inspect, patch, delete, and connectivity test (SPEC-API-001 §7.4).
 // @uses      internal/domain, internal/repository, context, strings, time.
-// @reason    §7.4 lets an operator define their own OpenAI-compatible or Anthropic-compatible base URL, and a node's prefix becomes a model-string namespace. That gives the service two rules the node row itself cannot hold: a prefix must not collide with a registry identifier or alias, and a delete has to take the node's endpoints and model rows with it while refusing a node a combo or an alias still names. Both need the registry, the endpoints table, the model catalog, the combo table and the alias set, not just the node row (AGENTS.md §1.5 keeps that orchestration here).
+// @reason    §7.4 lets an operator define their own OpenAI-compatible or Anthropic-compatible base URL, and a node's prefix becomes a model-string namespace. That gives the service two rules the node row itself cannot hold: a prefix must not collide with a registry identifier or alias, and a delete has to take the node's endpoints and model rows with it while refusing a node a combo or an alias still names. Both need the registry, the combo table and the alias set, not just the node row (AGENTS.md §1.5 keeps that orchestration here); the erasure itself is one store call because §2.2 makes the repository the place a transaction belongs.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -21,44 +21,25 @@ import (
 
 // NodeService implements SPEC-API-001 §7.4.
 type NodeService struct {
-	store     repository.NodeRepository
-	index     ProviderIndex
-	endpoints EndpointEraser
-	models    ModelEraser
-	combos    ComboLister
-	aliases   AliasLister
-	prober    NodeProber
-	clock     func() time.Time
+	store   repository.NodeRepository
+	index   ProviderIndex
+	combos  ComboLister
+	aliases AliasLister
+	prober  NodeProber
+	clock   func() time.Time
 }
 
-// EndpointEraser removes every endpoint that references a provider id, which is
-// what lets a node delete take its connections with it. An endpoint is routed by
-// the base URL and wire format stored on the node row, so a node gone leaves a
-// connection nothing can answer with. The keys go through the cascade the schema
-// declares on upstream_keys.endpoint_id.
-type EndpointEraser interface {
-	DeleteByProvider(ctx context.Context, providerID string) error
-}
-
-// ModelEraser removes the model rows stored under a provider id, custom and disabled
-// alike. They key on the provider rather than reference it, so no database cascade
-// clears them when the node goes, and without this every delete of a node that had
-// declared models left rows nothing can read.
-type ModelEraser interface {
-	DeleteForProvider(ctx context.Context, providerID string) error
-}
-
-// NodeServiceDeps holds the collaborators the service needs. Prober may be nil: a
-// deployment without one still serves node CRUD. Combos and Aliases may be nil: a
-// deployment without those tables skips the reference checks they stand for.
+// NodeServiceDeps holds the collaborators the service needs. The node erasure and its
+// dependents live behind repository.NodeRepository.DeleteCascade, in one transaction,
+// because none of those references is a foreign key the schema could carry. Prober may
+// be nil: a deployment without one still serves node CRUD. Combos and Aliases may be
+// nil: a deployment without those tables skips the reference checks they stand for.
 type NodeServiceDeps struct {
-	Store     repository.NodeRepository
-	Index     ProviderIndex
-	Endpoints EndpointEraser
-	Models    ModelEraser
-	Combos    ComboLister
-	Aliases   AliasLister
-	Prober    NodeProber
+	Store   repository.NodeRepository
+	Index   ProviderIndex
+	Combos  ComboLister
+	Aliases AliasLister
+	Prober  NodeProber
 }
 
 // NewNodeService validates deps and returns a ready service.
@@ -69,21 +50,13 @@ func NewNodeService(deps NodeServiceDeps) (*NodeService, error) {
 	if deps.Index == nil {
 		return nil, domain.NewValidationError("provider index is required")
 	}
-	if deps.Endpoints == nil {
-		return nil, domain.NewValidationError("endpoint eraser is required")
-	}
-	if deps.Models == nil {
-		return nil, domain.NewValidationError("model eraser is required")
-	}
 	return &NodeService{
-		store:     deps.Store,
-		index:     deps.Index,
-		endpoints: deps.Endpoints,
-		models:    deps.Models,
-		combos:    deps.Combos,
-		aliases:   deps.Aliases,
-		prober:    deps.Prober,
-		clock:     time.Now,
+		store:   deps.Store,
+		index:   deps.Index,
+		combos:  deps.Combos,
+		aliases: deps.Aliases,
+		prober:  deps.Prober,
+		clock:   time.Now,
 	}, nil
 }
 
@@ -199,7 +172,9 @@ func (s *NodeService) Update(ctx context.Context, id string, patch NodePatch) (d
 // writable on it, so its rows cannot outlive the node usefully and cannot be moved first;
 // keys follow the schema's own cascade. A combo naming the node or an alias targeting its
 // models is refused by name, before anything is erased. These references are id strings
-// rather than foreign keys, so no schema constraint can carry any of it.
+// rather than foreign keys, so no schema constraint can carry any of it and the erasure
+// runs as one transaction in the store: a cascade that stopped midway would leave
+// connections pointing at a base URL that no longer exists.
 func (s *NodeService) Delete(ctx context.Context, id string) error {
 	node, err := s.store.GetByID(ctx, id)
 	if err != nil {
@@ -211,13 +186,7 @@ func (s *NodeService) Delete(ctx context.Context, id string) error {
 	if err := s.rejectAliasReference(ctx, node.ID(), node.Prefix()); err != nil {
 		return err
 	}
-	if err := s.endpoints.DeleteByProvider(ctx, node.ID()); err != nil {
-		return err
-	}
-	if err := s.models.DeleteForProvider(ctx, node.ID()); err != nil {
-		return err
-	}
-	if err := s.store.Delete(ctx, id); err != nil {
+	if err := s.store.DeleteCascade(ctx, node.ID()); err != nil {
 		return err
 	}
 	s.invalidateOverlay()

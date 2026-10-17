@@ -28,7 +28,8 @@ const endpointColumns = `id, provider_id, label, auth_type, priority, status,
 	last_error, last_error_at, error_code, proxy_pool_id, quota_cooldown_until,
 	oauth_retry_at, oauth_retry_rounds,
 	sa_project_id, sa_location,
-	consecutive_errors, last_selected_at`
+	consecutive_errors, last_selected_at,
+	tags, disabled_until`
 
 // endpointRow is one upstream_endpoints row, kept as raw column values rather
 // than as an aggregate so the page's keys can be attached from one batched read
@@ -66,6 +67,12 @@ type endpointRow struct {
 	// back as an account that has never failed, which is what it is.
 	consecutiveErrors int
 	lastSelectedAt    *time.Time
+
+	// The operator's marks: the tag set a bulk action addresses this account by, and
+	// the deadline its park runs out at. A row created before migrations 000022 and
+	// 000023 reads back the column defaults, which are the same values.
+	tagsJSON      *string
+	disabledUntil *time.Time
 }
 
 // scanEndpointRow reads one endpoint row, including its window count when the
@@ -81,6 +88,7 @@ func scanEndpointRow(s scanner, extra ...any) (endpointRow, error) {
 		&row.quotaCooldownUntil, &row.oauthRetryAt, &row.oauthRetryRounds,
 		&row.saProjectID, &row.saLocation,
 		&row.consecutiveErrors, &row.lastSelectedAt,
+		&row.tagsJSON, &row.disabledUntil,
 	}
 	dest = append(dest, extra...)
 	if err := s.Scan(dest...); err != nil {
@@ -105,6 +113,10 @@ func (row endpointRow) aggregate(keys []domain.UpstreamKey) (domain.UpstreamEndp
 	if err != nil {
 		return domain.UpstreamEndpoint{}, err
 	}
+	tags, err := unmarshalTags(row.tagsJSON)
+	if err != nil {
+		return domain.UpstreamEndpoint{}, err
+	}
 	return domain.RehydrateUpstreamEndpoint(
 		row.id, row.providerID, row.label,
 		domain.UpstreamAuthType(row.authType), row.priority,
@@ -112,6 +124,7 @@ func (row endpointRow) aggregate(keys []domain.UpstreamKey) (domain.UpstreamEndp
 		row.rateLimitedUntil, row.lastUsedAt, row.createdAt, row.updatedAt, keys,
 		domain.ServiceAccountRef{ProjectID: row.saProjectID, Location: row.saLocation},
 		row.parity(),
+		domain.OperatorState{Tags: tags, DisabledUntil: row.disabledUntil},
 	), nil
 }
 

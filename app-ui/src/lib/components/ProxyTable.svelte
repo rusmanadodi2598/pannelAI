@@ -20,18 +20,25 @@
 		type ProxyProtocol
 	} from '$lib/schemas/proxy';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { rowChecked } from '$lib/utils/selection';
 	import { formatTimestamp } from '$lib/utils/time';
 
 	const EditIcon = ROW_ACTION_ICONS.edit.icon;
 	const TestIcon = ROW_ACTION_ICONS.test.icon;
 	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
+	const DisableIcon = ROW_ACTION_ICONS.disable.icon;
+	const EnableIcon = ROW_ACTION_ICONS.enable.icon;
 
 	let {
 		proxies,
 		testingId,
 		onedit,
 		ontest,
-		ondelete
+		ondelete,
+		ontoggle,
+		selected = [],
+		allSelected = false,
+		onselect
 	}: {
 		proxies: Proxy[];
 		/** The row whose probe is in flight, so only that row shows the wait. */
@@ -39,7 +46,18 @@
 		onedit: (proxy: Proxy) => void;
 		ontest: (proxy: Proxy) => void;
 		ondelete: (proxy: Proxy) => void;
+		/** Switching one candidate in or out of the pool. */
+		ontoggle: (proxy: Proxy, enabled: boolean) => void;
+		/** Ids the caller has selected; present alongside `onselect` to render the checkbox column. */
+		selected?: string[];
+		/** How many candidates the server holds, which is what Select-All addresses. */
+		total?: number;
+		/** Select-All is on, which contains every candidate the pool holds. */
+		allSelected?: boolean;
+		onselect?: (id: string, checked: boolean) => void;
 	} = $props();
+
+	const selectable = $derived(onselect !== undefined);
 
 	function protocolLabel(protocol: string): string {
 		return PROXY_PROTOCOL_LABELS[protocol as ProxyProtocol] ?? protocol;
@@ -83,7 +101,23 @@
 					<td data-label="Port" class="px-3 py-2 tabular-nums">{proxy.port}</td>
 					<td data-label="Username" class="px-3 py-2">{proxy.username || 'None'}</td>
 					<td data-label="Password" class="px-3 py-2">{proxy.has_password ? 'Set' : 'Not set'}</td>
-					<td data-label="Enabled" class="px-3 py-2">{proxy.enabled ? 'Enabled' : 'Disabled'}</td>
+					<td data-label="Enabled" class="px-3 py-2">
+						<button
+							type="button"
+							class={actionBase}
+							aria-label={proxy.enabled ? `Disable ${proxy.label}` : `Enable ${proxy.label}`}
+							title={proxy.enabled ? `Disable ${proxy.label}` : `Enable ${proxy.label}`}
+							onclick={() => ontoggle(proxy, !proxy.enabled)}
+						>
+							{#if proxy.enabled}
+								<DisableIcon class="size-4" aria-hidden="true" />
+							{:else}
+								<EnableIcon class="size-4" aria-hidden="true" />
+							{/if}
+						</button>
+						<!-- The word beside the glyph: §8.11.8 refuses a state readable only by hue. -->
+						<span class="ml-1 text-xs">{proxy.enabled ? 'Enabled' : 'Disabled'}</span>
+					</td>
 					<td data-label="Last test" class="px-3 py-2">
 						{#if proxy.status}
 							<span>{proxyTestStateLabel(proxy.status.state)} in {proxy.status.latency_ms}ms</span>
@@ -103,6 +137,19 @@
 					</td>
 					<td data-label="Actions" class="px-3 py-2">
 						<div class="flex flex-wrap gap-x-1">
+							{#if selectable}
+								<!-- Selection belongs with the actions you can take, not on a labelled line of
+									 its own once the card layout takes over below 768px. -->
+								<label class="flex min-h-11 min-w-11 items-center justify-center">
+									<input
+										type="checkbox"
+										class="size-4"
+										aria-label={`Select ${proxy.label} for bulk actions`}
+										checked={rowChecked({ ids: selected, all: allSelected }, proxy.id)}
+										onchange={(event) => onselect?.(proxy.id, event.currentTarget.checked)}
+									/>
+								</label>
+							{/if}
 							<button
 								type="button"
 								class={actionClass}

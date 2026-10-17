@@ -22,6 +22,15 @@ import (
 type EndpointFilter struct {
 	ProviderID string
 	Status     string
+	// IDs narrows the list to an explicit set. An empty slice narrows nothing: a
+	// bulk action that named no ids never reaches here, the selector refuses first.
+	IDs []string
+	// Tag narrows to the rows whose tag set contains this label, which is the
+	// containment the GIN index in migration 000022 exists to answer. The value is
+	// already in the domain's canonical spelling.
+	Tag string
+	// AuthType narrows to rows authenticating one way, in the wire vocabulary.
+	AuthType string
 }
 
 // EndpointRepository is the storage boundary for upstream endpoints and their
@@ -93,6 +102,22 @@ type EndpointRepository interface {
 	// Reorder assigns new priorities to every endpoint of one provider, so a
 	// priority change cannot leave two endpoints claiming the same slot.
 	Reorder(ctx context.Context, providerID string, orderedIDs []string) error
+
+	// ProxyPins answers, for each pool id given, which providers route endpoints through
+	// it and how many endpoints each of those pins holds.
+	//
+	// The reference is an id string rather than a foreign key, so deleting a proxy cannot
+	// be refused by the schema and cannot be reported by it either: an operator erasing a
+	// batch of candidates has to be told which connections lose their egress path before
+	// the erasure happens.
+	ProxyPins(ctx context.Context, poolIDs []string) (map[string][]ProxyPin, error)
+}
+
+// ProxyPin is one provider's stake in one proxy pool: how many of its endpoints send
+// their egress through it.
+type ProxyPin struct {
+	ProviderID string
+	Endpoints  int
 }
 
 // NodeRepository is the storage boundary for custom provider nodes
@@ -114,4 +139,10 @@ type NodeRepository interface {
 	// Delete removes a node, leaving the endpoints that reference it to the caller:
 	// the reference is an id string, so no database constraint can carry it.
 	Delete(ctx context.Context, id string) error
+
+	// DeleteCascade removes a node together with the endpoints that reference it and
+	// the model rows stored under its id, in one transaction. Those references are id
+	// strings rather than foreign keys, so the erasure is either complete or absent:
+	// a node deleted alone would leave connections nothing can answer with.
+	DeleteCascade(ctx context.Context, id string) error
 }

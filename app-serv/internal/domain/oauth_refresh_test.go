@@ -88,11 +88,12 @@ func TestMarkUnhealthySetsErrorStatusAndReason(t *testing.T) {
 	cases := []struct {
 		name    string
 		start   UpstreamEndpointStatus
+		want    UpstreamEndpointStatus
 		message string
 	}{
-		{"from active", UpstreamEndpointActive, "refresh failed: token refused"},
-		{"from disabled", UpstreamEndpointDisabled, ""},
-		{"empty message still records", UpstreamEndpointActive, ""},
+		{"from active", UpstreamEndpointActive, UpstreamEndpointError, "refresh failed: token refused"},
+		{"from disabled the operator keeps the state", UpstreamEndpointDisabled, UpstreamEndpointDisabled, ""},
+		{"empty message still records", UpstreamEndpointActive, UpstreamEndpointError, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -106,8 +107,8 @@ func TestMarkUnhealthySetsErrorStatusAndReason(t *testing.T) {
 				}
 			}
 			endpoint.MarkUnhealthy(tc.message, now)
-			if endpoint.Status() != UpstreamEndpointError {
-				t.Fatalf("status = %q, want error", endpoint.Status())
+			if endpoint.Status() != tc.want {
+				t.Fatalf("status = %q, want %q", endpoint.Status(), tc.want)
 			}
 			if got := endpoint.TestStatus().State(); got != EndpointTestFail {
 				t.Fatalf("test state = %q, want fail", got)

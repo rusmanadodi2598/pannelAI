@@ -116,16 +116,26 @@ func (r *ModelCatalogRepository) DeleteForProvider(ctx context.Context, provider
 		_ = tx.Rollback(ctx)
 	}()
 
+	if err := deleteModelRowsForProvider(ctx, tx, providerID); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("deleting the models of %s: %w", providerID, err)
+	}
+	return nil
+}
+
+// deleteModelRowsForProvider erases both model tables of one provider id through any
+// execer, so the node cascade runs them inside its transaction instead of carrying a
+// second spelling that can drift from this one.
+func deleteModelRowsForProvider(ctx context.Context, exec dbExecer, providerID string) error {
 	for _, statement := range []string{
 		`DELETE FROM models_custom WHERE provider_id = $1`,
 		`DELETE FROM models_disabled WHERE provider_id = $1`,
 	} {
-		if _, err := tx.Exec(ctx, statement, providerID); err != nil {
+		if _, err := exec.Exec(ctx, statement, providerID); err != nil {
 			return translateCatalogError(err)
 		}
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("deleting the models of %s: %w", providerID, err)
 	}
 	return nil
 }

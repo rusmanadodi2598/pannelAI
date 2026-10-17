@@ -38,6 +38,15 @@ func (s *OAuthFlowService) sweepProvider(ctx context.Context, entry registry.Pro
 		if domain.OAuthRefreshState(endpoint.OAuth(), refreshLead(entry.OAuth), now) != domain.RefreshDue {
 			continue
 		}
+		if endpoint.Status() == domain.UpstreamEndpointDisabled {
+			// The stored refresh token stays live across a disable, so this check is the
+			// only thing stopping the sweep spending a vendor grant per switched-off account.
+			outcome.Skipped = append(outcome.Skipped, OAuthRefreshSkipped{
+				EndpointID: endpoint.ID(),
+				Reason:     "endpoint is disabled",
+			})
+			continue
+		}
 		expires, err := s.refreshEndpoint(ctx, entry.OAuth, endpoint)
 		if err != nil {
 			outcome.Skipped = append(outcome.Skipped, OAuthRefreshSkipped{

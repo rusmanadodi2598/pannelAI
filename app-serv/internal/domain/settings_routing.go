@@ -164,19 +164,37 @@ type RoutingSettings struct {
 }
 
 // defaultRoutingSettings is the §7.14 routing default: combo fallback with a
-// sticky of 1, credential fill-first with a sticky of 3.
+// sticky of 1, credential fill-first with a sticky of 3, and the five-hour reset
+// cadence the vendors below publish for their free and event allowances.
+//
+// The cadence is stated as data rather than as a branch at the call site, so it is one
+// document an operator can retune through §7.14 without a rebuild, and the quota ladder
+// and an operator's park read the same answer from HealthFor.
 func defaultRoutingSettings() RoutingSettings {
+	fiveHours := KeyParkWindows{QuotaSeconds: int((5 * time.Hour).Seconds())}
 	return RoutingSettings{
 		ComboStrategy:      ComboFallback,
 		ComboStickyLimit:   1,
 		StickyLimit:        DefaultStickyLimit,
 		FallbackStrategy:   RotationFillFirst,
-		ProviderStrategies: map[string]ProviderStrategy{},
+		ProviderStrategies: fiveHourResetStrategies(fiveHours),
 		Failover: FailoverBudget{
 			TotalMS:     DefaultFailoverTotalMS,
 			MaxAttempts: DefaultFailoverAttempts,
 		},
 	}
+}
+
+// fiveHourResetStrategies seeds the providers whose allowance returns on a five-hour
+// window rather than a daily one: the three the owner named and the two CLI-shaped
+// siblings that read the same vendor period.
+func fiveHourResetStrategies(windows KeyParkWindows) map[string]ProviderStrategy {
+	ids := []string{"openai", "claude", "gemini", "gemini-cli", "antigravity"}
+	out := make(map[string]ProviderStrategy, len(ids))
+	for _, id := range ids {
+		out[id] = ProviderStrategy{KeyPark: windows}
+	}
+	return out
 }
 
 // Normalized fills the keys a stored row written before this change cannot

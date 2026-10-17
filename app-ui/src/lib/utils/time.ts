@@ -88,3 +88,22 @@ export function elapsedText(value: string, now: number): string {
 
 	return formatTimestamp(value);
 }
+
+/**
+ * How long a request that has not finished has been running.
+ *
+ * The mirror of `elapsedText` for a row that is still open, where "just now" would be a frozen figure: the
+ * number an operator reads there is how long the gateway has been holding the request, and the live panel
+ * drops an in-flight entry at a minute. An instant ahead of this clock is a gateway clock running loose,
+ * not a request that started in the future, so it reads as 0s rather than as a negative duration.
+ */
+export function runningText(value: string, now: number): string {
+	const parsed = Date.parse(value);
+	if (Number.isNaN(parsed)) return 'Invalid timestamp';
+
+	const elapsed = Math.max(0, now - parsed);
+	if (elapsed < MINUTE_MS) return `${Math.floor(elapsed / 1000)}s`;
+	if (elapsed < HOUR_MS) return `${Math.floor(elapsed / MINUTE_MS)}m`;
+
+	return `${Math.floor(elapsed / HOUR_MS)}h`;
+}

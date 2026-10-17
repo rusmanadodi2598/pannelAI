@@ -51,12 +51,16 @@ func OAuthRefreshState(cred *OAuthCredential, lead time.Duration, now time.Time)
 	return RefreshFresh
 }
 
-// MarkUnhealthy moves the endpoint to the error state and records why, so the
-// panel shows a reason rather than a bare status. Only health tracking calls
-// this; ParseUpstreamEndpointStatus deliberately refuses "error" from the
-// wire because a client must not be able to hide a usable account.
+// MarkUnhealthy records why health tracking considers an account dead and moves it
+// to the error state, unless an operator holds it `disabled`: that state is not
+// health tracking's to overwrite, the same ownership MarkHealthy enforces from the
+// other side. Only health tracking calls this; ParseUpstreamEndpointStatus
+// deliberately refuses "error" from the wire because a client must not be able to
+// hide a usable account.
 func (e *UpstreamEndpoint) MarkUnhealthy(message string, now time.Time) {
-	e.status = UpstreamEndpointError
+	if e.status != UpstreamEndpointDisabled {
+		e.status = UpstreamEndpointError
+	}
 	e.RecordTest(string(EndpointTestFail), 0, message, now)
 }
 

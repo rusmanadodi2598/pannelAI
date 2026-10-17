@@ -115,12 +115,11 @@ UPDATE provider_nodes
 	return nil
 }
 
-// Delete removes a node. It does not touch the endpoints that reference it:
+// Delete removes a node row alone. It does not touch the endpoints that reference it:
 // provider_nodes carries no foreign key to upstream_endpoints, an endpoint
 // references a provider by id string, and a built-in provider has no node row at
-// all, so a constraint is not expressible here. The service erases those rows first
-// (service.EndpointEraser), which keeps the ordering a destructive delete needs:
-// nothing is dropped until the guard that can still refuse has passed.
+// all, so a constraint is not expressible here. Deleting a node through the service
+// uses DeleteCascade instead; this is the one statement that boundary ends with.
 func (r *NodeRepository) Delete(ctx context.Context, id string) error {
 	tag, err := r.pool.Exec(ctx, `DELETE FROM provider_nodes WHERE id = $1`, id)
 	if err != nil {
@@ -128,6 +127,43 @@ func (r *NodeRepository) Delete(ctx context.Context, id string) error {
 	}
 	if tag.RowsAffected() == 0 {
 		return domain.ErrNodeNotFound
+	}
+	return nil
+}
+
+// DeleteCascade erases a node and everything that names it by id string in one
+// transaction: its endpoints (whose keys follow the schema's own cascade), then the
+// custom and disabled model rows stored under its id, then the node row itself.
+//
+// None of those three references is a foreign key, so no constraint can keep them
+// consistent and a statement that fails midway would leave a panel holding accounts
+// pointing at a base URL that no longer exists. The node row goes last for the same
+// reason the service runs its guards first: a missing node aborts the transaction
+// rather than erasing dependents for a provider that was never there.
+func (r *NodeRepository) DeleteCascade(ctx context.Context, id string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return translateNodeError(err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx) // reason: a rollback after a commit or a reported failure cannot change the caller's outcome.
+	}()
+
+	if err := deleteEndpointsByProvider(ctx, tx, id); err != nil {
+		return err
+	}
+	if err := deleteModelRowsForProvider(ctx, tx, id); err != nil {
+		return err
+	}
+	tag, err := tx.Exec(ctx, `DELETE FROM provider_nodes WHERE id = $1`, id)
+	if err != nil {
+		return translateNodeError(err)
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrNodeNotFound
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return translateNodeError(err)
 	}
 	return nil
 }

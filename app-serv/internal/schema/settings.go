@@ -66,6 +66,7 @@ type KeyParkResponse struct {
 	RateLimitSeconds int `json:"rate_limit_seconds,omitempty"`
 	TransientSeconds int `json:"transient_seconds,omitempty"`
 	BillingSeconds   int `json:"billing_seconds,omitempty"`
+	QuotaSeconds     int `json:"quota_seconds,omitempty"`
 }
 
 // ProviderStrategyResponse is one provider's rotation override. An absent field

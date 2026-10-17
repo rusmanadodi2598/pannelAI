@@ -26,6 +26,7 @@
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { isLastActiveApiKey, parkProvenance } from '$lib/utils/routing';
+	import { rowChecked } from '$lib/utils/selection';
 	import { countdownText, elapsedText, formatTimestamp } from '$lib/utils/time';
 
 	let {
@@ -35,7 +36,10 @@
 		now,
 		ontest,
 		onsettled,
-		onremove
+		onremove,
+		selected = [],
+		allSelected = false,
+		onselect
 	}: {
 		keys: EndpointKey[];
 		authType: string;
@@ -45,7 +49,19 @@
 		ontest: (key: EndpointKey) => void;
 		onsettled: (key: EndpointKey, status: 'active' | 'disabled') => void;
 		onremove: (key: EndpointKey) => void;
+		/** Ids selected in this drawer. Present alongside `onselect` to render the checkbox. */
+		selected?: string[];
+		/**
+		 * Selecting here addresses the keys of this one endpoint. `all` therefore means every key
+		 * this connection holds, never every key across providers: the drawer has no server scope
+		 * for that, and a control that promised one would be counting a set it cannot see.
+		 */
+		/** Select-All is on, which contains every key this connection holds. */
+		allSelected?: boolean;
+		onselect?: (id: string, checked: boolean) => void;
 	} = $props();
+
+	const selectable = $derived(onselect !== undefined);
 
 	const PreviousIcon = CONTROL_ICONS.previous.icon;
 	const NextIcon = CONTROL_ICONS.next.icon;
@@ -91,7 +107,19 @@
 				{@const isActive = key.status === ENDPOINT_STATUS_ACTIVE}
 				{@const provenance = parkProvenance(key)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td data-label="Label" class="px-3 py-2">{key.label || 'Unlabelled'}</td>
+					<td data-label="Label" class="px-3 py-2">
+						{key.label || 'Unlabelled'}
+						{#if key.tags?.length}
+							<span class="ml-1 inline-flex flex-wrap gap-1">
+								{#each key.tags as tag (tag)}
+									<span
+										class="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-1 text-xs"
+										>{tag}</span
+									>
+								{/each}
+							</span>
+						{/if}
+					</td>
 					<td data-label="Key" class="px-3 py-2">{key.key_hint}</td>
 					<td data-label="Priority" class="px-3 py-2 tabular-nums">{key.priority}</td>
 					<td data-label="Status" class="px-3 py-2">
@@ -117,6 +145,19 @@
 					<td data-label="Errors" class="px-3 py-2 tabular-nums">{key.consecutive_errors}</td>
 					<td data-label="Actions" class="px-3 py-2">
 						<div class="flex flex-wrap items-center gap-1">
+							{#if selectable}
+								<!-- Selection sits with the actions you can take on this credential rather than on
+									 a labelled line of its own once the row becomes a card below 768px. -->
+								<label class="flex min-h-11 min-w-11 items-center justify-center">
+									<input
+										type="checkbox"
+										class="size-4"
+										aria-label={`Select ${key.label || key.key_hint} for bulk actions`}
+										checked={rowChecked({ ids: selected, all: allSelected }, key.id)}
+										onchange={(event) => onselect?.(key.id, event.currentTarget.checked)}
+									/>
+								</label>
+							{/if}
 							<button
 								type="button"
 								class={actionClass}

@@ -150,6 +150,10 @@ func insertEndpoint(ctx context.Context, tx pgx.Tx, endpoint domain.UpstreamEndp
 	if err != nil {
 		return err
 	}
+	tagsJSON, err := marshalTags(endpoint.Tags())
+	if err != nil {
+		return err
+	}
 	const q = `
 INSERT INTO upstream_endpoints
     (id, provider_id, label, auth_type, priority, status, oauth, account,
@@ -157,9 +161,9 @@ INSERT INTO upstream_endpoints
      global_priority, default_model, consecutive_use_count,
      last_error, last_error_at, error_code, proxy_pool_id,
      oauth_retry_at, oauth_retry_rounds,
-     sa_project_id, sa_location)
+     sa_project_id, sa_location, tags, disabled_until)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`
+        $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)`
 
 	serviceAccount := endpoint.ServiceAccount()
 	args := []any{
@@ -169,7 +173,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
 		endpoint.LastUsedAt(), endpoint.CreatedAt(), endpoint.UpdatedAt(),
 	}
 	args = append(args, parityColumns(endpoint)...)
-	args = append(args, serviceAccount.ProjectID, serviceAccount.Location)
+	args = append(args, serviceAccount.ProjectID, serviceAccount.Location, tagsJSON, endpoint.DisabledUntil())
 	if _, err := tx.Exec(ctx, q, args...); err != nil {
 		return translateEndpointError(err)
 	}

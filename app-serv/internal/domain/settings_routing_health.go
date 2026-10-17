@@ -28,6 +28,10 @@ const (
 	// second step is still inside two hours and it reaches its ceiling by doubling
 	// rather than starting past it.
 	MaxKeyParkBilling = 3600
+	// MaxKeyParkQuota is the quota ladder's own ceiling: a cap configured above the
+	// last rung changes nothing, so the bound is the rung rather than a number that
+	// would let a write store a no-op.
+	MaxKeyParkQuota = 86400
 )
 
 // KeyParkWindows is the parking budget as the routing group stores it: seconds,
@@ -37,13 +41,18 @@ type KeyParkWindows struct {
 	RateLimitSeconds int `json:"rate_limit_seconds,omitempty"`
 	TransientSeconds int `json:"transient_seconds,omitempty"`
 	BillingSeconds   int `json:"billing_seconds,omitempty"`
+	// QuotaSeconds is how long a provider's allowance actually takes to come back. One
+	// field answers two questions because they are the same fact: it caps the quota
+	// ladder, and it is the window an operator's disable parks for on a provider whose
+	// reset is shorter than a day.
+	QuotaSeconds int `json:"quota_seconds,omitempty"`
 }
 
 // IsEmpty reports whether the entry names no window at all, which is what makes a
 // provider override with nothing in it dead configuration.
 func (w KeyParkWindows) IsEmpty() bool {
 	return w.AuthSeconds == 0 && w.RateLimitSeconds == 0 &&
-		w.TransientSeconds == 0 && w.BillingSeconds == 0
+		w.TransientSeconds == 0 && w.BillingSeconds == 0 && w.QuotaSeconds == 0
 }
 
 // KeyParkPatch is the parking group of a routing PATCH: one pointer per window, so
@@ -53,6 +62,7 @@ type KeyParkPatch struct {
 	RateLimitSeconds *int
 	TransientSeconds *int
 	BillingSeconds   *int
+	QuotaSeconds     *int
 }
 
 // applyTo writes the windows the patch names, and only those.
@@ -61,6 +71,7 @@ func (p KeyParkPatch) applyTo(dst *KeyParkWindows) {
 	applyInt(&dst.RateLimitSeconds, p.RateLimitSeconds)
 	applyInt(&dst.TransientSeconds, p.TransientSeconds)
 	applyInt(&dst.BillingSeconds, p.BillingSeconds)
+	applyInt(&dst.QuotaSeconds, p.QuotaSeconds)
 }
 
 // Merged replaces the windows this entry names with the override's own, field by
@@ -79,6 +90,9 @@ func (w KeyParkWindows) Merged(over KeyParkWindows) KeyParkWindows {
 	if over.BillingSeconds != 0 {
 		w.BillingSeconds = over.BillingSeconds
 	}
+	if over.QuotaSeconds != 0 {
+		w.QuotaSeconds = over.QuotaSeconds
+	}
 	return w
 }
 
@@ -92,6 +106,7 @@ func (w KeyParkWindows) Policy() KeyHealthPolicy {
 		RateLimitWindow: secondsWindow(w.RateLimitSeconds, keyRateLimitBase, MaxKeyParkRateLimit),
 		TransientWindow: secondsWindow(w.TransientSeconds, keyTransientCooldown, MaxKeyParkTransient),
 		BillingWindow:   secondsWindow(w.BillingSeconds, keyBillingBase, MaxKeyParkBilling),
+		QuotaWindow:     secondsWindow(w.QuotaSeconds, keyQuotaCeiling, MaxKeyParkQuota),
 	}
 }
 
@@ -105,101 +120,6 @@ func secondsWindow(seconds int, def time.Duration, max int) time.Duration {
 		return time.Duration(max) * time.Second
 	}
 	return time.Duration(seconds) * time.Second
-}
-
-// KeyHealthPolicy is the resolved parking budget for one provider. The zero value
-// is usable: it answers the documented windows, which is what keeps the health
-// model callable from a path that reads no settings.
-type KeyHealthPolicy struct {
-	AuthWindow      time.Duration
-	RateLimitWindow time.Duration
-	TransientWindow time.Duration
-	BillingWindow   time.Duration
-	// RetryAfterHint is the wait the vendor itself named for this failure, or zero. It rides
-	// the budget because it answers the budget's own question: how long to stay away.
-	RetryAfterHint time.Duration
-	// Rest is what the classifier recognised about this one failure: the class, the
-	// vendor's own reset and wait, and where each came from. It rides the budget for
-	// the same reason the hint does, and the zero value is the pre-classification
-	// behaviour every caller that has nothing to report still gets.
-	Rest RestDirective
-	// FailureClasses is the per-class action and windows resolved for this provider:
-	// the provider's override over the group's over the documented defaults. A nil
-	// map answers the documented default for every class.
-	FailureClasses FailureClassPolicies
-}
-
-// WithRetryAfter returns the same budget with the vendor's own wait applied.
-func (p KeyHealthPolicy) WithRetryAfter(hint time.Duration) KeyHealthPolicy {
-	p.RetryAfterHint = hint
-	return p
-}
-
-// WithRest returns the same budget with one classified failure applied: the
-// vendor's wait, so the ladder still reads what it always read, and the rest
-// the classification earned, which outranks it.
-func (p KeyHealthPolicy) WithRest(rest RestDirective) KeyHealthPolicy {
-	p.Rest = rest
-	p.RetryAfterHint = rest.RetryAfter
-	return p
-}
-
-// DefaultKeyHealthPolicy answers the §7.5 windows a provider gets when nobody
-// configures any.
-func DefaultKeyHealthPolicy() KeyHealthPolicy {
-	return KeyHealthPolicy{
-		AuthWindow:      keyAuthBase,
-		RateLimitWindow: keyRateLimitBase,
-		TransientWindow: keyTransientCooldown,
-		BillingWindow:   keyBillingBase,
-	}
-}
-
-// WindowFor reports how long a failure of this class parks a key that has now failed it n
-// times running. Each ladder stops at a ceiling that is not configurable: a park an operator
-// can set never to expire is the one-way grave draft 050 T2 had to dig an account out of.
-//
-// A rate limit honors the vendor's own wait where it named one: a 429 saying "come back in
-// two minutes" answered with the ladder's two-second first step is a key put back into
-// rotation to be throttled again. The ladder's ceiling bounds the hint too, because the wait
-// a vendor names for its own queue is a guess, not a promise.
-func (p KeyHealthPolicy) WindowFor(class KeyFailureClass, n int) time.Duration {
-	switch class {
-	case KeyFailureAuth:
-		return backoff(durationOr(p.AuthWindow, keyAuthBase), n, keyAuthMax)
-	case KeyFailureRateLimit:
-		base := durationOr(p.RateLimitWindow, keyRateLimitBase)
-		if p.RetryAfterHint > 0 {
-			return clampDuration(p.RetryAfterHint, base, keyRateLimitMax)
-		}
-		return backoff(base, n, keyRateLimitMax)
-	case KeyFailureBilling:
-		return backoff(durationOr(p.BillingWindow, keyBillingBase), n, keyBillingMax)
-	case KeyFailureQuota:
-		return quotaStep(n)
-	default:
-		return durationOr(p.TransientWindow, keyTransientCooldown)
-	}
-}
-
-// clampDuration pulls a vendor's named wait inside the ladder it belongs to: never
-// shorter than that ladder's first step, never longer than its ceiling.
-func clampDuration(wait, floor, ceiling time.Duration) time.Duration {
-	if wait < floor {
-		return floor
-	}
-	if wait > ceiling {
-		return ceiling
-	}
-	return wait
-}
-
-// durationOr keeps the documented default for a window the policy does not name.
-func durationOr(set, def time.Duration) time.Duration {
-	if set <= 0 {
-		return def
-	}
-	return set
 }
 
 // HealthFor resolves the parking budget for one provider: the provider's override
@@ -227,6 +147,7 @@ func validateKeyPark(scope string, w KeyParkWindows) error {
 	}{
 		{"auth_seconds", w.AuthSeconds, MaxKeyParkAuthSeconds},
 		{"rate_limit_seconds", w.RateLimitSeconds, MaxKeyParkRateLimit},
+		{"quota_seconds", w.QuotaSeconds, MaxKeyParkQuota},
 		{"transient_seconds", w.TransientSeconds, MaxKeyParkTransient},
 		{"billing_seconds", w.BillingSeconds, MaxKeyParkBilling},
 	}

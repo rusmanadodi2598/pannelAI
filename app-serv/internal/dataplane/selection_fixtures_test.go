@@ -142,6 +142,12 @@ func (r *memEndpointRepo) UpdateKey(context.Context, domain.UpstreamKey) error {
 func (r *memEndpointRepo) DeleteKey(context.Context, string, string) error     { return nil }
 func (r *memEndpointRepo) Reorder(context.Context, string, []string) error     { return nil }
 
+// ProxyPins answers no pins: the data plane routes with a pool it was handed and never
+// erases one, so the assertion here is only that the contract stays satisfied.
+func (r *memEndpointRepo) ProxyPins(context.Context, []string) (map[string][]repository.ProxyPin, error) {
+	return map[string][]repository.ProxyPin{}, nil
+}
+
 // endpointFixture builds one endpoint with a key per priority.
 type keyFixture struct {
 	id       string
@@ -177,7 +183,7 @@ func buildEndpoint(t *testing.T, id string, priority int, status domain.Upstream
 		key := domain.RehydrateUpstreamKey(
 			fixture.id, id, "key-"+fixture.id, "v1:nonce:cipher", "abc...wxyz",
 			fixture.priority, domain.UpstreamKeyActive, nil, "", 0, domain.KeyRotationState{}, nil, now, now,
-		)
+			domain.OperatorState{})
 		if fixture.status != "" && fixture.status != domain.UpstreamKeyActive {
 			// reason: the transition is the domain's, so a disabled key is built
 			// through it rather than by writing the field.

@@ -20,7 +20,7 @@ import (
 func stampableKey(id string, priority int, used, selected *time.Time) UpstreamKey {
 	return RehydrateUpstreamKey(id, "ep_1", "key-"+id, sealedFixture, "sk-…cret",
 		priority, UpstreamKeyActive, used, "", 0,
-		KeyRotationState{LastSelectedAt: selected}, nil, keyNow, keyNow)
+		KeyRotationState{LastSelectedAt: selected}, nil, keyNow, keyNow, OperatorState{})
 }
 
 // endpointWithKeys builds an account owning the given keys in stored order.

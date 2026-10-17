@@ -143,6 +143,13 @@ func (r *chatEndpointRepository) UpdateKey(context.Context, domain.UpstreamKey) 
 func (r *chatEndpointRepository) DeleteKey(context.Context, string, string) error     { return nil }
 func (r *chatEndpointRepository) Reorder(context.Context, string, []string) error     { return nil }
 
+// ProxyPins answers no pins: this double serves the chat pipeline, which never erases a
+// proxy, and the assertion here is that the contract is satisfied rather than that the
+// answer is interesting.
+func (r *chatEndpointRepository) ProxyPins(context.Context, []string) (map[string][]repository.ProxyPin, error) {
+	return map[string][]repository.ProxyPin{}, nil
+}
+
 type chatKeyLookup struct{ key domain.GatewayKey }
 
 func (l chatKeyLookup) GetByValueHash(_ context.Context, hash string) (domain.GatewayKey, error) {

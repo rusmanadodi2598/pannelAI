@@ -9,6 +9,7 @@
 import { cleanup, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import UsageLivePanel from '../../src/lib/components/UsageLivePanel.svelte';
+import { squashed } from '../support/dom';
 import { frameText } from '../support/live-stream';
 import { comboRow, frame, startedNow, stubPanel } from '../support/live-panel-stub';
 
@@ -58,8 +59,10 @@ describe('UsageLivePanel combo band', () => {
 		);
 
 		// The drawing is aria-hidden, so the row is the only place this fact exists for a reader who cannot
-		// see which band lit up (SPEC-UI §6.5).
-		expect(await screen.findByText('pro-tier → OpenAI (gpt-4o)')).toBeTruthy();
+		// see which band lit up (SPEC-UI §6.5). The row keeps the combo and the answer in their own spans, so
+		// the sentence is read off the row rather than off one text node.
+		const routing = await screen.findByText('OpenAI (gpt-4o)');
+		expect(squashed(routing.parentElement as HTMLElement)).toContain('pro-tier → OpenAI (gpt-4o)');
 		expect(
 			(screen.getByText('pro-tier').parentElement as HTMLElement).classList.contains(
 				'border-[var(--color-ok)]'

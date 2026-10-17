@@ -201,12 +201,16 @@ describe('testing and deleting a stored proxy', () => {
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Delete Frankfurt egress' }));
 
-		// §8.5 wants the object named, and the consequence stated precisely: the outbound path is a
-		// separate setting, so deleting a row does not reroute anything.
+		// §8.5 wants the object named and the consequence stated precisely. The consequence used to
+		// be claimed here was the opposite of the truth: an endpoint pins a candidate by id string,
+		// not by a foreign key, so deleting a row does strand the connections that used it. The
+		// global outbound proxy stays a separate setting, which is the half that was true.
 		const dialog = squashed(screen.getByRole('dialog'));
 		expect(dialog).toContain('Frankfurt egress');
 		expect(dialog).toContain('proxy.example.com:8443');
-		expect(dialog).toContain('does not change the outbound path');
+		expect(dialog).toContain('stops routing through it');
+		expect(dialog).toContain('loses its egress path');
+		expect(dialog).toContain('separate setting');
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Delete the proxy' }));
 

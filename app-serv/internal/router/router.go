@@ -154,6 +154,18 @@ func New(deps Deps) *Mux {
 	mux.Handle("PATCH "+APIVersion+"/endpoints/{id}/keys/{key_id}", gateway(http.HandlerFunc(deps.EndpointKey.UpdateKey)))
 	mux.Handle("DELETE "+APIVersion+"/endpoints/{id}/keys/{key_id}", gateway(http.HandlerFunc(deps.EndpointKey.DeleteKey)))
 
+	// The bulk mutation routes address a set rather than one row, so the selector is a
+	// body and the method is POST: a DELETE with a body cannot be replayed safely by the
+	// clients this panel has, and §8.1 already fixes the batch answer shape. The flat
+	// /endpoint-keys path exists because a key selector crosses endpoints, and nesting it
+	// under one {id} would promise a scope the selector does not have.
+	mux.Handle("POST "+APIVersion+"/endpoints/bulk-status", gateway(http.HandlerFunc(deps.EndpointBulk.BulkStatus)))
+	mux.Handle("POST "+APIVersion+"/endpoints/bulk-tags", gateway(http.HandlerFunc(deps.EndpointBulk.BulkTags)))
+	mux.Handle("POST "+APIVersion+"/endpoints/bulk-delete", gateway(http.HandlerFunc(deps.EndpointBulk.BulkDelete)))
+	mux.Handle("POST "+APIVersion+"/endpoint-keys/bulk-status", gateway(http.HandlerFunc(deps.EndpointBulk.BulkKeyStatus)))
+	mux.Handle("POST "+APIVersion+"/endpoint-keys/bulk-tags", gateway(http.HandlerFunc(deps.EndpointBulk.BulkKeyTags)))
+	mux.Handle("POST "+APIVersion+"/endpoint-keys/bulk-delete", gateway(http.HandlerFunc(deps.EndpointBulk.BulkKeyDelete)))
+
 	// §7.6-§7.8 Models, combos, and the vision adapter are management routes, so
 	// they share the same session guard the gateway keys use.
 	mux.Handle("GET "+APIVersion+"/models/catalog", gateway(http.HandlerFunc(deps.Model.Catalog)))
@@ -181,6 +193,9 @@ func New(deps Deps) *Mux {
 	mux.Handle("GET "+APIVersion+"/proxies", gateway(http.HandlerFunc(deps.Proxy.List)))
 	mux.Handle("POST "+APIVersion+"/proxies", gateway(http.HandlerFunc(deps.Proxy.Create)))
 	mux.Handle("POST "+APIVersion+"/proxies/test", gateway(http.HandlerFunc(deps.Proxy.TestCandidate)))
+	mux.Handle("POST "+APIVersion+"/proxies/bulk-status", gateway(http.HandlerFunc(deps.Proxy.BulkStatus)))
+	mux.Handle("POST "+APIVersion+"/proxies/bulk-preview", gateway(http.HandlerFunc(deps.Proxy.BulkPreview)))
+	mux.Handle("POST "+APIVersion+"/proxies/bulk-delete", gateway(http.HandlerFunc(deps.Proxy.BulkDelete)))
 	mux.Handle("PATCH "+APIVersion+"/proxies/{id}", gateway(http.HandlerFunc(deps.Proxy.Update)))
 	mux.Handle("DELETE "+APIVersion+"/proxies/{id}", gateway(http.HandlerFunc(deps.Proxy.Delete)))
 	mux.Handle("POST "+APIVersion+"/proxies/{id}/test", gateway(http.HandlerFunc(deps.Proxy.Test)))

@@ -145,7 +145,7 @@ func relayEndpoint(t *testing.T, id, providerID string) domain.UpstreamEndpoint 
 	key := domain.RehydrateUpstreamKey(
 		"uky-"+id, id, "key", "sealed-"+id, "…hint",
 		1, domain.UpstreamKeyActive, nil, "", 0, domain.KeyRotationState{}, nil, now, now,
-	)
+		domain.OperatorState{})
 	endpoint.AttachKey(key)
 	return endpoint
 }

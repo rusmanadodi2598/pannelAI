@@ -186,3 +186,43 @@ func nullIfEmpty(value string) *string {
 	}
 	return &value
 }
+
+// marshalTags encodes a tag set as the jsonb array its column holds. An empty set is
+// the empty array rather than NULL, because the column is NOT NULL and the containment
+// index reads it on every row it visits.
+func marshalTags(tags []domain.Tag) (string, error) {
+	if len(tags) == 0 {
+		return "[]", nil
+	}
+	values := make([]string, len(tags))
+	for i, tag := range tags {
+		values[i] = tag.String()
+	}
+	encoded, err := json.Marshal(values)
+	if err != nil {
+		return "", fmt.Errorf("encoding stored tags: %w", err)
+	}
+	return string(encoded), nil
+}
+
+// unmarshalTags decodes the column back into value objects. A stored tag the domain
+// refuses is an error rather than a skip: a row that cannot read its own labels would
+// answer a bulk action with a set shorter than the one it holds.
+func unmarshalTags(raw *string) ([]domain.Tag, error) {
+	if raw == nil || *raw == "" || *raw == "[]" {
+		return nil, nil
+	}
+	var values []string
+	if err := json.Unmarshal([]byte(*raw), &values); err != nil {
+		return nil, fmt.Errorf("decoding stored tags: %w", err)
+	}
+	out := make([]domain.Tag, 0, len(values))
+	for _, value := range values {
+		tag, err := domain.NewTag(value)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, tag)
+	}
+	return out, nil
+}

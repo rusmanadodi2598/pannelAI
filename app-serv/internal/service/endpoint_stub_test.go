@@ -2,7 +2,7 @@
 //
 // @file      internal/service/endpoint_stub_test.go
 // @for       The in-memory EndpointStore double the endpoint service's tests are built on.
-// @uses      context, time, internal/domain, internal/repository.
+// @uses      context, slices, strings, time, internal/domain, internal/repository.
 // @reason    AGENTS.md §2.1 forbids t.Skip as a way to sidestep a test, so the service is exercised without a database by implementing the store interface here.
 //
 //	Keys are held in their own slice per endpoint rather than inside the
@@ -19,6 +19,8 @@ package service
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -89,6 +91,11 @@ func (s *memEndpointStore) withKeys(endpoint domain.UpstreamEndpoint) domain.Ups
 			QuotaCooldownUntil: endpoint.QuotaCooldownUntil(),
 			RefreshRetryAt:     endpoint.RefreshRetryAt(),
 			RefreshRetryRounds: endpoint.RefreshRetryRounds(),
+		}, domain.OperatorState{
+			// The operator's marks ride the same read: dropping them here would let a
+			// bulk test pass while the tags and the park window vanished between the
+			// write and the row the service acts on next.
+			Tags: endpoint.Tags(), DisabledUntil: endpoint.DisabledUntil(),
 		})
 }
 
@@ -117,8 +124,29 @@ func (s *memEndpointStore) List(_ context.Context, filter repository.EndpointFil
 		if filter.Status != "" && string(endpoint.Status()) != filter.Status {
 			continue
 		}
+		if len(filter.IDs) > 0 && !containsID(filter.IDs, endpoint.ID()) {
+			continue
+		}
+		if filter.Tag != "" && !holdsTag(endpoint.Tags(), filter.Tag) {
+			continue
+		}
+		if filter.AuthType != "" && string(endpoint.AuthType()) != filter.AuthType {
+			continue
+		}
 		all = append(all, s.withKeys(endpoint))
 	}
+	// The real statement orders by provider, priority, id, and a paged reader depends on
+	// that: without it this double hands each page a differently shuffled slice, so a
+	// resolver that walks pages would silently skip rows here and pass anyway.
+	slices.SortFunc(all, func(a, b domain.UpstreamEndpoint) int {
+		if byProvider := strings.Compare(a.ProviderID(), b.ProviderID()); byProvider != 0 {
+			return byProvider
+		}
+		if a.Priority() != b.Priority() {
+			return a.Priority() - b.Priority()
+		}
+		return strings.Compare(a.ID(), b.ID())
+	})
 	total := int64(len(all))
 	start := q.Offset()
 	if start >= len(all) {

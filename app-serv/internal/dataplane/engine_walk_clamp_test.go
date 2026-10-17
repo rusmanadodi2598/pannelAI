@@ -36,7 +36,7 @@ func rateLimitedEndpoint(t *testing.T, id, providerID string, keys int) domain.U
 			fmt.Sprintf("uky-%s-%d", id, index), id, fmt.Sprintf("key-%d", index),
 			fmt.Sprintf("sealed-%s-%d", id, index), "…hint",
 			1, domain.UpstreamKeyActive, nil, "", 0, domain.KeyRotationState{}, nil, now, now,
-		)
+			domain.OperatorState{})
 		endpoint.AttachKey(key)
 	}
 	return endpoint

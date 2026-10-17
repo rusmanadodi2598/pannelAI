@@ -183,7 +183,7 @@ func healthKeyAt(now, until time.Time, failures int) domain.UpstreamKey {
 	return domain.RehydrateUpstreamKey(
 		healthKeyID, healthEndpointID, "primary", "sealed-ciphertext", "sk-****last",
 		1, domain.UpstreamKeyError, nil, "upstream refused", failures, domain.KeyRotationState{}, window, now, now,
-	)
+		domain.OperatorState{})
 }
 
 func readHealthKey(t *testing.T, repo *EndpointRepository, ctx context.Context) domain.UpstreamEndpoint {

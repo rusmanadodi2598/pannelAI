@@ -36,10 +36,7 @@ func TestNodeService_MutationsInvalidateTheOverlayCache(t *testing.T) {
 	index := &invalidatingIndex{readinessProviderIndex: readinessProviderIndex{
 		entries: []registry.Provider{{ID: "openai"}},
 	}}
-	svc, err := NewNodeService(NodeServiceDeps{
-		Store: store, Index: index, Endpoints: &readinessEndpointErasures{},
-		Models: &readinessModelErasures{},
-	})
+	svc, err := NewNodeService(NodeServiceDeps{Store: store, Index: index})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)
 	}

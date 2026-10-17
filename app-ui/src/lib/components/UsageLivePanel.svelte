@@ -218,6 +218,8 @@
 	     that is the drawing's colours and the status chip, not a sentence (owner's correction,
 	     2026-09-23). -->
 	<!-- The live facts and the request lists sit together in one tab component at the bottom of the panel,
-	     below the drawing, so the page reads Node first and the detail after it. -->
-	<UsageLiveTabs {facts} {active} {recent} {providerName} />
+	     below the drawing, so the page reads Node first and the detail after it. `now` rides along because
+	     the in-flight rows state how long each request has been held, and that figure has to age on the
+	     same clock that ages the staleness guard rather than on a second clock of its own. -->
+	<UsageLiveTabs {facts} {active} {recent} {providerName} {now} />
 </section>

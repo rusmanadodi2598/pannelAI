@@ -72,6 +72,40 @@ func (r *stubProxyRepo) Update(_ context.Context, proxy domain.Proxy) error {
 	return nil
 }
 
+// UpdateBulk mirrors the real transaction, including the stub's injected failure, so a
+// bulk switch can be proven to write nothing when the store refuses.
+func (r *stubProxyRepo) UpdateBulk(_ context.Context, proxies []domain.Proxy) error {
+	if r.failure != nil {
+		return r.failure
+	}
+	for _, proxy := range proxies {
+		if _, ok := r.byID[proxy.ID()]; !ok {
+			return domain.ErrProxyNotFound
+		}
+	}
+	for _, proxy := range proxies {
+		r.byID[proxy.ID()] = proxy
+		r.updates++
+	}
+	return nil
+}
+
+// DeleteBulk mirrors the same all-or-nothing erase.
+func (r *stubProxyRepo) DeleteBulk(_ context.Context, ids []string) error {
+	if r.failure != nil {
+		return r.failure
+	}
+	for _, id := range ids {
+		if _, ok := r.byID[id]; !ok {
+			return domain.ErrProxyNotFound
+		}
+	}
+	for _, id := range ids {
+		delete(r.byID, id)
+	}
+	return nil
+}
+
 func (r *stubProxyRepo) Delete(_ context.Context, id string) error {
 	if r.failure != nil {
 		return r.failure

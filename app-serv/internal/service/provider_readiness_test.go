@@ -20,8 +20,11 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
+// readinessNodeStore records the ids a cascade erased, so a test can prove a refused
+// delete erased nothing: the cascade is one store call, the way it is one transaction.
 type readinessNodeStore struct {
-	nodes map[string]domain.ProviderNode
+	nodes    map[string]domain.ProviderNode
+	cascaded []string
 }
 
 func newReadinessNodeStore() *readinessNodeStore {
@@ -62,22 +65,12 @@ func (s *readinessNodeStore) Delete(_ context.Context, id string) error {
 	return nil
 }
 
-// readinessEndpointErasures records the provider ids a delete erased, so a test can
-// name whose connections went and prove a refused delete erased nothing.
-type readinessEndpointErasures struct{ providers []string }
-
-func (e *readinessEndpointErasures) DeleteByProvider(_ context.Context, providerID string) error {
-	e.providers = append(e.providers, providerID)
-	return nil
-}
-
-// readinessModelErasures records whose model rows a delete erased, so a test can tell
-// the node's own rows from another provider's, and can prove a refused delete erased
-// neither connections nor models.
-type readinessModelErasures struct{ providers []string }
-
-func (m *readinessModelErasures) DeleteForProvider(_ context.Context, providerID string) error {
-	m.providers = append(m.providers, providerID)
+func (s *readinessNodeStore) DeleteCascade(_ context.Context, id string) error {
+	if _, ok := s.nodes[id]; !ok {
+		return domain.ErrNodeNotFound
+	}
+	s.cascaded = append(s.cascaded, id)
+	delete(s.nodes, id)
 	return nil
 }
 
@@ -106,12 +99,10 @@ func (i readinessProviderIndex) Categories() []string {
 	return out
 }
 
-func readinessNodeService(
-	t *testing.T, store *readinessNodeStore, eraser EndpointEraser, models ModelEraser) *NodeService {
+func readinessNodeService(t *testing.T, store *readinessNodeStore) *NodeService {
 	t.Helper()
 	svc, err := NewNodeService(NodeServiceDeps{
 		Store: store, Index: readinessProviderIndex{entries: []registry.Provider{{ID: "openai"}}},
-		Endpoints: eraser, Models: models,
 	})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)
@@ -122,7 +113,7 @@ func readinessNodeService(
 
 func TestNodeService_CreateAndUpdateRejectPrefixCollision(t *testing.T) {
 	store := newReadinessNodeStore()
-	svc := readinessNodeService(t, store, &readinessEndpointErasures{}, &readinessModelErasures{})
+	svc := readinessNodeService(t, store)
 	_, err := svc.Create(context.Background(), CreateNodeInput{Name: "one", Prefix: "openai", Type: domain.NodeOpenAICompatible, APIType: domain.NodeAPIChat, BaseURL: "https://one.example"})
 	mustAppError(t, err, "CONFLICT")
 
@@ -143,9 +134,7 @@ func TestNodeService_CreateAndUpdateRejectPrefixCollision(t *testing.T) {
 
 func TestNodeService_DeleteTakesTheNodesEndpointsAndModelRowsWithIt(t *testing.T) {
 	store := newReadinessNodeStore()
-	erasures := &readinessEndpointErasures{}
-	models := &readinessModelErasures{}
-	svc := readinessNodeService(t, store, erasures, models)
+	svc := readinessNodeService(t, store)
 	node, err := svc.Create(context.Background(), CreateNodeInput{Name: "one", Prefix: "one", Type: domain.NodeOpenAICompatible, APIType: domain.NodeAPIChat, BaseURL: "https://one.example"})
 	if err != nil {
 		t.Fatalf("create: %v", err)
@@ -157,11 +146,8 @@ func TestNodeService_DeleteTakesTheNodesEndpointsAndModelRowsWithIt(t *testing.T
 	if _, err := store.GetByID(context.Background(), node.ID()); !errors.Is(err, domain.ErrNodeNotFound) {
 		t.Fatalf("the node survived its own delete: %v", err)
 	}
-	if len(erasures.providers) != 1 || erasures.providers[0] != node.ID() {
-		t.Fatalf("connections erased for %v, want exactly the deleted node", erasures.providers)
-	}
-	if len(models.providers) != 1 || models.providers[0] != node.ID() {
-		t.Fatalf("model rows erased for %v, want exactly the deleted node", models.providers)
+	if len(store.cascaded) != 1 || store.cascaded[0] != node.ID() {
+		t.Fatalf("cascade ran for %v, want exactly the deleted node", store.cascaded)
 	}
 }
 

@@ -62,6 +62,11 @@ type UpstreamEndpoint struct {
 	// upstream_endpoint_service_account.go.
 	saProjectID string
 	saLocation  string
+	// tags and disabledUntil are the operator's own marks: the sets a bulk action
+	// addresses this account by, and the deadline its park runs out at. Their rules
+	// live in upstream_endpoint_operator.go.
+	tags          TagSet
+	disabledUntil *time.Time
 }
 
 // NewUpstreamEndpoint is the only constructor for a new endpoint.
@@ -114,6 +119,7 @@ func RehydrateUpstreamEndpoint(
 	keys []UpstreamKey,
 	serviceAccount ServiceAccountRef,
 	parity EndpointParity,
+	operator OperatorState,
 ) UpstreamEndpoint {
 	owned := make([]UpstreamKey, len(keys))
 	copy(owned, keys)
@@ -136,6 +142,8 @@ func RehydrateUpstreamEndpoint(
 		lastSelectedAt:      parity.LastSelectedAt,
 		saProjectID:         serviceAccount.ProjectID,
 		saLocation:          serviceAccount.Location,
+		tags:                operator.Tags,
+		disabledUntil:       operator.DisabledUntil,
 	}
 }
 
@@ -155,7 +163,7 @@ func (e UpstreamEndpoint) CreatedAt() time.Time           { return e.createdAt }
 func (e UpstreamEndpoint) UpdatedAt() time.Time           { return e.updatedAt }
 
 func (e UpstreamEndpoint) Available(now time.Time) bool {
-	if e.status != UpstreamEndpointActive {
+	if e.status != UpstreamEndpointActive && !e.DisableWindowElapsed(now) {
 		return false
 	}
 	if e.rateLimitedUntil != nil && now.Before(*e.rateLimitedUntil) {
@@ -190,6 +198,9 @@ func (e *UpstreamEndpoint) Update(label string, priority int, status string, now
 			return err
 		}
 		e.status = parsed
+		// A PATCH states no window, so it leaves none behind: an operator moving a row
+		// by hand owns the switch outright, and a stale deadline would release it again.
+		e.disabledUntil = nil
 		if parsed == UpstreamEndpointDisabled {
 			// A disabled endpoint is not in a backoff, and its keys are not
 			// being spent, so the window is cleared rather than left to show a

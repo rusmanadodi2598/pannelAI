@@ -59,6 +59,33 @@ func (r *stubProxyRepo) Update(_ context.Context, proxy domain.Proxy) error {
 	return nil
 }
 
+// UpdateBulk mirrors the real transaction: a candidate that is not there aborts the whole
+// set rather than switching the rest.
+func (r *stubProxyRepo) UpdateBulk(_ context.Context, proxies []domain.Proxy) error {
+	for _, proxy := range proxies {
+		if _, ok := r.byID[proxy.ID()]; !ok {
+			return domain.ErrProxyNotFound
+		}
+	}
+	for _, proxy := range proxies {
+		r.byID[proxy.ID()] = proxy
+	}
+	return nil
+}
+
+// DeleteBulk mirrors the same all-or-nothing erase.
+func (r *stubProxyRepo) DeleteBulk(_ context.Context, ids []string) error {
+	for _, id := range ids {
+		if _, ok := r.byID[id]; !ok {
+			return domain.ErrProxyNotFound
+		}
+	}
+	for _, id := range ids {
+		delete(r.byID, id)
+	}
+	return nil
+}
+
 func (r *stubProxyRepo) Delete(_ context.Context, id string) error {
 	if _, ok := r.byID[id]; !ok {
 		return domain.ErrProxyNotFound

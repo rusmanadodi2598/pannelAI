@@ -74,6 +74,10 @@ export const schemaEndpointKey = z.object({
 	last_error_class: z.string().optional(),
 	reset_source: z.string().optional(),
 	signature_id: z.string().optional(),
+	// The operator's marks on this credential, the same pair the account carries: a key is
+	// parked and labelled on its own as often as its account is.
+	tags: z.array(z.string().max(48)).max(16).optional(),
+	disabled_until: optionalTimestamp,
 	created_at: rfc3339Timestamp,
 	updated_at: rfc3339Timestamp
 });
@@ -93,6 +97,10 @@ export const schemaEndpoint = z.object({
 	test_status: schemaEndpointTestStatus.optional(),
 	rate_limited_until: optionalTimestamp,
 	last_used_at: optionalTimestamp,
+	// The operator's own marks: the labels a bulk action addresses this account by, and the
+	// deadline its park releases at. Absent window means the switch is permanent.
+	tags: z.array(z.string().max(48)).max(16).optional(),
+	disabled_until: optionalTimestamp,
 	key_count: z.number().int().min(0),
 	active_key_count: z.number().int().min(0),
 	available: z.boolean(),

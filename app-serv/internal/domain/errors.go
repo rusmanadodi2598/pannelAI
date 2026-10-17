@@ -37,15 +37,17 @@ func (e *AppError) Unwrap() error { return e.Wrapped }
 // HTTPStatus maps an error code to the status documented in §8.
 func (e *AppError) HTTPStatus() int {
 	switch e.Code {
-	case "VALIDATION_ERROR":
+	case "VALIDATION_ERROR", "BULK_SELECTOR_REQUIRED", "BULK_SELECTOR_AMBIGUOUS":
 		return 400
+	case "BULK_TARGET_TOO_LARGE":
+		return 413
 	case "UNAUTHORIZED":
 		return 401
 	case "FORBIDDEN":
 		return 403
 	case "NOT_FOUND":
 		return 404
-	case "CONFLICT":
+	case "CONFLICT", "BULK_TARGET_COUNT_MISMATCH":
 		return 409
 	case "METHOD_NOT_ALLOWED":
 		return 405
@@ -100,6 +102,26 @@ func NewUpstreamTimeoutError(message string) *AppError {
 
 func NewInternalError(message string) *AppError {
 	return &AppError{Code: "INTERNAL_ERROR", Message: message}
+}
+
+// The four refusals a bulk action can raise before it touches a row. They are codes of
+// their own rather than VALIDATION_ERROR because each asks the caller to do a different
+// thing: name a set, narrow one that is too wide, or re-read a list that changed under
+// the click. Collapsing them would leave a client guessing which.
+func NewBulkSelectorRequiredError(message string) *AppError {
+	return &AppError{Code: "BULK_SELECTOR_REQUIRED", Message: message}
+}
+
+func NewBulkSelectorAmbiguousError(message string) *AppError {
+	return &AppError{Code: "BULK_SELECTOR_AMBIGUOUS", Message: message}
+}
+
+func NewBulkTargetTooLargeError(message string) *AppError {
+	return &AppError{Code: "BULK_TARGET_TOO_LARGE", Message: message}
+}
+
+func NewBulkTargetCountMismatchError(message string) *AppError {
+	return &AppError{Code: "BULK_TARGET_COUNT_MISMATCH", Message: message}
 }
 
 // Sentinel errors let layers match on identity without re-declaring codes.

@@ -145,6 +145,17 @@ func indexLast(s, sub string) int {
 	return -1
 }
 
+// DecodeAndValidate reads one request body and validates it in the one step every
+// management handler needs. It lives beside DecodeJSON because that is the declared I/O
+// boundary: the concrete shape is the caller's, and the generic target stops here rather
+// than leaking into handlers, where AGENTS.md §1.4 requires a typed value.
+func DecodeAndValidate(r *http.Request, dst any) error {
+	if err := DecodeJSON(r, dst); err != nil {
+		return err
+	}
+	return ValidateStruct(dst)
+}
+
 // ValidateStruct runs the struct-tag rules attached to v. The single engine
 // is constructed once in validator.go and reused for every request.
 func ValidateStruct(v any) error {

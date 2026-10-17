@@ -11,12 +11,15 @@
 	// detail, answer the routing question, and coordinate the parts.
 	import AddEndpointKeysPanel from '$lib/components/AddEndpointKeysPanel.svelte';
 	import EndpointFieldsForm from '$lib/components/EndpointFieldsForm.svelte';
+	import BulkActionBar from '$lib/components/BulkActionBar.svelte';
 	import EndpointKeysTable from '$lib/components/EndpointKeysTable.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
+	import { emptySelection, toggleAll, toggleRow, type Selection } from '$lib/utils/selection';
+	import { bulkDelete, bulkStatus, bulkTags } from '$lib/api/bulk-mutation';
 	import {
 		deleteEndpointKey,
 		getEndpoint,
@@ -151,6 +154,74 @@
 
 		await refresh();
 	}
+
+	// Selection here addresses the credentials of this one connection. Select-All therefore means
+	// "every key this endpoint holds" and never a cross-provider set: the drawer has no server scope
+	// for that, and a control promising one would be counting rows it cannot see.
+	let picked = $state<Selection>(emptySelection);
+	let bulkBusy = $state(false);
+
+	const keyIds = $derived(keys.map((key) => key.id));
+	const bulkCount = $derived(picked.all ? keyIds.length : picked.ids.length);
+	const bulkScope = $derived(
+		picked.all
+			? `all ${keyIds.length} keys on this connection`
+			: `${picked.ids.length} named by you`
+	);
+
+	function toggleChosen(id: string, checked: boolean): void {
+		picked = toggleRow(picked, id, checked, keyIds);
+	}
+
+	function toggleChooseAll(checked: boolean): void {
+		picked = toggleAll(checked);
+	}
+
+	function bulkSelector(): { ids?: string[]; all?: true } {
+		return picked.all ? { all: true } : { ids: picked.ids };
+	}
+
+	async function runBulkStatus(status: 'active' | 'disabled'): Promise<void> {
+		if (bulkCount === 0) return;
+		bulkBusy = true;
+		const result = await bulkStatus('endpoint-keys', bulkSelector(), status, bulkCount);
+		bulkBusy = false;
+		if (!result.ok) {
+			notice = result.error;
+			return;
+		}
+		notice = null;
+		await refresh();
+	}
+
+	async function runBulkTag(tag: string): Promise<void> {
+		if (bulkCount === 0) return;
+		bulkBusy = true;
+		const result = await bulkTags('endpoint-keys', bulkSelector(), [tag], [], false, bulkCount);
+		bulkBusy = false;
+		if (!result.ok) {
+			notice = result.error;
+			return;
+		}
+		notice = null;
+		await refresh();
+	}
+
+	async function runBulkDelete(): Promise<void> {
+		if (bulkCount === 0) return;
+		bulkBusy = true;
+		const result = await bulkDelete('endpoint-keys', bulkSelector(), bulkCount);
+		bulkBusy = false;
+		if (!result.ok) {
+			// A refused row is the account's floor: an endpoint keeps at least one usable
+			// credential, and the refusal names which key would have emptied it.
+			notice = result.error;
+			return;
+		}
+		notice = null;
+		picked = emptySelection;
+		await refresh();
+	}
 </script>
 
 <Modal title={entry ? `Endpoint ${entry.label}` : 'Endpoint'} open={entry !== null} {onclose}>
@@ -207,10 +278,32 @@
 					authType={detail.auth_type}
 					{testing}
 					{now}
+					selected={picked.ids}
+					allSelected={picked.all}
 					ontest={(key) => runTest(key.id)}
 					onsettled={setKeyStatus}
 					onremove={removeKey}
+					onselect={toggleChosen}
 				/>
+
+				<BulkActionBar
+					kind="keys"
+					selected={bulkCount}
+					total={keyIds.length}
+					scope={bulkScope}
+					allSelected={picked.all}
+					ontag={(tag: string) => void runBulkTag(tag)}
+					ondisable={() => void runBulkStatus('disabled')}
+					onenable={() => void runBulkStatus('active')}
+					ondelete={() => void runBulkDelete()}
+					onclear={() => (picked = emptySelection)}
+					ontoggleall={toggleChooseAll}
+				/>
+				{#if bulkBusy}
+					<p role="status" class="text-sm text-[var(--color-text-muted)]">
+						Applying to the selected keys...
+					</p>
+				{/if}
 			{/if}
 
 			<AddEndpointKeysPanel endpointId={detail.id} onadded={refresh} />

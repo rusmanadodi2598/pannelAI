@@ -48,6 +48,9 @@ import {
 	Search,
 	Server,
 	Settings,
+	Square,
+	SquareCheckBig,
+	Tag,
 	TerminalSquare,
 	Trash2,
 	Volume2,
@@ -237,6 +240,21 @@ export const CONTROL_ICONS = {
 		icon: ChevronDown,
 		reason:
 			'Folding tucks a card body away behind a header that already counts what is inside; the chevron marks the tucked edge and turns when the body opens.'
+	},
+	select: {
+		icon: SquareCheckBig,
+		reason:
+			'Select all marks every row the server counted, not only the page on screen, so the checked box names the wider set.'
+	},
+	selectNone: {
+		icon: Square,
+		reason:
+			'Clearing the selection empties an already-checked box, the same control read the other way.'
+	},
+	tag: {
+		icon: Tag,
+		reason:
+			'A tag is the label a bulk action is addressed to, and the price tag is the shape that means a label you select by.'
 	},
 	pause: {
 		icon: Pause,

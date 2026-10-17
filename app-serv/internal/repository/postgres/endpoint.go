@@ -41,6 +41,21 @@ func (r *EndpointRepository) Create(ctx context.Context, endpoint domain.Upstrea
 	})
 }
 
+// endpointFilterWhere is the predicate every narrowed read of the table shares. It
+// takes provider, status, id set, tag and auth type in that order, and each clause
+// answers true when its filter names nothing, so a zero EndpointFilter reads the whole
+// table exactly as it always did.
+//
+// One spelling serves both the page and its count: a bulk action compares the number it
+// shows an operator against the rows it then writes, and two WHERE clauses that could
+// drift would turn that comparison into a false alarm.
+const endpointFilterWhere = `
+ WHERE ($1 = '' OR provider_id = $1)
+   AND ($2 = '' OR status = $2)
+   AND (cardinality(coalesce($3::text[], '{}'::text[])) = 0 OR id = ANY($3))
+   AND ($4 = '' OR tags @> jsonb_build_array($4))
+   AND ($5 = '' OR auth_type = $5)`
+
 // List returns one page of endpoints with their keys attached, narrowed by
 // provider and status. The order is provider, then priority, then id: it is the
 // order the router reads, so it is the order the panel must show.
@@ -50,19 +65,16 @@ func (r *EndpointRepository) Create(ctx context.Context, endpoint domain.Upstrea
 // statement keyed by the page's ids, so a page of 25 endpoints costs two queries
 // rather than 26 (AGENTS.md §1.7).
 func (r *EndpointRepository) List(ctx context.Context, filter repository.EndpointFilter, q repository.PageQuery) ([]domain.UpstreamEndpoint, int64, error) {
-	const query = `
+	query := `
 SELECT ` + endpointColumns + `, count(*) OVER() AS total
-  FROM upstream_endpoints
- WHERE ($1 = '' OR provider_id = $1)
-   AND ($2 = '' OR status = $2)
+  FROM upstream_endpoints` + endpointFilterWhere + `
  ORDER BY provider_id, priority, id
- LIMIT $3 OFFSET $4`
-	const countQuery = `
-SELECT count(*) FROM upstream_endpoints
- WHERE ($1 = '' OR provider_id = $1)
-   AND ($2 = '' OR status = $2)`
+ LIMIT $6 OFFSET $7`
+	countQuery := `
+SELECT count(*) FROM upstream_endpoints` + endpointFilterWhere
 
-	rows, err := r.pool.Query(ctx, query, filter.ProviderID, filter.Status, q.PerPage, q.Offset())
+	args := []any{filter.ProviderID, filter.Status, filter.IDs, filter.Tag, filter.AuthType}
+	rows, err := r.pool.Query(ctx, query, append(append([]any{}, args...), q.PerPage, q.Offset())...)
 	if err != nil {
 		return nil, 0, translateEndpointError(err)
 	}
@@ -88,7 +100,7 @@ SELECT count(*) FROM upstream_endpoints
 	// A page beyond the last row returns no rows and therefore no window count;
 	// the total is then read separately so pagination still reports it.
 	if len(orderedIDs) == 0 {
-		if err := r.pool.QueryRow(ctx, countQuery, filter.ProviderID, filter.Status).Scan(&total); err != nil {
+		if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
 			return nil, 0, translateEndpointError(err)
 		}
 		return make([]domain.UpstreamEndpoint, 0), total, nil
@@ -171,8 +183,14 @@ func (r *EndpointRepository) Delete(ctx context.Context, id string) error {
 // with them. Deleting zero rows is a success: a node with no connection is the
 // ordinary state, not an error to report.
 func (r *EndpointRepository) DeleteByProvider(ctx context.Context, providerID string) error {
-	_, err := r.pool.Exec(ctx, `DELETE FROM upstream_endpoints WHERE provider_id = $1`, providerID)
-	if err != nil {
+	return deleteEndpointsByProvider(ctx, r.pool, providerID)
+}
+
+// deleteEndpointsByProvider erases one provider's endpoints through any execer, so
+// the node cascade runs it inside its own transaction rather than with a second
+// spelling of the statement.
+func deleteEndpointsByProvider(ctx context.Context, exec dbExecer, providerID string) error {
+	if _, err := exec.Exec(ctx, `DELETE FROM upstream_endpoints WHERE provider_id = $1`, providerID); err != nil {
 		return translateEndpointError(err)
 	}
 	return nil

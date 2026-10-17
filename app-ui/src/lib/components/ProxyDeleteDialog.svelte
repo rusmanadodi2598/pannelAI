@@ -32,7 +32,9 @@
 			test result goes with it.
 		</p>
 		<p class="mt-3 text-[var(--color-text-muted)]">
-			Deleting here does not change the outbound path.
+			An endpoint that pins this candidate stops routing through it, and a provider whose only pin
+			was here loses its egress path. The global outbound proxy is a separate setting and this
+			delete does not change it.
 		</p>
 	{/if}
 

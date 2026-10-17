@@ -73,6 +73,10 @@ type ProxyServiceDeps struct {
 	Repo   repository.ProxyRepository
 	Sealer CredentialSealer
 	Prober ProxyProber
+	// Pins answers which endpoints route through a pool. Bulk delete needs it and refuses
+	// without one: erasing a candidate whose pin report nobody could read would strand
+	// connections silently, which is the failure D5 exists to close.
+	Pins ProxyPinReader
 }
 
 // ProxyService implements §7.11.
@@ -80,6 +84,7 @@ type ProxyService struct {
 	repo   repository.ProxyRepository
 	sealer CredentialSealer
 	prober ProxyProber
+	pins   ProxyPinReader
 	clock  func() time.Time
 }
 
@@ -94,7 +99,7 @@ func NewProxyService(deps ProxyServiceDeps) (*ProxyService, error) {
 	if deps.Prober == nil {
 		return nil, domain.NewValidationError("proxy service requires a connectivity prober")
 	}
-	return &ProxyService{repo: deps.Repo, sealer: deps.Sealer, prober: deps.Prober, clock: time.Now}, nil
+	return &ProxyService{repo: deps.Repo, sealer: deps.Sealer, prober: deps.Prober, pins: deps.Pins, clock: time.Now}, nil
 }
 
 // List returns the pool, ordered by label.

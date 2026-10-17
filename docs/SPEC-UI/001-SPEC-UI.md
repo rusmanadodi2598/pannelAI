@@ -676,10 +676,23 @@ absent.
   screen: the row is a claim about now, so a frozen "just now" would be a wrong figure (draft 014 F4).
   (2026-10-12) The live detail is one tablist, Live activity, at the bottom of the panel below the drawing,
   with three tabs: In flight (count), Last finished (with the last error beneath it), and Finished requests
-  (count). Each tab scrolls inside a box of one height (`max-h-48`, `overflow-y-auto`), so switching tabs
+  (count). Each tab scrolls inside a box of one height, so switching tabs
   does not move the page. The tablist is the page's detail after Node, not a control over the stream; the
   facts inside it are not focusable. Each finished row splits its tokens into in and out in the words the tiles above use, and a figure the
   frame did not send is stated as absent rather than printed as zero (draft 016 F3).
+  (2026-10-17) The region is framed the way the page frames a bounded block (one border,
+  `rounded-[var(--radius-md)]`), with the tab strip and the list it selects inside that one frame, so the
+  three tabs read as a box at the bottom of the page rather than as loose text. The list area is a fixed
+  height (`h-48`, `overflow-y-auto`) rather than a maximum (`max-h-48`), so the three tabs are visibly one
+  size and an empty tab holds the same region a full one does. The In flight
+  tab lists the live requests, one row per request: the combo it entered through, the provider and model
+  answering it in the drawing's status colour, and how long the gateway has been holding it. It replaced the
+  joined sentence the tab used to state, which could not answer the question the tab is opened for. That
+  figure counts seconds (`12s`, then `1m`), because an in-flight entry ages out at a minute and `elapsedText`
+  collapses anything under a minute into "just now", which would freeze every row at the same words. The
+  in-flight box follows a request that arrives while the tab is open, one jump per arrival, gated on the
+  frame the way the drawing's motion is; the finished list is never pulled back to the top, since it is
+  newest-first and read like a history, and the count in its label is what reports that the stream moved.
 
 **Tab 2: Records**
 

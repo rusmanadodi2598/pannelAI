@@ -96,8 +96,13 @@ type UpstreamKey struct {
 	// written by an older binary simply carries neither.
 	resetSource string
 	signatureID string
-	createdAt   time.Time
-	updatedAt   time.Time
+	// tags and disabledUntil are the operator's own marks: the sets a bulk action
+	// addresses this credential by, and the deadline its park runs out at. Their
+	// rules live in upstream_key_operator.go.
+	tags          TagSet
+	disabledUntil *time.Time
+	createdAt     time.Time
+	updatedAt     time.Time
 }
 
 // NewUpstreamKey is the only constructor for a freshly added key. The value
@@ -152,6 +157,7 @@ func RehydrateUpstreamKey(
 	rotation KeyRotationState,
 	rateLimitedUntil *time.Time,
 	createdAt, updatedAt time.Time,
+	operator OperatorState,
 ) UpstreamKey {
 	return UpstreamKey{
 		id:                   id,
@@ -172,6 +178,8 @@ func RehydrateUpstreamKey(
 		resetSource:          rotation.ResetSource,
 		signatureID:          rotation.SignatureID,
 		rateLimitedUntil:     rateLimitedUntil,
+		tags:                 operator.Tags,
+		disabledUntil:        operator.DisabledUntil,
 		createdAt:            createdAt,
 		updatedAt:            updatedAt,
 	}
@@ -207,6 +215,9 @@ func (k *UpstreamKey) Transition(next UpstreamKeyStatus) error {
 		return NewValidationError("invalid status: " + string(next))
 	}
 	k.status = next
+	// A PATCH states no window, so it leaves none behind: a stale deadline would
+	// release a switch the operator moved by hand.
+	k.disabledUntil = nil
 	if next == UpstreamKeyDisabled {
 		// A disabled key is not in a backoff; keeping the timestamp would make
 		// the panel show a countdown for a key that is switched off.

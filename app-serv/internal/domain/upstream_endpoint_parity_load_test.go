@@ -37,7 +37,7 @@ func TestRehydrateUpstreamEndpoint_CarriesTheParityFields(t *testing.T) {
 			RefreshRetryAt:      &at,
 			RefreshRetryRounds:  4,
 		},
-	)
+		OperatorState{})
 	if endpoint.GlobalPriority() != 5 {
 		t.Fatalf("GlobalPriority() = %d, want 5", endpoint.GlobalPriority())
 	}

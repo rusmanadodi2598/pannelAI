@@ -1152,6 +1152,16 @@ components:
     EndpointKeyResponse:
       type: object
       properties:
+        tags:
+          type: array
+          description: The operator's labels on this row, in the canonical lowercase spelling a bulk selector matches against.
+          maxItems: 16
+          items:
+            type: string
+        disabled_until:
+          type: string
+          format: date-time
+          description: When an operator's park releases on its own. Absent means permanent, which is what a switch with no window is.
         id:
           type: string
         endpoint_id:
@@ -1219,6 +1229,16 @@ components:
     EndpointResponse:
       type: object
       properties:
+        tags:
+          type: array
+          description: The operator's labels on this row, in the canonical lowercase spelling a bulk selector matches against.
+          maxItems: 16
+          items:
+            type: string
+        disabled_until:
+          type: string
+          format: date-time
+          description: When an operator's park releases on its own. Absent means permanent, which is what a switch with no window is.
         id:
           type: string
         provider_id:
@@ -2761,6 +2781,14 @@ components:
           minimum: 1
           maximum: 3600
           description: The first upstream 402 parks the account's key this long, then doubles up to six hours.
+        quota_seconds:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 86400
+          description: How long this provider's allowance takes to come back. It caps the quota ladder and it
+            is the window an operator's disable parks for, because a vendor that resets every five hours says
+            the same thing about a manual park. Unset answers a day.
       additionalProperties: false
     FailoverBudgetPatch:
       type: object
@@ -3084,6 +3112,9 @@ components:
       additionalProperties: true
     BulkResultRow:
       type: object
+      description: One row's outcome inside a batch answer. A row that refused for its own
+        reason carries the code beside the message, so a client maps one conflicted credential
+        without reading prose.
       properties:
         index:
           type: integer
@@ -3092,8 +3123,208 @@ components:
           type: string
         error:
           type: string
+        code:
+          type: string
       required:
       - index
+      additionalProperties: false
+
+    BulkSelector:
+      type: object
+      description: 'The rows one bulk action addresses (SPEC-API-001 §7.5). Exactly one of ids,
+        tag or all names a set: nothing named is a refusal rather than everything, and two named
+        is a refusal rather than an intersection. provider_id and auth_type narrow whichever
+        form is set, and all with no provider spans every provider, native and custom alike.
+        The set is resolved in storage, never in a browser.'
+      properties:
+        ids:
+          type: array
+          maxItems: 200
+          items:
+            type: string
+        tag:
+          type: string
+          maxLength: 48
+        auth_type:
+          type: string
+          enum:
+          - api_key
+          - oauth
+          - no_auth
+          - service_account
+          - apikey
+          - none
+        provider_id:
+          type: string
+          maxLength: 120
+        all:
+          type: boolean
+      additionalProperties: false
+
+    BulkStatusRequest:
+      type: object
+      description: Park or release every row a selector resolves to. An omitted window_hours
+        takes the provider's own reset cadence, so a disabled account returns to rotation by
+        the clock rather than by a job.
+      properties:
+        selector:
+          $ref: '#/components/schemas/BulkSelector'
+        status:
+          type: string
+          enum:
+          - active
+          - disabled
+        window_hours:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 168
+        confirm_count:
+          type: integer
+          format: int64
+          minimum: 1
+      required:
+      - selector
+      - status
+      - confirm_count
+      additionalProperties: false
+
+    BulkDeleteRequest:
+      type: object
+      description: Remove every row a selector resolves to, in one transaction.
+      properties:
+        selector:
+          $ref: '#/components/schemas/BulkSelector'
+        confirm_count:
+          type: integer
+          format: int64
+          minimum: 1
+      required:
+      - selector
+      - confirm_count
+      additionalProperties: false
+
+    BulkTagsRequest:
+      type: object
+      description: Add, remove, or clear tags across the resolved set. add and remove may both
+        be filled in one call because retagging a set is one intent.
+      properties:
+        selector:
+          $ref: '#/components/schemas/BulkSelector'
+        add:
+          type: array
+          maxItems: 16
+          items:
+            type: string
+        remove:
+          type: array
+          maxItems: 16
+          items:
+            type: string
+        clear:
+          type: boolean
+        confirm_count:
+          type: integer
+          format: int64
+          minimum: 1
+      required:
+      - selector
+      - confirm_count
+      additionalProperties: false
+
+    BulkProxyStatusRequest:
+      type: object
+      description: Switch every candidate a selector resolves to on or off. A candidate that carries no tag, provider, or auth type refuses a selector that narrows by one, rather than acting on the whole pool and calling it the subset.
+      properties:
+        selector:
+          $ref: '#/components/schemas/BulkSelector'
+        enabled:
+          type: boolean
+        confirm_count:
+          type: integer
+          format: int64
+          minimum: 1
+      required:
+      - selector
+      - enabled
+      - confirm_count
+      additionalProperties: false
+    BulkProxyDeleteRequest:
+      type: object
+      description: Erase every candidate a selector resolves to. confirm_endpoints is the number of connections the operator saw lose their egress path; the server counts them from storage and refuses when the two differ.
+      properties:
+        selector:
+          $ref: '#/components/schemas/BulkSelector'
+        confirm_count:
+          type: integer
+          format: int64
+          minimum: 1
+        confirm_endpoints:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - selector
+      - confirm_count
+      additionalProperties: false
+    ProxyPinsResponse:
+      type: object
+      description: What a bulk erase took down with it.
+      properties:
+        endpoints:
+          type: integer
+          format: int64
+        providers:
+          type: array
+          items:
+            type: string
+      required:
+      - endpoints
+      - providers
+      additionalProperties: false
+    BulkProxyResponse:
+      type: object
+      description: What a proxy bulk action did, with the pin report beside the row results.
+      properties:
+        matched:
+          type: integer
+          format: int64
+        changed:
+          type: integer
+          format: int64
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BulkResultRow'
+        pins:
+          $ref: '#/components/schemas/ProxyPinsResponse'
+      required:
+      - matched
+      - changed
+      - results
+      - pins
+      additionalProperties: false
+    BulkMutationResponse:
+      type: object
+      description: What a bulk mutation did. matched is the server's own count of the resolved
+        set rather than the rows one page showed, so the panel reports what the action covered.
+      properties:
+        matched:
+          type: integer
+          format: int64
+        changed:
+          type: integer
+          format: int64
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BulkResultRow'
+        error:
+          $ref: '#/components/schemas/BulkError'
+      required:
+      - matched
+      - changed
+      - results
       additionalProperties: false
     BulkEndpointResponse:
       type: object
@@ -3739,6 +3970,9 @@ components:
         billing_seconds:
           type: integer
           format: int64
+        quota_seconds:
+          type: integer
+          format: int64
       additionalProperties: false
     FailoverBudgetResponse:
       type: object
@@ -4375,6 +4609,34 @@ components:
                 error:
                   code: CONFLICT
                   message: The request conflicts with existing state.
+    BulkCountMismatchError:
+      description: The set a bulk action resolved to is not the set the caller confirmed, so the action was refused and nothing was written.
+      x-error-codes:
+      - BULK_TARGET_COUNT_MISMATCH
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ManagementError'
+          examples:
+            BULK_TARGET_COUNT_MISMATCH:
+              value:
+                error:
+                  code: BULK_TARGET_COUNT_MISMATCH
+                  message: The selector now resolves to a different number of rows than this action confirmed.
+    BulkTargetTooLargeError:
+      description: The selector resolves past the ceiling one bulk action may address, and the refusal names the count it resolved to so the caller knows how far to narrow.
+      x-error-codes:
+      - BULK_TARGET_TOO_LARGE
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ManagementError'
+          examples:
+            BULK_TARGET_TOO_LARGE:
+              value:
+                error:
+                  code: BULK_TARGET_TOO_LARGE
+                  message: This selector resolves to more rows than one action may address.
     ManagementRateLimitedError:
       description: The caller exceeded a configured rate limit.
       x-error-codes:
@@ -6067,6 +6329,282 @@ paths:
           $ref: '#/components/responses/ManagementMethodNotAllowedError'
         '409':
           $ref: '#/components/responses/ManagementConflictError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/endpoints/bulk-status:
+    post:
+      summary: Park or release every endpoint a selector resolves to
+      tags:
+      - Endpoints
+      operationId: postApiV1EndpointsBulkStatus
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkStatusRequest'
+      responses:
+        '200':
+          description: The set was resolved and the action applied to it; a row that refused is
+            reported beside the rows that landed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkMutationResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/BulkCountMismatchError'
+        '413':
+          $ref: '#/components/responses/BulkTargetTooLargeError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/endpoints/bulk-tags:
+    post:
+      summary: Add, remove, or clear tags across the resolved endpoints
+      tags:
+      - Endpoints
+      operationId: postApiV1EndpointsBulkTags
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkTagsRequest'
+      responses:
+        '200':
+          description: The set was resolved and the action applied to it; a row that refused is
+            reported beside the rows that landed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkMutationResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/BulkCountMismatchError'
+        '413':
+          $ref: '#/components/responses/BulkTargetTooLargeError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/endpoints/bulk-delete:
+    post:
+      summary: Remove every endpoint a selector resolves to
+      tags:
+      - Endpoints
+      operationId: postApiV1EndpointsBulkDelete
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkDeleteRequest'
+      responses:
+        '200':
+          description: The set was resolved and the action applied to it; a row that refused is
+            reported beside the rows that landed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkMutationResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/BulkCountMismatchError'
+        '413':
+          $ref: '#/components/responses/BulkTargetTooLargeError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/endpoint-keys/bulk-status:
+    post:
+      summary: Park or release every credential a selector resolves to
+      tags:
+      - Endpoints
+      operationId: postApiV1EndpointKeysBulkStatus
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkStatusRequest'
+      responses:
+        '200':
+          description: The set was resolved and the action applied to it; a row that refused is
+            reported beside the rows that landed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkMutationResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/BulkCountMismatchError'
+        '413':
+          $ref: '#/components/responses/BulkTargetTooLargeError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/endpoint-keys/bulk-tags:
+    post:
+      summary: Add, remove, or clear tags across the resolved credentials
+      tags:
+      - Endpoints
+      operationId: postApiV1EndpointKeysBulkTags
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkTagsRequest'
+      responses:
+        '200':
+          description: The set was resolved and the action applied to it; a row that refused is
+            reported beside the rows that landed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkMutationResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/BulkCountMismatchError'
+        '413':
+          $ref: '#/components/responses/BulkTargetTooLargeError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/endpoint-keys/bulk-delete:
+    post:
+      summary: Remove every credential a selector resolves to
+      tags:
+      - Endpoints
+      operationId: postApiV1EndpointKeysBulkDelete
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkDeleteRequest'
+      responses:
+        '200':
+          description: The set was resolved and the action applied to it; a row that refused is
+            reported beside the rows that landed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkMutationResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/BulkCountMismatchError'
+        '413':
+          $ref: '#/components/responses/BulkTargetTooLargeError'
         '429':
           $ref: '#/components/responses/ManagementRateLimitedError'
         '500':
@@ -7838,6 +8376,142 @@ paths:
           $ref: '#/components/responses/ManagementMethodNotAllowedError'
         '409':
           $ref: '#/components/responses/ManagementConflictError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/proxies/bulk-status:
+    post:
+      summary: Switch every proxy candidate a selector resolves to
+      tags:
+      - Proxy Pools
+      operationId: postApiV1ProxiesBulkStatus
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkProxyStatusRequest'
+      responses:
+        '200':
+          description: The set was resolved and the action applied to it; a row that refused is reported beside the rows that landed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkProxyResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/BulkCountMismatchError'
+        '413':
+          $ref: '#/components/responses/BulkTargetTooLargeError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/proxies/bulk-preview:
+    post:
+      summary: Answer what a bulk proxy erase would take down
+      description: The same selector as the erase, and nothing is written. An operator can only confirm a number they were given, and an endpoint pins a candidate by id string rather than by foreign key, so storage is the only place that knows how many connections hang on the selection.
+      tags:
+      - Proxy Pools
+      operationId: postApiV1ProxiesBulkPreview
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkProxyDeleteRequest'
+      responses:
+        '200':
+          description: The resolved set and the pins it carries; changed is zero because nothing was erased.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkProxyResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/BulkCountMismatchError'
+        '413':
+          $ref: '#/components/responses/BulkTargetTooLargeError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/proxies/bulk-delete:
+    post:
+      summary: Erase every proxy candidate a selector resolves to
+      tags:
+      - Proxy Pools
+      operationId: postApiV1ProxiesBulkDelete
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkProxyDeleteRequest'
+      responses:
+        '200':
+          description: The set was resolved and the action applied to it; a row that refused is reported beside the rows that landed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkProxyResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/BulkCountMismatchError'
+        '413':
+          $ref: '#/components/responses/BulkTargetTooLargeError'
         '429':
           $ref: '#/components/responses/ManagementRateLimitedError'
         '500':

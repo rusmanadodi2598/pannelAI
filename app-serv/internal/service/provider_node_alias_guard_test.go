@@ -42,12 +42,10 @@ func (s stubAliasLister) Aliases(context.Context) ([]domain.ModelAlias, error) {
 
 func TestNodeService_DeleteRefusesWhileAnAliasTargetsTheNode(t *testing.T) {
 	store := newReadinessNodeStore()
-	erasures := &readinessEndpointErasures{}
-	models := &readinessModelErasures{}
 	aliases := stubAliasLister{targets: map[string]string{}}
 	svc, err := NewNodeService(NodeServiceDeps{
 		Store: store, Index: readinessProviderIndex{entries: []registry.Provider{{ID: "openai"}}},
-		Endpoints: erasures, Models: models, Aliases: aliases,
+		Aliases: aliases,
 	})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)
@@ -69,33 +67,29 @@ func TestNodeService_DeleteRefusesWhileAnAliasTargetsTheNode(t *testing.T) {
 
 	// The id spelling blocks it, and the refusal names the alias.
 	aliases.targets["by-id"] = node.ID() + "/gpt-4o"
-	assertAliasBlocksDelete(t, svc, store, erasures, node.ID(), "by-id")
+	assertAliasBlocksDelete(t, svc, store, node.ID(), "by-id")
 	delete(aliases.targets, "by-id")
 
 	// So does the prefix spelling, which the router resolves the same way it
 	// resolves a combo member.
 	aliases.targets["by-prefix"] = node.Prefix() + "/gpt-4o"
-	assertAliasBlocksDelete(t, svc, store, erasures, node.ID(), "by-prefix")
+	assertAliasBlocksDelete(t, svc, store, node.ID(), "by-prefix")
 	delete(aliases.targets, "by-prefix")
 
 	if err := svc.Delete(context.Background(), node.ID()); err != nil {
 		t.Fatalf("delete after the blocking aliases are gone: %v", err)
 	}
-	if len(erasures.providers) != 1 || erasures.providers[0] != node.ID() {
-		t.Fatalf("connections erased for %v, want exactly the deleted node", erasures.providers)
-	}
-	if len(models.providers) != 1 || models.providers[0] != node.ID() {
-		t.Fatalf("model rows erased for %v, want exactly the deleted node", models.providers)
+	if len(store.cascaded) != 1 || store.cascaded[0] != node.ID() {
+		t.Fatalf("cascade ran for %v, want exactly the deleted node", store.cascaded)
 	}
 }
 
 // assertAliasBlocksDelete asserts the delete is refused with the alias named, and
-// that the refused delete removed neither the node nor any of its connections.
+// that the refused delete removed neither the node nor any of its dependents.
 func assertAliasBlocksDelete(
 	t *testing.T,
 	svc *NodeService,
 	store *readinessNodeStore,
-	erasures *readinessEndpointErasures,
 	nodeID, aliasName string,
 ) {
 	t.Helper()
@@ -108,7 +102,7 @@ func assertAliasBlocksDelete(
 	if _, ok := store.nodes[nodeID]; !ok {
 		t.Fatal("the refused delete removed the node")
 	}
-	if len(erasures.providers) != 0 {
-		t.Fatalf("the refused delete erased connections for %v", erasures.providers)
+	if len(store.cascaded) != 0 {
+		t.Fatalf("the refused delete ran the cascade for %v", store.cascaded)
 	}
 }

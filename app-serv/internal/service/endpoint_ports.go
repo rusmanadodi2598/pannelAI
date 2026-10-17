@@ -113,6 +113,29 @@ type EndpointStore interface {
 	// frozen contract has no such read because it is not aggregate-scoped.
 	IDsByProvider(ctx context.Context, providerID string) ([]string, error)
 
+	// UpdateBulk persists each endpoint's own fields in ONE transaction, which is
+	// what makes a bulk disable or retag land on every row it resolved or on none.
+	// The caller applies the aggregate's own methods first, so the decision stays in
+	// the domain and this only writes what it decided.
+	UpdateBulk(ctx context.Context, endpoints []domain.UpstreamEndpoint) error
+
+	// UpdateKeysBulk persists each key's own fields in ONE transaction, on the same
+	// terms. Keys cross endpoints, which is why a key set arrives here rather than
+	// through the endpoint aggregate it happens to belong to.
+	UpdateKeysBulk(ctx context.Context, keys []domain.UpstreamKey) error
+
+	// DeleteBulk removes each endpoint in ONE transaction, its keys going through
+	// the cascade the schema declares. A row that vanished mid-set aborts the whole
+	// delete rather than applying to the rest.
+	DeleteBulk(ctx context.Context, ids []string) error
+
+	// ApplyKeyChanges persists what one bulk action on credentials moved, in ONE
+	// transaction: the accounts whose key sets changed, the credentials that were
+	// retagged or re-parked, and the credentials deleted. A bulk key action reaches
+	// through the account root because the "keep one usable credential" rule is the
+	// account's, so both sides of that write have to land together or not at all.
+	ApplyKeyChanges(ctx context.Context, endpoints []domain.UpstreamEndpoint, keys []domain.UpstreamKey, deletedKeyIDs []string) error
+
 	// FindOAuthEndpoint returns the id of the OAuth endpoint whose stored account
 	// identity matches the given email or workspace id, or
 	// domain.ErrEndpointNotFound when the account has never been imported.
