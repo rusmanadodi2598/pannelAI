@@ -25,20 +25,18 @@ const (
 	// for: a custom node with `api_type: responses` is routable from either
 	// client wire.
 	TargetResponses = "openai-responses"
-	// TargetGemini is Gemini's generateContent wire: the model in the path, the
-	// payload written plainly.
+	// TargetGemini is Gemini's generateContent wire. Three registry formats reach it:
+	// `gemini` writes the model into the path, and the two Cloud Code Assist families
+	// put the same payload inside a project envelope instead. The envelope and the
+	// address are the connectors' work; the payload is translated here once.
 	TargetGemini = "gemini"
 )
 
 // targetFormat maps a registry wire format onto a translator, or "" when no
 // translator handles it.
 //
-// Three Google formats stay unmapped on purpose, and each for its own reason.
-// `gemini-cli` and `antigravity` wrap the same Gemini payload in a Cloud Code
-// Assist envelope keyed to a project (measured against the reference's executor:
-// the URL has no model segment either), so a translator alone would send a body
-// the vendor rejects; `vertex` addresses calls by project and region in the path.
-// Each needs its own connector before it can be served, and a format with no
+// `vertex` stays unmapped on purpose: it addresses calls by project and region in the
+// path, so it needs its own connector before it can be served, and a format with no
 // reachable route must not decode as translatable.
 func targetFormat(format string) string {
 	switch format {
@@ -48,7 +46,7 @@ func targetFormat(format string) string {
 		return TargetClaude
 	case registry.FormatOpenAIResponses:
 		return TargetResponses
-	case TargetGemini:
+	case TargetGemini, "gemini-cli", "antigravity":
 		return TargetGemini
 	default:
 		return ""

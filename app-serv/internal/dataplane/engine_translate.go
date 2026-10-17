@@ -133,15 +133,11 @@ func readUsage(raw []byte, upstreamTarget string) *schema.Usage {
 	if !ok {
 		return nil
 	}
-	// Gemini names its accounting block usageMetadata, so reading the OpenAI key
-	// first would report no usage for a call the vendor did bill.
+	// Gemini names its accounting block usageMetadata, and the OAuth families send it
+	// inside a wrapper, so both readings come from one helper rather than a lookup
+	// here and a second one in the answer translator.
 	if upstreamTarget == TargetGemini {
-		metadata, found := objectField(body, "usageMetadata")
-		if !found || len(metadata) == 0 {
-			return nil
-		}
-		parsed := GeminiUsageToOpenAI(mustJSON(metadata))
-		return &parsed
+		return geminiUsageOf(body)
 	}
 	usage, ok := objectField(body, "usage")
 	if !ok {

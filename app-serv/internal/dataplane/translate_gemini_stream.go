@@ -54,8 +54,8 @@ func geminiChunkToOpenAIChunk(payload []byte) []byte {
 	}
 
 	out := map[string]any{}
-	if metadata, ok := objectField(chunk, "usageMetadata"); ok && len(metadata) > 0 {
-		out["usage"] = GeminiUsageToOpenAI(mustJSON(metadata))
+	if metadata, ok := geminiUsage(chunk); ok {
+		out["usage"] = GeminiUsageToOpenAI(metadata)
 	}
 	finish := ""
 	if reason != "" {

@@ -579,7 +579,19 @@ blok `transport.usage`), lalu menyimpannya di kredensial lewat seam `service.Pro
 yang sama seperti poller kuota, dan satu detail protokol tidak punya dua pembaca. Lookup yang tidak
 menjawab (ditolak, tanpa project, atau resolver tidak dipasang) **tidak** membatalkan login: kredensial yang
 operator setujui disimpan juga, `project_id` dibiarkan tidak hadir di JSONB, dan panggilan berikutnya yang
-membutuhkannya bertanya ulang. Yang belum ada jalannya: `onboard_user_endpoint` milik entri `antigravity`,
+membutuhkannya bertanya ulang.
+
+Keluar dari penyimpanan, project berjalan di **slot metadata** kredensial (`provider.MetadataProjectID`),
+bukan di `Credential.ProjectID`: field itu adalah workspace account yang dibaca penyedia bertanda tangan
+sebagai user id-nya, dan sebelum pemisahan ini login Google dengan kedua nilai tersimpan menimpanya, jadi
+satu field bermakna dua hal. Aturan seam yang melarang bahan kredensial masuk ke body karenanya tetap utuh
+tanpa pengecualian, karena project memang bukan bahan kredensial. Dua keluarga Cloud Code Assist
+(`gemini-cli`, `antigravity`) menaruhnya di dalam amplop `{project, model, request}` yang konektor
+`provider.CloudCode` bangun lewat seam `Transformer`; alamatnya `{base}:generateContent` tanpa segmen model,
+dan jawaban yang datang terbungkus `response` dibuka satu helper yang sama untuk candidate dan usage, sehingga
+pembacaan tagihan tidak bisa tertinggal dari pembacaan isi. Project yang tidak diketahui **tidak** dikarang:
+anggotanya dihilangkan dan penolakan vendor menjadi sinyalnya (draft 061 §8 mencatat `onboardUser` sebagai
+jalan jujur yang belum ditulis). Yang belum ada jalannya: `onboard_user_endpoint` milik entri `antigravity`,
 dipakai reference untuk akun yang belum punya project sama sekali (draft 061 §8 butir 6).
 
 

@@ -101,8 +101,8 @@ func GeminiToOpenAIResponse(raw []byte, model string, created int64) (schema.Cha
 	message.Content = schema.MessageContent{Text: concatGeminiText(texts)}
 
 	usage := schema.Usage{}
-	if metadata, ok := objectField(response, "usageMetadata"); ok && len(metadata) > 0 {
-		usage = GeminiUsageToOpenAI(mustJSON(metadata))
+	if metadata, ok := geminiUsage(response); ok {
+		usage = GeminiUsageToOpenAI(metadata)
 	}
 	return schema.ChatCompletionResponse{
 		ID:      responseID("", "chatcmpl-pannelai"),
@@ -125,8 +125,52 @@ func geminiAnswerAsOpenAI(raw []byte, resolution Resolution, created int64) ([]b
 	return mustJSON(answer), nil
 }
 
-// geminiAnswerParts reads the first candidate's parts and its finish reason.
+// geminiAnswerParts reads the answer's parts and finish reason, from inside the
+// Cloud Code Assist wrapper when the vendor used one.
 func geminiAnswerParts(body object) ([]geminiAnswerPart, string) {
+	return readGeminiPartsAndReason(geminiBody(body))
+}
+
+// geminiBody returns the object the Gemini members are actually written in: the
+// OAuth families nest the same answer under a top-level `response`, while a plain
+// generateContent call writes it at the root. Both spellings are one body here
+// rather than a rule each reader repeats.
+func geminiBody(body object) object {
+	if inner, ok := objectField(body, "response"); ok && len(inner) > 0 {
+		return inner
+	}
+	return body
+}
+
+// geminiUsageOf returns the billed numbers for a Gemini body, or nil when it
+// reported none. The engine's usage reader calls this so the wrapper rule lives in
+// one function rather than in each place a Gemini answer is read.
+func geminiUsageOf(body object) *schema.Usage {
+	metadata, ok := geminiUsage(body)
+	if !ok {
+		return nil
+	}
+	parsed := GeminiUsageToOpenAI(metadata)
+	return &parsed
+}
+
+// geminiUsage returns the accounting block, which travels beside the candidate in
+// a wrapped answer and on the payload itself in a flat one. An empty member is not
+// numbers, so it is not treated as a report.
+func geminiUsage(body object) (json.RawMessage, bool) {
+	if metadata, ok := objectField(geminiBody(body), "usageMetadata"); ok && len(metadata) > 0 {
+		return mustJSON(metadata), true
+	}
+	metadata, ok := objectField(body, "usageMetadata")
+	if !ok || len(metadata) == 0 {
+		return nil, false
+	}
+	return mustJSON(metadata), true
+}
+
+// readGeminiPartsAndReason is the unwrapped reader, split out so the wrapper rule
+// lives in geminiBody and not inside the walk.
+func readGeminiPartsAndReason(body object) ([]geminiAnswerPart, string) {
 	candidates, ok := arrayField(body, "candidates")
 	if !ok || len(candidates) == 0 {
 		return nil, ""
@@ -157,7 +201,7 @@ func geminiAnswerParts(body object) ([]geminiAnswerPart, string) {
 
 // geminiBlockReason names the reason a prompt never reached a candidate.
 func geminiBlockReason(body object) string {
-	feedback, ok := objectField(body, "promptFeedback")
+	feedback, ok := objectField(geminiBody(body), "promptFeedback")
 	if !ok {
 		return ""
 	}

@@ -1691,3 +1691,27 @@ translator alone would send a body the vendor rejects, and a project id is crede
 connector may write into a body (§6, `provider.Request`). `vertex` stays out for its own reason (project and
 region in the path). Draft 061 §5 records the measurement; `SYSTEM_MAP.md` §94's example list is unchanged
 because those three formats are still reported by `Connectors.Unsupported()`._
+
+_Changelog 2026-10-18 (later same day, supersedes the refusal in the 2026-10-17 entry): the two Cloud
+Code Assist families are served. `gemini-cli` and `antigravity` now map onto `TargetGemini` and are
+accepted by `nativeFormats`, because the payload they send is the generateContent body this gateway already
+translates and the difference between them is a wrapper rather than a second wire format. `provider.CloudCode`
+owns that wrapper through the connector seams that already existed: `TransformRequest` builds
+`{project, model, request}` (plus `userAgent` and a `requestId` for the IDE product, which are the only
+members that differ), `Endpoint` addresses `{base}:generateContent` or `:streamGenerateContent?alt=sse` with
+**no model segment**, and `ApplyAuth` sends the client identification the entry declares in `api_client` and
+`cli_version`, two members that had been carried in the registry document with no reader at all. The answer
+direction unwraps `response` when the vendor nests one, through one helper shared by the candidate reader and
+the usage reader, so the two cannot drift apart; a wrapped answer read flat would have billed every call at
+zero. `vertex` is the remaining Google format refused by name: its project and region sit in the path, so it
+needs its own connector.
+
+Two rules this stage settled rather than worked around. The Cloud project travels in the Credential's
+declared **metadata slot** (`MetadataProjectID`), not in `ProjectID`: that field carries the account
+workspace a signed provider reads as its user id, and a Google login with both values stored had been
+overwriting it, so one field had two meanings. The seam rule that forbids credential material in a body is
+unchanged and needs no exception, because the project was never the credential. And the reference's practice
+of inventing a project identifier when the account has none is **not** adopted: an unknown project is omitted
+from the envelope, and the vendor's own refusal is the signal, following the decision draft 011 §10.11 reached
+for a fabricated dedup key. The honest path to a missing project is the `onboardUser` call draft 061 §8
+records as still unwritten, not a made-up value._

@@ -165,3 +165,33 @@ func TestGeminiToOpenAIResponse_RefusesAnUnreadableBody(t *testing.T) {
 		}
 	}
 }
+
+// TestGeminiToOpenAIResponse_UnwrapsTheCloudCodeAnswer pins the shape the OAuth
+// families send: the same Gemini answer nested in a top-level `response` member.
+// Reading only the flat shape answers 200 with an empty completion for every call
+// that succeeded, and the usage numbers vanish with it because they sit inside the
+// wrapper too.
+func TestGeminiToOpenAIResponse_UnwrapsTheCloudCodeAnswer(t *testing.T) {
+	wrapped := `{"response":{"candidates":[{"content":{"role":"model","parts":[{"text":"pong"}]},` +
+		`"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":6,"candidatesTokenCount":2,"totalTokenCount":8}}}`
+
+	response, err := GeminiToOpenAIResponse([]byte(wrapped), "gemini-2.5-flash", 1700000000)
+	if err != nil {
+		t.Fatalf("GeminiToOpenAIResponse() error = %v", err)
+	}
+	if got := response.Choices[0].Message.Content.TextContent(); got != "pong" {
+		t.Fatalf("content = %q, want the candidate inside the wrapper", got)
+	}
+	if response.Usage == nil || response.Usage.TotalTokens != 8 {
+		t.Fatalf("usage = %+v, want the numbers that arrived inside the wrapper", response.Usage)
+	}
+}
+
+// TestGeminiChunkToOpenAIChunk_UnwrapsToo covers the streamed half, where a vendor
+// that wraps the answer wraps its frames as well.
+func TestGeminiChunkToOpenAIChunk_UnwrapsToo(t *testing.T) {
+	chunk := geminiChunkToOpenAIChunk([]byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"par"}]}}]}}`))
+	if chunk == nil || !strings.Contains(string(chunk), `"content":"par"`) {
+		t.Fatalf("chunk = %s, want the wrapped delta mapped onto the OpenAI chunk", chunk)
+	}
+}

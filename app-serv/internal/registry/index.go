@@ -113,11 +113,14 @@ var nativeFormats = map[string]struct{}{
 	DefaultFormat:         {},
 	"claude":              {},
 	FormatOpenAIResponses: {},
-	// Gemini's generateContent payload is translated here for the API-key family.
-	// `gemini-cli` and `antigravity` are absent on purpose: they wrap that same
-	// payload in a Cloud Code Assist envelope keyed to a project, so a format the
-	// gateway can only half-write is a connector's job, not a translator's.
-	"gemini": {},
+	// Gemini's generateContent payload is translated here for all three families that
+	// declare it: the API-key entry and the two Cloud Code Assist products, whose
+	// project envelope and model-less address are their connectors' business rather
+	// than a second payload shape. `vertex` stays out: project and region sit in its
+	// path, so no route reaches it without its own connector.
+	"gemini":      {},
+	"gemini-cli":  {},
+	"antigravity": {},
 }
 
 // ChatRoutability reports whether this provider's chat path can be served

@@ -56,7 +56,7 @@ func catalogIndex(t *testing.T) *registry.Index {
 			// is what keeps its models out of the list. `gemini` itself is translated
 			// natively since draft 061, so it can no longer stand in for that rule.
 			ID: "envelope-ish", Category: "apikey", PassthroughModels: true,
-			Transport: registry.Transport{Format: "antigravity", BaseURL: "https://g.test/v1"},
+			Transport: registry.Transport{Format: "vertex", BaseURL: "https://g.test/v1"},
 			Models:    []registry.Model{{ID: "no-translator"}},
 		},
 	}})

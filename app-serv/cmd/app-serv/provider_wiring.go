@@ -40,7 +40,7 @@ func buildProviderRuntime(egressClient *http.Client) (*registry.Index, *provider
 	// one connector because they share one upstream protocol, differing only in
 	// credential and endpoint table. Each is registered by name and the connector
 	// reads the entry it was built for, so a new lane is one line here.
-	plugins := make([]provider.Plugin, 0, 8)
+	plugins := make([]provider.Plugin, 0, 10)
 	for _, id := range []string{"opencode", "opencode-zen", "opencode-go"} {
 		entry, ok := idx.Provider(id)
 		if !ok {
@@ -88,6 +88,25 @@ func buildProviderRuntime(egressClient *http.Client) (*registry.Index, *provider
 			return nil, nil, fmt.Errorf("provider connectors: the %s entry is missing from the registry", id)
 		}
 		plugins = append(plugins, provider.NewGemini(entry))
+	}
+	// The two Cloud Code Assist families send that same translated payload inside an
+	// envelope keyed to the account's Cloud project, and address an endpoint that
+	// names no model, so each needs the connector rather than the fallback. They
+	// differ only in the attribution members one product adds and in how it
+	// identifies its client, which is why the product is passed in rather than
+	// derived from the id inside the connector.
+	for _, lane := range []struct {
+		id      string
+		product provider.CloudCodeProduct
+	}{
+		{id: "gemini-cli", product: provider.CloudCodeGeminiCLI},
+		{id: "antigravity", product: provider.CloudCodeAntigravity},
+	} {
+		entry, ok := idx.Provider(lane.id)
+		if !ok {
+			return nil, nil, fmt.Errorf("provider connectors: the %s entry is missing from the registry", lane.id)
+		}
+		plugins = append(plugins, provider.NewCloudCode(entry, lane.product))
 	}
 	connectors, err := provider.NewConnectors(provider.DefaultFactory, plugins...)
 	if err != nil {
