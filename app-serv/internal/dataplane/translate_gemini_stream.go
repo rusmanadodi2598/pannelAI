@@ -14,7 +14,24 @@ package dataplane
 
 import "github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 
-func geminiChunkToOpenAIChunk(payload []byte) []byte {
+// geminiStream is the half of one Gemini stream's translation the frames alone
+// cannot know: how many calls the stream has already shown the client.
+//
+// A streamed OpenAI delta is accumulated by tool-call index, so a second call
+// arriving in a later frame has to be reported under the next index rather than
+// 0 again, and under an id the client can tell apart.
+type geminiStream struct {
+	calls int
+	// sawCall marks a stream that already reported a call, because the vendor's
+	// finish frame arrives separately and says STOP: a client that reads a plain
+	// stop after a tool call never dispatches it.
+	sawCall bool
+}
+
+// chunk maps one streamed Gemini payload onto the OpenAI chunk vocabulary, given
+// the creation second the stream reports. The zero value is the state of a stream
+// that has shown no call yet.
+func (g *geminiStream) chunk(payload []byte, created int64) []byte {
 	chunk, ok := decodeObject(payload)
 	if !ok {
 		return nil
@@ -34,12 +51,13 @@ func geminiChunkToOpenAIChunk(payload []byte) []byte {
 		case part.Text != "":
 			texts = append(texts, part.Text)
 		}
-		if name, arguments, ok := part.functionCall(); ok {
+		if call, ok := part.call(created, g.calls); ok {
+			g.calls++
 			calls = append(calls, map[string]any{
-				"index":    len(calls),
-				"id":       geminiCallID(len(calls)),
+				"index":    g.calls - 1,
+				"id":       call.id,
 				"type":     schema.BlockFunction,
-				"function": map[string]any{"name": name, "arguments": string(arguments)},
+				"function": map[string]any{"name": call.name, "arguments": string(call.arguments)},
 			})
 		}
 	}
@@ -51,6 +69,7 @@ func geminiChunkToOpenAIChunk(payload []byte) []byte {
 	}
 	if len(calls) > 0 {
 		delta["tool_calls"] = calls
+		g.sawCall = true
 	}
 
 	out := map[string]any{}
@@ -60,6 +79,9 @@ func geminiChunkToOpenAIChunk(payload []byte) []byte {
 	finish := ""
 	if reason != "" {
 		finish = openAIFinishReason(reason, formatGemini)
+		if g.sawCall && finish == FinishStop {
+			finish = FinishToolCalls
+		}
 	}
 	// A frame carrying neither content, a finish, nor usage is the vendor's
 	// bookkeeping (a model version header arrives the same way). Forwarding it as

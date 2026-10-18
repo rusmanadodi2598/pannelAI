@@ -95,7 +95,7 @@ func translateUpstreamBody(in Request, resolution Resolution) ([]byte, error) {
 			// The Anthropic wire reaches Gemini through the OpenAI request shape
 			// this package already builds and tests for it, rather than a fourth
 			// copy of the message rules.
-			return encode(OpenAIToGemini(ClaudeToOpenAI(*in.Messages, resolution.UpstreamID, in.Stream), resolution.UpstreamID))
+			return encode(OpenAIToGemini(ClaudeToOpenAI(*in.Messages, resolution.UpstreamID, in.Stream), resolution.UpstreamID, resolution.geminiProduct()))
 		}
 	case schema.FormatOpenAI:
 		if in.Chat == nil {
@@ -107,7 +107,7 @@ func translateUpstreamBody(in Request, resolution Resolution) ([]byte, error) {
 		case TargetResponses:
 			return encode(OpenAIToResponses(*in.Chat, resolution.UpstreamID, in.Stream))
 		case TargetGemini:
-			return encode(OpenAIToGemini(*in.Chat, resolution.UpstreamID))
+			return encode(OpenAIToGemini(*in.Chat, resolution.UpstreamID, resolution.geminiProduct()))
 		}
 	case schema.FormatOpenAIResponses:
 		if in.Responses == nil {
@@ -119,7 +119,7 @@ func translateUpstreamBody(in Request, resolution Resolution) ([]byte, error) {
 		case TargetClaude:
 			return encode(ResponsesToClaude(*in.Responses, resolution.UpstreamID, in.Stream))
 		case TargetGemini:
-			return encode(OpenAIToGemini(ResponsesToOpenAI(*in.Responses, resolution.UpstreamID, in.Stream), resolution.UpstreamID))
+			return encode(OpenAIToGemini(ResponsesToOpenAI(*in.Responses, resolution.UpstreamID, in.Stream), resolution.UpstreamID, resolution.geminiProduct()))
 		}
 	}
 	return nil, dataPlaneError(CodeProviderNotRoutable,

@@ -44,6 +44,7 @@ type ResponsesStreamState struct {
 	// mapping in one shape.
 	claude    StreamState
 	responses responsesStreamState
+	gemini    geminiStream
 
 	// seq is the last sequence_number handed out, which the API requires to
 	// increase by one across the stream.
@@ -110,7 +111,7 @@ func (s *ResponsesStreamState) Frames(upstreamTarget string, payload []byte) [][
 		}
 		return s.chunkFrames(chunk)
 	case TargetGemini:
-		chunk := geminiChunkToOpenAIChunk(payload)
+		chunk := s.gemini.chunk(payload, s.Created)
 		if chunk == nil {
 			return nil
 		}

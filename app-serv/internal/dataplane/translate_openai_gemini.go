@@ -71,6 +71,9 @@ type GeminiPart struct {
 	FileData         *GeminiFileData     `json:"fileData,omitempty"`
 	FunctionCall     *GeminiFunctionCall `json:"functionCall,omitempty"`
 	FunctionResponse *GeminiFunctionResp `json:"functionResponse,omitempty"`
+	// ThoughtSignature travels beside a functionCall, never inside it: a replayed
+	// call without one is what Gemini 3 refuses.
+	ThoughtSignature string `json:"thoughtSignature,omitempty"`
 }
 
 // GeminiInlineData is an inlined base64 payload.
@@ -122,13 +125,14 @@ type GeminiFunctionDecl struct {
 }
 
 // OpenAIToGemini translates an OpenAI chat request into a Gemini generateContent
-// payload. Three shape differences are load-bearing. A system prompt has no place in
-// Gemini's contents, so it moves to systemInstruction, and a lone system message is
-// treated as the user's first turn. A tool result is a functionResponse part inside a
-// user turn, paired by call id, rather than its own message. Tool arguments are an
-// object rather than a JSON string, so an unparseable argument string becomes an
-// empty object instead of invalid JSON.
-func OpenAIToGemini(req schema.ChatRequest, upstreamModel string) GeminiRequest {
+// payload. Three shape differences are load-bearing: a system prompt has no place in
+// contents so it moves to systemInstruction, a tool result is a functionResponse part
+// inside a user turn rather than its own message, and tool arguments are an object
+// rather than a JSON string, so an unparseable one becomes an empty object.
+//
+// The product names the thought signature a replayed call carries, and the turns
+// merge at the end, once the whole conversation's shape is known.
+func OpenAIToGemini(req schema.ChatRequest, upstreamModel string, product geminiProduct) GeminiRequest {
 	out := GeminiRequest{
 		Model:          upstreamModel,
 		Contents:       make([]GeminiContent, 0, len(req.Messages)),
@@ -143,7 +147,7 @@ func OpenAIToGemini(req schema.ChatRequest, upstreamModel string) GeminiRequest 
 		out.GenerationConfig.MaxOutputTokens = &max
 	}
 
-	calls := geminiCallNames(req.Messages)
+	history := newGeminiHistory(product.thoughtSignature())
 	system := make([]string, 0, 2)
 
 	for _, message := range req.Messages {
@@ -162,7 +166,7 @@ func OpenAIToGemini(req schema.ChatRequest, upstreamModel string) GeminiRequest 
 				system = append(system, text)
 			}
 		default:
-			if content, ok := geminiTurn(message, calls); ok {
+			if content, ok := geminiTurn(message, history); ok {
 				out.Contents = append(out.Contents, content)
 			}
 		}
@@ -177,6 +181,7 @@ func OpenAIToGemini(req schema.ChatRequest, upstreamModel string) GeminiRequest 
 	if declarations := geminiDeclarations(req.Tools); len(declarations) > 0 {
 		out.Tools = []GeminiToolSets{{FunctionDeclarations: declarations}}
 	}
+	out.Contents = mergeGeminiTurns(out.Contents, upstreamModel)
 	return out
 }
 

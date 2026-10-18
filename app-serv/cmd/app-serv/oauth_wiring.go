@@ -57,8 +57,9 @@ func buildOAuth(
 }
 
 // oauthClientMaterial moves the deployment's OAuth client material across the
-// boundary the flow reads. The registry document is generated and committed, so
-// a secret it does not carry arrives here instead.
+// boundary the flow reads. The secret has only this route, and for the Google
+// families so does the id: the committed document carries neither, so a flow that
+// needs a client is configured here or refused before the round starts.
 func oauthClientMaterial(cfg config.Config) map[string]service.OAuthClient {
 	if len(cfg.OAuthClients) == 0 {
 		return nil

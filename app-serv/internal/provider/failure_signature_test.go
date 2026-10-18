@@ -224,3 +224,61 @@ func TestClassify_THarborIsRecognisedOnAnyHost(t *testing.T) {
 		t.Fatalf("Classify() = %s/%s, want the allowance signature on any host", got.Class, got.SignatureID)
 	}
 }
+
+// TestClassify_GoogleQuotaMarkersSeparateThrottleFromSpent is the parking rule for
+// the Gemini families: Google reports both a full pool and a spent allowance under a
+// 429 whose status alone cannot tell them apart, and the difference is what the
+// operator pays for. A spent allowance belongs on the long ladder; a pool that frees
+// in seconds must not park a working credential for a day.
+func TestClassify_GoogleQuotaMarkersSeparateThrottleFromSpent(t *testing.T) {
+	cases := []struct {
+		name      string
+		body      string
+		host      string
+		wantClass domain.FailureClass
+		wantID    string
+	}{
+		{
+			name:      "a named rate-limit reason is spent quota",
+			body:      `{"error":{"code":429,"status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"RATE_LIMIT_EXCEEDED"}]}}`,
+			wantClass: domain.FailureQuotaExhausted, wantID: "google.quota-exhausted",
+		},
+		{
+			name:      "the quota bucket spent wording is spent quota",
+			body:      `{"error":{"code":403,"message":"Individual quota reached for the current model."}}`,
+			wantClass: domain.FailureQuotaExhausted, wantID: "google.quota-exhausted",
+		},
+		{
+			// The reference keeps this wording off the quota ladder on purpose, and
+			// this is the line a careless signature would erase.
+			name:      "bare exhausted status stays a short throttle",
+			body:      `{"error":{"code":429,"status":"RESOURCE_EXHAUSTED","message":"Resource has been exhausted"}}`,
+			wantClass: domain.FailureRateLimitTemporary, wantID: "",
+		},
+		{
+			name: "the markers do not travel to another vendor",
+			body: `{"error":{"reason":"QUOTA_EXHAUSTED"}}`, host: "api.example.com",
+			wantClass: domain.FailureRateLimitTemporary, wantID: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			host := tc.host
+			if host == "" {
+				host = "daily-cloudcode-pa.googleapis.com"
+			}
+			failure := Failure{
+				Provider: "gemini-cli", Host: host, Status: http.StatusTooManyRequests,
+				Body: []byte(tc.body),
+			}
+			verdict := Classify(failure)
+			if verdict.Class != tc.wantClass {
+				t.Fatalf("class = %q, want %q (body=%s)", verdict.Class, tc.wantClass, tc.body)
+			}
+			if verdict.SignatureID != tc.wantID {
+				t.Fatalf("signature = %q, want %q", verdict.SignatureID, tc.wantID)
+			}
+		})
+	}
+}

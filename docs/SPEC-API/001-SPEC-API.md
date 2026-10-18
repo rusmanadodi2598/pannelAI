@@ -1715,3 +1715,19 @@ of inventing a project identifier when the account has none is **not** adopted: 
 from the envelope, and the vendor's own refusal is the signal, following the decision draft 011 §10.11 reached
 for a fabricated dedup key. The honest path to a missing project is the `onboardUser` call draft 061 §8
 records as still unwritten, not a made-up value._
+
+_Changelog 2026-10-18 (later same day, tool calls): a Gemini answer's tool call now survives being used.
+The client-visible half is that a streamed call reported under `index: 0` in one frame no longer reappears as
+`index: 0` in the next, a stream that carried a call finishes as `tool_calls` rather than `stop`, and the id a
+client answers by is the vendor's when the answer sent one and `call_<name>_<created>_<index>` when it did not,
+so the same tool called on two turns arrives as two ids. The upstream half is the agreement Gemini checks: it
+validates `functionCall` ids across the whole history and rejects a request where one repeats, so each replayed
+call takes the next free id and its `functionResponse` is written under that same id with the name that call
+declared, rather than the name the last turn gave the id. Adjacent same-role turns merge into one (parallel tool
+results arrive as one message per call), a history opened by the model gets a user turn, and a call the caller
+left unanswered is closed with a function response carrying `"Continue."`. Parts marked thinking are still read
+into `reasoning_content` and never replayed: Gemini 3 requires a `thoughtSignature` beside a replayed
+`functionCall`, no client wire carries one back, and this gateway holds no state between requests, so the first
+call of each model turn is signed with the product's known-good filler and its siblings stay unsigned. Draft 061
+§5.6 records why the reference's two storage mechanisms were not adopted, and §8 what a live round still has to
+confirm._

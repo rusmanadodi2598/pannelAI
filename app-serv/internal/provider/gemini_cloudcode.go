@@ -97,7 +97,7 @@ func (c *CloudCode) TransformRequest(req *Request) error {
 	}
 
 	envelope := cloudcodeEnvelope{
-		Model:   req.Model.UpstreamID(),
+		Model:   cloudcodeWireModel(req.Model.UpstreamID()),
 		Request: req.Body,
 		Project: strings.TrimSpace(req.Credential.MetadataValue(MetadataProjectID)),
 	}
@@ -153,19 +153,38 @@ type cloudcodeEnvelope struct {
 // identity it was first counted with. The step counts two per turn (a user ask and a
 // model answer) and never below one.
 func (c *CloudCode) requestID(req *Request, turns int) string {
-	session := req.Credential.Account()
+	// The project is the session this product attributes by, so two projects of one
+	// account do not blend into one conversation and a retry of one project keeps it.
+	session := req.Credential.MetadataValue(MetadataProjectID)
+	if session == "" {
+		session = req.Credential.Account()
+	}
 	if session == "" {
 		session = req.Credential.EndpointID()
 	}
 	product := c.product.userAgentValue
 	conversation := cloudcodeSeedID(product + ":conversation:" + session)
-	trajectory := cloudcodeSeedID(product + ":trajectory:" + session + ":" + req.Model.UpstreamID())
+	trajectory := cloudcodeSeedID(product + ":trajectory:" + session + ":" + cloudcodeWireModel(req.Model.UpstreamID()))
 
 	step := 1
 	if turns > 0 {
 		step = turns*2 - 1
 	}
 	return fmt.Sprintf("agent/%s/%d/%s/%d", conversation, time.Now().UnixMilli(), trajectory, step)
+}
+
+// cloudcodeWireModel drops the trailing thinking level from a declared model id.
+// The catalog writes `gemini-3.8-flash-high(high)` because that is how the level is
+// named on the way in, and the level has already been applied to the request's
+// thinking budget; Cloud Code Assist answers 404 for a model string that still
+// carries the parenthetical.
+func cloudcodeWireModel(model string) string {
+	model = strings.TrimSpace(model)
+	open := strings.LastIndex(model, "(")
+	if open <= 0 || !strings.HasSuffix(model, ")") {
+		return model
+	}
+	return strings.TrimSpace(model[:open])
 }
 
 // cloudcodeTurns counts the turns the translated payload carries. The count comes

@@ -36,22 +36,44 @@ type geminiAnswerPart struct {
 	Thought bool   `json:"thought"`
 
 	FunctionCall *struct {
+		ID   string          `json:"id"`
 		Name string          `json:"name"`
 		Args json.RawMessage `json:"args"`
 	} `json:"functionCall"`
 }
 
-func (p *geminiAnswerPart) functionCall() (string, []byte, bool) {
+// geminiCallRead is one functionCall part as a client needs it: the call named,
+// its arguments as the JSON string the OpenAI wire carries, and an id.
+type geminiCallRead struct {
+	id        string
+	name      string
+	arguments []byte
+}
+
+// call reads one answer part as a tool call, returning false for a part that is
+// not one.
+//
+// The id is the vendor's when the answer carried one. Gemini names none on the
+// plain API, and an OpenAI client dispatches and answers by id, so the gateway
+// mints one: the call's name and the answer's own creation second make it
+// different from the same tool's next turn, and the request direction
+// re-uniquifies whatever the client echoes back.
+func (p *geminiAnswerPart) call(created int64, index int) (geminiCallRead, bool) {
 	if p.FunctionCall == nil || p.FunctionCall.Name == "" {
-		return "", nil, false
+		return geminiCallRead{}, false
 	}
-	arguments := p.FunctionCall.Args
+	call := geminiCallRead{name: p.FunctionCall.Name, id: p.FunctionCall.ID}
 	// OpenAI clients parse the arguments field as JSON, so a call that arrived
 	// with none gets the empty object rather than a field that fails to parse.
-	if len(arguments) == 0 || string(arguments) == "null" {
-		arguments = []byte("{}")
+	if len(p.FunctionCall.Args) == 0 || string(p.FunctionCall.Args) == "null" {
+		call.arguments = []byte("{}")
+	} else {
+		call.arguments = p.FunctionCall.Args
 	}
-	return p.FunctionCall.Name, arguments, true
+	if call.id == "" {
+		call.id = geminiCallID(call.name, created, index)
+	}
+	return call, true
 }
 
 // GeminiToOpenAIResponse translates one non-streamed Gemini answer into the
@@ -80,11 +102,11 @@ func GeminiToOpenAIResponse(raw []byte, model string, created int64) (schema.Cha
 		case part.Text != "":
 			texts = append(texts, part.Text)
 		}
-		if name, arguments, ok := part.functionCall(); ok {
+		if call, ok := part.call(created, len(message.ToolCalls)); ok {
 			message.ToolCalls = append(message.ToolCalls, schema.ToolCall{
-				ID:       geminiCallID(len(message.ToolCalls)),
+				ID:       call.id,
 				Type:     schema.BlockFunction,
-				Function: schema.FunctionCall{Name: name, Arguments: string(arguments)},
+				Function: schema.FunctionCall{Name: call.name, Arguments: string(call.arguments)},
 			})
 		}
 	}
@@ -208,9 +230,10 @@ func geminiBlockReason(body object) string {
 	return stringField(feedback, "blockReason")
 }
 
-// geminiCallID synthesizes the call id an OpenAI client needs: Gemini sends none,
-// and the request direction pairs a result back to its call by function name, so
-// an id only has to be distinct within one answer.
-func geminiCallID(index int) string {
-	return fmt.Sprintf("call_%d", index)
+// geminiCallID mints the id a call the vendor named none carries. It has to hold
+// together the call and its result inside one conversation, and be different from
+// the same tool's call on the next turn, because Gemini validates functionCall ids
+// across the whole history.
+func geminiCallID(name string, created int64, index int) string {
+	return fmt.Sprintf("call_%s_%d_%d", name, created, index)
 }

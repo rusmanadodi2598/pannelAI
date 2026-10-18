@@ -12,10 +12,12 @@ package service
 
 import (
 	"context"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 )
 
 func TestOAuthRoundCarriesTheConfiguredClient(t *testing.T) {
@@ -85,8 +87,8 @@ func TestOAuthRoundFallsBackToTheRegistryClient(t *testing.T) {
 
 // TestOAuthRefreshCarriesTheConfiguredClient proves the third path: a token the
 // vendor rotates days later is exchanged with the same client that opened the
-// round, because a refresh under the registry's id fails against a secret the
-// deployment alone holds.
+// round, because a refresh under an id the deployment does not hold fails against
+// a secret it alone knows.
 func TestOAuthRefreshCarriesTheConfiguredClient(t *testing.T) {
 	fixture := newOAuthFlowFixture(t, providerWithCodeFlow("gc"))
 	fixture.service.providerClients = map[string]OAuthClient{"gc": {ClientSecret: "own-secret"}}
@@ -101,6 +103,50 @@ func TestOAuthRefreshCarriesTheConfiguredClient(t *testing.T) {
 	}
 	if grant.ClientID != "client-gc" {
 		t.Fatalf("refresh client_id = %q, want the registry entry's client when no id is configured", grant.ClientID)
+	}
+}
+
+// TestOAuthRoundRefusesAnUnconfiguredClient pins the half the registry no longer
+// supplies. A flow whose client belongs to the deployment is refused when the
+// deployment states nothing, and it is refused before any state is staged, so the
+// panel gets one English sentence about its own environment instead of a browser
+// redirect that dies at the provider.
+func TestOAuthRoundRefusesAnUnconfiguredClient(t *testing.T) {
+	entry := providerWithCodeFlow("gc")
+	entry.OAuth.ClientID = ""
+	fixture := newOAuthFlowFixture(t, entry)
+
+	_, err := fixture.service.Start(context.Background(), OAuthStartInput{
+		ProviderID: "gc", BaseURL: "https://panel.example.com",
+	})
+	if err == nil {
+		t.Fatal("Start() error = nil, want the round refused for want of a client")
+	}
+	if !strings.Contains(err.Error(), "not configured on this deployment") {
+		t.Fatalf("Start() error = %v, want the reason an operator can act on", err)
+	}
+	if len(fixture.states.staged) != 0 {
+		t.Fatalf("staged states = %d, want a refused round to leave nothing behind", len(fixture.states.staged))
+	}
+}
+
+// TestOAuthRefreshRefusesWhenTheClientDisappearsLater holds the path a refusal at
+// Start cannot cover: the credential was connected while the deployment stated its
+// client, and the env line is gone by the time the token needs rotating. The
+// worker is told the same sentence rather than exchanging under no client.
+func TestOAuthRefreshRefusesWhenTheClientDisappearsLater(t *testing.T) {
+	entry := providerWithCodeFlow("gc")
+	entry.OAuth.ClientID = ""
+	fixture := newOAuthFlowFixture(t, entry)
+	seedOAuthEndpoint(t, fixture, "ep_gc", "gc", "Account 1", "someone@example.com", testNow.Add(time.Hour))
+
+	if _, err := fixture.service.Refresh(context.Background(), "gc", "ep_gc"); err == nil {
+		t.Fatal("Refresh() error = nil, want the round refused for want of a client")
+	} else if !strings.Contains(err.Error(), "not configured on this deployment") {
+		t.Fatalf("Refresh() error = %v, want the reason an operator can act on", err)
+	}
+	if calls := len(fixture.tokens.grantCalls); calls != 0 {
+		t.Fatalf("grant calls = %d, want a refused refresh to reach no provider", calls)
 	}
 }
 

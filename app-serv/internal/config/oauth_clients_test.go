@@ -3,7 +3,7 @@
 // @file      internal/config/oauth_clients_test.go
 // @for       The typed OAuth client material a deployment may supply for a provider's flow.
 // @uses      testing.
-// @reason    The reference ships public installed-app client secrets in its registry, and this repository commits generated registry data, so a secret read from the document would be a secret in git history. These tests hold the two rules that keep the secret out of the document: it is read from the environment per provider, and an unset one leaves the provider on the registry's client id rather than a broken round.
+// @reason    A client secret read from the committed registry document would be a secret in git history, and the document is generated from a reference that ships live ones. These tests hold the two rules that keep it out: the material is read from the environment per provider, and a provider that states nothing is left out of the map rather than entered empty, which is what lets the flow tell "not configured" from "configured with a blank".
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

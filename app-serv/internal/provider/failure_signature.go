@@ -126,6 +126,18 @@ var seedSignatures = []Signature{
 		Retryable: RetryableAfter(true),
 	},
 	{
+		// Google separates a momentary throttle from a spent allowance by the
+		// reason it names inside error.details, not by the status: both arrive as
+		// 429 or 403. Bare RESOURCE_EXHAUSTED is deliberately absent, since that is
+		// the wording of a full pool that frees within seconds and the status rule
+		// already parks it on the short ladder.
+		ID:        "google.quota-exhausted",
+		Host:      "googleapis.com",
+		Pattern:   regexp.MustCompile(`(?i)RATE_LIMIT_EXCEEDED|QUOTA_EXHAUSTED|Individual quota reached`),
+		Class:     domain.FailureQuotaExhausted,
+		Retryable: RetryableAfter(false),
+	},
+	{
 		// OpenCode's free tier answers this gateway rather than this credential:
 		// no key on the account can serve it and retrying only spends the walk.
 		ID:        "opencode.free-tier-gate",

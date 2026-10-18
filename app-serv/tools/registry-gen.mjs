@@ -581,6 +581,17 @@ function mapModels(models) {
 // and kiro, whose flows then cannot be started at all.
 const OAUTH_TRANSPORT_FIELDS = ["clientId", "tokenUrl", "refreshUrl", "authUrl"];
 
+// RUNTIME_CLIENT_PROVIDERS are the entries whose OAuth client belongs to the
+// deployment rather than to this document. The two Google installed-app families
+// ship a client secret together with their id, and the reference publishes both,
+// so carrying either half here would put a live client credential in git history:
+// GitHub's secret scanning reads the id and the GOCSPX secret as a verified pair
+// and refuses the push. Their flows read both halves from typed config
+// (internal/config/oauth_clients.go) and refuse to start when it states nothing.
+// `gemini` joins because its whole oauth block is that one published id; with the
+// id stripped the block declares nothing and disappears.
+const RUNTIME_CLIENT_PROVIDERS = new Set(["antigravity", "gemini-cli", "gemini"]);
+
 // mapOAuth carries the flow configuration with two deliberate omissions.
 //
 // clientSecret is dropped rather than copied: the reference checkout holds live
@@ -604,6 +615,16 @@ function mapOAuth(entry) {
     if (transport[key] !== undefined && out[tag] === undefined) out[tag] = transport[key];
   }
   delete out.client_secret;
+  if (RUNTIME_CLIENT_PROVIDERS.has(entry.id)) {
+    delete out.client_id;
+  }
+  // Offline consent is the port's declaration, so it lands after the reference's
+  // own members and a provider that ever states the parameter itself keeps its
+  // value rather than being overwritten by a default.
+  const consent = APP_SERV_OAUTH_CONSENT[entry.id];
+  if (consent) {
+    out.extra_params = { ...consent, ...(isPlainObject(out.extra_params) ? out.extra_params : {}) };
+  }
   // scopes arrives as a string for some providers and a list for others; the
   // Go StringList accepts both, so the shape is preserved as written.
   return Object.keys(out).length > 0 ? out : undefined;
@@ -638,6 +659,20 @@ const APP_SERV_PROVIDER_EXTENSIONS = {
 // keeps its whole catalog.
 const APP_SERV_MODEL_KINDS = {
   vertex: new Set(["video"]),
+};
+
+// APP_SERV_OAUTH_CONSENT names the providers whose authorization must ask for
+// offline consent: Google returns no refresh token without `access_type=offline`,
+// and a login that stores no refresh token dies when the access token expires,
+// which the panel then reports as a provider that keeps disconnecting.
+//
+// The reference states this in its authorize builder rather than in its entry
+// data, so there is nothing for this generator to copy: the rule is declared
+// here as the port's own knowledge about the vendors it serves, and reaches the
+// document as the entry data the flow reads.
+const APP_SERV_OAUTH_CONSENT = {
+  "antigravity": { access_type: "offline", prompt: "consent" },
+  "gemini-cli": { access_type: "offline", prompt: "consent" },
 };
 
 // modelsFor applies the per-provider kind filter before the allowlist pass.

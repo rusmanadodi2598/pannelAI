@@ -41,6 +41,9 @@ type ClaudeStreamState struct {
 	// responses maps Responses API events onto the OpenAI chunks this state
 	// frames, when the upstream speaks that format.
 	responses responsesStreamState
+	// gemini counts the calls one Gemini stream has already reported, so the
+	// next frame continues the indices rather than restarting them.
+	gemini geminiStream
 
 	// usage is the accounting folded into the closing message_delta, which is
 	// where Anthropic carries it.
@@ -111,9 +114,11 @@ func (s *ClaudeStreamState) fromResponses(payload []byte) [][]byte {
 
 // fromGemini maps one Gemini stream payload into the OpenAI chunk vocabulary and
 // frames it on the same path, so the Gemini stream shape is known in one place
-// rather than in each client state.
+// rather than in each client state. The Anthropic wire reports no creation instant,
+// so calls are minted under a zero stamp and stay distinct by index; the request
+// direction re-uniquifies whatever the client echoes back.
 func (s *ClaudeStreamState) fromGemini(payload []byte) [][]byte {
-	chunk := geminiChunkToOpenAIChunk(payload)
+	chunk := s.gemini.chunk(payload, 0)
 	if chunk == nil {
 		return nil
 	}

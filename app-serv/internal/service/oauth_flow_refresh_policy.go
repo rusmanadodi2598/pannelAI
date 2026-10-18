@@ -50,7 +50,10 @@ func (s *OAuthFlowService) refreshGrant(
 		}
 		return client.StateRefresh(ctx, oauth, refreshToken)
 	}
-	clientID, clientSecret := s.clientFor(providerID, oauth)
+	clientID, clientSecret, err := s.clientFor(providerID, oauth)
+	if err != nil {
+		return oauthhttp.TokenResponse{}, err
+	}
 	grant := oauthhttp.TokenGrant{
 		GrantType:    "refresh_token",
 		RefreshToken: refreshToken,

@@ -131,7 +131,10 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 		return OAuthConnect{}, domain.NewValidationError("the state belongs to another provider")
 	}
 
-	clientID, clientSecret := s.clientFor(providerID, oauth)
+	clientID, clientSecret, err := s.clientFor(providerID, oauth)
+	if err != nil {
+		return OAuthConnect{}, err
+	}
 	token, err := s.tokens.Grant(ctx, oauth.TokenURL, tokenEncoding(oauth), oauthhttp.TokenGrant{
 		GrantType: "authorization_code", Code: code,
 		ClientID: clientID, ClientSecret: clientSecret,

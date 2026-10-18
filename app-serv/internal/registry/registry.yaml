@@ -270,7 +270,12 @@ providers:
       onboard_user_endpoint: https://cloudcode-pa.googleapis.com/v1internal:onboardUser
       load_code_assist_user_agent: antigravity/ide/2.11.0 darwin/arm64
       refresh_lead_ms: 300000
-      client_id: 1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com
+      # Offline consent is declared by the port, not the reference: without it
+      # Google returns no refresh token and the account dies when the access token
+      # expires. The generator carries the same rule in APP_SERV_OAUTH_CONSENT.
+      extra_params:
+        access_type: offline
+        prompt: consent
     models:
       - id: gemini-3.8-flash-high
         name: Gemini 3.8 Flash (High)
@@ -415,7 +420,11 @@ providers:
         - https://www.googleapis.com/auth/userinfo.profile
       refresh:
         encoding: form
-      client_id: 681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com
+      # See the antigravity entry: the same port-declared offline consent, same
+      # generator rule.
+      extra_params:
+        access_type: offline
+        prompt: consent
     models:
       - id: gemini-3.1-pro-preview
         name: Gemini 3.1 Pro Preview
@@ -1109,8 +1118,6 @@ providers:
         api_key:
           header: x-goog-api-key
           scheme: raw
-    oauth:
-      client_id: 681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com
     models:
       - id: gemini-3.8-flash
         name: Gemini 3.8 Flash

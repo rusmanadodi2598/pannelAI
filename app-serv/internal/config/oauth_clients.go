@@ -3,7 +3,7 @@
 // @file      internal/config/oauth_clients.go
 // @for       The OAuth client material a deployment supplies for a provider's authorization round.
 // @uses      strings, config.getenv.
-// @reason    The reference publishes installed-app client secrets inside its registry document, and this repository commits generated registry data, so a secret read from the document would be a secret in git. Reading it per provider here keeps one source of truth for each half: the client id comes from the registry unless the operator registered their own, and the secret exists only in the process environment.
+// @reason    The reference publishes installed-app client material inside its registry document, and this repository commits generated registry data, so either half read from that document would be a credential in git history. The secret therefore exists only in the process environment, and for the two Google families so does the id: a provider that states nothing here is refused before its round starts rather than sent with a blank client.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable
@@ -21,9 +21,11 @@ type OAuthClient struct {
 
 func (c OAuthClient) isEmpty() bool { return c.ClientID == "" && c.ClientSecret == "" }
 
-// providerOAuthClients names the flows whose client may belong to the
-// deployment. The Google family is first because its rounds are started by the
-// shared client against a client id the registry already carries.
+// providerOAuthClients names the flows whose client belongs to the deployment.
+// The two Google installed-app families are the ones that need it: their client
+// material lives in the reference's registry document, and none of it is copied
+// into a committed file here. A provider absent from this table has no env slot,
+// so its flow can only start on a client id the entry itself carries.
 var providerOAuthClients = []struct {
 	provider  string
 	idEnv     string

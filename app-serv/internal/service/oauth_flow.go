@@ -119,6 +119,13 @@ func (s *OAuthFlowService) Start(ctx context.Context, in OAuthStartInput) (OAuth
 		return OAuthStart{}, err
 	}
 
+	clientID, _, err := s.clientFor(provider.ID, oauth)
+	if err != nil {
+		// Refused before anything is staged: a round this deployment cannot
+		// perform leaves no state behind for the provider's redirect to find.
+		return OAuthStart{}, err
+	}
+
 	redirect := strings.TrimSpace(in.RedirectURI)
 	if redirect == "" {
 		if strings.TrimSpace(in.BaseURL) == "" {
@@ -155,7 +162,6 @@ func (s *OAuthFlowService) Start(ctx context.Context, in OAuthStartInput) (OAuth
 		return OAuthStart{}, err
 	}
 
-	clientID, _ := s.clientFor(provider.ID, oauth)
 	authorize, err := buildAuthorizeURL(oauth, clientID, redirect, state, verifier)
 	if err != nil {
 		return OAuthStart{}, err

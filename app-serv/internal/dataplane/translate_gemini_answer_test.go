@@ -190,8 +190,48 @@ func TestGeminiToOpenAIResponse_UnwrapsTheCloudCodeAnswer(t *testing.T) {
 // TestGeminiChunkToOpenAIChunk_UnwrapsToo covers the streamed half, where a vendor
 // that wraps the answer wraps its frames as well.
 func TestGeminiChunkToOpenAIChunk_UnwrapsToo(t *testing.T) {
-	chunk := geminiChunkToOpenAIChunk([]byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"par"}]}}]}}`))
+	stream := geminiStream{}
+	chunk := stream.chunk([]byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"par"}]}}]}}`), 1700000000)
 	if chunk == nil || !strings.Contains(string(chunk), `"content":"par"`) {
 		t.Fatalf("chunk = %s, want the wrapped delta mapped onto the OpenAI chunk", chunk)
+	}
+}
+
+// TestGeminiToOpenAIResponse_CallIDsHoldAcrossTurns pins what a client's next
+// request depends on: the id it echoes must name this turn's call and not the
+// same tool's call two turns ago, because Gemini reads a repeated functionCall id
+// as a malformed history.
+func TestGeminiToOpenAIResponse_CallIDsHoldAcrossTurns(t *testing.T) {
+	body := []byte(`{"candidates":[{"content":{"role":"model","parts":[
+		{"functionCall":{"name":"get_weather","args":{}}}]}}]}`)
+
+	first, err := GeminiToOpenAIResponse(body, "gemini-2.5-flash", 1700000000)
+	if err != nil {
+		t.Fatalf("GeminiToOpenAIResponse() error = %v", err)
+	}
+	second, err := GeminiToOpenAIResponse(body, "gemini-2.5-flash", 1700000042)
+	if err != nil {
+		t.Fatalf("GeminiToOpenAIResponse() error = %v", err)
+	}
+	a := first.Choices[0].Message.ToolCalls[0].ID
+	b := second.Choices[0].Message.ToolCalls[0].ID
+	if a == b {
+		t.Fatalf("call ids = %q in both answers, want the same tool's next turn told apart", a)
+	}
+}
+
+// TestGeminiToOpenAIResponse_KeepsTheVendorsCallID holds the other half: where the
+// upstream did name a call, that name is the pair's only anchor and rewriting it
+// would break the client's own bookkeeping.
+func TestGeminiToOpenAIResponse_KeepsTheVendorsCallID(t *testing.T) {
+	body := []byte(`{"candidates":[{"content":{"role":"model","parts":[
+		{"functionCall":{"id":"tool-9","name":"get_weather","args":{}}}]}}]}`)
+
+	response, err := GeminiToOpenAIResponse(body, "gemini-2.5-flash", 1700000000)
+	if err != nil {
+		t.Fatalf("GeminiToOpenAIResponse() error = %v", err)
+	}
+	if got := response.Choices[0].Message.ToolCalls[0].ID; got != "tool-9" {
+		t.Fatalf("call id = %q, want the id the upstream sent", got)
 	}
 }

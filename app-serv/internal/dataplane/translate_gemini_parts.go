@@ -3,9 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_gemini_parts.go
-// @for       The part, image, tool, and function-result conversion the OpenAI-to-Gemini direction needs, plus Gemini's name rules.
+// @for       The content part, image, and tool-declaration conversion the OpenAI-to-Gemini direction needs, plus Gemini's function-name rules.
 // @uses      internal/schema, encoding/json, strings.
-// @reason    Gemini's part shapes are the bulk of the direction's work and none of them is reachable from the request builder without them: a tool result has to be paired by call id with the name its functionCall declared, and a name has to satisfy Gemini's character rules. Keeping these beside the request translation is what makes the pairing auditable in one place.
+// @reason    Gemini's part shapes are the bulk of the direction's work and none of them is reachable from the request builder without them: an image arrives as two different references depending on whether the caller inlined it, and a tool name has to satisfy Gemini's character rules before the upstream accepts the request at all. The call-and-result pairing lives in translate_gemini_calls.go because it needs the whole history, not one message.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -25,44 +25,6 @@ import (
 // (openai-to-gemini.js, sanitizeGeminiFunctionName), because the name is the
 // client's, not the gateway's.
 const geminiMaxFunctionNameLen = 64
-
-// geminiTurn converts one non-system message into a Gemini turn, returning false
-// when the message produced nothing to send.
-func geminiTurn(message schema.ChatMessage, calls map[string]string) (GeminiContent, bool) {
-	switch message.Role {
-	case schema.RoleAssistant:
-		parts := make([]GeminiPart, 0, 2+len(message.ToolCalls))
-		if text := message.Content.TextContent(); text != "" {
-			parts = append(parts, GeminiPart{Text: text})
-		}
-		for _, call := range message.ToolCalls {
-			if call.Function.Name == "" {
-				continue
-			}
-			parts = append(parts, GeminiPart{FunctionCall: &GeminiFunctionCall{
-				ID:   call.ID,
-				Name: sanitizeGeminiFunctionName(call.Function.Name),
-				Args: argumentMap(call.Function.Arguments),
-			}})
-		}
-		if len(parts) == 0 {
-			return GeminiContent{}, false
-		}
-		return GeminiContent{Role: RoleModel, Parts: parts}, true
-	case schema.RoleTool:
-		part, ok := geminiFunctionResponse(message.ToolCallID, message.Content.TextContent(), calls)
-		if !ok {
-			return GeminiContent{}, false
-		}
-		return GeminiContent{Role: RoleUser, Parts: []GeminiPart{part}}, true
-	default:
-		parts := geminiParts(message.Content)
-		if len(parts) == 0 {
-			return GeminiContent{}, false
-		}
-		return GeminiContent{Role: RoleUser, Parts: parts}, true
-	}
-}
 
 // geminiParts converts an OpenAI user body into Gemini parts: text, inline base64
 // images, and remote image references.
@@ -97,43 +59,6 @@ func geminiImage(reference string) (GeminiPart, bool) {
 		return GeminiPart{FileData: &GeminiFileData{FileURI: reference, MIMEType: "image/*"}}, true
 	}
 	return GeminiPart{}, false
-}
-
-// geminiFunctionResponse builds the functionResponse part for one tool call, using
-// the name the matching functionCall declared so the upstream can pair them.
-//
-// The result travels under `result`, which is the reference's shape
-// (openai-to-gemini.js wraps every parsed body: `response: { result: parsed }`).
-// A body that already carries a `result` member is kept as it is instead of
-// being nested a second time, and an unparseable or scalar body is carried
-// verbatim under `result` so no result is silently lost.
-func geminiFunctionResponse(callID, body string, calls map[string]string) (GeminiPart, bool) {
-	if callID == "" {
-		return GeminiPart{}, false
-	}
-	result := argumentMap(body)
-	if _, ok := result["result"]; !ok {
-		result = map[string]any{"result": argumentValue(body)}
-	}
-	return GeminiPart{FunctionResponse: &GeminiFunctionResp{
-		ID:       callID,
-		Name:     sanitizeGeminiFunctionName(calls[callID]),
-		Response: result,
-	}}, true
-}
-
-// geminiCallNames maps every tool-call id in the conversation to the name its
-// functionCall declared, which is what a functionResponse has to repeat.
-func geminiCallNames(messages []schema.ChatMessage) map[string]string {
-	names := make(map[string]string, 4)
-	for _, message := range messages {
-		for _, call := range message.ToolCalls {
-			if call.ID != "" && call.Function.Name != "" {
-				names[call.ID] = call.Function.Name
-			}
-		}
-	}
-	return names
 }
 
 // geminiDeclarations converts OpenAI tool declarations into Gemini ones, applying
@@ -200,21 +125,6 @@ func argumentMap(arguments string) map[string]any {
 	var parsed map[string]any
 	if err := json.Unmarshal([]byte(trimmed), &parsed); err != nil || parsed == nil {
 		return map[string]any{}
-	}
-	return parsed
-}
-
-// argumentValue decodes a tool result body into the value a functionResponse
-// carries: an object or array stays as it is, and a scalar or unparseable string is
-// kept verbatim so no result is silently lost.
-func argumentValue(body string) any {
-	trimmed := strings.TrimSpace(body)
-	if trimmed == "" {
-		return ""
-	}
-	var parsed any
-	if err := json.Unmarshal([]byte(trimmed), &parsed); err != nil {
-		return body
 	}
 	return parsed
 }

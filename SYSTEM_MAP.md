@@ -91,7 +91,7 @@ Setiap provider berbeda dalam konektivitas: ada yang **api_key**, ada yang **OAu
 
 **Konsekuensi operasional:** menambah provider = menambah entri di `registry.yaml` (speak format standar) atau satu berkas connector (protokol khusus). Tidak ada `switch` pada provider id di core, sehingga provider A bisa di-patch tanpa menyentuh provider B.
 
-**Batasan yang diketahui:** `Connectors.Unsupported()` sengaja melaporkan provider ber-format khusus (mis. `kiro`, `cursor`, `antigravity`) selama connector-nya belum ditulis; laporan itu adalah daftar kerja, bukan kegagalan diam.
+**Batasan yang diketahui:** `Connectors.Unsupported()` sengaja melaporkan provider ber-format khusus selama connector-nya belum ditulis; yang tersisa saat ini, terukur dari boot, adalah `commandcode`, `kilocode`, dan `vertex` (10 konektor terdaftar atas 36 provider). Laporan itu adalah daftar kerja, bukan kegagalan diam. Keluarga Gemini tidak lagi termasuk: `gemini`, `gemini-cli`, dan `antigravity` punya konektor sejak draft 061, dan `vertex` tetap ada karena project dan regionnya duduk di path, bukan di body.
 
 **Forced stream diputuskan oleh deklarasi connector, bukan oleh field registry.** Seam-nya `provider.StreamForcer` (`ForcesStream() bool`), dan `transport.force_stream` pada entri hanyalah data yang belum dibaca siapa-siapa di jalur request. Yang saat ini mendeklarasikannya: OpenCode (`internal/provider/opencode.go`) dan CodeBuddy CN + Intl (`internal/provider/codebuddy.go`; connector itu ada karena dua hal, stream paksa dan bentuk body; sisanya wire OpenAI biasa yang sudah dilayani `Default`). Empat entri lain mendeklarasikan `force_stream: true` di registry tanpa connector yang memutuskannya (`openai`, `commandcode`, `grok-cli`, `zed`), tercatat sebagai F5 di `docs/DRAFT/011-CODEBUDDY-PROVIDER-READINESS.md` §10.7.
 
@@ -594,6 +594,25 @@ anggotanya dihilangkan dan penolakan vendor menjadi sinyalnya (draft 061 §8 men
 jalan jujur yang belum ditulis). Yang belum ada jalannya: `onboard_user_endpoint` milik entri `antigravity`,
 dipakai reference untuk akun yang belum punya project sama sekali (draft 061 §8 butir 6).
 
+Tool call keluarga Gemini dibentuk oleh satu pass per request (`dataplane.translate_gemini_calls.go`,
+`translate_gemini_turns.go`). Gemini memvalidasi id `functionCall` di **seluruh** history dan menolak satu
+request yang id-nya berulang, sementara `tool_call_id` OpenAI hanya unik di turn-nya sendiri, jadi tiap call
+mengambil id bebas berikutnya dan `functionResponse`-nya ditulis dengan id yang sama bersama nama yang call itu
+sendiri deklarasikan; sebuah hasil yang tidak cocok dengan call mana pun tetap dikirim, bernama id yang
+dibawa klien, karena id itu opaque dan membacanya sebagai nama akan mengarang nama tool. Turn bersebelahan
+ber-role sama digabung (hasil paralel datang sebagai satu pesan per call), history yang dibuka turn model
+diberi turn user pembuka, call yang ditinggal tanpa jawaban ditutup dengan `result: "Continue."`, dan pada
+model `gemini-4*` functionResponse dipindah ke akhir turn hasil penggabungan, mengikuti gerbang reference.
+`thoughtSignature` tidak punya penyimpan lintas request: dataplane tidak memegang state antar panggilan dan
+instance dilayani lebih dari satu, jadi call pertama tiap turn model diberi filler tetap per produk
+(`dataplane/gemini_thought.go`, satu nilai untuk antigravity dan API, nilai lain untuk gemini-cli) dan
+sibling-nya dibiarkan tanpa tanda tangan, yang adalah jalur cache-miss reference. Arah jawaban berhenti
+menyebut call sebagai `call_0`: id dari vendor dipakai bila ada, kalau tidak `call_<nama>_<created>_<indeks>`,
+dan satu stream menghitung call-nya sendiri supaya frame kedua membuka call kedua, bukan menimpa yang
+pertama. Frame finish dari stream yang memuat call dilaporkan sebagai `tool_calls`, bukan `stop`, karena klien
+dispatch dari nilai itu. Reference mengukur bahwa Gemini 3 menolak functionCall tanpa tanda tangan; angka
+dan penerimaan dua filler itu belum diukur di round hidup kita sendiri (draft 061 §8).
+
 
 ---
 
@@ -738,8 +757,21 @@ untuk setiap request yang dilayani, lewat seam yang dipakai bersama oleh chat
 
 Alur OAuth §7.4 (`internal/service/oauth_flow*.go`) memakai dua state eksternal: `state` single-use 10 menit di Redis (`pannelai:oauth:state:*`, `SET NX` + `GETDEL`) sebagai replay guard, dan token yang disegel AES-GCM pada `upstream_endpoints.oauth`. `POST .../oauth/start`, `GET .../oauth/status`, dan `POST .../oauth/refresh` adalah rute sesi; `GET .../oauth/callback` publik karena browser provider tidak bisa membawa cookie sesi. Tujuan redirect browser tidak pernah diambil dari request: `PUBLIC_BASE_URL` menang, origin `redirect_uri` hanya fallback absolut http(s), dan bila keduanya tidak ada callback menjawab JSON. Rotasi token ditulis lewat `UpdateIfUnchanged`, yang hanya menulis kolom `oauth` dan `updated_at` dan membandingkan dua ciphertext kredensial di kolom `oauth`, bukan `updated_at` barisnya: setiap request yang dilayani menulis `updated_at` lewat `RecordUpstreamOutcome`, jadi guard berbasis timestamp kalah oleh traffic yang tidak pernah ia saingi, dan lima kekalahan itu mengirim akun sehat ke dead-letter worker. Kolom lain sengaja tidak ikut tertulis, dan itu separuh kedua dari guard yang sama: rotasi memuat agregat, menghabiskan satu round trip ke vendor, lalu menulis kembali; mengirim `status` dan `priority` hasil muatan itu akan menimpa edit operator yang terjadi di antaranya, dan perbandingan kredensial tidak bisa melihatnya karena operator tidak menyentuh token. Penyapu due tidak lagi berhenti pada satu akun: `POST .../oauth/refresh` tanpa `endpoint_id` menjawab `skipped[]` berisi akun yang ia lewati beserta alasannya, karena yang sudah tersimpan tetap tersimpan dan membatalkan laporan atas batch yang sebagian berhasil adalah kebohongan lain.
 
-Dua cacat kepemilikan yang draft 059 jadikan prasyarat sebelum satu pun rute bulk dibuka, keduanya sudah hidup
-di binary dan keduanya hanya berbahaya dalam jumlah: (1) penyapu refresh OAuth memuat akun lewat filter provider
+Bahan klien OAuth datang dari dua tempat dengan aturan penulisan yang berbeda. `registry.OAuth` membawa
+`client_id` untuk provider yang client id publiknya memang terdokumentasi di reference, dan field
+`client_secret` **tidak ada** di tipe itu sama sekali: dokumen registry di-decode dengan `KnownFields(true)`,
+jadi satu baris `client_secret:` membuat registry gagal dimuat alih-alih membawa kredensial ke dalam git
+(`registry/embedded_test.go` memaku itu). Keluarga Google duduk di sisi lain aturan ini: reference mengirim
+pasangan id dan secret installed-app di dalam dokumen registry-nya, dan pemindai sekret GitHub membaca pasangan
+itu sebagai kredensial terverifikasi, jadi kedua anggota keluarga itu (`antigravity`, `gemini-cli`) kehilangan
+bahan kliennya di dokumen dan hanya membacanya dari environment
+(`ANTIGRAVITY_OAUTH_CLIENT_ID`/`_SECRET`, `GEMINI_CLI_OAUTH_CLIENT_ID`/`_SECRET`, didaftarkan di
+`internal/config/oauth_clients.go`, dan entri `gemini` kehilangan blok `oauth`-nya karena isinya hanya id itu).
+Konsekuensinya eksplisit: round yang tidak menemukan client id **ditolak sebelum satu state pun di-stage**,
+dengan pesan Inggris yang menyebut deployment dan bukan provider, jadi operator tidak dikirim ke browser untuk
+lalu gagal di sisi Google.
+
+Dua cacat kepemilikan yang draft 059 jadikan prasyarat sebelum satu pun rute bulk dibuka, keduanya sudah hidupdi binary dan keduanya hanya berbahaya dalam jumlah: (1) penyapu refresh OAuth memuat akun lewat filter provider
 saja, jadi akun yang operator matikan tetap punya refresh token hidup dan tetap membelanjakan grant vendor setiap
 tick - `sweepProvider` sekarang melewati akun `disabled` dan menamainya di `skipped[]`, sama seperti `OAuthRefreshWorker`
 yang sejak awal men-switch status dan tidak pernah menyentuh `disabled`; (2) `MarkUnhealthy` menulis `status = error`

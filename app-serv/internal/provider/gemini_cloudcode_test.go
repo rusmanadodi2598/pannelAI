@@ -4,7 +4,7 @@
 // @file      internal/provider/gemini_cloudcode_test.go
 // @for       The Cloud Code Assist families: the envelope their endpoint reads, the URL that carries no model, and the client identification the vendor expects.
 // @uses      encoding/json, net/http, strings, testing, internal/registry.
-// @reason    Two Google families send the same generateContent payload inside a project-keyed envelope, and the endpoint they address names no model at all, so neither the plain Gemini connector nor the OpenAI fallback describes them. Pinned here: the envelope's exact membership including the member that must stay absent when the account stores no project, the deterministic request id one family attributes by, and the two identity members the registry entry declares and had no reader until now.
+// @reason    Two Google families send the same generateContent payload inside a project-keyed envelope, and the endpoint they address names no model at all, so neither the plain Gemini connector nor the OpenAI fallback describes them. Pinned here: the envelope's exact membership including the member that must stay absent when the account stores no project, the wire model that arrives with a thinking suffix its reader has already consumed, and the two identity members the registry entry declares and had no reader until now. What one project's session id does across retries is pinned in gemini_cloudcode_requestid_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable
@@ -202,4 +202,33 @@ func TestCloudCodeEnvelope_AntigravityAddsItsAttributionMembers(t *testing.T) {
 		t.Fatalf("ids moved between two calls of one account (%q vs %q): one turn would attribute as two conversations",
 			id, retried["requestId"])
 	}
+}
+
+// TestCloudCodeEnvelope_StripsTheThinkingLevelFromTheWireModel pins the vendor rule
+// the registry data cannot carry: antigravity's declared upstream ids end in a
+// "(level)" because that is how the catalog names the thinking tier, but Cloud Code
+// Assist answers 404 for a model string that still has it. The level has already been
+// applied to the request's thinking budget by the time the id reaches here.
+func TestCloudCodeEnvelope_StripsTheThinkingLevelFromTheWireModel(t *testing.T) {
+	entry := cloudcodeEntry("antigravity")
+	request := cloudcodeRequest(t, entry, 1, false, "proj-9")
+	request.Model = registry.Model{ID: "gemini-3.8-flash-high", UpstreamModelID: "gemini-3.8-flash-high(high)"}
+
+	if err := NewCloudCode(entry, CloudCodeAntigravity).TransformRequest(&request); err != nil {
+		t.Fatalf("TransformRequest() error = %v", err)
+	}
+	members := envelopeMembers(t, request.Body)
+	if got := strings.Trim(string(members["model"]), `"`); got != "gemini-3.8-flash-high" {
+		t.Fatalf("model = %q, want the parenthetical level stripped", got)
+	}
+}
+
+// envelopeMembers reads one outbound body as top-level JSON members.
+func envelopeMembers(t *testing.T, body []byte) map[string]json.RawMessage {
+	t.Helper()
+	var members map[string]json.RawMessage
+	if err := json.Unmarshal(body, &members); err != nil {
+		t.Fatalf("the outbound body is not an object: %v (%s)", err, body)
+	}
+	return members
 }
