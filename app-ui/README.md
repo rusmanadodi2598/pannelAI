@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty-one passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty-two passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -239,6 +239,36 @@ and the Endpoint & Key screen on it, measured 2026-10-19: nothing on that screen
 press, half of it painted nothing under a pointer either (which is no state at all on a touch layout, where
 `hover:` is not applied), and the dialog's destructive commit measured 2.42:1 in dark, so the four states
 of a control are now decided in one token file and one component rather than on each screen.
+
+### The Combos screen on the scale, and the paging band that was copied three times, 2026-10-19
+
+Run with Bun 1.3.0. The widest screen so far: twenty-four controls across ten components, in three
+different readings of the same affordance. The create action was an accent fill wearing a warm hairline
+border, the model picker's chosen chips were accent fills too, the row actions washed to a raised surface
+with no press under any of them, and the vision adapter's retry had no 44px target at all.
+
+Two readings came out of the screen rather than into it. A chosen model chip is now marked the way a
+chosen filter is (the pressed surface, the text border, the weight): a dialog of a dozen coral chips is
+the accent everywhere DESIGN.md §3.4 forbids, and it made the chosen set read as the screen's primary
+action. And the Previous / Page n of m / Next band turned out to be copied on three screens with drifted
+padding and icons on two of them, so it is one component now, which is also what brought `CombosTab.svelte`
+from 257 lines to 232: the size debt and the state work land in the same diff, per the owner's rule that a
+page's audit and its fix stay together.
+
+Two pinned tokens in `combo-fase-6.test.ts` moved with the source that now owns them: the text actions'
+`px-2` is the button's `px-3`, and `max-sm:justify-center` is the button's unconditional centring. Each
+carries the reason at the assertion rather than being dropped.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `bun run test`              | 3244 tests passed across 203 files (3241 across 202 at the last row). This pass adds 3 rows in the new `tests/components/combos-control-states.test.ts`                                                                                                                                                                                                                                                                                                                                                    |
+| `bun run build`             | succeeds, output in `build/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Browser measurement         | Chromium against the dev server with the combos routes stubbed, both themes: create, refresh, the row disclosure, the row edit glyph and the row delete glyph each report three distinct computed colours across rest, hover and held (light delete glyph 179/38/30 to 161/24/21 to 144/7/12; dark 240/138/132 to 253/153/146 to 255/170/163). The paging band is in the screenshot and covered by the unit guard, but the harness's selector for it timed out, so its painted steps are not measured here |
+| Guard found                 | the disclosure row button, the widest control on the screen, painted nothing under a pointer before this pass                                                                                                                                                                                                                                                                                                                                                                                              |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| File size                   | `CombosTab.svelte` 257 to 232, now under the cap; `providers/+page.svelte` 255 to 175 by extracting `ProvidersFilters.svelte`; every file in the cluster is under 250 (largest touched: `VisionAdapterForm.svelte` 239). Net across the pass: 270 lines removed, 126 added                                                                                                                                                                                                                                 |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### The Provider registry list on the state scale, 2026-10-19
 
