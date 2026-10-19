@@ -12,6 +12,7 @@
 	// the one value the gateway will never show again.
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import Modal from '$lib/components/Modal.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { CreatedGatewayKey } from '$lib/schemas/gateway-key';
 
 	type Props = {
@@ -59,11 +60,6 @@
 	{/if}
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-			disabled={!acknowledged}
-			onclick={onclose}>Done</button
-		>
+		<Button disabled={!acknowledged} onclick={onclose}>Done</Button>
 	{/snippet}
 </Modal>

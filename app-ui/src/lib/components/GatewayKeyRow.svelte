@@ -12,6 +12,7 @@
 	// its Save and Cancel are icons too.
 	import { updateGatewayKey } from '$lib/api/gateway-keys';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import {
@@ -36,15 +37,9 @@
 	const SaveIcon = ROW_ACTION_ICONS.save.icon;
 	const CancelIcon = ROW_ACTION_ICONS.cancel.icon;
 
-	// One target size and one hover wash for every action, so the row reads as a set rather than as
-	// three differently styled controls. Each variant carries exactly one text colour: two competing
-	// `text-*` utilities resolve by stylesheet order, and the muted one silently won the destructive
-	// button's colour (rgb(95, 87, 78) instead of the danger token).
-	const actionBase =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
-	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;
-	const dangerClass = `${actionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]`;
-
+	// Every action takes its size and its states from the shared button: four ghosts and one quiet danger
+	// glyph, so the row reads as a set. No colour is decided here, where two `text-*` utilities would
+	// resolve by stylesheet order rather than by intent (DESIGN.md §3.5).
 	let renaming = $state(false);
 	let draft = $state('');
 	let localBusy = $state(false);
@@ -120,34 +115,34 @@
 	<td data-label="Actions" class="px-3 py-2">
 		<div class="flex flex-wrap items-center gap-1">
 			{#if renaming}
-				<button
-					type="button"
-					class={actionClass}
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label="Save"
 					title="Save"
 					disabled={working}
-					onclick={save}><SaveIcon class="size-4" aria-hidden="true" /></button
+					onclick={save}><SaveIcon class="size-4" aria-hidden="true" /></Button
 				>
-				<button
-					type="button"
-					class={actionClass}
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label="Cancel"
 					title="Cancel"
 					onclick={() => (renaming = false)}
-					><CancelIcon class="size-4" aria-hidden="true" /></button
+					><CancelIcon class="size-4" aria-hidden="true" /></Button
 				>
 			{:else}
-				<button
-					type="button"
-					class={actionClass}
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label="Rename"
 					title="Rename"
 					disabled={working}
-					onclick={startRename}><RenameIcon class="size-4" aria-hidden="true" /></button
+					onclick={startRename}><RenameIcon class="size-4" aria-hidden="true" /></Button
 				>
-				<button
-					type="button"
-					class={actionClass}
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label={active ? 'Disable' : 'Enable'}
 					title={active ? 'Disable' : 'Enable'}
 					disabled={working}
@@ -158,13 +153,13 @@
 					{:else}
 						<EnableIcon class="size-4" aria-hidden="true" />
 					{/if}
-				</button>
-				<button
-					type="button"
-					class={dangerClass}
+				</Button>
+				<Button
+					variant="destructive-ghost"
+					size="icon"
 					aria-label="Delete"
 					title="Delete"
-					onclick={() => ondelete(entry)}><DeleteIcon class="size-4" aria-hidden="true" /></button
+					onclick={() => ondelete(entry)}><DeleteIcon class="size-4" aria-hidden="true" /></Button
 				>
 			{/if}
 

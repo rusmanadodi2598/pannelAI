@@ -16,6 +16,7 @@
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { listGatewayKeys, revokeGatewayKey } from '$lib/api/gateway-keys';
 	import {
@@ -106,11 +107,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="Gateway keys could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={load}>Try again</button
-				>
+				<Button variant="ghost" class="underline" onclick={load}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if total === 0}
@@ -157,24 +154,24 @@
 		{/if}
 
 		<div class="flex items-center gap-3 text-sm">
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
+			<Button
+				variant="ghost"
+				class="underline"
 				disabled={page <= 1}
 				onclick={() => {
 					page -= 1;
 					void load();
-				}}>Previous</button
+				}}>Previous</Button
 			>
 			<span class="text-[var(--color-text-muted)]">Page {page} of {lastPage}</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
+			<Button
+				variant="ghost"
+				class="underline"
 				disabled={page >= lastPage}
 				onclick={() => {
 					page += 1;
 					void load();
-				}}>Next</button
+				}}>Next</Button
 			>
 		</div>
 	{/if}
@@ -195,15 +192,7 @@
 	{/if}
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			onclick={() => (pendingDelete = null)}>Keep the key</button
-		>
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-3 text-sm font-medium text-white"
-			onclick={confirmDelete}>Delete key</button
-		>
+		<Button variant="outline" onclick={() => (pendingDelete = null)}>Keep the key</Button>
+		<Button variant="destructive" aria-busy={deleting} onclick={confirmDelete}>Delete key</Button>
 	{/snippet}
 </Modal>

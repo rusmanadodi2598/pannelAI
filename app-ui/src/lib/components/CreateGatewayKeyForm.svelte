@@ -5,6 +5,7 @@
 	// so the screen file stays within the project's line limit and each piece has one job.
 	import { createGatewayKey } from '$lib/api/gateway-keys';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { schemaCreateGatewayKeyForm, type CreatedGatewayKey } from '$lib/schemas/gateway-key';
 
@@ -61,13 +62,9 @@
 		/>
 	</label>
 
-	<button
-		type="submit"
-		disabled={working}
-		class="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-60 sm:w-auto"
-	>
+	<Button type="submit" disabled={working} aria-busy={working} class="w-full sm:w-auto">
 		{working ? 'Creating' : 'Create gateway key'}
-	</button>
+	</Button>
 
 	{#if error}
 		<p class="text-sm text-[var(--color-danger)]" role="alert"><ApiErrorText {error} /></p>
