@@ -20,6 +20,7 @@
 		type ProxyProtocol
 	} from '$lib/schemas/proxy';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { rowChecked } from '$lib/utils/selection';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -63,13 +64,8 @@
 		return PROXY_PROTOCOL_LABELS[protocol as ProxyProtocol] ?? protocol;
 	}
 
-	// One target size and one hover wash for every action, so the cell reads as a set. Each variant
-	// carries exactly one text colour: two competing `text-*` utilities resolve by stylesheet order,
-	// and the muted one silently wins the destructive button's colour.
-	const actionBase =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
-	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;
-	const dangerClass = `${actionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]`;
+	// Size and states come from the shared button, so the cell reads as a set and the destructive glyph
+	// keeps its colour instead of losing it to a competing utility (DESIGN.md §3.5).
 </script>
 
 <div
@@ -102,9 +98,9 @@
 					<td data-label="Username" class="px-3 py-2">{proxy.username || 'None'}</td>
 					<td data-label="Password" class="px-3 py-2">{proxy.has_password ? 'Set' : 'Not set'}</td>
 					<td data-label="Enabled" class="px-3 py-2">
-						<button
-							type="button"
-							class={actionBase}
+						<Button
+							variant="ghost"
+							size="icon"
 							aria-label={proxy.enabled ? `Disable ${proxy.label}` : `Enable ${proxy.label}`}
 							title={proxy.enabled ? `Disable ${proxy.label}` : `Enable ${proxy.label}`}
 							onclick={() => ontoggle(proxy, !proxy.enabled)}
@@ -114,7 +110,7 @@
 							{:else}
 								<EnableIcon class="size-4" aria-hidden="true" />
 							{/if}
-						</button>
+						</Button>
 						<!-- The word beside the glyph: §8.11.8 refuses a state readable only by hue. -->
 						<span class="ml-1 text-xs">{proxy.enabled ? 'Enabled' : 'Disabled'}</span>
 					</td>
@@ -150,34 +146,35 @@
 									/>
 								</label>
 							{/if}
-							<button
-								type="button"
-								class={actionClass}
+							<Button
+								variant="ghost"
+								size="icon"
 								aria-label={`Edit ${proxy.label}`}
 								title={`Edit ${proxy.label}`}
 								onclick={() => onedit(proxy)}
 							>
 								<EditIcon class="size-4" aria-hidden="true" />
-							</button>
-							<button
-								type="button"
-								class={actionClass}
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
 								disabled={testingId === proxy.id}
+								aria-busy={testingId === proxy.id}
 								aria-label={`Test ${proxy.label}`}
 								title={`Test ${proxy.label}`}
 								onclick={() => ontest(proxy)}
 							>
 								<TestIcon class="size-4" aria-hidden="true" />
-							</button>
-							<button
-								type="button"
-								class={dangerClass}
+							</Button>
+							<Button
+								variant="destructive-ghost"
+								size="icon"
 								aria-label={`Delete ${proxy.label}`}
 								title={`Delete ${proxy.label}`}
 								onclick={() => ondelete(proxy)}
 							>
 								<DeleteIcon class="size-4" aria-hidden="true" />
-							</button>
+							</Button>
 						</div>
 					</td>
 				</tr>

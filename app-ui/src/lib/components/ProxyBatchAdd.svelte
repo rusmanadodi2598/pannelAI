@@ -16,6 +16,7 @@
 	// deliberately shows the same thing: that one is set.
 	import { createProxy } from '$lib/api/proxies';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import {
 		parseProxyLines,
@@ -184,24 +185,24 @@ socks5://operator:hunter2@proxy.example.com:1080`;
 		</div>
 
 		<div class="flex flex-wrap items-center gap-3">
-			<button
-				type="button"
+			<Button
+				class="px-3"
 				disabled={submitting}
-				class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
+				aria-busy={submitting}
 				onclick={() => void submit()}
 			>
 				{submitLabel}
-			</button>
-			<button
-				type="button"
-				class="min-h-11 underline"
+			</Button>
+			<Button
+				variant="ghost"
+				class="underline"
 				onclick={() => {
 					text = '';
 					forgetRun();
 				}}
 			>
 				Clear the paste
-			</button>
+			</Button>
 		</div>
 	{/if}
 </div>

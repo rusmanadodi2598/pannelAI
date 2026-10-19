@@ -22,6 +22,7 @@
 	// sends and accepts; the schema normalizes it (trim, lowercase, dedupe, drop empty) without
 	// changing shape.
 	import { onMount } from 'svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
@@ -141,11 +142,7 @@
 	{:else if error && server === null}
 		<StateMessage kind="error" title="Outbound settings not loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => void load()}>Try again</button
-				>
+				<Button variant="ghost" class="underline" onclick={() => void load()}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else}
@@ -219,17 +216,12 @@
 		</div>
 
 		<div class="flex flex-wrap items-center gap-3">
-			<button
-				type="button"
-				disabled={saving}
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-				onclick={() => void save()}
-			>
+			<Button disabled={saving} aria-busy={saving} onclick={() => void save()}>
 				<SaveIcon class="size-4" aria-hidden="true" />
 				Save outbound settings
-			</button>
+			</Button>
 			{#if dirty}
-				<button type="button" class="min-h-11 underline" onclick={discard}>Discard changes</button>
+				<Button variant="ghost" class="underline" onclick={discard}>Discard changes</Button>
 				<span class="text-sm font-medium text-[var(--color-text-muted)]">Unsaved changes</span>
 			{/if}
 			{#if saved}

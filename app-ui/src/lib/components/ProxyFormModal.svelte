@@ -14,6 +14,7 @@
 	// Validation runs on submit rather than on every keystroke (§8.4.5), and the messages are the
 	// schema's, so the panel and the API describe a rule the same way.
 	import { untrack } from 'svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import Modal from '$lib/components/Modal.svelte';
@@ -133,14 +134,9 @@
 		<ProxyFormFields bind:value={draft} {target} />
 
 		<div class="flex flex-wrap items-center gap-3 border-t border-[var(--color-border)] pt-4">
-			<button
-				type="button"
-				disabled={testing}
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-60"
-				onclick={() => void test()}
-			>
+			<Button variant="outline" disabled={testing} aria-busy={testing} onclick={() => void test()}>
 				{testing ? 'Testing' : 'Test this candidate'}
-			</button>
+			</Button>
 
 			{#if result}
 				<p role="status" class="text-sm">
@@ -155,14 +151,9 @@
 	</div>
 
 	{#snippet footer()}
-		<button type="button" class="min-h-11 underline" onclick={onclose}>Cancel</button>
-		<button
-			type="button"
-			disabled={saving}
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-			onclick={() => void save()}
-		>
+		<Button variant="ghost" class="underline" onclick={onclose}>Cancel</Button>
+		<Button class="px-4" disabled={saving} aria-busy={saving} onclick={() => void save()}>
 			{saving ? 'Saving' : editing ? 'Save proxy' : 'Add proxy'}
-		</button>
+		</Button>
 	{/snippet}
 </Modal>

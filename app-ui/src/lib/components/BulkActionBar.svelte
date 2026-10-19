@@ -12,6 +12,7 @@
 	// one page happens to hold.
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import Modal from '$lib/components/Modal.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 
 	let {
 		kind,
@@ -79,10 +80,9 @@
 		tagDraft = '';
 	}
 
-	const neutral =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]';
-	const danger =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]';
+	// One size and one state scale for the whole bar (DESIGN.md §3.5). Two of its colours were written as
+	// `--color-primary-contrast` and `--color-surface-1`, and neither token exists: the commit button
+	// inherited the page's text colour, which is near-white on the coral fill in dark, 1.44:1.
 </script>
 
 {#if total > 0}
@@ -102,9 +102,9 @@
 		</span>
 
 		<div class="flex gap-1">
-			<button
-				type="button"
-				class={neutral}
+			<Button
+				variant="toggle"
+				size="icon"
 				aria-label={allSelected ? clearSelectionName : selectAllName}
 				title={allSelected ? clearSelectionName : selectAllName}
 				aria-pressed={allSelected}
@@ -115,63 +115,63 @@
 				{:else}
 					<SelectIcon class="size-4" aria-hidden="true" />
 				{/if}
-			</button>
+			</Button>
 
 			{#if selected > 0}
 				{#if ontag}
-					<button
-						type="button"
-						class={neutral}
+					<Button
+						variant="ghost"
+						size="icon"
 						aria-label={label('Tag')}
 						title={label('Tag')}
 						onclick={() => (tagging = true)}
 					>
 						<TagIcon class="size-4" aria-hidden="true" />
-					</button>
+					</Button>
 				{/if}
-				<button
-					type="button"
-					class={neutral}
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label={label('Disable')}
 					title={label('Disable')}
 					aria-busy={busy.status}
 					onclick={() => run('status', ondisable)}
 				>
 					<DisableIcon class="size-4" aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class={neutral}
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label={label('Enable')}
 					title={label('Enable')}
 					aria-busy={busy.status}
 					onclick={() => run('status', onenable)}
 				>
 					<EnableIcon class="size-4" aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class={danger}
+				</Button>
+				<Button
+					variant="destructive-ghost"
+					size="icon"
 					aria-label={label('Delete')}
 					title={label('Delete')}
 					aria-busy={busy.remove}
 					onclick={() => run('remove', ondelete)}
 				>
 					<DeleteIcon class="size-4" aria-hidden="true" />
-				</button>
+				</Button>
 				<!-- Only when the claim is an id set. Under Select-All the toggle above already reads
 					 "Clear selection", and a second control with that name and the same glyph beside it
 					 is one action shown twice. -->
 				{#if !allSelected}
-					<button
-						type="button"
-						class={neutral}
+					<Button
+						variant="ghost"
+						size="icon"
 						aria-label={clearSelectionName}
 						title={clearSelectionName}
 						onclick={onclear}
 					>
 						<SelectNoneIcon class="size-4" aria-hidden="true" />
-					</button>
+					</Button>
 				{/if}
 			{/if}
 		</div>
@@ -184,7 +184,7 @@
 		{kind}
 		<input
 			id="bulk-tag-field"
-			class="mt-1 min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface-1)] px-2"
+			class="mt-1 min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
 			type="text"
 			maxlength="48"
 			placeholder="free-tier"
@@ -196,15 +196,7 @@
 		than cut short.
 	</p>
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-primary)] px-3 text-sm text-[var(--color-primary-contrast)]"
-			onclick={applyTag}
-		>
-			Apply the tag
-		</button>
-		<button type="button" class="min-h-11 px-3 text-sm" onclick={() => (tagging = false)}>
-			Cancel
-		</button>
+		<Button onclick={applyTag}>Apply the tag</Button>
+		<Button variant="ghost" onclick={() => (tagging = false)}>Cancel</Button>
 	{/snippet}
 </Modal>
