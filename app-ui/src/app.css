@@ -18,9 +18,10 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* The live drawing's keyframes, kept in their own file on the line budget. Imported here rather than from
-   the layout so the panel still has one token entry point (SPEC-UI §10.6). */
+/* The drawing keyframes and the interaction-state scale, each in its own file on the line budget and
+   imported here so the panel keeps one token entry point (SPEC-UI §10.6). */
 @import './lib/motion.css';
+@import './lib/states.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 

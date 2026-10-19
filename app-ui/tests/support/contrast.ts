@@ -13,12 +13,23 @@ const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
 
 export const stylesheet = css;
 
+// The palette is app.css plus every local token file it imports, because the interaction-state scale
+// lives in `src/lib/states.css` on the line budget the same way `src/lib/motion.css` does. A bare
+// specifier (`tailwindcss`, `tw-animate-css`) is a dependency's own CSS rather than the panel's palette,
+// so it is not followed; only a relative import is read.
+const tokenSource = [
+	css,
+	...[...css.matchAll(/@import\s+'(\.\/[^']+)'/g)].map((match) =>
+		readFileSync(resolve(process.cwd(), 'src', match[1].slice(2)), 'utf8')
+	)
+].join('\n');
+
 // A selector can appear more than once (the dark block is extended by the sidebar tint), so every
 // occurrence is merged rather than only the first.
 function blockTokens(pattern: RegExp): Record<string, string> {
 	const tokens: Record<string, string> = {};
 
-	for (const block of css.matchAll(pattern)) {
+	for (const block of tokenSource.matchAll(pattern)) {
 		for (const match of block[1].matchAll(TOKEN)) {
 			const value = match[2];
 			tokens[match[1]] = value.startsWith('#') ? value.toLowerCase() : value.trim();
@@ -99,13 +110,16 @@ function channel(value: number): number {
 	return scaled <= 0.03928 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
 }
 
-export function luminance(hex: string): number {
+// The three linear-light channels of a hex colour, which is the form both the luminance sum and the
+// XYZ matrix read. SRGB is assumed, as it is everywhere else in this file.
+function toLinear(hex: string): [number, number, number] {
 	const value = Number.parseInt(hex.slice(1), 16);
-	return (
-		0.2126 * channel((value >> 16) & 0xff) +
-		0.7152 * channel((value >> 8) & 0xff) +
-		0.0722 * channel(value & 0xff)
-	);
+	return [channel((value >> 16) & 0xff), channel((value >> 8) & 0xff), channel(value & 0xff)];
+}
+
+export function luminance(hex: string): number {
+	const [r, g, b] = toLinear(hex);
+	return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 // `pageSurface` is the theme's opaque ground. Anything translucent in the pair is painted on top of it
@@ -119,4 +133,29 @@ export function contrast(foreground: string, background: string, pageSurface: st
 	const a = luminance(ink);
 	const b = luminance(ground);
 	return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+// CIELAB, which is the measure a state step is sized by. A contrast ratio cannot express it: a hover
+// wash and the ground under it are deliberately close, so the pair measures about 1.08:1 at any step
+// size, while the eye reads 3 L* as a flicker and 7 L* as a state. L* is the step, a* and b* say which
+// colour the step stayed in. A translucent token is measured as the colour it composites to, the same
+// way a reader receives it.
+export function lab(value: string, over?: string): [number, number, number] {
+	const hex = isOpaque(value)
+		? value
+		: over === undefined
+			? value
+			: (composite(value, over) ?? value);
+	const [r, g, b] = toLinear(hex);
+	const f = (t: number): number => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+	const x = f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047);
+	const y = f(luminance(hex));
+	const z = f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+
+	return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+
+// `L*` alone: the lightness a state step moves through.
+export function lightness(value: string, over?: string): number {
+	return lab(value, over)[0];
 }

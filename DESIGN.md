@@ -71,19 +71,30 @@ to be readable as hierarchy rather than as a tint.
 
 ### 3.2 Tokens
 
-| Token                 | Light     | Dark      | Role                                                      |
-| --------------------- | --------- | --------- | --------------------------------------------------------- |
-| `--color-surface`     | `#FCFAF7` | `#1A1917` | Page ground                                               |
-| `--color-surface-2`   | `#F4F1EC` | `#24221F` | Raised panel: sidebar, card, table header                 |
-| `--color-surface-3`   | `#E9E4DC` | `#302D29` | Pressed or selected row, input well                       |
-| `--color-border`      | `#DFD9D0` | `#3A362F` | One hairline weight everywhere                            |
-| `--color-text`        | `#1A1614` | `#EDEAE6` | Body text                                                 |
-| `--color-text-muted`  | `#5F574E` | `#A69E93` | Secondary text, labels, icon rest state                   |
-| `--color-accent`      | `#B8412A` | `#E56A4A` | The single accent: active nav, primary action, focus ring |
-| `--color-accent-text` | `#FFFFFF` | `#14100E` | Label on an accent fill                                   |
-| `--color-ok`          | `#14743A` | `#5CC97B` | Healthy, active, passing                                  |
-| `--color-warn`        | `#8F5C0A` | `#E8A93A` | Degraded, nearing a limit                                 |
-| `--color-danger`      | `#B3261E` | `#F08A84` | Failed, revoked, destructive                              |
+| Token                  | Light     | Dark      | Role                                                      |
+| ---------------------- | --------- | --------- | --------------------------------------------------------- |
+| `--color-surface`      | `#FCFAF7` | `#1A1917` | Page ground                                               |
+| `--color-surface-2`    | `#F4F1EC` | `#24221F` | Raised panel: sidebar, card, table header                 |
+| `--color-surface-3`    | `#E9E4DC` | `#302D29` | Pressed or selected row, input well                       |
+| `--color-border`       | `#DFD9D0` | `#3A362F` | One hairline weight everywhere                            |
+| `--color-text`         | `#1A1614` | `#EDEAE6` | Body text                                                 |
+| `--color-text-muted`   | `#5F574E` | `#A69E93` | Secondary text, labels, icon rest state                   |
+| `--color-accent`       | `#B8412A` | `#E56A4A` | The single accent: active nav, primary action, focus ring |
+| `--color-accent-text`  | `#FFFFFF` | `#14100E` | Label on an accent fill                                   |
+| `--color-ok`           | `#14743A` | `#5CC97B` | Healthy, active, passing                                  |
+| `--color-warn`         | `#8F5C0A` | `#E8A93A` | Degraded, nearing a limit                                 |
+| `--color-danger`       | `#B3261E` | `#F08A84` | Failed, revoked, destructive                              |
+| `--color-state-hover`  | ink @ 9%  | ink @ 9%  | Hovered control on any ground (§3.5)                      |
+| `--color-state-press`  | ink @ 16% | ink @ 16% | Pressed control on any ground (§3.5)                      |
+| `--color-accent-hover` | `#AB311C` | `#F07A5A` | Primary action under a pointer                            |
+| `--color-accent-press` | `#9C2412` | `#FA8A6C` | Primary action while held                                 |
+| `--color-danger-hover` | `#A11815` | `#FD9992` | Destructive control, hovered                              |
+| `--color-danger-press` | `#90070C` | `#FFAAA3` | Destructive control, held                                 |
+| `--color-danger-ink`   | `#FFFFFF` | `#14100E` | Label on a destructive fill                               |
+
+The seven state tokens are declared in `src/lib/states.css`, which `src/app.css` imports. They live in
+their own file for the same reason the motion tokens do: `app.css` carries the palette and the alias
+layer, and it sits at the project's file-size ceiling. The contrast suites read both files.
 
 ### 3.3 Measured contrast
 
@@ -121,6 +132,73 @@ The accent appears in exactly five places, and nowhere else:
 
 It is not used for borders, background washes, icon fills across a list, chart fills beyond one series, or
 status. Status has its own three colours and is never carried by the accent.
+
+### 3.5 Interaction states
+
+Every control that can be pressed takes four states from one scale: rest, hover, pressed, disabled. The
+scale is `src/lib/states.css`; `primitives/button` is the only component that reads it into classes, and
+a screen takes its controls from that component rather than writing a `hover:` utility of its own (SPEC-UI
+§9.3). The rule exists because the panel had no pressed state at all: on Endpoint & Key, eight control
+groups painted no colour under a click, three painted no hover either, and the only feedback a press got
+was a label swap that appears once the request has started.
+
+**A press is a colour, not only a movement.** Tailwind applies `hover:` only under
+`@media (hover: hover)`, so on a touch layout a control whose sole state is a hover wash has no state.
+A pressed colour is the one cue that survives both pointer types, and it is the answer to the question
+this panel asks twenty times a day: did that click land. The 1px `active:` shift stays as a secondary
+cue, not the primary one.
+
+**A step is measured in lightness.** A contrast ratio cannot size a state change, because a wash and the
+ground beneath it are deliberately close: the washes this scale replaced measured 1.08:1 against the page
+at any usable size, and moved 3.1 L\*, which reads as a flicker. Steps are therefore sized in L\*, with the
+label's ratio asserted separately so a step cannot buy its visibility with contrast.
+
+| Ramp                                   | Rest L\* | Hover L\* | Press L\* | Step | Label on the deepest step |
+| -------------------------------------- | ------- | -------- | -------- | ---- | ------------------------- |
+| Neutral wash on the page surface       | 98.3    | 91.1     | 85.7     | ~6   | `text` at 12.39:1         |
+| Neutral wash on a raised panel         | 95.2    | 88.2     | 82.9     | ~6   | `text` at 11.45:1         |
+| Accent fill, light (darker going in)   | 44.4    | 39.5     | 34.7     | ~5   | `accent-text` at 7.85:1   |
+| Accent fill, dark (lighter going in)   | 59.4    | 64.3     | 69.2     | ~5   | `accent-text` at 8.03:1   |
+| Destructive fill, light                | 39.7    | 34.6     | 29.7     | ~5   | `danger-ink` at 9.45:1    |
+| Destructive fill, dark                 | 68.3    | 73.4     | 77.7     | ~5   | `danger-ink` at 10.39:1   |
+
+`tests/tokens/state-scale.test.ts` measures the step and the label for every ramp in both themes, on both
+grounds a wash can land on.
+
+**Two mechanisms, chosen by what the control is painted with.**
+
+1. A control with no colour of its own takes an ink wash: `state-hover` and `state-press` are the theme's
+   own ink at 9% and 16%, so one token takes the same perceptual step on the page, on a raised panel, and
+   on a table header. An absolute hex can only ever be calibrated for one of the three.
+2. A control that carries a colour carries its own ramp instead: `accent-hover`/`accent-press` for the
+   primary action, `danger-hover`/`danger-press` for a destructive one. A coloured label cannot sit under
+   an ink wash: the danger glyph on a pressed wash measures 4.17:1 on a raised panel, under the AA floor,
+   where stepping it along the danger ramp holds 5.02:1.
+
+**Direction follows the theme's own surface ramp.** §3.2 gives `surface-3` the pressed row, which is
+darker than the page in light and lighter than it in dark. A state step moves the same way: further in is
+deeper in light, brighter in dark. Both directions raise the label's contrast rather than spending it.
+
+**A muted glyph lifts to full text the moment it is hovered, and holds there while pressed.** That is not
+only hierarchy: `text-muted` on a pressed wash measures 3.78:1 in dark, so the pairing is forbidden by the
+arithmetic as well as by taste. `text-muted` stays the icon rest state (§3.2), and the state scale is what
+takes it off.
+
+**Two destructive shapes, one ramp.** A destructive action is either the commit in a confirmation dialog,
+which takes the danger colour as its fill and needs a fixed label pair (`danger-ink` is to `danger` what
+`accent-text` is to `accent`; the raw `text-white` it replaced measured 2.42:1 in dark), or one glyph among
+four in a table row, which stays quiet because a red block on every row shouts. The quiet glyph steps its
+own colour along the same ramp.
+
+**A disabled control says it is disabled in one way.** Ghost, outline, and link controls fade to 50%
+opacity, the panel's single value (it was 60% on the two filled buttons, which faded a label and its own
+fill toward the page together and left the pair at 1.87:1). A filled button instead leaves the accent: it
+takes `surface-3` with a `text-muted` label, 5.61:1 in light and 5.17:1 in dark, which is both legible and
+honest about §3.4, because an action that cannot be taken no longer claims the accent for itself.
+
+**This stays inside MOTION 1.** §2.1 allows hover, focus, and state transition; a colour step between
+states is the third of those. The transition is `transition-colors` only, so no geometry enters the
+screen that the dial did not ask for.
 
 ---
 
@@ -400,6 +478,15 @@ installed set.
 | Combo nodes are capped at eight, and the row says which ones the drawing left out                             | Half an ellipse holds about half as many readable labels as the ring the drawing used before combos joined it: measured, eight nodes per band still draw 98px boxes and twelve draw 62px. A silent cap would be a map that quietly omits, so the count that is missing is stated (draft 043 F1).                                                                            |
 | A beam's direction is its endpoint order, not a second keyframe                                               | `beam-dash` moves the offset by -100 along a path normalized to 100 units, which carries every dash from a line's start to its end, so the way back is drawn as a line that starts at the upstream. One animation, and the answer still reads as returning rather than as a second request (draft 043 F2).                                                                       |
 | A card fades in as it joins the drawing and the box transitions its height                                    | The owner's complaint about the node animation was that it jumped: a combo appears with traffic and the box grew instantly under the reader's eyes. Neither claim is about what is happening now, so neither is the drawing's state motion, and both are still dropped for a reader who asked for reduced motion (draft 043 F3).                                             |
+| Interaction states are one scale, read by one component                                                       | Eight control groups on one screen had each written their own `hover:` utility, which is why a press step had nowhere to be decided and the same affordance measured 50% in one place and 60% in another. A value a screen can rewrite is a value a screen will rewrite (SPEC-UI §9.3).                                                                                       |
+| A pressed control paints a colour, not only a shift                                                           | `hover:` does not exist on a touch layout, so a wash plus a 1px move leaves a phone with no answer to "did that land". The shift stays as the secondary cue.                                                                                                                                                |
+| Steps are sized in L\*, labels in contrast ratio                                                              | A ratio cannot size a state change: a wash and its ground are close by design, so the pair sits near 1.08:1 however visible the step is. Measuring both ways stops a step being bought with the label's contrast, which is how the previous wash ended up at 3.1 L\*.                                                                                                       |
+| A colourless control takes an ink wash, a coloured one takes its own ramp                                     | The wash calibrates itself against whatever ground it lands on, which one absolute hex cannot do across a page, a card, and a table header. A coloured label under an ink wash loses its AA (the danger glyph measures 4.17:1 pressed on a raised panel), so it steps along its own ramp instead.                                                                          |
+| Further in moves deeper in light, brighter in dark                                                            | It is the direction §3.2 already gives `surface-3` for a pressed row. A ramp running the other way in the same theme would read as a control lifting off the page while it is being held.                                                                                                                     |
+| A disabled primary leaves the accent rather than fading it                                                    | Element opacity fades a label and its own fill toward the page together, which measured 1.87:1 on the washed pair; `surface-3` with a muted label reads 5.61:1 and stops an action that cannot be taken from claiming the screen's one accent.                                                                                                                               |
+| A destructive commit in a dialog carries `danger-ink`, the way the accent carries `accent-text`               | A solid action control needs a fixed light-on-dark or dark-on-light pair per theme. The raw `text-white` it replaced measured 2.42:1 on the dark danger token, which is below the floor and was in three screens.                                                                                             |
+| A destructive action in a table row stays a quiet glyph                                                       | One danger action among four reads as a set; a red block on every row shouts, and the row is where an operator scans.                                                                                                                                                                                        |
+| The dense icon button matches the dense text button's height                                                  | `icon-sm` was 32px beside a 36px text button, so a toolbar with both finished on two lines. Measured against §7's density, the dense tier is one height.                                                                                                                                                    |
 
 ---
 
@@ -418,11 +505,11 @@ What this direction settles, and what the Delivery Gate therefore checks against
 | R-07 (background)          | No grid, blueprint, or dot pattern. The surfaces are a warm neutral.                                             |
 | R-09 (badges)              | A badge carries a real status: endpoint state, key health, quota source, request status.                         |
 | R-10, R-13 (glass, glow)   | Not used. The panel has no surface that needs either.                                                            |
-| R-11 (radius)              | Two functional values plus a dialog value and an avatar value, with a stated hierarchy.                          |
+| R-11 (radius)              | Two functional values plus a dialog value and an avatar value, with a stated hierarchy. The shared button carries `--radius-sm`, the value §5 assigns a button.                          |
 | R-12 (shadow)              | Two floating surfaces only, plus the logo frame, each with a stated reason.                                      |
-| R-19 (animation)           | MOTION 1, plus the live indicator while a request is in flight: a pulse and a flowing dash.                      |
+| R-19 (animation)           | MOTION 1, plus the live indicator while a request is in flight: a pulse and a flowing dash. The hover and pressed colour steps (§3.5) are state transitions, which is what the dial already allows; nothing else moves.                      |
 | R-21 (theme)               | Both themes authored from §3.2, both verified per screen.                                                        |
-| R-25 (contrast)            | Every pair in §3.3 measured, asserted by a test that reads `src/app.css`, lowest text pair 4.87:1.               |
+| R-25 (contrast)            | Every pair in §3.3 measured, asserted by a test that reads `src/app.css`, lowest text pair 4.87:1. The state steps and their labels are measured in §3.5 by `tests/tokens/state-scale.test.ts`.               |
 | R-29 (palette cap)         | One accent. Neutrals are excluded by the rule; status colours are not brand colours.                             |
 | R-31 (reason per decision) | §11. Every visual decision carries a one-line reason.                                                            |
 | R-37 (direction required)  | This file. A screen styled from it is a deliverable, not a draft.                                                |
