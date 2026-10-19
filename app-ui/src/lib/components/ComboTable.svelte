@@ -10,6 +10,7 @@
 	// reference, which a table cell cannot hold.
 	import ComboTestDialog from '$lib/components/ComboTestDialog.svelte';
 	import { ChevronDown } from '@lucide/svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import {
 		comboModelSummary,
@@ -23,13 +24,8 @@
 	const TestIcon = ROW_ACTION_ICONS.test.icon;
 	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
 
-	// One target size and one hover wash for every action, so the cell reads as a set. Each variant carries
-	// exactly one `text-*` colour: two competing utilities resolve by stylesheet order, and the muted one
-	// silently wins the destructive button's colour.
-	const actionBase =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
-	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;
-	const dangerClass = `${actionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]`;
+	// Size and states come from the shared button, so the cell reads as a set and the destructive glyph
+	// keeps its colour instead of losing it to a competing utility (DESIGN.md §3.5).
 
 	let {
 		combos,
@@ -60,9 +56,9 @@
 	{#each sorted as combo (combo.id)}
 		<section class="rounded-[var(--radius-md)] border border-[var(--color-border)]">
 			<div class="flex items-center gap-2 px-3 py-2">
-				<button
-					type="button"
-					class="inline-flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left text-sm font-medium"
+				<Button
+					variant="ghost"
+					class="min-w-0 flex-1 justify-start text-left text-sm font-medium text-[var(--color-text)]"
 					aria-expanded={expanded[combo.id] === true}
 					aria-controls={`combo-detail-${combo.id}`}
 					onclick={() => toggle(combo.id)}
@@ -75,35 +71,35 @@
 					<span class="ms-auto shrink-0 text-xs font-normal text-[var(--color-text-muted)]"
 						>{comboStrategyLabel(combo.strategy)} · {comboModelSummary(combo)}</span
 					>
-				</button>
-				<button
-					type="button"
-					class={actionClass}
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label="Edit"
 					title="Edit"
 					onclick={() => onedit(combo)}
 				>
 					<EditIcon class="size-4" aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class={actionClass}
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label="Test"
 					title="Test"
 					onclick={() => (testing = combo)}
 				>
 					<TestIcon class="size-4" aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class={dangerClass}
+				</Button>
+				<Button
+					variant="destructive-ghost"
+					size="icon"
 					aria-label="Delete"
 					title="Delete"
 					disabled={deleting === combo.id}
 					onclick={() => ondelete(combo)}
 				>
 					<DeleteIcon class="size-4" aria-hidden="true" />
-				</button>
+				</Button>
 			</div>
 			{#if expanded[combo.id]}
 				<dl

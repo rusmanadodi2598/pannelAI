@@ -9,6 +9,7 @@
 	// Split from `CombosTab` on the seam that file already names: the tab owns the list and the writes, this
 	// owns the row above them.
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { CONTROL_ICONS } from '$lib/icons';
 
 	const AddIcon = CONTROL_ICONS.add.icon;
@@ -36,14 +37,10 @@
 	</p>
 	<div class="flex flex-wrap items-center gap-2">
 		{#if !hidden}
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-accent)] px-3 text-sm text-[var(--color-accent-text)]"
-				onclick={oncreate}
-			>
+			<Button onclick={oncreate}>
 				<AddIcon class="size-4" aria-hidden="true" />
 				New combo
-			</button>
+			</Button>
 		{/if}
 		<RefreshControl {onrefresh} />
 	</div>

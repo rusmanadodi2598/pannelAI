@@ -45,8 +45,8 @@
 					"text-[var(--color-danger)] hover:bg-[var(--color-state-hover)] hover:text-[var(--color-danger-hover)] active:bg-[var(--color-state-press)] active:text-[var(--color-danger-press)]"
 			},
 			size: {
-				default: "min-h-11 gap-1.5 px-3",
-				sm: "min-h-9 gap-1 px-2.5 text-xs",
+				default: "min-h-11 gap-2 px-3",
+				sm: "min-h-9 gap-1.5 px-2.5 text-xs",
 				icon: "size-11",
 				"icon-sm": "size-9"
 			}

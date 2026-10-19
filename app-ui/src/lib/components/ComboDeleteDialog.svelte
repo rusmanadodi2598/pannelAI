@@ -9,6 +9,7 @@
 	// combo is still referenced, so the lead sentence that says so is rendered for that code alone: a
 	// server failure that read "still referenced" would be a claim the panel cannot support.
 	import Modal from '$lib/components/Modal.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
@@ -56,22 +57,19 @@
 	{/if}
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 underline"
-			onclick={oncancel}
-		>
+		<Button variant="ghost" class="underline" onclick={oncancel}>
 			<CancelIcon class="size-4" aria-hidden="true" />
 			Keep it
-		</button>
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
+		</Button>
+		<Button
+			variant="destructive"
+			class="px-4"
 			disabled={deleting}
+			aria-busy={deleting}
 			onclick={onconfirm}
 		>
 			<DeleteIcon class="size-4" aria-hidden="true" />
 			{deleting ? 'Deleting' : 'Delete the combo'}
-		</button>
+		</Button>
 	{/snippet}
 </Modal>

@@ -13,6 +13,7 @@
 	// picker cannot offer yet (a model id an upstream has not answered with) is still typeable here.
 	import { GripVertical, Trash2 } from '@lucide/svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { reorderComboModels, type ComboModelEntry } from '$lib/schemas/combo';
 
 	const MoveUpIcon = ROW_ACTION_ICONS.moveUp.icon;
@@ -104,35 +105,35 @@
 			</label>
 
 			<div class="flex items-center gap-1">
-				<button
-					type="button"
-					class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
+				<Button
+					variant="ghost"
+					size="icon"
 					disabled={index === 0}
 					onclick={() => move(index, index - 1)}
 					aria-label={`Move ${labelFor(index)} up`}
 					title={`Move ${labelFor(index)} up`}
 				>
 					<MoveUpIcon class="size-4" aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon"
 					disabled={index === models.length - 1}
 					onclick={() => move(index, index + 1)}
 					aria-label={`Move ${labelFor(index)} down`}
 					title={`Move ${labelFor(index)} down`}
 				>
 					<MoveDownIcon class="size-4" aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]"
+				</Button>
+				<Button
+					variant="destructive-ghost"
+					size="icon"
 					onclick={() => remove(index)}
 					aria-label={`Remove ${labelFor(index)}`}
 					title={`Remove ${labelFor(index)}`}
 				>
 					<Trash2 class="size-4" aria-hidden="true" />
-				</button>
+				</Button>
 			</div>
 		</li>
 	{/each}

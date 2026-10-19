@@ -11,6 +11,7 @@
 	// sentences for an empty or failed answer.
 	import { Check, Pencil } from '@lucide/svelte';
 	import Modal from '$lib/components/Modal.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import {
 		filterPickerSections,
@@ -75,14 +76,11 @@
 
 	// The chip's state, written as one class string so the three states stay mutually exclusive: picked,
 	// a placeholder, or an ordinary offer.
-	function chipClass(option: PickerOption, isSelected: boolean): string {
-		if (isSelected) {
-			return 'border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-accent-text)]';
-		}
-		if (option.placeholder === true) {
-			return 'border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] italic hover:bg-[var(--color-surface-2)]';
-		}
-		return 'border-[var(--color-border)] hover:bg-[var(--color-surface-2)]';
+	// A chosen model is marked the way a chosen filter is (DESIGN.md §3.5): the pressed surface and the
+	// text border. A picker of a dozen accent-filled chips is the accent everywhere the rule forbids, so
+	// only the placeholder shape is told apart here.
+	function chipClass(option: PickerOption): string {
+		return option.placeholder === true ? 'border-dashed italic' : '';
 	}
 </script>
 
@@ -133,17 +131,14 @@
 						<div class="flex flex-wrap gap-1.5">
 							{#each section.options as option (option.value)}
 								{@const isSelected = selected.includes(option.value)}
-								<button
-									type="button"
+								<Button
+									variant="toggle"
+									class="px-2.5 {chipClass(option)}"
 									aria-pressed={isSelected}
 									title={option.placeholder
 										? 'Add it, then edit the model id in the editor.'
 										: undefined}
 									onclick={() => pick(option.value)}
-									class="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-sm)] border px-2.5 text-sm {chipClass(
-										option,
-										isSelected
-									)}"
 								>
 									{#if isSelected}
 										<Check class="size-3.5" aria-hidden="true" />
@@ -151,7 +146,7 @@
 										<Pencil class="size-3.5" aria-hidden="true" />
 									{/if}
 									{option.label}
-								</button>
+								</Button>
 							{/each}
 						</div>
 					</div>
@@ -161,13 +156,9 @@
 	</div>
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)]"
-			onclick={onclose}
-		>
+		<Button class="px-4" onclick={onclose}>
 			<DoneIcon class="size-4" aria-hidden="true" />
 			Done
-		</button>
+		</Button>
 	{/snippet}
 </Modal>
