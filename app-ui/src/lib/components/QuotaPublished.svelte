@@ -19,19 +19,22 @@
 	// the counted rows' geometry so one screen cannot hold two answers to "percent used".
 	import { getPublishedQuota } from '$lib/api/usage';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import {
 		PUBLISHED_QUOTA_NOTE,
 		publishedAmountText,
-		publishedAskedStamp,
 		publishedBar,
-		publishedAttemptFailure,
-		publishedQuotaNotice,
 		publishedRefillVerb,
-		publishedWasNeverPolled,
 		publishedWindowView,
 		type PublishedQuotaUsage
 	} from '$lib/schemas/quota-published';
+	import {
+		publishedAskedStamp,
+		publishedAttemptFailure,
+		publishedQuotaNotice,
+		publishedWasNeverPolled
+	} from '$lib/schemas/quota-published-status';
 	import { countdownText, formatTimestamp } from '$lib/utils/time';
 
 	type Props = {
@@ -107,15 +110,15 @@
 	{/if}
 
 	<div class="flex flex-wrap items-center gap-2">
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50"
+		<Button
+			variant="outline"
 			aria-label={`Ask the provider about ${label}`}
 			disabled={loading}
+			aria-busy={loading}
 			onclick={() => void askNow()}
 		>
 			Ask {provider} now
-		</button>
+		</Button>
 		{#if loading}
 			<span role="status" class="text-xs text-[var(--color-text-muted)]">Asking the provider…</span>
 		{/if}

@@ -10,7 +10,8 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import QuotaPage from '../../src/routes/quota/+page.svelte';
-import { quotaEndpointRow, quotaWindowRow, stubQuota } from '../support/quota-stub';
+import { quotaEndpointRow, quotaWindowRow } from '../support/quota-fixtures';
+import { stubQuota } from '../support/quota-stub';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 

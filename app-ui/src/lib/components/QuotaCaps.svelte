@@ -18,6 +18,7 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { getQuotaEndpoint, replaceQuotaCap } from '$lib/api/usage';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		QUOTA_CAP_WARNING,
 		buildQuotaCapBody,
@@ -175,13 +176,14 @@
 						placeholder="1000000"
 					/>
 				</label>
-				<button
+				<Button
 					type="submit"
-					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
+					variant="outline"
 					disabled={saving || read === undefined}
+					aria-busy={saving}
 				>
 					{saving ? 'Saving' : 'Save the cap'}
-				</button>
+				</Button>
 			{/if}
 		</form>
 

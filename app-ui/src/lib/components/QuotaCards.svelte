@@ -18,6 +18,7 @@
 	// The fold and selection sets are plain string arrays: the reactive-set lint rule this file once tripped
 	// (pass 004) is avoided by never holding a Set or Map in component state at all.
 	import { CONTROL_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		QUOTA_SOURCE_EXPLANATIONS,
 		quotaCardGroups,
@@ -162,9 +163,9 @@
 						>{countsText(group)}</span
 					>
 				</div>
-				<button
-					type="button"
-					class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label={`Fold ${name}`}
 					aria-expanded={!isFolded(key)}
 					aria-controls={bodyId}
@@ -172,7 +173,7 @@
 					onclick={() => toggleFold(key)}
 				>
 					<FoldIcon class="size-4 {isFolded(key) ? '' : 'rotate-180'}" aria-hidden="true" />
-				</button>
+				</Button>
 			</div>
 
 			{#if !isFolded(key)}
@@ -199,45 +200,33 @@
 		>
 			<span class="text-sm">{selected.length} selected</span>
 			<div class="flex gap-2">
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
-					onclick={foldSelected}
-				>
-					Fold selected
-				</button>
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
-					onclick={unfoldSelected}
-				>
-					Unfold selected
-				</button>
+				<Button variant="outline" onclick={foldSelected}>Fold selected</Button>
+				<Button variant="outline" onclick={unfoldSelected}>Unfold selected</Button>
 			</div>
 		</div>
 	{/if}
 
 	{#if groups.length > 0}
 		<nav class="flex items-center justify-between gap-2" aria-label="Quota card pages">
-			<button
-				type="button"
-				class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] text-[var(--color-text-muted)] disabled:opacity-50"
+			<Button
+				variant="outline"
+				size="icon"
 				aria-label="Previous page"
 				disabled={page <= 1}
 				onclick={() => onpagechange(page - 1)}
 			>
 				<PreviousIcon class="size-4" aria-hidden="true" />
-			</button>
+			</Button>
 			<span class="text-sm tabular-nums">Page {page} of {pageCount}</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] text-[var(--color-text-muted)] disabled:opacity-50"
+			<Button
+				variant="outline"
+				size="icon"
 				aria-label="Next page"
 				disabled={page >= pageCount}
 				onclick={() => onpagechange(page + 1)}
 			>
 				<NextIcon class="size-4" aria-hidden="true" />
-			</button>
+			</Button>
 		</nav>
 	{/if}
 	<div class="flex flex-col gap-1 text-sm text-[var(--color-text-muted)]">

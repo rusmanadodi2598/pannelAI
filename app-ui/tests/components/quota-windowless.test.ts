@@ -20,9 +20,9 @@ import {
 	neverPolledUsage,
 	publishedUsage,
 	quotaEndpointRow,
-	quotaWindowRow,
-	stubQuota
-} from '../support/quota-stub';
+	quotaWindowRow
+} from '../support/quota-fixtures';
+import { stubQuota } from '../support/quota-stub';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 

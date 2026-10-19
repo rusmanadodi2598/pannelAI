@@ -184,7 +184,9 @@ deeper in light, brighter in dark. Both directions raise the label's contrast ra
 ground §3.2 already calls pressed, and its hover reaches `state-deep` from there. It asks for no fourth
 step: pressing a control that is already chosen changes nothing, so the 1px shift is the whole answer. The
 selection is read from `aria-pressed`, which is what announces it to a screen reader, so a screen cannot
-render the chosen state without also reporting it.
+render the chosen state without also reporting it. That is also why a screen cannot pick its own ground for
+a chosen control: `/quota`'s pause chip marked itself with `surface-2`, the hovered ground, so a chosen
+control looked like every pointer that was merely passing over one.
 
 **A muted glyph lifts to full text the moment it is hovered, and holds there while pressed.** That is not
 only hierarchy: `text-muted` on a pressed wash measures 3.78:1 in dark, so the pairing is forbidden by the

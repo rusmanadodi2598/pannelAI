@@ -14,7 +14,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import QuotaPage from '../../src/routes/quota/+page.svelte';
-import { CAP_WRITTEN_AT, quotaWindowRow, stubQuota, type QuotaStub } from '../support/quota-stub';
+import { CAP_WRITTEN_AT, quotaWindowRow, type QuotaStub } from '../support/quota-fixtures';
+import { stubQuota } from '../support/quota-stub';
 import { visit } from '../support/page.svelte';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));

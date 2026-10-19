@@ -1,11 +1,11 @@
-// Shared fake API for the Quota Tracker's budget caps (docs/SPEC-UI/001-SPEC-UI.md §6.6, U2).
+// Shared fake API for the Quota Tracker (docs/SPEC-UI/001-SPEC-UI.md §6.6, U2).
 //
-// The stub stores caps and applies every write to them the way the server does, because the rule this
-// slice turns on is a rule about state: the route REPLACES the whole cap set, so an amount the body omits
-// clears that cap. A stub that echoed the request back would let a panel that sent a stale amount pass,
-// and that panel would clear a budget in production. It also answers the two shapes the API distinguishes
-// rather than one: an endpoint with nothing stored reports `cap: null`, while a cap that was cleared
-// reports an object whose amounts are absent, which is what the Go response's `omitempty` pointers do.
+// The stub stores caps and applies every write to them the way the server does, because the rule this slice
+// turns on is a rule about state: the route REPLACES the whole cap set, so an amount the body omits clears
+// that cap. A stub that echoed the request back would let a panel that sent a stale amount pass, and that
+// panel would clear a budget in production. It also answers the two shapes the API distinguishes rather than
+// one: an endpoint with nothing stored reports `cap: null`, while a cap that was cleared reports an object
+// whose amounts are absent, which is what the Go response's `omitempty` pointers do.
 //
 // An endpoint the registry does not carry is refused with the server's own sentence and status, so the
 // panel's handling of that answer is exercised rather than assumed.
@@ -16,133 +16,16 @@
 // per-endpoint route on every load would let a screen that fired one request per card pass, and that screen
 // is the fan-out the collection block exists to remove. `publishedReads` and `publishedForces` are what a
 // test measures those two paths against.
+//
+// The rows, the stored-cap shape and the stub's own state type are in `quota-fixtures.ts`.
 
 import { vi } from 'vitest';
-
-export type StoredCap = {
-	monthly_cost_usd: string | null;
-	monthly_tokens: number | null;
-	updated_at: string;
-};
-
-/** The instant every write in this stub stores, so a test can tell the stored time from the read time. */
-export const CAP_WRITTEN_AT = '2026-09-20T12:00:00Z';
+import { CAP_WRITTEN_AT, quotaEndpointRow, type QuotaStub, type StoredCap } from './quota-fixtures';
 
 // `domain.Decimal.String()` prints 8 places, so a stored amount always reads back with them.
 function normalizeCost(value: string): string {
 	const [whole, fraction = ''] = value.split('.');
 	return `${whole}.${fraction.padEnd(8, '0').slice(0, 8)}`;
-}
-
-export type QuotaStub = {
-	windows: Record<string, unknown>[];
-	/** The endpoint list the screen reads for its labels, which is also what a cap write is checked against. */
-	endpoints: Record<string, unknown>[] | null;
-	/** The stored cap per endpoint. A missing key means no cap was ever stored for it. */
-	caps: Record<string, StoredCap>;
-	/** The endpoint ids the per-endpoint read was called with. */
-	capReads: string[];
-	/** Every write, with the body as it arrived, so a test can prove what was sent and what was left out. */
-	capWrites: { endpointId: string; body: Record<string, unknown> }[];
-	capReadStatus: number;
-	capWriteRefusal: { status: number; code: string; message: string } | null;
-	/** The endpoint list's own status, for a test that needs the label read to fail. */
-	endpointStatus: number;
-	/** Every paged /quotas read's URL, in order, so a test can prove what the screen asked for. */
-	quotaReads: string[];
-	/**
-	 * When set, the paged read answers as if only this many provider groups existed, standing in for a
-	 * poll that lands after the data shrank.
-	 */
-	shrinkTo: number | null;
-	/**
-	 * The published-quota payload per endpoint id. A missing key answers the server's own refusal, which
-	 * is what an endpoint the gateway does not carry produces. The same payloads ride on the collection
-	 * read for the endpoints that read's page names, because that is where the card gets its numbers now.
-	 */
-	published: Record<string, Record<string, unknown>>;
-	/**
-	 * When set, the collection read answers with the gateway's "the provider cache could not be read"
-	 * sentence beside its own counts, and no `published` block at all.
-	 */
-	publishedNote: string | null;
-	/** The endpoint ids the published read was called with, in order: the read is per card, not on load. */
-	publishedReads: string[];
-	/** The endpoint ids the published read was called with `force=1`, which is the operator's own press. */
-	publishedForces: string[];
-	/**
-	 * When set, the published read's response is withheld until `releasePublished` runs. A screen that
-	 * fired a second read while the first was still in flight is otherwise invisible to a test.
-	 */
-	holdPublished: boolean;
-	/** Set once a held read has been asked for; the test calls it with the payload to answer with. */
-	releasePublished: ((payload: Record<string, unknown>) => void) | null;
-};
-
-export function quotaWindowRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return {
-		endpoint_id: 'ep_1',
-		provider_id: 'anthropic',
-		window: 'monthly',
-		used: 120000,
-		limit: 200000,
-		resets_at: new Date(Date.now() + 2 * 3_600_000).toISOString(),
-		source: 'computed',
-		...overrides
-	};
-}
-
-export function quotaEndpointRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return { id: 'ep_1', label: 'Anthropic primary', ...overrides };
-}
-
-/** The instant a `never_polled` placeholder carries: a real timestamp that means no answer, not a gap. */
-export const NEVER_POLLED_FETCHED_AT = '1970-01-01T00:00:00Z';
-
-/**
- * A published-quota payload, shaped the way the API shapes one: amounts as decimal strings, a bucket
- * with no ceiling carrying no `total` key at all, and a soft outcome as a sentence beside an empty list.
- *
- * The reset is built from the wall clock the way `quotaWindowRow` is, so a countdown assertion stays
- * true whenever the suite runs.
- */
-export function publishedUsage(
-	endpointId: string,
-	overrides: Record<string, unknown> = {}
-): Record<string, unknown> {
-	return {
-		endpoint_id: endpointId,
-		provider_id: 'qoder',
-		plan: 'personal_standard',
-		fetched_at: '2026-09-28T12:00:00Z',
-		data: [
-			{
-				label: 'Personal',
-				used: '12.5',
-				total: '3000',
-				resets_at: new Date(Date.now() + 2 * 3_600_000).toISOString()
-			}
-		],
-		...overrides
-	};
-}
-
-/**
- * The `published[]` entry for an account the poll worker has not answered for yet, the windowless account
- * the reshape exists to make visible. It carries the placeholder `fetched_at`, empty `data`, and no message
- * or plan: the card's "Not polled yet" state is driven by the flag, not by an empty answer.
- */
-export function neverPolledUsage(
-	endpointId: string,
-	providerId = 'qoder'
-): Record<string, unknown> {
-	return {
-		endpoint_id: endpointId,
-		provider_id: providerId,
-		fetched_at: NEVER_POLLED_FETCHED_AT,
-		data: [],
-		never_polled: true
-	};
 }
 
 export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {

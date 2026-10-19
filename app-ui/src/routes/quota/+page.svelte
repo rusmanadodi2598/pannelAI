@@ -1,10 +1,9 @@
 <script lang="ts">
 	// Quota Tracker (docs/SPEC-UI/001-SPEC-UI.md §6.6).
 	//
-	// The countdown ticks locally and the data refetches on an interval (§8.6.1). One timer drives both:
-	// every second it moves `now`, which redraws the countdowns, and it reads again when the interval has
-	// elapsed. `pollDue` holds that decision, so "paused" and "the tab is hidden" are rules with a test
-	// rather than conditions scattered through a component.
+	// The countdown ticks locally and the data refetches on an interval (§8.6.1). One timer drives both, and
+	// the loop that runs it is `src/lib/stores/quota-poll.svelte.ts`, so "paused" and "the tab is hidden" are
+	// rules with a test rather than conditions scattered through a component.
 	//
 	// The read is paged over provider groups (docs/PORT/006-PORT-QUOTA-PAGING.md D1/D5): the screen asks
 	// for its card page size, and the pager walks server pages. A read that discovers the data shrank
@@ -19,29 +18,20 @@
 	// its connection has left without a request of its own and without the operator pressing anything. The
 	// page keys them by endpoint and hands them down; a card that wants a fresher answer asks for it itself.
 	import { resolve } from '$app/paths';
-	import { onMount } from 'svelte';
 	import QuotaCaps from '$lib/components/QuotaCaps.svelte';
 	import QuotaCards from '$lib/components/QuotaCards.svelte';
 	import QuotaToolbar from '$lib/components/QuotaToolbar.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { listQuotaWindows } from '$lib/api/usage';
-	import {
-		clampPage,
-		pollDue,
-		pollSecondsRemaining,
-		QUOTA_PAGE_SIZE,
-		QUOTA_POLL_MS
-	} from '$lib/polling';
+	import { clampPage, QUOTA_PAGE_SIZE } from '$lib/polling';
+	import { createQuotaPoll } from '$lib/stores/quota-poll.svelte';
 	import type { PublishedQuotaUsage } from '$lib/schemas/quota-published';
 	import { quotaCardGroups, quotaCardProviders, type QuotaWindow } from '$lib/schemas/quota';
 	import { formatTimestamp } from '$lib/utils/time';
-
-	// The countdown's resolution. A second is the smallest unit the countdown prints, so a faster tick would
-	// redraw without changing what anyone reads.
-	const TICK_MS = 1000;
 
 	let windows = $state<QuotaWindow[]>([]);
 	let published = $state<PublishedQuotaUsage[]>([]);
@@ -54,10 +44,6 @@
 	let rerunRequested = $state(false);
 	let error = $state<ApiError | null>(null);
 	let labelNotice = $state<string | ApiError | null>(null);
-	let paused = $state(false);
-	let now = $state(Date.now());
-	let lastLoadedAt = $state(0);
-	let readAt = $state('');
 	let page = $state(1);
 	let totalGroups = $state(0);
 	let providerFilter = $state('');
@@ -76,32 +62,8 @@
 	// the screen's card page size is the read's per_page.
 	const pageCount = $derived(Math.max(1, Math.ceil(totalGroups / QUOTA_PAGE_SIZE)));
 
-	const secondsToNext = $derived(
-		pollSecondsRemaining({ paused, lastLoadedAt }, now, QUOTA_POLL_MS)
-	);
-
-	onMount(() => {
-		const timer = setInterval(tick, TICK_MS);
-		document.addEventListener('visibilitychange', onVisibility);
-		void load();
-
-		return () => {
-			clearInterval(timer);
-			document.removeEventListener('visibilitychange', onVisibility);
-		};
-	});
-
-	function tick(): void {
-		now = Date.now();
-		if (pollDue({ paused, lastLoadedAt }, now, QUOTA_POLL_MS, document.visibilityState))
-			void load();
-	}
-
-	function onVisibility(): void {
-		// Coming back to the tab reads once. The interval that elapsed while it was hidden was skipped rather
-		// than queued, so this is what brings the table up to date again.
-		if (document.visibilityState === 'visible') void load();
-	}
+	// The screen's clock, its pause rule and its interval, in one loop that reads through this page.
+	const poll = createQuotaPoll(() => void load());
 
 	function goToPage(next: number): void {
 		const bounded = Math.min(pageCount, Math.max(1, next));
@@ -128,8 +90,7 @@
 				listEndpointLabels({ page: 1, per_page: 100 })
 			]);
 
-			lastLoadedAt = Date.now();
-			readAt = new Date(lastLoadedAt).toISOString();
+			poll.markRead();
 
 			if (endpointResult.ok) {
 				labelNotice = null;
@@ -178,14 +139,15 @@
 	</div>
 
 	<QuotaToolbar
-		{paused}
-		{readAt}
-		{secondsToNext}
+		paused={poll.paused}
+		readAt={poll.readAt}
+		secondsToNext={poll.secondsToNext}
 		providers={providerIds}
 		provider={providerFilter}
+		refreshing={busy}
 		onproviderchange={(next) => (providerFilter = next)}
 		onrefresh={() => void load()}
-		ontogglepause={() => (paused = !paused)}
+		ontogglepause={() => (poll.paused = !poll.paused)}
 	/>
 
 	{#if labelNotice}
@@ -199,10 +161,7 @@
 	{:else if error && windows.length === 0 && published.length === 0}
 		<StateMessage kind="error" title="Quota windows could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => void load()}>Try again</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>
@@ -221,7 +180,10 @@
 	{:else}
 		{#if error}
 			<p role="alert" class="text-sm text-[var(--color-danger)]">
-				<ApiErrorText {error} suffix={` Showing the last read at ${formatTimestamp(readAt)}.`} />
+				<ApiErrorText
+					{error}
+					suffix={` Showing the last read at ${formatTimestamp(poll.readAt)}.`}
+				/>
 			</p>
 		{/if}
 
@@ -231,7 +193,7 @@
 			{published}
 			{publishedNote}
 			provider={providerFilter}
-			{now}
+			now={poll.now}
 			{page}
 			{pageCount}
 			onpagechange={goToPage}

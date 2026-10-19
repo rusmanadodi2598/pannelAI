@@ -17,9 +17,9 @@ import {
 	publishedUsage,
 	quotaEndpointRow,
 	quotaWindowRow,
-	stubQuota,
 	type QuotaStub
-} from '../support/quota-stub';
+} from '../support/quota-fixtures';
+import { stubQuota } from '../support/quota-stub';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 
