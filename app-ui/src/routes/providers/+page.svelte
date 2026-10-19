@@ -11,29 +11,19 @@
 	// operator-created, so the section writes. Its set is not paginated and not narrowed by either
 	// filter, which is why it is read on its own rather than derived from the registry page.
 	import CustomProviderSection from '$lib/components/CustomProviderSection.svelte';
+	import ProvidersFilters from '$lib/components/ProvidersFilters.svelte';
+	import PagingControls from '$lib/components/PagingControls.svelte';
 	import ProviderTable from '$lib/components/ProviderTable.svelte';
-	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { Button } from '$lib/primitives/button/index.js';
-	import { CONTROL_ICONS } from '$lib/icons';
 	import { listProviders } from '$lib/api/providers';
 	import { listProviderNodes } from '$lib/api/provider-nodes';
 	import type { ApiError } from '$lib/api/errors';
-	import { PROVIDER_CATEGORIES, schemaProviderQuery, type Provider } from '$lib/schemas/provider';
+	import { schemaProviderQuery, type Provider } from '$lib/schemas/provider';
 	import type { ProviderNode } from '$lib/schemas/provider-node';
 	import { onMount } from 'svelte';
 
 	const PAGE_SIZE = 25;
-
-	// "All" plus each category the API accepts. The labels are the API's own category values.
-	const CATEGORY_FILTERS = [
-		{ value: '', label: 'All' },
-		...PROVIDER_CATEGORIES.map((value) => ({ value, label: value }))
-	];
-
-	const SearchIcon = CONTROL_ICONS.search.icon;
-	const PreviousIcon = CONTROL_ICONS.previous.icon;
-	const NextIcon = CONTROL_ICONS.next.icon;
 
 	let providers = $state<Provider[]>([]);
 	let total = $state(0);
@@ -119,6 +109,11 @@
 		void loadProviders();
 	}
 
+	function goPage(next: number): void {
+		page = next;
+		void loadProviders();
+	}
+
 	function clearFilters(): void {
 		category = '';
 		searchDraft = '';
@@ -137,63 +132,14 @@
 		</p>
 	</div>
 
-	<!-- One compact row for the three controls the operator reaches for together (owner directive,
-	     2026-09-25): the search commits on submit, the select commits on change, and the refresh
-	     re-reads both this list and the node set. Every control shares one height and one baseline, and
-	     the row wraps as a block on a narrow screen rather than stretching any single control. -->
-	<!-- Row 1: the search, then the refresh. From sm the two share one line; on a phone each takes the full width. -->
-	<div class="flex flex-col gap-2 sm:flex-row sm:items-start">
-		<div class="min-w-0 sm:max-w-md sm:flex-1">
-			<form
-				class="flex min-w-0 items-center gap-2"
-				onsubmit={(event) => {
-					event.preventDefault();
-					applySearch();
-				}}
-			>
-				<input
-					type="search"
-					bind:value={searchDraft}
-					placeholder="Search name or id"
-					aria-label="Search providers by name or id"
-					aria-describedby={searchError ? 'provider-search-error' : undefined}
-					aria-invalid={searchError !== null}
-					class="min-h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
-				/>
-				<Button type="submit" variant="outline">
-					<SearchIcon class="size-4" aria-hidden="true" />
-					Search
-				</Button>
-			</form>
-			{#if searchError}
-				<p id="provider-search-error" role="alert" class="mt-1 text-sm text-[var(--color-danger)]">
-					{searchError}
-				</p>
-			{/if}
-		</div>
-		<div
-			class="flex min-w-0 [&>div]:w-full [&_button]:w-full sm:w-auto sm:[&>div]:w-auto sm:[&_button]:w-auto"
-		>
-			<RefreshControl onrefresh={load} />
-		</div>
-	</div>
-
-	<!-- Row 2: the category chips span the full width, three to a row on a phone and all six on one line from sm. -->
-	<!-- The category filter is a row of chips, not a select: every option is visible at once, each is the
-	     same 44px target, and `aria-pressed` is the chosen state, which the button both paints and
-	     announces (DESIGN.md §3.5). -->
-	<div role="group" aria-label="Filter by category" class="grid grid-cols-3 gap-2 sm:grid-cols-6">
-		{#each CATEGORY_FILTERS as option (option.value)}
-			<Button
-				variant="toggle"
-				class="w-full min-w-0 px-2"
-				aria-pressed={category === option.value}
-				onclick={() => applyCategory(option.value)}
-			>
-				{option.label}
-			</Button>
-		{/each}
-	</div>
+	<ProvidersFilters
+		bind:draft={searchDraft}
+		{category}
+		{searchError}
+		oncategory={applyCategory}
+		onsearch={applySearch}
+		onrefresh={load}
+	/>
 
 	<CustomProviderSection {nodes} loading={nodesLoading} error={nodesError} onreload={loadNodes} />
 
@@ -224,32 +170,6 @@
 	{:else}
 		<ProviderTable {providers} />
 
-		<div class="flex items-center gap-3 text-sm">
-			<Button
-				variant="ghost"
-				class="underline"
-				disabled={page <= 1}
-				onclick={() => {
-					page -= 1;
-					void loadProviders();
-				}}
-			>
-				<PreviousIcon class="size-4" aria-hidden="true" />
-				Previous
-			</Button>
-			<span class="text-[var(--color-text-muted)]">Page {page} of {lastPage}</span>
-			<Button
-				variant="ghost"
-				class="underline"
-				disabled={page >= lastPage}
-				onclick={() => {
-					page += 1;
-					void loadProviders();
-				}}
-			>
-				Next
-				<NextIcon class="size-4" aria-hidden="true" />
-			</Button>
-		</div>
+		<PagingControls {page} {lastPage} onpage={goPage} />
 	{/if}
 </section>
