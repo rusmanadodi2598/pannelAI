@@ -152,6 +152,22 @@ describe('interaction state scale', () => {
 				}
 			});
 
+			// A chosen control sits on the ground §3.2 already calls pressed, and its hover has to reach
+			// past that. Re-pressing a chosen control changes nothing, so it asks for no fourth step.
+			it('steps a chosen control far enough from its own ground', () => {
+				const ground = lab(token(tokens, 'surface-3'))[0];
+				const hoveredValue = token(tokens, 'state-deep');
+				const hovered = lab(composite(hoveredValue, token(tokens, 'surface')) ?? hoveredValue)[0];
+
+				expect(Math.abs(hovered - ground), 'the selected hover step').toBeGreaterThanOrEqual(
+					MIN_STEP
+				);
+				expect(
+					contrast(token(tokens, 'text'), hoveredValue, token(tokens, 'surface')),
+					'the chosen label'
+				).toBeGreaterThanOrEqual(4.5);
+			});
+
 			// The accent steps are the same coral at two depths, not two more accents (R-29). Held to
 			// chroma and hue, because L* is the axis the ramp is allowed to move along. The band is
 			// +/-15%: a coral brightened toward its ceiling necessarily gives up some chroma, which is

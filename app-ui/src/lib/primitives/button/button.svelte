@@ -29,6 +29,11 @@
 					"border-[var(--color-border)] bg-transparent text-[var(--color-text)] hover:bg-[var(--color-state-hover)] active:bg-[var(--color-state-press)]",
 				ghost:
 					"text-[var(--color-text-muted)] hover:bg-[var(--color-state-hover)] hover:text-[var(--color-text)] active:bg-[var(--color-state-press)]",
+				// A filter chip. Selection rides `aria-pressed`, which is what announces the chosen one, so
+				// the state is read from the attribute rather than from a class a call site must remember
+				// to apply, and a chosen chip still answers a pointer instead of sitting at its own ground.
+				toggle:
+					"border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-state-hover)] hover:text-[var(--color-text)] active:bg-[var(--color-state-press)] aria-[pressed=true]:border-[var(--color-text)] aria-[pressed=true]:bg-[var(--color-surface-3)] aria-[pressed=true]:font-medium aria-[pressed=true]:text-[var(--color-text)] aria-[pressed=true]:hover:bg-[var(--color-state-deep)]",
 				// The commit in a confirmation dialog. A solid control needs a fixed label pair the way the
 				// accent does, so `danger-ink` is to `danger` what `accent-text` is to `accent`.
 				destructive:

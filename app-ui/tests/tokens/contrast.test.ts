@@ -70,6 +70,7 @@ const REQUIRED = [
 	'accent-press',
 	'state-hover',
 	'state-press',
+	'state-deep',
 	'danger-hover',
 	'danger-press',
 	'danger-ink',

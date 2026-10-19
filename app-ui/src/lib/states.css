@@ -8,11 +8,16 @@
  * control that carries a colour steps that colour instead, because an ink wash under a coloured label
  * drops the label below AA. Direction follows the theme's own surface ramp: further in is darker in
  * light, lighter in dark, and both directions spend the step rather than the label's contrast.
+ *
+ * Selection is a state too, so a chosen control keeps answering a pointer: `surface-3` is its ground and
+ * `state-deep` is the step its hover has to reach from there, one notch past the press of an unchosen
+ * one. Re-pressing a control that is already chosen changes nothing, so it asks for no fourth step.
  */
 @theme {
 	/* Light. The ink washed by `state-*` is #1a1614; the fills are coral #b8412a and #b3261e. */
 	--color-state-hover: rgb(26 22 20 / 0.09);
 	--color-state-press: rgb(26 22 20 / 0.16);
+	--color-state-deep: rgb(26 22 20 / 0.2);
 
 	/* White on the pressed coral measures 7.85:1, against 5.49:1 at rest. */
 	--color-accent-hover: #ab311c;
@@ -29,6 +34,7 @@
 	/* Dark. The ink washed by `state-*` is #edeae6; the fills are coral #e56a4a and #f08a84. */
 	--color-state-hover: rgb(237 234 230 / 0.09);
 	--color-state-press: rgb(237 234 230 / 0.16);
+	--color-state-deep: rgb(237 234 230 / 0.2);
 
 	/* The label is near-black, so stepping the coral up toward it raises the label's contrast instead
 	   of costing any: near-black on the pressed coral measures 8.03:1, against 5.85:1 at rest. */

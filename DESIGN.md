@@ -86,6 +86,7 @@ to be readable as hierarchy rather than as a tint.
 | `--color-danger`       | `#B3261E` | `#F08A84` | Failed, revoked, destructive                              |
 | `--color-state-hover`  | ink @ 9%  | ink @ 9%  | Hovered control on any ground (§3.5)                      |
 | `--color-state-press`  | ink @ 16% | ink @ 16% | Pressed control on any ground (§3.5)                      |
+| `--color-state-deep`   | ink @ 20% | ink @ 20% | Hover over a chosen control (§3.5)                      |
 | `--color-accent-hover` | `#AB311C` | `#F07A5A` | Primary action under a pointer                            |
 | `--color-accent-press` | `#9C2412` | `#FA8A6C` | Primary action while held                                 |
 | `--color-danger-hover` | `#A11815` | `#FD9992` | Destructive control, hovered                              |
@@ -178,6 +179,12 @@ grounds a wash can land on.
 **Direction follows the theme's own surface ramp.** §3.2 gives `surface-3` the pressed row, which is
 darker than the page in light and lighter than it in dark. A state step moves the same way: further in is
 deeper in light, brighter in dark. Both directions raise the label's contrast rather than spending it.
+
+**A chosen control is a state, not a hover.** A filter chip that is selected sits on `surface-3`, the
+ground §3.2 already calls pressed, and its hover reaches `state-deep` from there. It asks for no fourth
+step: pressing a control that is already chosen changes nothing, so the 1px shift is the whole answer. The
+selection is read from `aria-pressed`, which is what announces it to a screen reader, so a screen cannot
+render the chosen state without also reporting it.
 
 **A muted glyph lifts to full text the moment it is hovered, and holds there while pressed.** That is not
 only hierarchy: `text-muted` on a pressed wash measures 3.78:1 in dark, so the pairing is forbidden by the
@@ -486,6 +493,7 @@ installed set.
 | A disabled primary leaves the accent rather than fading it                                                    | Element opacity fades a label and its own fill toward the page together, which measured 1.87:1 on the washed pair; `surface-3` with a muted label reads 5.61:1 and stops an action that cannot be taken from claiming the screen's one accent.                                                                                                                               |
 | A destructive commit in a dialog carries `danger-ink`, the way the accent carries `accent-text`               | A solid action control needs a fixed light-on-dark or dark-on-light pair per theme. The raw `text-white` it replaced measured 2.42:1 on the dark danger token, which is below the floor and was in three screens.                                                                                             |
 | A destructive action in a table row stays a quiet glyph                                                       | One danger action among four reads as a set; a red block on every row shouts, and the row is where an operator scans.                                                                                                                                                                                        |
+| A chosen control keeps answering a pointer, one step past its own ground                      | A filter chip that is selected sits on the pressed surface, so its hover needs a step of its own; `state-deep` is that step, and re-pressing a chosen chip asks for no fourth because it changes nothing. The selection is read from `aria-pressed` rather than a class, because that attribute is already what announces it.                                                  |
 | The dense icon button matches the dense text button's height                                                  | `icon-sm` was 32px beside a 36px text button, so a toolbar with both finished on two lines. Measured against §7's density, the dense tier is one height.                                                                                                                                                    |
 
 ---
