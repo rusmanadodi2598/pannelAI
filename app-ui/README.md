@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Thirty-nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -234,7 +234,63 @@ that sentence became a tab of the row itself, filed as `docs/DRAFT/035-USAGE-LIV
 thirty-ninth is the vertex service-account credential in the endpoint forms, measured 2026-10-12: the
 panel learns the gateway's fourth auth type, `service_account`, on both create paths (the inline form and
 the key dialog), with the project and location fields offered exactly where the API reads them and refused
-everywhere else, filed as `docs/PORT/012-PORT-VERTEX-VEO.md`.
+everywhere else, filed as `docs/PORT/012-PORT-VERTEX-VEO.md`. The fortieth is the interaction-state scale
+and the Endpoint & Key screen on it, measured 2026-10-19: nothing on that screen painted a colour under a
+press, half of it painted nothing under a pointer either (which is no state at all on a touch layout, where
+`hover:` is not applied), and the dialog's destructive commit measured 2.42:1 in dark, so the four states
+of a control are now decided in one token file and one component rather than on each screen.
+
+### The interaction-state scale and Endpoint & Key, 2026-10-19
+
+Run with Bun 1.3.0. The question asked was what colour tells an operator that a button is live, and what
+colour tells them it was pressed, starting on Endpoint & Key. Measured against the screen, the second half
+had no answer. Eight control groups rendered there from eight hand-written class lists: none carried a
+pressed colour, three carried no hover either, and the only feedback a click got was a label swap that
+appears after the request has already started. Because Tailwind applies `hover:` only under
+`(hover: hover)`, the half that did have a hover wash had no state of any kind on a touch layout. The first
+half was failing too: the refresh control and a dialog's dismiss button paint the same hairline border as
+the static panel behind them, so "alive" was not visible either.
+
+That made it a palette problem rather than eight screen fixes. The scale is `src/lib/states.css`, and
+`primitives/button` is the component that reads it into classes: `default`, `outline`, `ghost`,
+`destructive` (the commit in a dialog) and `destructive-ghost` (one danger action among four in a row).
+Steps are sized in L\* (about 5 per state, about 10 across a ramp) rather than by contrast ratio, because a
+wash and its ground are deliberately close and the washes this replaced measured 3.1 L\*, which reads as a
+flicker. A control with no colour of its own takes an ink wash, so one token calibrates itself against the
+page, a card, or a table header; a control that carries a colour steps its own ramp instead, because a
+danger glyph under a 16% ink wash measures 4.17:1 on a raised panel. Direction follows the ramp each theme
+already draws, where `surface-3` is the pressed row: deeper in light, brighter in dark.
+
+The measurement found three defects and fixed them where it stood. The dialog's Delete key button carried
+a raw `text-white` on the danger token, which measures 2.42:1 in dark; the same pair sat on
+`PurgeLogsDialog` and `SettingsSecurityTab`, and all three now read `danger-ink`. The registry variant's
+`hover:bg-primary/80` lifts a filled button toward the page and puts its own label at 3.88:1, so a filled
+control darkens instead. And fading a filled button with element opacity pulls label and fill toward the
+page together (1.87:1), which is why a primary that is gated steps off the accent onto `surface-3` with a
+muted label, while a primary with a call in flight keeps the accent and says so with `aria-busy`: grey on
+a button the operator just pressed reads as a broken one, which is the failure the refresh control already
+records about its own gate.
+
+Endpoint & Key is converted: the create form, the refresh control, the five row actions, the pagination and
+retry steps, both dialog footers, the one-time key modal's copy and Done, and the shared `Modal` close
+control, which every dialog in the panel inherits. `RefreshControl` and `CopyButton` are shared too, so ten
+further screens gain the states without being touched. The rest of the panel's hand-written buttons are not
+migrated by this pass, and the new screen-scoped test guards that one screen only.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                         |
+| `bun run test`              | 3238 tests passed across 201 files on the final tree. This pass adds 33 rows: 28 in the new `tests/tokens/state-scale.test.ts` and 5 in the new `tests/components/endpoint-key-control-states.test.ts`. The last whole-panel count recorded in this file was 2548 across 147 files                                                                                                           |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read rather than assumed, and carries both themes' state tokens and the `aria-busy` rules                                                                                                                                                                                                                                           |
+| Token measurement           | every ramp step at least 4 L\* and every label pairing at AA on both grounds, in both themes; the accent steps are held to within 15% chroma and 5 degrees of hue, so a ramp cannot quietly become a second accent                                                                                                                                                                           |
+| Browser measurement         | Chromium against the dev server with the gateway routes stubbed, both themes: each control reports three distinct computed colours across rest, hover and held (light primary 184/65/42 to 171/49/28 to 156/36/18, dark 229/106/74 to 240/122/90 to 250/138/108); an in-flight primary keeps the accent and a gated one reads `surface-3`; at 390px a tap opens the dialog on a 44x44 target |
+| `scrypts/gates/antislop.sh` | PASS: tree-wide R-02, the changed-file citation and header checks, and the suppression checks                                                                                                                                                                                                                                                                                                |
+| File size                   | `src/app.css` 249 lines, at the ceiling, which is why the scale is its own file (the same seam `motion.css` records); `src/lib/states.css` 63; `primitives/button/button.svelte` 117; the largest touched test is `tests/tokens/contrast.test.ts` at 223, above the 220 warning and disclosed rather than split                                                                              |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.2, the new §3.5, §11 and §12                                                                                                                                                                                                                |
+
+Not yet verified: the screens that inherit `RefreshControl`, `CopyButton`, and `Modal` were not each
+click-through audited; their controls now read the same states, but only Endpoint & Key carries the test
+that pins it.
 
 ### The vertex service-account credential in the endpoint forms, 2026-10-12
 

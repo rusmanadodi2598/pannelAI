@@ -9,6 +9,7 @@
 	import { untrack } from 'svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import PasswordChangeForm from '$lib/components/PasswordChangeForm.svelte';
 	import { patchSecuritySettings } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
@@ -139,19 +140,16 @@
 	</p>
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			onclick={() => (confirmingOpenPanel = false)}>Keep the password</button
+		<Button variant="outline" onclick={() => (confirmingOpenPanel = false)}
+			>Keep the password</Button
 		>
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-3 text-sm font-medium text-white"
+		<Button
+			variant="destructive"
 			onclick={() => {
 				confirmingOpenPanel = false;
 				draft.require_login = false;
 				void save();
-			}}>Turn it off</button
+			}}>Turn it off</Button
 		>
 	{/snippet}
 </Modal>
