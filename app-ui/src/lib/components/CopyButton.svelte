@@ -26,16 +26,13 @@
 	// The sentence is not part of the shape: a copy that
 	// reported nothing would be the dead control R-26 rejects, pressed in either shape.
 	import { CONTROL_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 
 	const DEFAULT_LABEL = 'Copy';
 	const COPIED = 'Copied.';
 	const FAILED = 'Copy failed. Select the text and copy it.';
 
 	const CopyIcon = CONTROL_ICONS.copy.icon;
-
-	// One base for both shapes, so the border and the hover state cannot drift apart between them.
-	const BUTTON_BASE =
-		'rounded-[var(--radius-sm)] border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]';
 
 	let {
 		value,
@@ -121,28 +118,25 @@
 
 <span class="inline-flex items-center gap-2">
 	{#if iconOnly}
-		<button
-			type="button"
-			class="inline-flex {touchTarget
-				? 'size-11'
-				: 'size-9'} items-center justify-center {BUTTON_BASE}"
+		<Button
+			variant="outline"
+			size={touchTarget ? 'icon' : 'icon-sm'}
 			aria-label={label}
 			title={label}
 			onclick={() => void write()}
 		>
 			<CopyIcon class="size-4" aria-hidden="true" />
-		</button>
+		</Button>
 	{:else}
-		<button
-			type="button"
-			class="inline-flex {touchTarget
-				? 'min-h-11'
-				: 'min-h-9'} items-center gap-1.5 {BUTTON_BASE} px-2.5 text-xs"
+		<Button
+			variant="outline"
+			size="sm"
+			class={touchTarget ? 'min-h-11' : undefined}
 			onclick={() => void write()}
 		>
 			<CopyIcon class="size-3.5" aria-hidden="true" />
 			{label}
-		</button>
+		</Button>
 	{/if}
 
 	<span class="text-xs text-[var(--color-text-muted)]" role="status" aria-live="polite">

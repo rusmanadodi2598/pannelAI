@@ -16,7 +16,11 @@
 	// already state both through their loading and error states, and a stamp written here could not tell a
 	// read that succeeded from one that failed. The glyph is the map's refresh mark (R-04, R-31): it is
 	// what the button does, not decoration, and it stays while the label reports the read in flight.
+	//
+	// Its rest, hover, pressed, and disabled colour are not written here either: they come from the shared
+	// button (DESIGN.md §3.5), which is the only place a control's state is decided (SPEC-UI §9.3).
 	import { CONTROL_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 
 	const RefreshIcon = CONTROL_ICONS.refresh.icon;
 
@@ -39,12 +43,8 @@
 <!-- The row the button sits in is part of the control: a bare button in a column would stretch to the
      full width of the screen, and every caller would have to repeat the same wrapper to stop it. -->
 <div class="flex flex-wrap items-center gap-3">
-	<button
-		type="button"
-		class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-		onclick={run}
-	>
+	<Button variant="outline" aria-busy={busy} onclick={run}>
 		<RefreshIcon class="size-4" aria-hidden="true" />
 		{busy ? 'Refreshing' : 'Refresh now'}
-	</button>
+	</Button>
 </div>

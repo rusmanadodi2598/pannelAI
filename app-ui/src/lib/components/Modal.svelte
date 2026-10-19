@@ -4,6 +4,7 @@
 	// Native modal mode gives Escape-to-close, focus containment, and inert background for free, which
 	// is what R-32 requires. Reimplementing that on a div is how focus handling goes wrong.
 	import { X } from '@lucide/svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { Snippet } from 'svelte';
 
 	type Props = {
@@ -60,14 +61,17 @@
 	<div class="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
 		<h2 id={titleId} class="text-sm font-semibold">{title}</h2>
 		{#if dismissible}
-			<button
-				type="button"
-				class="ml-auto inline-flex size-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)]"
+			<!-- The shared button, so a dialog closes with the same states as every other control: the
+			     glyph rests at the icon colour DESIGN.md §3.2 gives it, and the press paints. -->
+			<Button
+				variant="ghost"
+				size="icon"
+				class="ml-auto"
 				onclick={onclose}
 				aria-label="Close dialog"
 			>
 				<X class="size-4" aria-hidden="true" />
-			</button>
+			</Button>
 		{/if}
 	</div>
 
