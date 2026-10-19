@@ -1,14 +1,15 @@
 // Every control on Endpoint & Key carries a pressed colour, not only a hover one.
 //
 // The screen used to render eight control groups from eight hand-written class lists and painted nothing
-// under a press. What is asserted is the shape of the fix: each control reads its states from the shared
-// button (DESIGN.md §3.5) and needs no raw Tailwind white, which measured 2.42:1 on the danger fill in
-// dark. The colours themselves are measured in tests/tokens/state-scale.test.ts, and this screen is the
-// scope: a control on another screen that has no pressed state is not reported here.
+// under a press. What is asserted is the shape of the fix through the shared contract in
+// tests/support/control-states.ts, plus the two readings this screen owns: the destructive ramp on a row
+// glyph and the label pair on a dialog commit. The colours themselves are measured in
+// tests/tokens/state-scale.test.ts, and this screen is the scope.
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import GatewayKeysTab from '../../src/lib/components/GatewayKeysTab.svelte';
+import { expectControlStates, expectEveryControlHasStates } from '../support/control-states';
 import { stubGatewayKeys } from '../support/gateway-key-stub';
 
 /** Renders the tab and opens the delete dialog, so the dialog footer is on the page with the rest. */
@@ -22,45 +23,38 @@ async function controls(): Promise<HTMLElement[]> {
 	return Array.from(document.querySelectorAll('button'));
 }
 
+function control(buttons: HTMLElement[], match: (button: HTMLElement) => boolean): HTMLElement {
+	const found = buttons.find(match);
+	expect(found, 'the control is not on the screen').toBeTruthy();
+	return found as HTMLElement;
+}
+
+const labelled =
+	(name: string) =>
+	(button: HTMLElement): boolean =>
+		button.getAttribute('aria-label') === name;
+const called =
+	(text: string) =>
+	(button: HTMLElement): boolean =>
+		button.textContent?.trim() === text;
+
 describe('Endpoint & Key control states', () => {
 	afterEach(() => {
 		cleanup();
 		vi.unstubAllGlobals();
 	});
 
-	it('gives every control a pressed colour', async () => {
-		const buttons = await controls();
-
-		// The create form, refresh, four row actions, the delete in its own dialog, the dialog dismiss,
-		// and the two pagination steps. Named in the failure so a control that loses its state is findable.
-		expect(buttons.length).toBeGreaterThanOrEqual(8);
-
-		for (const button of buttons) {
-			expect(
-				button.className,
-				`${button.textContent?.trim() || button.getAttribute('aria-label') || 'unnamed'} has no pressed state`
-			).toMatch(/active:(bg|text)-/);
-			expect(
-				button.className,
-				`${button.textContent?.trim() || button.getAttribute('aria-label') || 'unnamed'} has no hover state`
-			).toMatch(/hover:(bg|text|underline)-/);
-		}
-	});
-
-	it('paints no control with a raw Tailwind white or black', async () => {
-		for (const button of await controls()) {
-			expect(button.className, `${button.textContent?.trim()} uses a raw colour`).not.toMatch(
-				/(^|\s)(text|bg)-(white|black)\b/
-			);
-		}
+	it('gives every control a hover and a pressed step, and no raw colour', async () => {
+		// The create form, refresh, four row actions, the dialog commit and dismiss, and the two
+		// pagination steps, so a control that loses its state is not hidden by a small expectation.
+		expectEveryControlHasStates(await controls(), 'Endpoint & Key');
 	});
 
 	it('steps the destructive row glyph along the danger ramp', async () => {
 		const buttons = await controls();
-		const row = buttons.find(
-			(button) => button.getAttribute('aria-label') === 'Delete'
-		) as HTMLElement;
+		const row = control(buttons, labelled('Delete'));
 
+		expectControlStates(row);
 		for (const state of [
 			'text-[var(--color-danger)]',
 			'hover:text-[var(--color-danger-hover)]',
@@ -71,10 +65,7 @@ describe('Endpoint & Key control states', () => {
 	});
 
 	it('gives the dialog commit a label pair rather than a raw white', async () => {
-		const buttons = await controls();
-		const commit = buttons.find(
-			(button) => button.textContent?.trim() === 'Delete key'
-		) as HTMLElement;
+		const commit = control(await controls(), called('Delete key'));
 
 		expect(commit.className).toContain('bg-[var(--color-danger)]');
 		expect(commit.className).toContain('text-[var(--color-danger-ink)]');
@@ -82,11 +73,8 @@ describe('Endpoint & Key control states', () => {
 		expect(commit.className).toContain('active:bg-[var(--color-danger-press)]');
 	});
 
-	it('keeps the pagination and retry steps disabled at the same opacity as every other control', async () => {
-		const buttons = await controls();
-		const previous = buttons.find(
-			(button) => button.textContent?.trim() === 'Previous'
-		) as HTMLElement;
+	it('keeps the disabled steps at one fade value across the panel', async () => {
+		const previous = control(await controls(), called('Previous'));
 
 		expect(previous.className).toContain('disabled:opacity-50');
 		expect(previous.className).not.toContain('disabled:opacity-60');
