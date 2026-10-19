@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty-four passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty-five passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -250,7 +250,47 @@ colours that pointed at nothing, because `--color-primary-contrast` and `--color
 anywhere and an undeclared token falls through silently rather than failing. The forty-fourth is the provider
 detail screen, measured the same day: 59 controls across the cluster the screen pulls in, two of them the
 section fold and the tab strip every other screen is built from, four more copies of that paging band, and
-two files' worth of the same bulk orchestration written twice.
+two files' worth of the same bulk orchestration written twice. The forty-fifth is the Quota Tracker, measured
+the same day: ten controls with no pressed colour, a chosen pause chip wearing the hovered ground as its
+selection, and a read loop that moved out of the route before the route could pass the line limit.
+
+### The Quota Tracker on the scale, and the six test files that held two subjects, 2026-10-19
+
+Run with Bun 1.3.0. Ten controls across four components, and not one of them painted a colour under a press.
+The chosen pause chip was the loudest finding: it marked itself with a hand-written
+`aria-pressed:bg-[var(--color-surface-2)]`, and `surface-2` is the ground DESIGN.md §3.2 calls _hovered_, so
+a chosen chip wore the same colour as every hovered control on the screen and answered nothing when pressed.
+It reads the toggle variant now, which puts it on `surface-3`, lifts it to `state-deep` under a pointer and
+steps it on a press.
+
+The refresh control is the one the screen could not borrow. `RefreshControl` drops a second press while a
+read is in flight; this screen queues it, because a press that arrives during a poll is a press the operator
+still means. The reason is written into the component and locked by a new case, and the control now says
+"Refreshing" while a read runs, which is the acknowledgment it used to give nothing.
+
+The size debt here was not in the route alone. The route sat at exactly the cap (250), its schema file
+carried two subjects (257), and six test files had grown past it: the read loop moved to
+`src/lib/stores/quota-poll.svelte.ts`, the published read's _status_ half (never polled, the soft sentence,
+the stamp, a failed attempt) moved to `src/lib/schemas/quota-published-status.ts` and its cases followed it,
+and the test files split along describe boundaries that were already two subjects in one file. No case moved
+against its grain: 21 + 19 cases in the two schema files before, 21 + 19 in the four after, and the card
+file's 24 in three.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `bun run test`              | 3257 tests passed across 212 files (3252 across 205 at the last row). This pass adds 4 rows in the new `tests/routes/quota-control-states.test.ts` and one case in `tests/components/quota-polling.test.ts` for the press a poll queues; the other 205 files are the same suite split along the describe lines that were already two subjects in one file, so no case moved against its grain                                                                                |
+| `bun run build`             | succeeds, output in `build/`                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Browser measurement         | Chromium against the dev server with the quota routes stubbed, both themes: seven controls each report three distinct computed colours across rest, hover and held (the outline wash 0/0/0 to 26/22/20 at 9% to 16% in light, 237/234/230 at the same two steps in dark; the fold glyph 95/87/78 to 26/22/20), and the chosen chip's pressed read stays on `state-deep`, the one step §3.5 says a chosen control does not take again                                         |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| File size                   | `quota/+page.svelte` 250 to 209, `schemas/quota-published.ts` 257 to 195, `quota-stub.ts` 345 to 223, and six over-cap test files (460, 426, 417, 344, 319, 345) split to eleven, largest 237. `src/lib/stores/quota-poll.svelte.ts` 72, `schemas/quota-published-status.ts` 71. Remaining over-cap files in `src/`: 4 (`schemas/settings.ts` 426, `SettingsRoutingTab.svelte` 322, `icons.ts` 281, `schemas/usage-view.ts` 264), each scheduled with the page that reads it |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                           |
+
+Not yet verified: the published block's own refresh round-trip was measured only through its control's
+computed colours, not through a held request. Three controls on this screen (the card fold glyph, the
+published ask, and the two paging steps) were drawn on `radius-md` while every control elsewhere in the panel
+is on `radius-sm`; they take the primitive's radius now, which the browser check shows as a corner change and
+no test pins.
 
 ### The provider detail screen on the scale, and the two shells it is built from, 2026-10-19
 
