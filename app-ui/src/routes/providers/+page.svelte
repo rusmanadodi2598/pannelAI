@@ -14,6 +14,7 @@
 	import ProviderTable from '$lib/components/ProviderTable.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { listProviders } from '$lib/api/providers';
 	import { listProviderNodes } from '$lib/api/provider-nodes';
@@ -159,13 +160,10 @@
 					aria-invalid={searchError !== null}
 					class="min-h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
 				/>
-				<button
-					type="submit"
-					class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-				>
+				<Button type="submit" variant="outline">
 					<SearchIcon class="size-4" aria-hidden="true" />
 					Search
-				</button>
+				</Button>
 			</form>
 			{#if searchError}
 				<p id="provider-search-error" role="alert" class="mt-1 text-sm text-[var(--color-danger)]">
@@ -182,20 +180,18 @@
 
 	<!-- Row 2: the category chips span the full width, three to a row on a phone and all six on one line from sm. -->
 	<!-- The category filter is a row of chips, not a select: every option is visible at once, each is the
-	     same 44px target, and the pressed state is announced with aria-pressed. -->
+	     same 44px target, and `aria-pressed` is the chosen state, which the button both paints and
+	     announces (DESIGN.md §3.5). -->
 	<div role="group" aria-label="Filter by category" class="grid grid-cols-3 gap-2 sm:grid-cols-6">
 		{#each CATEGORY_FILTERS as option (option.value)}
-			<button
-				type="button"
+			<Button
+				variant="toggle"
+				class="w-full min-w-0 px-2"
 				aria-pressed={category === option.value}
 				onclick={() => applyCategory(option.value)}
-				class="inline-flex min-h-11 w-full min-w-0 items-center justify-center rounded-[var(--radius-sm)] border px-2 text-sm {category ===
-				option.value
-					? 'border-[var(--color-text)] font-medium text-[var(--color-text)]'
-					: 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'}"
 			>
 				{option.label}
-			</button>
+			</Button>
 		{/each}
 	</div>
 
@@ -206,9 +202,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the provider registry" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={load}
-					>Try again</button
-				>
+				<Button variant="ghost" class="underline" onclick={load}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if providers.length === 0}
@@ -221,11 +215,9 @@
 		>
 			{#snippet action()}
 				{#if filtered}
-					<button
-						type="button"
-						class="inline-flex min-h-11 items-center underline"
-						onclick={clearFilters}>Clear the filters</button
-					>
+					<Button variant="ghost" class="underline" onclick={clearFilters}>
+						Clear the filters
+					</Button>
 				{/if}
 			{/snippet}
 		</StateMessage>
@@ -233,9 +225,9 @@
 		<ProviderTable {providers} />
 
 		<div class="flex items-center gap-3 text-sm">
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
+			<Button
+				variant="ghost"
+				class="underline"
 				disabled={page <= 1}
 				onclick={() => {
 					page -= 1;
@@ -244,11 +236,11 @@
 			>
 				<PreviousIcon class="size-4" aria-hidden="true" />
 				Previous
-			</button>
+			</Button>
 			<span class="text-[var(--color-text-muted)]">Page {page} of {lastPage}</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
+			<Button
+				variant="ghost"
+				class="underline"
 				disabled={page >= lastPage}
 				onclick={() => {
 					page += 1;
@@ -257,7 +249,7 @@
 			>
 				Next
 				<NextIcon class="size-4" aria-hidden="true" />
-			</button>
+			</Button>
 		</div>
 	{/if}
 </section>

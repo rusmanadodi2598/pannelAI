@@ -28,6 +28,7 @@
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import Modal from '$lib/components/Modal.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { createProviderNode, updateProviderNode } from '$lib/api/provider-nodes';
 	import type { ApiError } from '$lib/api/errors';
 	import {
@@ -212,22 +213,19 @@
 	</div>
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 underline"
-			onclick={onclose}
-		>
+		<Button variant="ghost" class="underline" onclick={onclose}>
 			<CancelIcon class="size-4" aria-hidden="true" />
 			Cancel
-		</button>
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
+		</Button>
+		<Button
+			variant="outline"
+			class="px-4"
 			disabled={saving || draft.name.trim() === '' || draft.prefix.trim() === ''}
+			aria-busy={saving}
 			onclick={() => void submit()}
 		>
 			<SaveIcon class="size-4" aria-hidden="true" />
 			{saving ? 'Saving' : editing ? 'Save the provider' : 'Add the provider'}
-		</button>
+		</Button>
 	{/snippet}
 </Modal>

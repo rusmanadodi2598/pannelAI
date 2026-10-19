@@ -16,6 +16,7 @@
 	import { resolve } from '$app/paths';
 	import CustomProviderDialog from '$lib/components/CustomProviderDialog.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import type { ApiError } from '$lib/api/errors';
 	import {
@@ -61,22 +62,14 @@
 			</p>
 		</div>
 		<div class="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
-			<button
-				type="button"
-				class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-				onclick={() => add('anthropic-compatible')}
-			>
+			<Button variant="outline" class="w-full" onclick={() => add('anthropic-compatible')}>
 				<AddIcon class="size-4" aria-hidden="true" />
 				Add Anthropic Compatible
-			</button>
-			<button
-				type="button"
-				class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-				onclick={() => add('openai-compatible')}
-			>
+			</Button>
+			<Button variant="outline" class="w-full" onclick={() => add('openai-compatible')}>
 				<AddIcon class="size-4" aria-hidden="true" />
 				Add OpenAI Compatible
-			</button>
+			</Button>
 		</div>
 	</div>
 
@@ -85,9 +78,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the custom providers" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={onreload}
-					>Try again</button
-				>
+				<Button variant="ghost" class="underline" onclick={onreload}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if sorted.length === 0}

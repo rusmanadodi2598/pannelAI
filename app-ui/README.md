@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty-one passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -239,6 +239,34 @@ and the Endpoint & Key screen on it, measured 2026-10-19: nothing on that screen
 press, half of it painted nothing under a pointer either (which is no state at all on a touch layout, where
 `hover:` is not applied), and the dialog's destructive commit measured 2.42:1 in dark, so the four states
 of a control are now decided in one token file and one component rather than on each screen.
+
+### The Provider registry list on the state scale, 2026-10-19
+
+Run with Bun 1.3.0. The second screen on the scale, and the one that showed the scale was incomplete.
+Sixteen controls were hand-written here: the search submit, the two add actions, the node dialog's commit
+and its cancel, and the pagination pair painted a border or an underline and nothing else, so a live
+control and the panel behind it were the same picture. The six category chips changed only their text
+colour, which leaves a chosen filter and a hovered one indistinguishable from each other.
+
+Selection had no place on a scale built for pointer states, so it gained one. A chosen chip sits on
+`surface-3`, the ground DESIGN.md §3.2 already calls pressed, and its hover reaches the new `state-deep`
+from there; no fourth step, because re-pressing a chip that is already chosen changes nothing and the 1px
+shift is the whole answer. The state is read from `aria-pressed`, which is the attribute that already
+announces it, so a screen cannot paint the chosen filter without reporting it.
+
+The pressed-state assertions moved into `tests/support/control-states.ts` the way the icon-only contract
+did, so a second screen answers the same question instead of writing its own version of it.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `bun run test`              | 3241 tests passed across 202 files (3238 across 201 at the last row). This pass adds 3 rows: 2 in the new `tests/routes/providers-control-states.test.ts` and 1 in `tests/tokens/state-scale.test.ts` for the selected step                                                                                                                                                                                                                                                                                                                        |
+| `bun run build`             | succeeds; the emitted stylesheet carries the `aria-pressed` rules and both themes' `state-deep`, read from the built CSS rather than assumed                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Browser measurement         | Chromium against the dev server with the registry routes stubbed, both themes: search, an unchosen chip, and an add action each report three distinct computed colours (transparent, 9% ink, 16% ink); a chosen chip reads rgb(233,228,220) at rest and rgba(26,22,20,0.2) under the pointer in light, rgb(48,45,41) and rgba(237,234,230,0.2) in dark. Not measured in the browser: this screen's pagination pair, which the harness's fixture timing skipped; the unit test covers it and the identical treatment was measured on Endpoint & Key |
+| Guard found                 | the screen-scoped test caught two more hand-written controls the inventory had missed (the node dialog's Cancel and its commit), because a closed dialog keeps its markup in the document; both are converted here                                                                                                                                                                                                                                                                                                                                 |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| File size                   | `src/routes/providers/+page.svelte` is 254 lines, over the 250 cap: it was 263 before this pass, so the file shrank by 9 rather than growing, and it is disclosed rather than split, the practice recorded for the other over-cap files. `CustomProviderDialog.svelte` 231, `CustomProviderCard.svelte` 224, `states.css` 49, `primitives/button/button.svelte` 108                                                                                                                                                                                |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ### The interaction-state scale and Endpoint & Key, 2026-10-19
 
