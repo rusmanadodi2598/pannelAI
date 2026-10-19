@@ -8,6 +8,7 @@
 	import { addEndpointKey } from '$lib/api/endpoints';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { schemaAddEndpointKeyForm } from '$lib/schemas/endpoint-credential';
 
 	let { endpointId, onadded }: { endpointId: string; onadded: () => void } = $props();
@@ -68,11 +69,6 @@
 				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
 			/>
 		</label>
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50"
-			disabled={adding}
-			onclick={submit}>Add key</button
-		>
+		<Button variant="default" disabled={adding} aria-busy={adding} onclick={submit}>Add key</Button>
 	</div>
 </div>

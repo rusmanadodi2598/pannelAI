@@ -15,7 +15,8 @@ import {
 	type BulkSelector
 } from '$lib/schemas/bulk-mutation';
 
-type BulkKind = 'endpoints' | 'endpoint-keys';
+/** The row set a bulk write resolves: a provider's connection list, or one connection's keys. */
+export type BulkKind = 'endpoints' | 'endpoint-keys';
 
 /** The rows the panel displayed, echoed back so the server can refuse a set that changed underneath them. */
 interface BulkEnvelope {

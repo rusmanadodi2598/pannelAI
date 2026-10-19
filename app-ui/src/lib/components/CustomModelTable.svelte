@@ -12,15 +12,15 @@
 	// the same string it copies.
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import ModelTestState from '$lib/components/ModelTestState.svelte';
-	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
+	import PagingControls from '$lib/components/PagingControls.svelte';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { customModelLabel, type CustomModel } from '$lib/schemas/custom-model';
 	import { thinkingSuffix } from '$lib/schemas/settings';
 	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 	import { formatTimestamp } from '$lib/utils/time';
 	import { pageOf } from '$lib/schemas/local-page';
-	const PreviousIcon = CONTROL_ICONS.previous.icon;
-	const NextIcon = CONTROL_ICONS.next.icon;
 
 	let {
 		rows,
@@ -45,10 +45,6 @@
 	// "Delete".
 	const RemoveIcon = ROW_ACTION_ICONS.remove.icon;
 	const TestIcon = ROW_ACTION_ICONS.test.icon;
-
-	// One tap target and one hover wash for both row actions, the rule the key table states.
-	const actionClass =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50';
 
 	const prefix = $derived(nodePrefix !== undefined && nodePrefix !== '' ? nodePrefix : null);
 
@@ -116,26 +112,28 @@
 					<td data-label="Actions" class="px-3 py-2 text-end">
 						<div class="flex flex-wrap items-center justify-end gap-1">
 							<CopyButton value={address} label="Copy model address" iconOnly touchTarget />
-							<button
-								type="button"
-								class={actionClass}
+							<Button
+								variant="ghost"
+								size="icon"
 								aria-label={probe?.phase === 'running' ? 'Testing' : 'Test'}
 								title="Test"
 								disabled={probe?.phase === 'running'}
+								aria-busy={probe?.phase === 'running'}
 								onclick={() => void tests.testOne(row.provider_id, row.model_id)}
 							>
 								<TestIcon class="size-4" aria-hidden="true" />
-							</button>
-							<button
-								type="button"
-								class={actionClass}
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
 								aria-label="Remove"
 								title="Remove"
 								disabled={removing}
+								aria-busy={removing}
 								onclick={() => onremove(row)}
 							>
 								<RemoveIcon class="size-4" aria-hidden="true" />
-							</button>
+							</Button>
 						</div>
 					</td>
 				</tr>
@@ -145,25 +143,9 @@
 </div>
 
 {#if view.pages > 1}
-	<div class="flex flex-wrap items-center gap-3 pt-2 text-sm">
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
-			disabled={view.page <= 1}
-			onclick={() => (requestedPage = view.page - 1)}
-		>
-			<PreviousIcon class="size-4" aria-hidden="true" />
-			Previous
-		</button>
-		<span class="text-[var(--color-text-muted)]">Page {view.page} of {view.pages}</span>
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
-			disabled={view.page >= view.pages}
-			onclick={() => (requestedPage = view.page + 1)}
-		>
-			Next
-			<NextIcon class="size-4" aria-hidden="true" />
-		</button>
-	</div>
+	<PagingControls
+		page={view.page}
+		lastPage={view.pages}
+		onpage={(next) => (requestedPage = next)}
+	/>
 {/if}

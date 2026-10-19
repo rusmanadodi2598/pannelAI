@@ -22,6 +22,7 @@
 	import ProviderEndpoints from '$lib/components/ProviderEndpoints.svelte';
 	import ProviderRotationSwitch from '$lib/components/ProviderRotationSwitch.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		keyCredentialLabel,
 		takesKeyCredential,
@@ -75,21 +76,13 @@
 		<div class="flex flex-wrap items-start gap-3">
 			<ProviderRotationSwitch providerId={provider.id} />
 			{#if showKeyButton}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
-					onclick={onaddkey}
-				>
+				<Button variant="outline" onclick={onaddkey}>
 					<AddKeyIcon class="size-4" aria-hidden="true" />
 					Add {credentialLabel}
-				</button>
+				</Button>
 			{/if}
 			{#if showConnectionButton}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
-					onclick={() => (creating = !creating)}
-				>
+				<Button variant="outline" onclick={() => (creating = !creating)}>
 					{#if creating}
 						<CancelIcon class="size-4" aria-hidden="true" />
 						Hide the form
@@ -97,7 +90,7 @@
 						<AddIcon class="size-4" aria-hidden="true" />
 						Add a connection
 					{/if}
-				</button>
+				</Button>
 			{/if}
 		</div>
 	</div>

@@ -187,7 +187,9 @@ describe('the endpoint table selection', () => {
 			true
 		);
 		expect(group?.className).toContain('items-center');
-		expect(deleteButton.className).toContain('min-h-11');
+		// The 44px square now comes from the primitive's icon size rather than a height written at the call
+		// site: the same measurement, with one owner.
+		expect(deleteButton.className).toContain('size-11');
 		expectIconOnly(deleteButton, 'Delete');
 	});
 

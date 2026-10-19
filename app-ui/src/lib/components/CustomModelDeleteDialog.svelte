@@ -9,6 +9,7 @@
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { customModelLabel, type CustomModel } from '$lib/schemas/custom-model';
 
 	const CancelIcon = ROW_ACTION_ICONS.cancel.icon;
@@ -47,22 +48,13 @@
 	{/if}
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 underline"
-			onclick={oncancel}
-		>
+		<Button variant="ghost" class="underline" onclick={oncancel}>
 			<CancelIcon class="size-4" aria-hidden="true" />
 			Keep it
-		</button>
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
-			disabled={removing}
-			onclick={onconfirm}
-		>
+		</Button>
+		<Button variant="destructive" disabled={removing} aria-busy={removing} onclick={onconfirm}>
 			<RemoveIcon class="size-4" aria-hidden="true" />
 			{removing ? 'Removing' : 'Remove the model'}
-		</button>
+		</Button>
 	{/snippet}
 </Modal>

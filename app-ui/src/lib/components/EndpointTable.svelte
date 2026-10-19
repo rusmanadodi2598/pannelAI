@@ -13,6 +13,7 @@
 	// Selection is offered the same way: when the caller can act on a set, each row's Actions cell gains a
 	// checkbox. Select-All is deliberately not here: `src/app.css` clips the whole `<thead>` below 768px,
 	// so a header control would not exist on a phone. `BulkActionBar` carries it instead.
+	import { Button } from '$lib/primitives/button/index.js';
 	import { AUTH_TYPE_LABELS, ENDPOINT_STATUS_ACTIVE, type Endpoint } from '$lib/schemas/endpoint';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { rowChecked } from '$lib/utils/selection';
@@ -116,9 +117,7 @@
 						{/if}
 					</td>
 					<td data-label="Detail" class="px-3 py-2">
-						<button type="button" class="min-h-11 underline" onclick={() => onopen(entry)}
-							>Open</button
-						>
+						<Button variant="ghost" class="underline" onclick={() => onopen(entry)}>Open</Button>
 					</td>
 					{#if ondelete || selectable}
 						<!-- Selection sits with the action controls rather than in a column of its own: under
@@ -140,15 +139,15 @@
 									</label>
 								{/if}
 								{#if ondelete}
-									<button
-										type="button"
-										class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]"
+									<Button
+										variant="destructive-ghost"
+										size="icon"
 										aria-label="Delete"
 										title="Delete"
 										onclick={() => ondelete(entry)}
 									>
 										<DeleteIcon class="size-4" aria-hidden="true" />
-									</button>
+									</Button>
 								{/if}
 							</div>
 						</td>

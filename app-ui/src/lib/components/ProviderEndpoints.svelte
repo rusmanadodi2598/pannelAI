@@ -19,18 +19,15 @@
 	import BulkActionBar from '$lib/components/BulkActionBar.svelte';
 	import EndpointTable from '$lib/components/EndpointTable.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import PagingControls from '$lib/components/PagingControls.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { deleteEndpoint, listEndpoints } from '$lib/api/endpoints';
-	import { bulkDelete, bulkStatus, bulkTags } from '$lib/api/bulk-mutation';
-	import { CONTROL_ICONS } from '$lib/icons';
-	import { emptySelection, toggleAll, toggleRow, type Selection } from '$lib/utils/selection';
+	import { Button } from '$lib/primitives/button/index.js';
+	import { createBulkActions } from '$lib/stores/bulk-actions.svelte';
 	import type { Endpoint } from '$lib/schemas/endpoint';
 
 	let { providerId, token = 0 }: { providerId: string; token?: number } = $props();
-
-	const PreviousIcon = CONTROL_ICONS.previous.icon;
-	const NextIcon = CONTROL_ICONS.next.icon;
 
 	// Ten connections a page. A provider can hold one per account, and the server pages the read, so the
 	// page size is what keeps the list short on a phone.
@@ -55,78 +52,39 @@
 	// Select-All sends `all` with the provider scope and the server resolves the 47, so the number
 	// in the bar is the number the request will act on. `confirm_count` carries that same figure,
 	// which is what turns a list that changed under the click into a refusal instead of a surprise.
-	let chosen = $state<Selection>(emptySelection);
-	let bulkBusy = $state(false);
-	let bulkError = $state<ApiError | null>(null);
+	const bulk = createBulkActions({
+		kind: 'endpoints',
+		ids: () => endpoints.map((entry) => entry.id),
+		total: () => total,
+		scope: () => ({ provider_id: providerId }),
+		onapplied: () => load(providerId)
+	});
+
 	let bulkNotice = $state<string | null>(null);
 
-	const bulkCount = $derived(chosen.all ? total : chosen.ids.length);
 	const bulkScope = $derived(
-		chosen.all
+		bulk.selected.all
 			? `all ${total} connections at ${providerId}`
-			: `${chosen.ids.length} of the ${endpoints.length} on this page`
+			: `${bulk.selected.ids.length} of the ${endpoints.length} on this page`
 	);
 
-	function toggleChosen(id: string, checked: boolean): void {
-		chosen = toggleRow(
-			chosen,
-			id,
-			checked,
-			endpoints.map((entry) => entry.id)
-		);
-	}
-
-	function toggleChooseAll(checked: boolean): void {
-		chosen = toggleAll(checked);
-	}
-
-	function bulkSelector(): { ids?: string[]; all?: true; provider_id?: string } {
-		return chosen.all ? { all: true, provider_id: providerId } : { ids: chosen.ids };
-	}
-
+	// The store reports how many rows changed; the sentence that names them connections is this screen's.
 	async function runBulkStatus(status: 'active' | 'disabled'): Promise<void> {
-		if (bulkCount === 0) return;
-		bulkBusy = true;
-		const result = await bulkStatus('endpoints', bulkSelector(), status, bulkCount);
-		bulkBusy = false;
-		if (!result.ok) {
-			bulkError = result.error;
-			return;
-		}
-		bulkError = null;
-		bulkNotice = `${result.data.changed} connection(s) ${status === 'disabled' ? "parked; they return on their own when the provider's reset window runs out" : 'returned to rotation'}.`;
-		await load(providerId);
+		const done = await bulk.setStatus(status);
+		if (!done) return;
+		bulkNotice = `${done.changed} connection(s) ${status === 'disabled' ? "parked; they return on their own when the provider's reset window runs out" : 'returned to rotation'}.`;
 	}
 
 	async function runBulkDelete(): Promise<void> {
-		if (bulkCount === 0) return;
-		bulkBusy = true;
-		const result = await bulkDelete('endpoints', bulkSelector(), bulkCount);
-		bulkBusy = false;
-		if (!result.ok) {
-			bulkError = result.error;
-			return;
-		}
-		bulkError = null;
-		bulkNotice = `Removed ${result.data.changed} connection(s) and their stored keys.`;
-		chosen = emptySelection;
-		await load(providerId);
+		const done = await bulk.remove();
+		if (done) bulkNotice = `Removed ${done.changed} connection(s) and their stored keys.`;
 	}
 
 	// The bar hands over a tag it already normalized; the server canonicalizes once more and refuses
 	// a label too long to store rather than cutting it.
 	async function runBulkTag(tag: string): Promise<void> {
-		if (bulkCount === 0) return;
-		bulkBusy = true;
-		const result = await bulkTags('endpoints', bulkSelector(), [tag], [], false, bulkCount);
-		bulkBusy = false;
-		if (!result.ok) {
-			bulkError = result.error;
-			return;
-		}
-		bulkError = null;
-		bulkNotice = `Tagged ${result.data.changed} connection(s) "${tag}".`;
-		await load(providerId);
+		const done = await bulk.tag(tag);
+		if (done) bulkNotice = `Tagged ${done.changed} connection(s) "${tag}".`;
 	}
 
 	// Reloads when the route's provider changes and when the token moves, which is how a key added from this
@@ -159,6 +117,13 @@
 		error = null;
 		endpoints = result.data.data;
 		total = result.data.meta.total;
+	}
+
+	// The window is the server's, so a page step re-reads at the new offset instead of slicing what is
+	// already on screen.
+	function goPage(page: number): void {
+		pageNumber = page;
+		void load(providerId);
 	}
 
 	function askDelete(entry: Endpoint): void {
@@ -195,10 +160,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load this provider's connections" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center underline"
-					onclick={() => load(providerId)}>Try again</button
+				<Button variant="ghost" class="underline" onclick={() => load(providerId)}>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>
@@ -211,67 +173,39 @@
 	{:else}
 		<EndpointTable
 			{endpoints}
-			selected={chosen.ids}
-			allSelected={chosen.all}
+			selected={bulk.selected.ids}
+			allSelected={bulk.selected.all}
 			onopen={(entry) => (selected = entry)}
 			ondelete={askDelete}
-			onselect={toggleChosen}
+			onselect={(id, checked) => bulk.toggle(id, checked)}
 		/>
 
 		<BulkActionBar
 			kind="connections"
-			selected={bulkCount}
+			selected={bulk.count}
 			{total}
 			scope={bulkScope}
-			allSelected={chosen.all}
+			allSelected={bulk.selected.all}
 			ondisable={() => void runBulkStatus('disabled')}
 			onenable={() => void runBulkStatus('active')}
 			ondelete={() => void runBulkDelete()}
 			ontag={(tag: string) => void runBulkTag(tag)}
-			onclear={() => (chosen = emptySelection)}
-			ontoggleall={toggleChooseAll}
+			onclear={() => bulk.clear()}
+			ontoggleall={(checked: boolean) => bulk.toggleEvery(checked)}
 		/>
 
-		{#if bulkBusy}
-			<p role="status" class="mt-2 text-sm text-[var(--color-text-muted)]">
-				Applying to the set...
-			</p>
+		{#if bulk.busy}
+			<p role="status" class="text-sm text-[var(--color-text-muted)]">Applying to the set...</p>
 		{:else if bulkNotice}
-			<p role="status" class="mt-2 text-sm text-[var(--color-text-muted)]">{bulkNotice}</p>
+			<p role="status" class="text-sm text-[var(--color-text-muted)]">{bulkNotice}</p>
 		{/if}
-		{#if bulkError}
-			<p role="alert" class="mt-2 text-sm text-[var(--color-danger)]">
-				<ApiErrorText error={bulkError} />
+		{#if bulk.error}
+			<p role="alert" class="text-sm text-[var(--color-danger)]">
+				<ApiErrorText error={bulk.error} />
 			</p>
 		{/if}
 
-		<div class="flex items-center gap-3 text-sm">
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
-				disabled={pageNumber <= 1}
-				onclick={() => {
-					pageNumber -= 1;
-					void load(providerId);
-				}}
-			>
-				<PreviousIcon class="size-4" aria-hidden="true" />
-				Previous
-			</button>
-			<span class="text-[var(--color-text-muted)]">Page {pageNumber} of {lastPage}</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
-				disabled={pageNumber >= lastPage}
-				onclick={() => {
-					pageNumber += 1;
-					void load(providerId);
-				}}
-			>
-				Next
-				<NextIcon class="size-4" aria-hidden="true" />
-			</button>
-		</div>
+		<PagingControls page={pageNumber} {lastPage} onpage={goPage} />
 	{/if}
 </div>
 

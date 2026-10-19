@@ -11,6 +11,7 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import { disabledRefKey, type DisabledRef } from '$lib/schemas/model-disabled';
 
@@ -49,10 +50,8 @@
 	{:else if disabled.error}
 		<StateMessage kind="error" title="Could not load the disabled models" apiError={disabled.error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => disabled.load()}>Try again</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => disabled.load()}
+					>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>
@@ -86,16 +85,17 @@
 								<span class="text-[var(--color-text-muted)]">Not routable</span>
 							</td>
 							<td data-label="Actions" class="px-3 py-2 text-end">
-								<button
-									type="button"
-									class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
+								<Button
+									variant="ghost"
+									size="icon"
 									aria-label={disabled.saving === disabledRefKey(ref) ? 'Enabling' : 'Enable'}
 									title="Enable"
 									disabled={disabled.saving !== null}
+									aria-busy={disabled.saving === disabledRefKey(ref)}
 									onclick={() => enable(ref)}
 								>
 									<EnableIcon class="size-4" aria-hidden="true" />
-								</button>
+								</Button>
 							</td>
 						</tr>
 					{/each}

@@ -25,22 +25,17 @@
 	import { untrack } from 'svelte';
 	import AddProviderKeysDialog from '$lib/components/AddProviderKeysDialog.svelte';
 	import CustomProviderCard from '$lib/components/CustomProviderCard.svelte';
-	import ModelCatalogList from '$lib/components/ModelCatalogList.svelte';
 	import ProviderConnectionsSection from '$lib/components/ProviderConnectionsSection.svelte';
-	import ProviderCustomModels from '$lib/components/ProviderCustomModels.svelte';
+	import ProviderModelsSection from '$lib/components/ProviderModelsSection.svelte';
 	import SectionFold from '$lib/components/SectionFold.svelte';
-	import ProviderDisabledModels from '$lib/components/ProviderDisabledModels.svelte';
 	import ProviderFacts from '$lib/components/ProviderFacts.svelte';
 	import ProviderOAuth from '$lib/components/ProviderOAuth.svelte';
 	import ProviderProxyCard from '$lib/components/ProviderProxyCard.svelte';
-	import ProviderThinkingControl from '$lib/components/ProviderThinkingControl.svelte';
 	import PanelTabs from '$lib/components/PanelTabs.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { getProvider } from '$lib/api/providers';
-	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
-	import { createModelTestStore } from '$lib/stores/model-test.svelte';
-	import { createProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { isNodeId } from '$lib/schemas/provider-node';
 	import {
 		REQUIRES_KEY_AUTH_TYPES,
@@ -75,20 +70,6 @@
 	let provider = $state<ProviderDetail | null>(null);
 	let loading = $state(true);
 	let error = $state<ApiError | null>(null);
-
-	// The disabled set is global, so it is read once rather than per provider. A node does not read it: the
-	// set narrows the registry catalog, and a node's screen has no catalog to narrow.
-	// One probe store for the screen: a node's declared rows and a registry provider's catalog rows are
-	// the same models addressed the same way, so they carry one verdict rather than one per table.
-	const modelTests = createModelTestStore();
-	const disabled = createModelDisabledStore();
-	let catalogToken = $state(0);
-
-	// The reasoning mode is the models section's own setting (SPEC-API §7.14, §7.15): the picker writes it
-	// and the two model tables read it for the `(level)` suffix they copy, so the page owns the one store
-	// both halves share. It is read for every provider, including one whose picker does not render: a
-	// custom node's rows carry levels too, and the tables below still append the suffix.
-	const thinking = createProviderThinkingStore();
 
 	// The Connections section's own revision, bumped by the key dialog and by nothing else: a key added here
 	// has to appear in the table below without a reload of the whole page.
@@ -129,24 +110,6 @@
 		const id = providerId;
 		untrack(() => void load(id));
 	});
-
-	$effect(() => {
-		const node = custom;
-		untrack(() => {
-			if (!node) void disabled.load();
-		});
-	});
-
-	// Reloads with the provider, like the detail read above: the store answers a mode only for the provider
-	// it was last asked about, so a route swap shows no suffix until the new answer lands.
-	$effect(() => {
-		const id = providerId;
-		untrack(() => void thinking.load(id));
-	});
-
-	function bumpCatalog(): void {
-		catalogToken += 1;
-	}
 
 	function openKeyDialog(): void {
 		keyNotice = null;
@@ -189,10 +152,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="This provider could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center underline"
-					onclick={() => load(providerId)}>Try again</button
+				<Button variant="ghost" class="underline" onclick={() => load(providerId)}>Try again</Button
 				>
 				<a href={resolve('/providers')} class="ms-3 inline-flex min-h-11 items-center underline"
 					>Back to the registry</a
@@ -218,51 +178,7 @@
 						<ProviderFacts provider={loaded} />
 					{/if}
 				{:else if tab === 'models'}
-					{#if custom}
-						<SectionFold title="Available Models">
-							<div class="flex flex-col gap-3">
-								<ProviderThinkingControl {providerId} levels={loaded.thinking_levels} {thinking} />
-								<ProviderCustomModels
-									{providerId}
-									{thinking}
-									tests={modelTests}
-									{nodePrefix}
-									onchanged={bumpCatalog}
-								/>
-							</div>
-						</SectionFold>
-					{:else}
-						<SectionFold title="Model catalog">
-							<div class="flex flex-col gap-3">
-								<ProviderThinkingControl
-									providerId={loaded.id}
-									levels={loaded.thinking_levels}
-									{thinking}
-								/>
-								<ModelCatalogList
-									tests={modelTests}
-									{providerId}
-									{disabled}
-									{thinking}
-									onchanged={bumpCatalog}
-									token={catalogToken}
-								/>
-							</div>
-						</SectionFold>
-
-						<SectionFold title="Models this provider cannot route">
-							<ProviderDisabledModels {providerId} {disabled} onchanged={bumpCatalog} />
-						</SectionFold>
-
-						<SectionFold title="Custom models">
-							<ProviderCustomModels
-								providerId={loaded.id}
-								{thinking}
-								tests={modelTests}
-								onchanged={bumpCatalog}
-							/>
-						</SectionFold>
-					{/if}
+					<ProviderModelsSection provider={loaded} {providerId} {custom} {nodePrefix} />
 				{:else if tab === 'connections'}
 					<SectionFold title="Connections">
 						<ProviderConnectionsSection

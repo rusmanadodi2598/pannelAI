@@ -18,6 +18,7 @@
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { pollProviderOAuthDevice, startProviderOAuthDevice } from '$lib/api/providers';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		oauthDeviceConnected,
 		type OAuthDevicePoll,
@@ -115,10 +116,11 @@
 </script>
 
 <div class="flex flex-col gap-3">
-	<button
-		type="button"
-		class="min-h-11 self-start rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
+	<Button
+		variant="outline"
+		class="self-start"
 		disabled={starting}
+		aria-busy={starting}
 		onclick={() => void start()}
 	>
 		{starting
@@ -126,7 +128,7 @@
 			: connected
 				? 'Connect another account'
 				: 'Start the device authorization'}
-	</button>
+	</Button>
 
 	{#if startError}
 		<p class="text-sm text-[var(--color-danger)]" role="alert">
@@ -173,13 +175,7 @@
 			<p class="text-sm text-[var(--color-text-muted)]" role="status">
 				Waiting for the vendor to grant the request…
 			</p>
-			<button
-				type="button"
-				class="min-h-11 self-start rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4"
-				onclick={stop}
-			>
-				Stop waiting
-			</button>
+			<Button variant="outline" class="self-start" onclick={stop}>Stop waiting</Button>
 		{:else if expired}
 			<p class="text-sm text-[var(--color-danger)]" role="alert">
 				This round expired before the request was approved. Start another one.

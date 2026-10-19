@@ -195,7 +195,9 @@ takes it off.
 which takes the danger colour as its fill and needs a fixed label pair (`danger-ink` is to `danger` what
 `accent-text` is to `accent`; the raw `text-white` it replaced measured 2.42:1 in dark), or one glyph among
 four in a table row, which stays quiet because a red block on every row shouts. The quiet glyph steps its
-own colour along the same ramp.
+own colour along the same ramp. Four dialogs paired that fill with `accent-text` instead of `danger-ink`,
+and no contrast test caught it: the two tokens hold the same value in both themes today. The pairing belongs
+to the ramp anyway, because a re-tune of the accent would move a destructive label with it.
 
 **A disabled control says it is disabled in one way.** Ghost, outline, and link controls fade to 50%
 opacity, the panel's single value (it was 60% on the two filled buttons, which faded a label and its own
@@ -206,6 +208,18 @@ honest about §3.4, because an action that cannot be taken no longer claims the 
 **This stays inside MOTION 1.** §2.1 allows hover, focus, and state transition; a colour step between
 states is the third of those. The transition is `transition-colors` only, so no geometry enters the
 screen that the dial did not ask for.
+
+**A row-shaped control is still a control.** A section fold and a tab strip are pressed as often as a button
+and were painted the same way: a hover wash on `surface-2`, nothing under a press. Both now come through
+`primitives/button` and keep their identity in the class list it accepts, which is the bottom rule on a tab
+and the chevron, the left-aligned label and the text colour on a fold. Routing them through the primitive
+rather than writing two more class lists is what keeps the exception from becoming the rule: a screen that
+has to remember to add a state is a screen that will forget one.
+
+**A switch carries its own state.** The round-robin control is a `role="switch"` track: the thumb moves and
+the track takes the accent, which is the value, not the feedback. It takes the ink wash as well, because the
+finger that has not flipped it yet is still asking whether the press landed, and a hover rule gated behind
+`(hover: hover)` answers nothing on a touch screen.
 
 ---
 

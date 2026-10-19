@@ -8,6 +8,7 @@
 	import { updateEndpoint } from '$lib/api/endpoints';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		ENDPOINT_STATUS_ACTIVE,
 		ENDPOINT_STATUS_DISABLED,
@@ -98,25 +99,16 @@
 		</label>
 		<div class="flex flex-col gap-1">
 			<span class="text-[var(--color-text-muted)]">Status</span>
-			<button
-				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2"
-				onclick={toggleStatus}
-			>
+			<Button variant="outline" onclick={toggleStatus}>
 				{active ? 'Active' : endpoint.status}. Change
-			</button>
+			</Button>
 		</div>
 	</div>
 
 	<div>
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50"
-			disabled={saving}
-			onclick={save}
-		>
+		<Button variant="default" disabled={saving} aria-busy={saving} onclick={save}>
 			<SaveIcon class="size-4" aria-hidden="true" />
 			Save endpoint
-		</button>
+		</Button>
 	</div>
 </div>

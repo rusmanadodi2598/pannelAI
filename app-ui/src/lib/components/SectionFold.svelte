@@ -13,6 +13,7 @@
 	// mixing the two would give one screen two keyboard behaviours for the same gesture.
 	import { ChevronDown } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 
 	let {
 		title,
@@ -34,9 +35,9 @@
 </script>
 
 <section class="rounded-[var(--radius-md)] border border-[var(--color-border)]">
-	<button
-		type="button"
-		class="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-sm"
+	<Button
+		variant="ghost"
+		class="w-full justify-start px-3 py-2 text-left text-[var(--color-text)]"
 		aria-expanded={expanded}
 		onclick={() => (expanded = !expanded)}
 	>
@@ -46,9 +47,11 @@
 		/>
 		<span class="font-medium">{title}</span>
 		{#if summary !== ''}
-			<span class="ms-auto shrink-0 text-xs text-[var(--color-text-muted)]">{summary}</span>
+			<span class="ms-auto shrink-0 text-xs font-normal text-[var(--color-text-muted)]">
+				{summary}
+			</span>
 		{/if}
-	</button>
+	</Button>
 
 	{#if expanded}
 		<div class="border-t border-[var(--color-border)] p-3">

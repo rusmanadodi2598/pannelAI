@@ -15,6 +15,7 @@
 	import type { ApiError } from '$lib/api/errors';
 	import { listModelCatalog } from '$lib/api/models';
 	import { CONTROL_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		CATALOG_CAPABILITY_FILTERS,
 		catalogQueryParams,
@@ -128,34 +129,26 @@
 					class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm sm:w-64"
 				/>
 			</label>
-			<button
-				type="submit"
-				class="inline-flex min-h-11 w-full items-center justify-center gap-2 underline sm:w-auto"
-			>
+			<Button type="submit" variant="ghost" class="w-full sm:w-auto underline">
 				<SearchIcon class="size-4" aria-hidden="true" />
 				Search
-			</button>
+			</Button>
 		</form>
 
 		<div class="flex flex-wrap items-center gap-2">
 			<span class="text-sm text-[var(--color-text-muted)]">Capability</span>
 			{#each CATALOG_CAPABILITY_FILTERS as option (option)}
-				<button
-					type="button"
+				<Button
 					aria-pressed={capability === option}
-					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm aria-pressed:bg-[var(--color-surface-2)]"
-					onclick={() => toggleCapability(option)}>{option}</button
+					variant="toggle"
+					onclick={() => toggleCapability(option)}>{option}</Button
 				>
 			{/each}
 			{#if filtered}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center gap-2 underline"
-					onclick={clearFilters}
-				>
+				<Button variant="ghost" class="underline" onclick={clearFilters}>
 					<ClearIcon class="size-4" aria-hidden="true" />
 					Clear filters
-				</button>
+				</Button>
 			{/if}
 		</div>
 	</div>
@@ -165,10 +158,8 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the model catalog" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center underline"
-					onclick={() => load(providerId, token)}>Try again</button
+				<Button variant="ghost" class="underline" onclick={() => load(providerId, token)}
+					>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>
@@ -179,11 +170,7 @@
 			description="Clear the filters to see every model this provider offers."
 		>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center underline"
-					onclick={clearFilters}>Clear filters</button
-				>
+				<Button variant="ghost" class="underline" onclick={clearFilters}>Clear filters</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if models.length === 0}
