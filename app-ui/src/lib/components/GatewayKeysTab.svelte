@@ -14,6 +14,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import OneTimeKeyModal from '$lib/components/OneTimeKeyModal.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
+	import PagingControls from '$lib/components/PagingControls.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { Button } from '$lib/primitives/button/index.js';
@@ -60,6 +61,11 @@
 		// render: a revoked key has no working action left, so it leaves the screen.
 		keys = result.data.data.filter((entry) => entry.status !== KEY_STATUS_REVOKED);
 		total = result.data.meta.total;
+	}
+
+	function goPage(next: number): void {
+		page = next;
+		void load();
 	}
 
 	async function confirmDelete(): Promise<void> {
@@ -153,27 +159,7 @@
 			</div>
 		{/if}
 
-		<div class="flex items-center gap-3 text-sm">
-			<Button
-				variant="ghost"
-				class="underline"
-				disabled={page <= 1}
-				onclick={() => {
-					page -= 1;
-					void load();
-				}}>Previous</Button
-			>
-			<span class="text-[var(--color-text-muted)]">Page {page} of {lastPage}</span>
-			<Button
-				variant="ghost"
-				class="underline"
-				disabled={page >= lastPage}
-				onclick={() => {
-					page += 1;
-					void load();
-				}}>Next</Button
-			>
-		</div>
+		<PagingControls {page} {lastPage} onpage={goPage} />
 	{/if}
 </div>
 
