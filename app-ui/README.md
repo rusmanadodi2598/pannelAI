@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty-three passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty-four passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -238,7 +238,65 @@ everywhere else, filed as `docs/PORT/012-PORT-VERTEX-VEO.md`. The fortieth is th
 and the Endpoint & Key screen on it, measured 2026-10-19: nothing on that screen painted a colour under a
 press, half of it painted nothing under a pointer either (which is no state at all on a touch layout, where
 `hover:` is not applied), and the dialog's destructive commit measured 2.42:1 in dark, so the four states
-of a control are now decided in one token file and one component rather than on each screen.
+of a control are now decided in one token file and one component rather than on each screen. The
+forty-first is that Provider registry list on the same scale, measured the same day: its search, its category
+chips and its row actions read the one source, and the refresh control that three screens shared turned out
+to carry no pressed colour on any of them. The forty-second is the Combos screen, measured the same day:
+twenty-four controls in three readings of the same affordance, a chosen model chip moved off the accent
+because a dialog of coral chips is the accent everywhere §3.4 forbids it, and the Previous / Page n of m /
+Next band proved to be copied on three screens with drifted padding, so it is one component now. The
+forty-third is Proxy Pools, measured the same day: the panel's largest page file at 339 lines, and two
+colours that pointed at nothing, because `--color-primary-contrast` and `--color-surface-1` are not declared
+anywhere and an undeclared token falls through silently rather than failing. The forty-fourth is the provider
+detail screen, measured the same day: 59 controls across the cluster the screen pulls in, two of them the
+section fold and the tab strip every other screen is built from, four more copies of that paging band, and
+two files' worth of the same bulk orchestration written twice.
+
+### The provider detail screen on the scale, and the two shells it is built from, 2026-10-19
+
+Run with Bun 1.3.0. Following the route's imports reaches 45 components, and 59 of its controls wrote their
+own class lists: the connection table, its drawer, the two add-key paths, three model sections, the proxy
+binding and the OAuth half. None of them painted anything under a press, and four painted nothing under a
+pointer either.
+
+Two of the 59 were not controls the screen owns but the shells it is built from: every section fold and
+every tab in the tab strip. Both washed to `surface-2` on hover with no press, and Usage, Settings and
+Combos use them too, so converting them is the difference between one screen fixed and a rule the next
+screen can follow. Each keeps its own identity in the class list the primitive accepts (a bottom rule on the
+tab, a chevron and a left-aligned label on the fold) and takes its four states from the scale.
+
+The audit's other findings were not colour:
+
+- The connection list and the endpoint drawer each carried their own selection, three bulk writes, a busy
+  flag and an error slot: 77 lines and 67 lines of the same orchestration. `src/lib/stores/bulk-actions.svelte.ts`
+  is the one reading now, and it clears the selection after an erase, which is the defect the Proxy Pools
+  pass found in a third copy of this shape.
+- Four more copies of the Previous / Page n of m / Next band (the key table, the catalog table, the
+  custom-model table, the connection list), which makes seven copies of one band across five screens.
+- One row action arrived as an underlined red text link with an icon inside and no label, so it is the row
+  glyph treatment now, like every other delete in the panel.
+- Four dialogs paired the danger fill with `--color-accent-text` instead of `--color-danger-ink`. No contrast
+  test can see that: the two tokens hold the same value in both themes today. The pairing belongs to the ramp
+  because a re-tune of the accent must not move a destructive label with it.
+
+The size debt moved with the page, per the owner's rule that a page's audit and its fix stay in one diff:
+the route 308 to 224 (the Models tab is now `ProviderModelsSection.svelte`), the drawer 333 to 183
+(`EndpointCredentials.svelte`), the connection list 296 to 230, and the proxy card 251 to 240 by moving the
+binding's own sentence into `describeProxyBinding`, which is a derivation rather than markup.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `bun run test`              | 3252 tests passed across 205 files (3247 across 204 at the last row). This pass adds 5 rows in the new `tests/routes/provider-detail-control-states.test.ts` and rewrites one assertion in `tests/components/bulk-selection.test.ts` that had pinned a hand-written `min-h-11` on a row glyph now taking the primitive's icon size                                                                                                                                                  |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.active\:bg-[var(--color-state-press)]:active` and both themes' `--color-danger-ink`                                                                                                                                                                                                                                                                                                                     |
+| Browser measurement         | Chromium against the dev server with the provider routes stubbed, both themes: 16 controls each report three distinct computed colours across rest, hover and held (light row delete glyph 179/38/30 to 161/24/21 to 144/7/12; dark 240/138/132 to 253/153/146 to 255/170/163; the drawer's accent fill 184/65/42 to 171/49/28 to 156/36/18 in light, 229/106/74 to 240/122/90 to 250/138/108 in dark), and at 390px every measured control is 44px tall and a tap opens the drawer |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| File size                   | 4 files in this page's cluster were over the 250-line cap and all four are under it now, with the two new components at 105 and 115 and the store at 106. Remaining over-cap files in `src/`: 5 (`schemas/settings.ts` 426, `SettingsRoutingTab.svelte` 322, `icons.ts` 281, `schemas/usage-view.ts` 264, `schemas/quota-published.ts` 257), each scheduled with the page that reads it                                                                                             |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                  |
+
+Not yet verified: the node shape's OAuth device flow was read through the shared components but not
+click-through audited on a live device round, and the fold and tab shells were only re-measured on this
+screen; Usage, Settings and Combos inherit the same states without a guard test of their own for them.
 
 ### Proxy Pools on the scale, and two colours that pointed at nothing, 2026-10-19
 
