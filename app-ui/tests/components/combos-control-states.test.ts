@@ -14,6 +14,7 @@ import { expectEveryControlHasStates } from '../support/control-states';
 
 const SECTIONS = [
 	{
+		key: 'connected',
 		label: 'Connected',
 		options: [
 			{ value: 'openai/gpt-4o', label: 'GPT-4o' },

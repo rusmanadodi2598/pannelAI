@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty-two passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty-three passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -239,6 +239,34 @@ and the Endpoint & Key screen on it, measured 2026-10-19: nothing on that screen
 press, half of it painted nothing under a pointer either (which is no state at all on a touch layout, where
 `hover:` is not applied), and the dialog's destructive commit measured 2.42:1 in dark, so the four states
 of a control are now decided in one token file and one component rather than on each screen.
+
+### Proxy Pools on the scale, and two colours that pointed at nothing, 2026-10-19
+
+Run with Bun 1.3.0. The screen was 339 lines, the largest page file in the panel, and its eighteen controls
+were hand-written in four readings of the same affordance: the row switch carried no text colour at all,
+the row actions washed to a raised surface with no press, the bulk bar's icons had a border and a hover and
+no press, and the text actions faded at 60% while the rest of the panel fades at 50%.
+
+The audit found two colours that pointed at nothing. The bulk bar painted its commit with
+`--color-primary-contrast` and its tag field with `--color-surface-1`, and neither token is declared
+anywhere, so the utility resolved to nothing and the button inherited the page's text colour: near-white on
+the coral fill in dark, 1.44:1. An undeclared token is not a missing value, it is a silent fallthrough, and
+the reason it is now a rule rather than a fix is written in DESIGN.md §11.
+
+Moving the selection and the three bulk writes out of the page (`src/lib/stores/proxy-bulk.svelte.ts`, the
+same shape as the panel's other stores) brought the page to 239 lines. It also surfaced a defect on the
+way: the erase called `toggleAll(false)` and dropped the result, so the selection survived the rows it
+pointed at. Clearing it is now the store's own `clear()`.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                     |
+| `bun run test`              | 3247 tests passed across 204 files (3244 across 203 at the last row). This pass adds 3 rows in the new `tests/routes/proxy-pools-control-states.test.ts`                                                                                                                                                                                                                                 |
+| `bun run build`             | succeeds, output in `build/`                                                                                                                                                                                                                                                                                                                                                             |
+| Browser measurement         | Chromium against the dev server with the pool routes stubbed, both themes: eight controls each report three distinct computed colours across rest, hover and held (light row delete glyph 179/38/30 to 161/24/21 to 144/7/12; dark 240/138/132 to 253/153/146 to 255/170/163), including the bulk bar's select-all toggle, its disable glyph and its delete glyph once a row is selected |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                     |
+| File size                   | `proxy-pools/+page.svelte` 339 to 239; `src/lib/stores/proxy-bulk.svelte.ts` 135. Largest file in the cluster now `ProxyOutboundSettings.svelte` at 248, under the cap. Remaining over-cap files in `src/`: 9 (largest `schemas/settings.ts` 426), each scheduled with the page that reads it                                                                                            |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed                                                                                                                                                                                                                                                                                                  |
 
 ### The Combos screen on the scale, and the paging band that was copied three times, 2026-10-19
 
