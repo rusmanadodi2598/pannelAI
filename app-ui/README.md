@@ -318,15 +318,15 @@ was a rest colour written at the call site. The commit is the other one: a scree
 cannot spend the accent on all of them, so the card's save takes the neutral ramp and keeps its border, and
 `DESIGN.md` §3.4 now says the primary action is counted per screen rather than per card.
 
-| File                                            | Was | Now                                                                                                |
-| ----------------------------------------------- | --- | -------------------------------------------------------------------------------------------------- |
-| `tests/schemas/media-provider-form.test.ts`     | 398 | 197, with `media-provider-form-fields.test.ts` (200) taking the selector and the two hints         |
-| `tests/schemas/media-provider.test.ts`          | 326 | 176, with `media-provider-answer.test.ts` (135) taking the list, the detail answer and the refusal |
-| `tests/components/media-providers.test.ts`      | 313 | 173, with `media-provider-card.test.ts` (171) taking what a card shows                             |
-| `tests/components/media-providers-save.test.ts` | 263 | 176, with `media-providers-write.test.ts` (125) taking what reaches the wire                       |
-| `components/MediaProviderCard.svelte`           | 203 | 200, the title link and the commit on the scale                                                    |
-| `routes/media-providers/[kind]/+page.svelte`    | 148 | 149, the retry, the way back, and the six kind links                                               |
-| `tests/support/media-stub.ts`                   | 143 | 158, holding the kind block three schema files had each copied                                     |
+| File                                            | Was | Now                                                                                                  |
+| ----------------------------------------------- | --- | ---------------------------------------------------------------------------------------------------- |
+| `tests/schemas/media-provider-form.test.ts`     | 398 | 197, with `media-provider-form-fields.test.ts` (200) taking the selector and the two hints           |
+| `tests/schemas/media-provider.test.ts`          | 326 | 176, with `media-provider-answer.test.ts` (135) taking the list, the detail answer and the refusal   |
+| `tests/components/media-providers.test.ts`      | 313 | 173, with `media-provider-card.test.ts` (171) taking what a card shows                               |
+| `tests/components/media-providers-save.test.ts` | 263 | 176, with `media-providers-write.test.ts` (124) taking what reaches the wire                         |
+| `components/MediaProviderCard.svelte`           | 203 | 200, the title link and the commit on the scale                                                      |
+| `routes/media-providers/[kind]/+page.svelte`    | 148 | 149, the retry, the way back, and the six kind links                                                 |
+| `tests/support/media-stub.ts`                   | 143 | 163, holding the kind block three schema files had each copied, and a knob that holds the PATCH open |
 
 Every split is along a `describe` boundary the file already had, and the cluster's 121 cases stayed 121 across
 the eight files; the new state walk adds 7. The fixture that had been written twice, once in the stub and once
