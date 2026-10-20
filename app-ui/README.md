@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty-seven passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty-eight passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -258,7 +258,51 @@ twenty-one controls with no pressed colour, four chips choosing `surface-2`, sor
 target of their own, and four test files that had each outgrown the subject they were named for. The
 forty-seventh is the Settings screen, measured the same day: ten hand-written controls, three copies of one
 write band, two action links carrying no state rule at all, and the largest schema file in the panel at 426
-lines with five subjects inside it.
+lines with five subjects inside it. The forty-eighth is the Logs screen, measured the same day: eleven
+controls, a second action link with no state rule, a danger outline the primitive had no name for, and two
+test files that each held three subjects.
+
+### The Logs screen on the scale, and the two test files that held three subjects, 2026-10-20
+
+Run with Bun 1.3.0. Eleven controls written at the call site, none painted under a press. The pointer to
+`/console-log` was the same defect `/settings` recorded the same day one screen over: an anchor with
+`inline-flex min-h-11 items-center gap-2 text-sm` carries no state rule at all, so the only route to the
+screen's other half answered nothing on any device. It is an anchor still, with `href` and `role="link"`, and
+it takes the scale.
+
+The purge control needed a decision rather than a swap. It was `border-[var(--color-danger)] text-[var(--color-danger)]`,
+and the primitive offers a filled destructive commit and a quiet danger glyph but no outlined third. It takes
+the quiet variant with the border kept in the class list it accepts: the label steps along the danger ramp
+(179/38/30 to 161/24/21 to 144/7/12 in light, 240/138/132 to 253/153/146 to 255/170/163 in dark) instead of
+sitting under an ink wash, and the dialog's fill stays the only red block on the screen. Its paging band
+stays written out for the reason the records tab gives, that its counter carries the request total beside the
+page number, and the two steps read the primitive.
+
+| File                                | Was | Now                                                                                                            |
+| ----------------------------------- | --- | -------------------------------------------------------------------------------------------------------------- |
+| `tests/components/logs.test.ts`     | 288 | 104 plus `logs-states.test.ts` (83) and `logs-detail.test.ts` (105), on the shared `support/logs-stub.ts` (84) |
+| `tests/schemas/log.test.ts`         | 279 | 157 plus `log-search.test.ts` (127)                                                                            |
+| `components/LogsRequestsTab.svelte` | 225 | 220, five controls shorter than the markup they replaced                                                       |
+
+The case counts are unchanged: 12 in the screen file before and 12 across its three after, 35 in the schema
+file before and 35 across the two after. The split is along describes that were already separate subjects,
+the read and its URL, the list's states, and the detail behind the row.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `bun run test`              | 3283 tests passed across 230 files (3277 across 226 at the last row). This pass adds the 6 rows of `tests/routes/logs-control-states.test.ts`; the other four files are the two overgrown ones split along their describe boundaries, and the cases inside them are the same count. The logs cluster was re-run whole against the final tree after a class fix landed post-run: 72 tests across 7 files                                                                                                                             |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.active\:text-\[var\(--color-danger-press\)\]:active` and `.hover\:text-\[var\(--color-danger-hover\)\]:hover`, the two rules the quiet danger control needs and no screen wrote before                                                                                                                                                                                                                                                                  |
+| Browser measurement         | Chromium against the dev server with the log routes stubbed, both themes: 7 controls each report three distinct computed colours across rest, hover and held (the ghost row open and the pointer link 95/87/78 to 26/22/20 to 26/22/20 over a 9% then 16% wash in light; the purge 179/38/30 to 161/24/21 to 144/7/12, stepping its own ink rather than washing under it, and the same ramp read brighter going in in dark). At 390px the pointer, the commit, the purge, the row open, the page step and the refresh are 44px tall |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| File size                   | `src/` files over the cap now: 1 (`icons.ts` 281), shared by every screen. No logs file is over it, in `src` or in `tests`                                                                                                                                                                                                                                                                                                                                                                                                          |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decision is in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                        |
+
+Not yet verified: at 390px the stacked table stretches the row's Open control to the width of its value
+column (207px), which is how the records tab's identical cell already behaves. Whether a full-width
+underline in a stacked row reads as a control or as the row itself is a question this pass measured but did
+not answer.
 
 ### The Settings screen on the scale, one write band instead of three, and the schema file with five subjects, 2026-10-20
 
