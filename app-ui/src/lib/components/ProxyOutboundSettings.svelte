@@ -154,7 +154,7 @@
 			</p>
 		{/if}
 
-		<label class="flex items-start gap-3 text-sm">
+		<label class="flex min-h-11 items-start gap-3 text-sm">
 			<input type="checkbox" class="mt-1 size-4" bind:checked={draft.outbound_proxy_enabled} />
 			<span>
 				Route upstream calls through the proxy pool

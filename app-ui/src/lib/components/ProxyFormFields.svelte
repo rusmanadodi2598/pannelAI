@@ -82,7 +82,7 @@
 	<span id="proxy-password-help" class={hintClass}>{proxyPasswordHelp(target)}</span>
 </div>
 
-<label class="flex items-start gap-3 text-sm">
+<label class="flex min-h-11 items-start gap-3 text-sm">
 	<input type="checkbox" class="mt-1 size-4" bind:checked={value.enabled} />
 	<span>
 		Enabled

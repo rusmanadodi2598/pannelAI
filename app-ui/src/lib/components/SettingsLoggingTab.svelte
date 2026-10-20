@@ -73,7 +73,7 @@
 <div class="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4">
 	<h2 class="text-sm font-semibold">Logging</h2>
 
-	<label class="flex items-start gap-3 text-sm">
+	<label class="flex min-h-11 items-start gap-3 text-sm">
 		<input type="checkbox" bind:checked={draft.request_capture_enabled} class="mt-1" />
 		<span>
 			Capture request and response bodies
