@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Fifty passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Fifty-one passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -265,7 +265,51 @@ four hand-written controls, a third action link with no state rule, a clear that
 buffer on the first click with no confirmation in front of it, and a checkbox label 4px short of the target
 the rest of its screen meets. The fiftieth is the Token Saver screen, measured the same day: the band a
 fourth screen was still writing by hand, a copy control whose one clipboard path cannot exist on the origin
-the panel runs on, and a schema test file at 370 lines with eight subjects inside it.
+the panel runs on, and a schema test file at 370 lines with eight subjects inside it. The fifty-first is the
+Skills screen, measured the same day: four hand-written controls, an off-site link that was the row's only
+other affordance and answered nothing under a finger, and a copy control shipped in its table shape on the
+one screen whose whole job is that control.
+
+### The Skills screen on the scale, the source link that routes off-site, and the copy control's dense shape, 2026-10-20
+
+Run with Bun 1.3.0. Four controls written at the call site, none painted under a press: the retry a failed
+catalog read leaves behind, the check that re-reads every source, and the copy control and source link each
+row carries. The screen's one job is to hand over a line, so its controls are the screen.
+
+The source link is the fourth action link the week found, and the first that leaves the app: `text-xs
+underline` text routing to the source host's blob URL. It stays an anchor with its `target` and `rel`, and
+takes the ghost scale with `underline` kept in the class list. The copy control needed a different answer:
+`CopyButton` ships a dense 36px shape because the provider tables asked for one, and this screen inherited
+that default while being the one screen whose only affordance is the control. Both call sites pass
+`touchTarget` now, which is the flag the table callers already opt into.
+
+| File                                | Was | Now                                                                                  |
+| ----------------------------------- | --- | ------------------------------------------------------------------------------------ |
+| `tests/components/skills.test.ts`   | 243 | 198, on the shared `support/skills-stub.ts` (60)                                     |
+| `routes/skills/+page.svelte`        | 143 | 143: the two controls collapsed onto the primitive, and the check gained `aria-busy` |
+| `components/SkillCard.svelte`       | 77  | 84, the link on the scale and the copy control at 44px                               |
+| `components/SkillEntryBlock.svelte` | 59  | 63, the same two changes                                                             |
+
+Nothing on this screen was over the 250-line cap, so the file debt was the harness: the fetch stub and the
+two DOM helpers lived inside the screen's test file and the state walk needed them, so they moved to
+`support/skills-stub.ts` with the read counters on the returned object rather than in module globals. The
+13 cases stayed 13, and the new file adds 5.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run test`              | 3303 tests passed across 235 files, exit 0 (3298 across 234 at the last row). The five tests and the one file are this pass: `tests/routes/skills-control-states.test.ts`. The skills cluster was re-run against the final tree: 91 tests across 5 files, including the navigation rows that name this route                                                                                                                                                                                            |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.active\:bg-\[var\(--color-state-press\)\]:active` with its hover twin, which is the whole rule set the migrated link needed: routing it through the primitive added no new utility, because the anchor and the button already shared one                                                                                                                                                                                    |
+| Browser measurement         | Chromium against the dev server with the catalog and the source host stubbed, both themes: 4 controls each report three distinct computed colours across rest, hover and held (the check, the retry and the source link on the ink wash at 9% then 16%, lifting 95/87/78 to 26/22/20 in light and 166/158/147 to 237/234/230 in dark; the copy control on the same wash over its border). All 7 of the screen's own controls measure 44px tall at 1440 and at 390, and none stretches past the viewport |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| File size                   | `src/` files over the cap: 1 (`icons.ts` 281), deferred by the owner until the pages are done. The screen's test file came down from 243 to 198 when its harness moved out, and no skills file is over the cap in `src` or in `tests`                                                                                                                                                                                                                                                                   |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decision is in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                            |
+
+Not yet verified: the source link was measured with the blob address stubbed, so what Chromium proved is
+that the anchor keeps its role, its `target`, its `rel` and its states. Whether GitHub answers a real
+`blob_url` for every served skill row is the live pass's question, not this one, and the copy control's
+selection fallback is covered by `tests/components/copy-button.test.ts` rather than by this screen.
 
 ### The Token Saver screen on the shared band, the copy control that could not copy, and the 370-line file, 2026-10-20
 
