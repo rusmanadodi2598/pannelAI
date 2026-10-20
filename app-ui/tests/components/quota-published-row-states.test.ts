@@ -27,12 +27,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import QuotaPage from '../../src/routes/quota/+page.svelte';
-import {
-	publishedUsage,
-	quotaEndpointRow,
-	quotaWindowRow,
-	type QuotaStub
-} from '../support/quota-fixtures';
+import { publishedUsage, quotaWindowRow, type QuotaStub } from '../support/quota-fixtures';
 import { stubQuota } from '../support/quota-stub';
 
 const apiProbe = vi.hoisted(() => ({ published: [] as string[] }));

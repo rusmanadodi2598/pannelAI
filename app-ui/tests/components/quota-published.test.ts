@@ -47,9 +47,6 @@ function section(endpointLabel = 'Anthropic primary'): HTMLElement {
 }
 
 /** The bar tracks inside one block. A state with no ceiling to draw against must add none. */
-function bars(node: HTMLElement): HTMLElement[] {
-	return Array.from(node.querySelectorAll('.h-2'));
-}
 
 function renderWith(
 	published: QuotaStub['published'],

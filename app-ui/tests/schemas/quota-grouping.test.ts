@@ -13,7 +13,6 @@ import {
 	quotaCardGroups,
 	quotaCardProviders,
 	schemaQuotaWindow,
-	schemaQuotaWindowList,
 	type QuotaWindow
 } from '$lib/schemas/quota';
 import { schemaPublishedQuotaUsage, type PublishedQuotaUsage } from '$lib/schemas/quota-published';

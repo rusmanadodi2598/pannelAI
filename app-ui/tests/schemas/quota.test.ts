@@ -7,15 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
-import {
-	countedSummaryText,
-	quotaCardGroups,
-	quotaCardProviders,
-	schemaQuotaWindow,
-	schemaQuotaWindowList,
-	type QuotaWindow
-} from '$lib/schemas/quota';
-import { schemaPublishedQuotaUsage, type PublishedQuotaUsage } from '$lib/schemas/quota-published';
+import { schemaQuotaWindow, schemaQuotaWindowList } from '$lib/schemas/quota';
 
 function window_(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	return {
