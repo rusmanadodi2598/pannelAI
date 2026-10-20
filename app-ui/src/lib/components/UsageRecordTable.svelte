@@ -7,6 +7,7 @@
 	//
 	// Detail is a button rather than a clickable row, so the action is reachable by keyboard and announced
 	// as a control.
+	import { Button } from '$lib/primitives/button/index.js';
 	import { REQUEST_STATUS_LABELS, type RequestStatus } from '$lib/schemas/primitives';
 	import type { UsageRecord } from '$lib/schemas/usage';
 	import { formatCount } from '$lib/schemas/usage-view';
@@ -68,9 +69,7 @@
 						{/if}
 					</td>
 					<td data-label="Detail" class="px-3 py-2">
-						<button type="button" class="min-h-11 underline" onclick={() => onopen(record)}
-							>Open</button
-						>
+						<Button variant="ghost" class="underline" onclick={() => onopen(record)}>Open</Button>
 					</td>
 				</tr>
 			{/each}

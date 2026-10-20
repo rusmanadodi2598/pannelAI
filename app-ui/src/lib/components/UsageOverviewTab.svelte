@@ -19,6 +19,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { untrack } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
@@ -162,10 +163,8 @@
 	{:else if error}
 		<StateMessage kind="error" title="Usage could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => load(search)}>Try again</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => load(search)}
+					>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>

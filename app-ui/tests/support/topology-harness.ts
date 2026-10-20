@@ -17,6 +17,9 @@ export const PROVIDERS = [
 /** One combo on the band above the gateway. Its identity and its label are the same name. */
 export const COMBOS = [{ id: 'pro-tier', name: 'pro-tier' }];
 
+/** A stream with nothing in flight and nothing remembered, which is what an idle drawing reads. */
+export const TOPOLOGY_IDLE = { active: [], activeCombos: [], directCount: 0, last: '', error: '' };
+
 /** The active node's glow, which is the reference's `0 0 16px` at a low alpha. */
 export const GLOW = 'shadow-[0_0_16px_color-mix(in_srgb,var(--color-ok)_25%,transparent)]';
 

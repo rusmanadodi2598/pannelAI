@@ -8,6 +8,7 @@
 	// is the reason a fresh install usually has nothing to show.
 	import { resolve } from '$app/paths';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { UsagePeriod } from '$lib/schemas/usage';
 
 	type Props = {
@@ -27,10 +28,8 @@
 	{#snippet action()}
 		<div class="flex flex-wrap gap-3">
 			{#if period !== '60d'}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => onperiod('60d')}>Look back 60 days</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => onperiod('60d')}
+					>Look back 60 days</Button
 				>
 			{/if}
 			<a href={resolve('/endpoint-keys')} class="inline-flex min-h-11 items-center px-2 underline"

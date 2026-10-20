@@ -13,6 +13,7 @@
 	// screen that does: neither read builds the request, and the bar is what needs the names.
 	// A registry that cannot be read leaves the select offering the value the URL carries and a line saying
 	// why, rather than silently showing "Any provider" over a filtered table.
+	import { Button } from '$lib/primitives/button/index.js';
 	import { onMount } from 'svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
@@ -182,14 +183,10 @@
 		/>
 	</label>
 
-	<button
-		type="submit"
-		class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-		>Apply filters</button
-	>
+	<Button type="submit" variant="outline">Apply filters</Button>
 
 	{#if filtered}
-		<button type="button" class="min-h-11 underline" onclick={onclear}>Clear filters</button>
+		<Button variant="ghost" class="underline" onclick={onclear}>Clear filters</Button>
 	{/if}
 </form>
 

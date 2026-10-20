@@ -27,6 +27,7 @@
 	} from '$lib/schemas/usage-live-view';
 	import { configuredCombos, configuredProviders } from '$lib/schemas/usage-topology-nodeset';
 	import { openUsageLive, type LiveReport, type UsageLiveController } from '$lib/usage-live';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { formatTimestamp } from '$lib/utils/time';
 
 	// How often the staleness guard is re-evaluated while something is in flight. The gateway sends frames
@@ -35,9 +36,8 @@
 	// is in flight, so an idle screen runs no clock at all.
 	const ACTIVE_TICK_MS = 1_000;
 
-	// The one box every tab on this row wears, the chip and the facts tab included: neither sits at its own
-	// text size, and 44px is the panel's floor for a control's touch target
-	// (SPEC-UI §8.6 rule 3).
+	// The box the stream's status statement wears: the same 44px the controls beside it take, so one line
+	// holds them all (SPEC-UI §8.6 rule 3). The controls themselves come from the button primitive.
 	const TAB_BOX =
 		'inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm';
 
@@ -177,20 +177,16 @@
 		     keeps the owner's rule that a screen states what happened and never what did not
 		     (2026-09-23). -->
 
-		<button
-			type="button"
+		<Button
+			variant="toggle"
 			aria-pressed={paused}
-			class={`${TAB_BOX} hover:bg-[var(--color-surface-2)] aria-pressed:bg-[var(--color-surface-2)]`}
 			onclick={() => (paused ? controller?.resume() : controller?.pause())}
-			>{paused ? 'Resume live updates' : 'Pause live updates'}</button
 		>
+			{paused ? 'Resume live updates' : 'Pause live updates'}
+		</Button>
 
 		{#if report.status === 'unavailable'}
-			<button
-				type="button"
-				class={`${TAB_BOX} hover:bg-[var(--color-surface-2)]`}
-				onclick={() => controller?.retry()}>Try again</button
-			>
+			<Button variant="outline" onclick={() => controller?.retry()}>Try again</Button>
 		{/if}
 	</div>
 

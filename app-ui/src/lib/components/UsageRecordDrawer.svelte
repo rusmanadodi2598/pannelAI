@@ -11,6 +11,7 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { getUsageRecord } from '$lib/api/usage';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { REQUEST_STATUS_LABELS } from '$lib/schemas/primitives';
 	import type { UsageRecordDetail } from '$lib/schemas/usage';
 	import { formatCount } from '$lib/schemas/usage-view';
@@ -138,10 +139,6 @@
 	{/if}
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			onclick={onclose}>Close</button
-		>
+		<Button variant="outline" onclick={onclose}>Close</Button>
 	{/snippet}
 </Modal>

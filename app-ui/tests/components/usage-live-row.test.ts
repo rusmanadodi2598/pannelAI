@@ -74,14 +74,13 @@ describe('the live controls row', () => {
 		await liveRow();
 
 		const retry = await screen.findByRole('button', { name: 'Try again' });
-		expect(retry.classList.contains('hover:bg-[var(--color-surface-2)]')).toBe(true);
+		// The answer a pointer gets is the state scale's, not a surface the row picked for itself.
+		for (const control of [retry, screen.getByRole('button', { name: 'Pause live updates' })]) {
+			expect(control.classList.contains('hover:bg-[var(--color-state-hover)]')).toBe(true);
+			expect(control.classList.contains('active:bg-[var(--color-state-press)]')).toBe(true);
+		}
 		expect(
-			screen
-				.getByRole('button', { name: 'Pause live updates' })
-				.classList.contains('hover:bg-[var(--color-surface-2)]')
-		).toBe(true);
-		expect(
-			screen.getByText('Unavailable').classList.contains('hover:bg-[var(--color-surface-2)]')
+			screen.getByText('Unavailable').classList.contains('hover:bg-[var(--color-state-hover)]')
 		).toBe(false);
 	});
 });

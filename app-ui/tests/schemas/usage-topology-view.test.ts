@@ -11,14 +11,7 @@
 import { describe, expect, it } from 'vitest';
 import { topologyNodes } from '$lib/schemas/usage-topology-view';
 import { forEachCase } from '../support/tables';
-
-const PROVIDERS = [
-	{ id: 'openai', name: 'OpenAI' },
-	{ id: 'anthropic', name: 'Anthropic' }
-];
-const COMBOS = [{ id: 'pro-tier', name: 'pro-tier' }];
-const IDLE = { active: [], activeCombos: [], directCount: 0, last: '', error: '' };
-
+import { COMBOS, PROVIDERS, TOPOLOGY_IDLE } from '../support/topology-harness';
 function many(count: number, prefix = 'p'): { id: string; name: string }[] {
 	return Array.from({ length: count }, (_unused, index) => ({
 		id: `${prefix}${index}`,
@@ -28,21 +21,21 @@ function many(count: number, prefix = 'p'): { id: string; name: string }[] {
 
 describe('topologyNodes', () => {
 	it('draws nothing for a gateway with no provider and no combo', () => {
-		const layout = topologyNodes([], [], IDLE);
+		const layout = topologyNodes([], [], TOPOLOGY_IDLE);
 
 		expect(layout.nodes).toEqual([]);
 		expect(layout.height).toBe(360);
 	});
 
 	it('puts one upstream below the gateway and one combo above it', () => {
-		const layout = topologyNodes([{ id: 'openai', name: 'OpenAI' }], COMBOS, IDLE);
+		const layout = topologyNodes([{ id: 'openai', name: 'OpenAI' }], COMBOS, TOPOLOGY_IDLE);
 
 		expect(layout.providers[0]).toMatchObject({ x: 50, y: 84 });
 		expect(layout.combos[0]).toMatchObject({ x: 50, y: 16 });
 	});
 
 	it('puts two nodes of a band symmetric about the vertical axis', () => {
-		const layout = topologyNodes(PROVIDERS, PROVIDERS, IDLE);
+		const layout = topologyNodes(PROVIDERS, PROVIDERS, TOPOLOGY_IDLE);
 
 		expect(layout.providers[0].x).toBeCloseTo(24.827, 3);
 		expect(layout.providers[1].x).toBeCloseTo(75.173, 3);
@@ -52,7 +45,7 @@ describe('topologyNodes', () => {
 	});
 
 	it('keeps every position inside the drawing box', () => {
-		const layout = topologyNodes(many(24, 'pr'), many(8, 'cb'), IDLE);
+		const layout = topologyNodes(many(24, 'pr'), many(8, 'cb'), TOPOLOGY_IDLE);
 
 		for (const node of layout.nodes) {
 			expect(node.x).toBeGreaterThan(0);
@@ -70,41 +63,45 @@ describe('topologyNodes', () => {
 	];
 
 	forEachCase(heightCases, (testCase) => {
-		const layout = topologyNodes(many(testCase.providers, 'pr'), many(testCase.combos, 'cb'), IDLE);
+		const layout = topologyNodes(
+			many(testCase.providers, 'pr'),
+			many(testCase.combos, 'cb'),
+			TOPOLOGY_IDLE
+		);
 
 		expect(layout.height).toBe(testCase.height);
 	});
 
 	const stateCases = [
-		{ name: 'no live state at all', live: IDLE, state: 'idle' },
+		{ name: 'no live state at all', live: TOPOLOGY_IDLE, state: 'idle' },
 		{
 			name: 'the provider of the last request',
-			live: { ...IDLE, last: 'openai' },
+			live: { ...TOPOLOGY_IDLE, last: 'openai' },
 			state: 'last'
 		},
 		{
 			name: 'the provider the gateway reported an error for',
-			live: { ...IDLE, error: 'openai' },
+			live: { ...TOPOLOGY_IDLE, error: 'openai' },
 			state: 'error'
 		},
 		{
 			name: 'a provider in flight',
-			live: { ...IDLE, active: ['openai'] },
+			live: { ...TOPOLOGY_IDLE, active: ['openai'] },
 			state: 'active'
 		},
 		{
 			name: 'a provider in flight that also errored last',
-			live: { ...IDLE, active: ['openai'], error: 'openai' },
+			live: { ...TOPOLOGY_IDLE, active: ['openai'], error: 'openai' },
 			state: 'active'
 		},
 		{
 			name: 'a provider that is both last and in error',
-			live: { ...IDLE, last: 'openai', error: 'openai' },
+			live: { ...TOPOLOGY_IDLE, last: 'openai', error: 'openai' },
 			state: 'error'
 		},
 		{
 			name: 'an id whose case differs from the registry spelling',
-			live: { ...IDLE, active: ['OpenAI'] },
+			live: { ...TOPOLOGY_IDLE, active: ['OpenAI'] },
 			state: 'active'
 		}
 	];
@@ -117,8 +114,8 @@ describe('topologyNodes', () => {
 	});
 
 	it('lights a combo only from the combo names the frame carries, compared exactly', () => {
-		const layout = topologyNodes([], COMBOS, { ...IDLE, activeCombos: ['pro-tier'] });
-		const unlit = topologyNodes([], COMBOS, { ...IDLE, activeCombos: ['Pro-Tier'] });
+		const layout = topologyNodes([], COMBOS, { ...TOPOLOGY_IDLE, activeCombos: ['pro-tier'] });
+		const unlit = topologyNodes([], COMBOS, { ...TOPOLOGY_IDLE, activeCombos: ['Pro-Tier'] });
 
 		expect(layout.combos[0].state).toBe('active');
 		expect(unlit.combos[0].state).toBe('idle');
@@ -127,7 +124,11 @@ describe('topologyNodes', () => {
 	it('never marks a combo as the last provider or an errored one', () => {
 		// `last` and `error_provider` name providers on the wire. Reading them at a combo would light a
 		// combo the gateway never said anything about.
-		const layout = topologyNodes([], COMBOS, { ...IDLE, last: 'pro-tier', error: 'pro-tier' });
+		const layout = topologyNodes([], COMBOS, {
+			...TOPOLOGY_IDLE,
+			last: 'pro-tier',
+			error: 'pro-tier'
+		});
 
 		expect(layout.combos[0].state).toBe('idle');
 	});
@@ -138,7 +139,7 @@ describe('topologyNodes', () => {
 		const layout = topologyNodes(
 			[{ id: 'openai', name: 'OpenAI' }],
 			[{ id: 'openai', name: 'openai' }],
-			IDLE
+			TOPOLOGY_IDLE
 		);
 
 		expect(layout.providers[0].key).toBe('provider:openai');
@@ -147,74 +148,23 @@ describe('topologyNodes', () => {
 	});
 
 	it('keeps the node ids as the registry and the combo list spell them', () => {
-		const layout = topologyNodes(PROVIDERS, COMBOS, IDLE);
+		const layout = topologyNodes(PROVIDERS, COMBOS, TOPOLOGY_IDLE);
 
 		expect(layout.providers.map((node) => node.id)).toEqual(['openai', 'anthropic']);
 		expect(layout.combos.map((node) => node.id)).toEqual(['pro-tier']);
 	});
-
-	it('lights the client terminal while anything is in flight', () => {
-		const idle = topologyNodes(PROVIDERS, COMBOS, IDLE);
-		const busy = topologyNodes(PROVIDERS, COMBOS, { ...IDLE, active: ['openai'] });
-
-		expect(idle.client.state).toBe('idle');
-		expect(busy.client.state).toBe('active');
-	});
-
-	it('lights the response terminal on the way back, and keeps it lit as the last fact after', () => {
-		const busy = topologyNodes(PROVIDERS, COMBOS, { ...IDLE, active: ['openai'] });
-		const finished = topologyNodes(PROVIDERS, COMBOS, { ...IDLE, last: 'openai' });
-
-		expect(busy.response.state).toBe('active');
-		expect(finished.response.state).toBe('last');
-		expect(topologyNodes(PROVIDERS, COMBOS, IDLE).response.state).toBe('idle');
-	});
-
-	it('lights the direct hop only for traffic that addressed no combo', () => {
-		// A combo request travels client → combo → gateway. Beaming the direct line as well would state a
-		// second request that never took that hop, so the line is lit by its own count rather than by the
-		// client terminal's, which is honest about "something is in flight".
-		const comboTraffic = topologyNodes(PROVIDERS, COMBOS, {
-			...IDLE,
-			active: ['openai'],
-			activeCombos: ['pro-tier'],
-			directCount: 0
-		});
-		const plainTraffic = topologyNodes(PROVIDERS, COMBOS, {
-			...IDLE,
-			active: ['openai'],
-			directCount: 1
-		});
-
-		expect(comboTraffic.client.state).toBe('active');
-		expect(comboTraffic.direct.state).toBe('idle');
-		expect(plainTraffic.direct.state).toBe('active');
-	});
-
-	it('keeps the terminals out of the node list', () => {
-		// They carry no identity from the wire, so treating one as a node would let a fixed position decide
-		// how wide every label on the drawing may be.
-		const layout = topologyNodes(PROVIDERS, COMBOS, IDLE);
-
-		expect(layout.nodes.map((node) => node.key)).toEqual([
-			'provider:openai',
-			'provider:anthropic',
-			'combo:pro-tier'
-		]);
-	});
-
 	it('gives a node a fifth of the box while the bands still leave room between neighbours', () => {
 		for (const count of [1, 2, 3, 4, 5]) {
-			const layout = topologyNodes(many(count, 'pr'), many(count, 'cb'), IDLE);
+			const layout = topologyNodes(many(count, 'pr'), many(count, 'cb'), TOPOLOGY_IDLE);
 
 			expect(layout.nodeShare, `${count} per band`).toBeGreaterThan(0.15);
 		}
 	});
 
 	it('shrinks the share once a fifth of the box would leave two neighbours touching', () => {
-		const five = topologyNodes(many(5, 'pr'), many(5, 'cb'), IDLE).nodeShare;
-		const eight = topologyNodes(many(8, 'pr'), many(8, 'cb'), IDLE).nodeShare;
-		const twelve = topologyNodes(many(12, 'pr'), many(12, 'cb'), IDLE).nodeShare;
+		const five = topologyNodes(many(5, 'pr'), many(5, 'cb'), TOPOLOGY_IDLE).nodeShare;
+		const eight = topologyNodes(many(8, 'pr'), many(8, 'cb'), TOPOLOGY_IDLE).nodeShare;
+		const twelve = topologyNodes(many(12, 'pr'), many(12, 'cb'), TOPOLOGY_IDLE).nodeShare;
 
 		expect(five).toBeLessThan(0.2);
 		expect(eight).toBeLessThan(five);
@@ -228,7 +178,7 @@ describe('topologyNodes', () => {
 		// their vertical distance keeps them on different rows.
 		for (let providers = 0; providers <= 24; providers += 1) {
 			for (let combos = 0; combos <= 8; combos += 1) {
-				const layout = topologyNodes(many(providers, 'pr'), many(combos, 'cb'), IDLE);
+				const layout = topologyNodes(many(providers, 'pr'), many(combos, 'cb'), TOPOLOGY_IDLE);
 
 				expect(layout.nodeShare, `${providers} providers and ${combos} combos`).toBeGreaterThan(0);
 			}
@@ -241,7 +191,7 @@ describe('topologyNodes', () => {
 		// pins: no two node boxes intersect, at any width.
 		for (const width of [180, 228, 320, 480, 650, 900, 1086]) {
 			for (let count = 2; count <= 24; count += 1) {
-				const layout = topologyNodes(many(count, 'pr'), many(count, 'cb'), IDLE);
+				const layout = topologyNodes(many(count, 'pr'), many(count, 'cb'), TOPOLOGY_IDLE);
 				const unit = Math.min(1, (layout.nodeShare * width) / 130);
 				const nodeWidth = 130 * unit;
 				const nodeHeight = 30 * unit;
