@@ -1,13 +1,14 @@
 // Provider registry list (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // The detail page had render tests and the list had none, so the screen an operator lands on first was the
-// unverified one. What is checked here is what the screen decides: the category filter and the search are
-// the two filters the API accepts, the search goes to the server as `?q` because §6.3 forbids filtering
-// the registry in the browser (PORT 002 D1), the two empty states are different sentences because they
-// mean different things, and a failure offers the retry rather than a blank table.
+// unverified one. What is checked here is what the screen decides: the category filter is one of the two
+// filters the API accepts, the two empty states are different sentences because they mean different things,
+// the refresh repeats the read the screen is showing rather than resetting it, and a failure offers the
+// retry rather than a blank table.
 //
-// The screen also reads the custom provider node set, which is a second read with its own state; those
-// cases are in `providers-custom-section.test.ts`.
+// The search has its own file, `providers-search.test.ts`, because its contract is the server's: §6.3
+// forbids filtering the registry in the browser, so what is typed travels as `?q`. The custom provider node
+// set is a second read with its own state; those cases are in `providers-custom-section.test.ts`.
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -87,125 +88,6 @@ describe('provider registry list', () => {
 		expect(registryQuery(stub.queries).has('category')).toBe(false);
 		expect(registryQuery(stub.queries).has('q')).toBe(false);
 		expect(await screen.findByText('OpenAI')).toBeTruthy();
-	});
-
-	it('sends the search the operator typed, trimmed, and returns to the first page to do it', async () => {
-		const stub = stubProviders({
-			rows: [provider(), provider({ id: 'anthropic', name: 'Anthropic' })]
-		});
-		render(ProvidersPage);
-		await screen.findByRole('table');
-
-		const input = screen.getByLabelText('Search providers by name or id');
-		await fireEvent.input(input, { target: { value: '  anthropic  ' } });
-		await fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-
-		await waitFor(() => expect(registryQuery(stub.queries).get('q')).toBe('anthropic'));
-		expect(registryQuery(stub.queries).get('page')).toBe('1');
-		expect(await screen.findByText('Anthropic')).toBeTruthy();
-		expect(screen.queryByText('OpenAI')).toBeNull();
-	});
-
-	it('sends a name the id does not carry, because the API matches both fields', async () => {
-		const stub = stubProviders({
-			rows: [
-				provider(),
-				provider({ id: 'remote-llm', name: 'Claude via Ollama', category: 'local' })
-			]
-		});
-		render(ProvidersPage);
-		await screen.findByRole('table');
-
-		const input = screen.getByLabelText('Search providers by name or id');
-		await fireEvent.input(input, { target: { value: 'ollama' } });
-		await fireEvent.submit(input.closest('form') as HTMLFormElement);
-
-		await waitFor(() => expect(registryQuery(stub.queries).get('q')).toBe('ollama'));
-		expect(await screen.findByText('remote-llm')).toBeTruthy();
-		expect(screen.queryByText('OpenAI')).toBeNull();
-	});
-
-	it('accepts the 120-code-point provider-search limit', async () => {
-		const cases = [
-			{ name: '120 ASCII code points', query: 'x'.repeat(120) },
-			{ name: '120 astral Unicode code points', query: '😀'.repeat(120) },
-			{ name: '120 mixed ASCII and Unicode code points', query: '😀'.repeat(60) + 'x'.repeat(60) }
-		];
-		for (const { query } of cases) {
-			cleanup();
-			vi.unstubAllGlobals();
-			const stub = stubProviders({ rows: [provider()] });
-			render(ProvidersPage);
-			await screen.findByRole('table');
-
-			const input = screen.getByLabelText('Search providers by name or id');
-			await fireEvent.input(input, { target: { value: query } });
-			await fireEvent.submit(input.closest('form') as HTMLFormElement);
-
-			await waitFor(() => expect(registryQuery(stub.queries).get('q')).toBe(query));
-			expect(screen.queryByRole('alert')).toBeNull();
-		}
-	});
-
-	it('shows inline validation and sends no provider-search term over 120 code points', async () => {
-		const cases = [
-			{ name: '121 ASCII code points', query: 'x'.repeat(121) },
-			{ name: '121 astral Unicode code points', query: '😀'.repeat(121) },
-			{ name: '121 mixed ASCII and Unicode code points', query: '😀'.repeat(60) + 'x'.repeat(61) }
-		];
-		for (const { query } of cases) {
-			cleanup();
-			vi.unstubAllGlobals();
-			const stub = stubProviders({ rows: [provider()] });
-			render(ProvidersPage);
-			await screen.findByRole('table');
-
-			const initialReads = stub.queries.filter((url) =>
-				new URL(url, 'http://panel.test').pathname.endsWith('/providers')
-			).length;
-			const input = screen.getByLabelText('Search providers by name or id');
-			await fireEvent.input(input, { target: { value: query } });
-			await fireEvent.submit(input.closest('form') as HTMLFormElement);
-
-			const validationMessage = await screen.findByRole('alert');
-			expect(validationMessage.textContent).toContain('Search must be 120 characters or fewer.');
-			expect(input.getAttribute('aria-invalid')).toBe('true');
-			expect(
-				stub.queries.filter((url) =>
-					new URL(url, 'http://panel.test').pathname.endsWith('/providers')
-				)
-			).toHaveLength(initialReads);
-		}
-	});
-
-	it('drops the search parameter on an empty submit instead of sending it empty', async () => {
-		const stub = stubProviders({ rows: [provider()] });
-		render(ProvidersPage);
-		await screen.findByRole('table');
-
-		const input = screen.getByLabelText('Search providers by name or id');
-		await fireEvent.input(input, { target: { value: '   ' } });
-		await fireEvent.submit(input.closest('form') as HTMLFormElement);
-
-		await waitFor(() => expect(registryQuery(stub.queries).has('q')).toBe(false));
-	});
-
-	it('sends the search and the category together, because the API filters with both', async () => {
-		const stub = stubProviders({
-			rows: [provider(), provider({ id: 'anthropic', name: 'Anthropic', category: 'media' })]
-		});
-		render(ProvidersPage);
-		await screen.findByRole('table');
-
-		await fireEvent.input(screen.getByLabelText('Search providers by name or id'), {
-			target: { value: 'anthropic' }
-		});
-		await fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-		await waitFor(() => expect(registryQuery(stub.queries).get('q')).toBe('anthropic'));
-
-		await fireEvent.click(screen.getByRole('button', { name: 'media' }));
-		await waitFor(() => expect(registryQuery(stub.queries).get('category')).toBe('media'));
-		expect(registryQuery(stub.queries).get('q')).toBe('anthropic');
 	});
 
 	it('re-reads the registry with the search still applied when the operator asks for it', async () => {

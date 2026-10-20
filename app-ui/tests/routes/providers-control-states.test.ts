@@ -5,21 +5,31 @@
 // and the six category chips changed only their text colour, which leaves a chosen filter and a hovered
 // one looking the same. The chips are why the scale gained a selected step: a chosen control sits on the
 // ground DESIGN.md §3.2 calls pressed, and its hover has to reach past that.
+//
+// The walk counts anchors too, because three of this screen's controls are links: an action link is a
+// control (§3.5), and the registry row's two actions and the node row's name were bare underlines with no
+// state rule of their own.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProvidersPage from '../../src/routes/providers/+page.svelte';
-import { expectEveryControlHasStates } from '../support/control-states';
+import { expectControlStates, expectEveryControlHasStates } from '../support/control-states';
 import { provider, stubProviders } from '../support/providers-route-stub';
+import { nodeRow } from '../support/provider-node-stub';
 
-vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
+vi.mock('$app/paths', () => ({
+	resolve: (route: string, params?: Record<string, string>) =>
+		params === undefined
+			? route
+			: route.replace(/\[(\w+)\]/g, (_match, key: string) => params[key] ?? `[${key}]`)
+}));
 
 async function controls(): Promise<HTMLElement[]> {
 	stubProviders({ rows: [provider()] });
 	render(ProvidersPage);
 	await screen.findByRole('table');
 
-	return Array.from(document.querySelectorAll('button'));
+	return Array.from(document.querySelectorAll('button, a[data-slot="button"]'));
 }
 
 describe('Provider registry control states', () => {
@@ -29,11 +39,32 @@ describe('Provider registry control states', () => {
 	});
 
 	it('gives every control a hover and a pressed step, and no raw colour', async () => {
-		// Search, refresh, six chips, the two add actions, and the two pagination steps.
+		// Search, refresh, six chips, the two add actions, the two pagination steps, and the row's Open link.
 		const buttons = await controls();
-		expect(buttons.length).toBeGreaterThanOrEqual(11);
+		expect(buttons.length).toBeGreaterThanOrEqual(12);
 
 		expectEveryControlHasStates(buttons, 'Provider registry');
+	});
+
+	it('keeps the three links links, and gives them the states anyway', async () => {
+		stubProviders({ rows: [provider({ endpoint_count: 0 })], nodes: [nodeRow()] });
+		render(ProvidersPage);
+		await screen.findByRole('table');
+
+		// The registry row offers both of its actions when it holds no endpoint, and the node row's name
+		// routes to the screen that owns the node's facts.
+		const cases: [string, string][] = [
+			['Open', '/providers/openai'],
+			['Add endpoint', '/providers/openai'],
+			['Corp gateway', '/providers/openai-compatible-01J']
+		];
+
+		for (const [name, href] of cases) {
+			const link = (await screen.findByRole('link', { name })) as HTMLAnchorElement;
+			expect(link.getAttribute('href'), `${name} link`).toBe(href);
+			expect(link.className, `${name} link lost its 44px target`).toContain('min-h-11');
+			expectControlStates(link);
+		}
 	});
 
 	it('reads the chosen filter from aria-pressed rather than from a class the screen assembles', async () => {

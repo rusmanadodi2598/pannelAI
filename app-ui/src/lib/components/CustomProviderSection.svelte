@@ -94,9 +94,12 @@
 					class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2"
 				>
 					<div class="flex flex-col">
-						<a
+						<!-- The node's name routes to the screen that owns its facts, so it is an action link
+						     and takes the states the same component gives every other one (DESIGN.md §3.5). -->
+						<Button
 							href={resolve('/providers/[provider_id]', { provider_id: node.id })}
-							class="font-medium underline">{node.name}</a
+							variant="ghost"
+							class="px-2 underline">{node.name}</Button
 						>
 						<span class="text-sm text-[var(--color-text-muted)]">
 							{node.prefix}/model, {nodeEndpointLabel(node)}
