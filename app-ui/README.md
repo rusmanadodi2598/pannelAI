@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Fifty-one passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Fifty-two passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -268,7 +268,10 @@ fourth screen was still writing by hand, a copy control whose one clipboard path
 the panel runs on, and a schema test file at 370 lines with eight subjects inside it. The fifty-first is the
 Skills screen, measured the same day: four hand-written controls, an off-site link that was the row's only
 other affordance and answered nothing under a finger, and a copy control shipped in its table shape on the
-one screen whose whole job is that control.
+one screen whose whole job is that control. The fifty-second is the Media Provider screen, measured the same
+day: six control shapes written at the call site, of which four were links and one of those is a card's heading,
+a commit that cannot take the accent because every card carries one, and four test files that had each outgrown
+the subject they were named for.
 
 ### What each remaining page still owes, measured 2026-10-20
 
@@ -276,17 +279,70 @@ Counted by walking each route's own component tree, so the numbers are the page'
 repository's. A control is a `<button>` or an `<a>` written at the call site; the cap is SPEC-UI §10's 250
 lines.
 
-| Page               | Controls left      | Test files over the cap |
-| ------------------ | ------------------ | ----------------------- |
-| `/api-docs`        | 1 button, 1 link   | none                    |
-| `/changelog`       | 1 button           | none                    |
-| `/login`           | 1 button           | none                    |
-| `/media-providers` | 2 buttons, 4 links | 4: 398, 326, 313, 263   |
-| `/playground`      | 3 buttons          | 2: 664, 271             |
+| Page          | Controls left    | Test files over the cap |
+| ------------- | ---------------- | ----------------------- |
+| `/api-docs`   | 1 button, 1 link | none                    |
+| `/changelog`  | 1 button         | none                    |
+| `/login`      | 1 button         | none                    |
+| `/playground` | 3 buttons        | 2: 664, 271             |
+| `/providers`  | 3 links          | none                    |
+
+`/media-providers` left this list on 2026-10-20: its six control shapes read the button and its four test files
+are under the cap. `/providers` joined it the same day, measured after its own pass had been recorded as done.
+The walk of that pass read the route file and the components it edited, and stopped there, so it never counted
+`ProviderTable`'s two row links or the custom node row's name link: three anchors written at the call site, one
+of them the heading-shaped link §3.5 rules on and two of them the row action that routes. No file on that screen
+is over the cap.
 
 Three items belong to no page and wait for a decision of their own: `src/lib/icons.ts` at 281 lines, shared
 by every screen; `tests/schemas/vision-adapter.test.ts` at 268, whose page `/combos` is migrated and whose
 file was not touched by that pass; and the 36px checkbox label on the five files §8.7 still finds short.
+
+### The Media Provider screen on the scale, the title that is also a link, and the four files that outgrew their subject, 2026-10-20
+
+Run with Bun 1.3.0. Six control shapes were written at the call site and none of them painted under a press:
+the commit each card ends with, the retry a failed read leaves behind, and four links. Three of the links are
+one screen's whole way out of a bad address (the six kind names a slug that is not a kind renders instead of a
+card), one routes a provider to its registry entry, and two route back to `/providers`.
+
+Two of those needed a ruling rather than a swap. The provider name is a card's heading _and_ its link, so the
+`h2` now holds the anchor and keeps `text-base` while the ramp supplies the colour: the title sits at
+`text-muted` at rest and lifts to full text on hover, which is what the ghost variant says, and the alternative
+was a rest colour written at the call site. The commit is the other one: a screen with one save per provider
+cannot spend the accent on all of them, so the card's save takes the neutral ramp and keeps its border, and
+`DESIGN.md` §3.4 now says the primary action is counted per screen rather than per card.
+
+| File                                            | Was | Now                                                                                                |
+| ----------------------------------------------- | --- | -------------------------------------------------------------------------------------------------- |
+| `tests/schemas/media-provider-form.test.ts`     | 398 | 197, with `media-provider-form-fields.test.ts` (200) taking the selector and the two hints         |
+| `tests/schemas/media-provider.test.ts`          | 326 | 176, with `media-provider-answer.test.ts` (135) taking the list, the detail answer and the refusal |
+| `tests/components/media-providers.test.ts`      | 313 | 173, with `media-provider-card.test.ts` (171) taking what a card shows                             |
+| `tests/components/media-providers-save.test.ts` | 263 | 176, with `media-providers-write.test.ts` (125) taking what reaches the wire                       |
+| `components/MediaProviderCard.svelte`           | 203 | 200, the title link and the commit on the scale                                                    |
+| `routes/media-providers/[kind]/+page.svelte`    | 148 | 149, the retry, the way back, and the six kind links                                               |
+| `tests/support/media-stub.ts`                   | 143 | 158, holding the kind block three schema files had each copied                                     |
+
+Every split is along a `describe` boundary the file already had, and the cluster's 121 cases stayed 121 across
+the eight files; the new state walk adds 7. The fixture that had been written twice, once in the stub and once
+inside `media-provider.test.ts`, is one export now, and the block fixture moved with it rather than being
+copied into each of the three files that needed it.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `bun run test`              | 3310 tests passed across 240 files, exit 0 (3303 across 235 at the last row). The seven tests and the five files are this pass: four splits and `tests/routes/media-providers-control-states.test.ts`. The media cluster was re-run against the final tree: 128 tests across 9 files                                                                                                                                                                                                                                                                                                                     |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries the hover and the pressed wash utilities once each, which is the whole rule set the six migrated controls needed, so routing them through the primitive added no new utility to the CSS                                                                                                                                                                                                                                                                                                                                        |
+| Browser measurement         | Chromium against the dev server with `/api/v1` stubbed, both themes, four readings of the route (cards, unknown kind, failed read, empty kind): every control reports three distinct computed colours across rest, hover and held (the ghost label lifting 95/87/78 to 26/22/20 in light and 166/158/147 to 237/234/230 in dark, on the ink wash at 9% then 16%; the refresh and the commit on the same wash over their own border). The cards' 5 controls, the kind list's 6, the failed read's 3 and the empty kind's 2 all measure 44px tall at 1440 and at 390, and none stretches past the viewport |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| File size                   | `src/` files over the cap: 1 (`icons.ts` 281), deferred by the owner until the pages are done. No media file is over the cap in `src` or in `tests`, after four of them came down from 398, 326, 313 and 263                                                                                                                                                                                                                                                                                                                                                                                             |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The two decisions are in `DESIGN.md` §3.4 and §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+Not yet verified: the commit's fade while its write is in flight is asserted as an attribute, and Chromium
+measured the control at rest rather than disabled, so what that fade looks like beside a `surface-2` card is
+unmeasured. The PATCH was stubbed, so the case Q18 records (clearing an override the panel cannot check) is
+proved only against a fake that refuses the way the server refuses. And the walk covers the route itself: the
+six sidebar rows that link to these addresses belong to `tests/navigation/`, not to this screen.
 
 ### The Skills screen on the scale, the source link that routes off-site, and the copy control's dense shape, 2026-10-20
 

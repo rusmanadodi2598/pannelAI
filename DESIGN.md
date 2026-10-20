@@ -134,6 +134,11 @@ The accent appears in exactly five places, and nowhere else:
 It is not used for borders, background washes, icon fills across a list, chart fills beyond one series, or
 status. Status has its own three colours and is never carried by the accent.
 
+**Item 2 counts the screen, not the card.** `/media-providers/[kind]` renders one commit per provider, so a
+filled accent there would put the accent on as many controls as the registry has rows for the kind. The card's
+save keeps the neutral ramp and its border, which is also the honest reading: each card's save belongs to its own
+provider, and the screen has no single primary action to spend the accent on.
+
 ### 3.5 Interaction states
 
 Every control that can be pressed takes four states from one scale: rest, hover, pressed, disabled. The
@@ -238,7 +243,13 @@ anchor when it is given `href`, so the link keeps its role and takes the scale f
 discard written as an underlined button is the same case: it is the ghost variant with `underline` in the
 class list it accepts, not a second control shape a screen has to remember. `/skills`' source link is the
 case with a different destination: `text-xs underline` text that routes off-site, and the only other thing a
-row asks the operator to press besides its copy control.
+row asks the operator to press besides its copy control. `/media-providers/[kind]`'s card title is the case
+where the heading and the control are one element: the provider name routes to its registry entry, so the `h2`
+holds the anchor and keeps its size while the ramp supplies the colour, which leaves a title at `text-muted` at
+rest and lifts it on hover. Its weight and size still carry the card, and the alternative is a rest colour
+written at the call site, which is the drift this rule exists to stop. The same screen's six kind links are the
+list that _is_ the way out: an address naming no kind renders no card, so those six anchors are everything the
+screen offers to press.
 
 **One write band, not three.** Every settings tab ends with its commit, its unsaved marker and its outcome
 line, and the three tabs each wrote that row by hand, including the `disabled:opacity-60` the ramp above
