@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty-nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Fifty passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -263,7 +263,61 @@ controls, a second action link with no state rule, a danger outline the primitiv
 test files that each held three subjects. The forty-ninth is the Console Log screen, measured the same day:
 four hand-written controls, a third action link with no state rule, a clear that emptied the gateway's
 buffer on the first click with no confirmation in front of it, and a checkbox label 4px short of the target
-the rest of its screen meets.
+the rest of its screen meets. The fiftieth is the Token Saver screen, measured the same day: the band a
+fourth screen was still writing by hand, a copy control whose one clipboard path cannot exist on the origin
+the panel runs on, and a schema test file at 370 lines with eight subjects inside it.
+
+### The Token Saver screen on the shared band, the copy control that could not copy, and the 370-line file, 2026-10-20
+
+Run with Bun 1.3.0. `TokenSaverSectionShell` framed three sections and wrote their save row by hand: the
+commit with `disabled:opacity-60`, which `DESIGN.md` §3.5 already records as the wrong fade for a filled
+control, and the discard beside it as a bare underline with no ground at all. The row is `SaveBar` now,
+which is also the rename that let it be reused: the component was `SettingsSaveBar`, and §6.7 makes the save
+per section while §6.13 makes it per tab, which is one band stated in two spec sections. The shell maps its
+`saved` flag onto the band's outcome line and yields it while the draft is dirty, because "Saved." cannot
+sit beside "Unsaved changes".
+
+The bypass header was the sharper finding. The screen wrote its own copy control: one `navigator.clipboard`
+path, a hover onto `surface-2` and nothing under a press. The panel is normally reached at
+`http://<host>:3000`, which is not a secure context, so `navigator.clipboard` is not merely refusing there,
+it does not exist, and the catch branch would have told an operator to copy the header by hand while the
+shared control copied it through the selection path. It is `CopyButton` now, which carries the fallback, the
+44px row the screen's own shape had already reached, and the outcome sentence.
+
+The touch pass found the class of target the colour work does not cover. Fifteen of the screen's sixteen
+checkbox labels were 36px tall: twelve allowlist rows, whose title and caption fit inside that height, and
+the three section toggles written the same way. The label is the target, because clicking the words toggles
+the box, so the five label sites took `min-h-11` and §8.7's 44px now holds across the screen.
+
+| File                                       | Was | Now                                                                                              |
+| ------------------------------------------ | --- | ------------------------------------------------------------------------------------------------ |
+| `tests/schemas/token-saver-form.test.ts`   | 370 | 231, plus `token-saver-rtk.test.ts` (143)                                                        |
+| `components/SettingsSaveBar.svelte`        | 39  | `SaveBar.svelte` (40), unchanged in behaviour, renamed so a second screen can import it honestly |
+| `components/TokenSaverSectionShell.svelte` | 50  | 45, its band replaced by the shared one                                                          |
+| `components/TokenSaverBypass.svelte`       | 71  | 44, its copy logic replaced by `CopyButton`                                                      |
+
+The schema split is along describes that were already separate subjects, the allowlist and the draft, and
+its case count is unchanged: 40 before, 21 plus 19 after. `tokenSaverDocument` moved to the screen's stub
+file and is typed as `TokenSaver` rather than `Record<string, unknown>`, so the schema tests and the
+component tests read the same fixture.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run test`              | 3298 tests passed across 234 files, exit 0 (3292 across 232 at the last row). The six tests and the two files are this pass: the control-state walk and the RTK half of the split schema file, whose 40 cases stayed 40. The token saver cluster was re-run whole against the final tree: 113 tests across 8 files, including the shared `copy-button.test.ts` this screen now leans on                                                                                                                                                                                                                                                                                 |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries the four `[aria-busy=true]:disabled` rules that keep a filled commit on its own colour while a write is in flight, plus `.disabled:bg-[var(--color-surface-3)]:disabled`, which is the pair the shell's hand-written `disabled:opacity-60` was replacing                                                                                                                                                                                                                                                                                                                                      |
+| Browser measurement         | Chromium against the dev server with the token-saver routes stubbed, both themes: 5 controls each report three distinct computed colours across rest, hover and held (the section commit 184/65/42 to 171/49/28 to 156/36/18 in light and 229/106/74 to 240/122/90 to 250/138/108 in dark, stepping its own ramp; the copy control and the discard on the ink wash at 9% then 16%). At 390px every measured press target is 44px tall (three commits, the copy control, the discard, both text fields and the four section labels), and the twelve allowlist rows that measured 36px before the label fix measure 44px after, with nothing stretching past the viewport |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| File size                   | `src/` files over the cap: 1 (`icons.ts` 281), deferred by the owner until the pages are done. The screen's 370-line schema test is now 231 plus 143, and no token-saver file is over the cap in `src` or in `tests`                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+
+Not yet verified: the bypass copy was exercised in Chromium on a loopback origin, which is a secure context,
+so the async clipboard path is the one that ran there. The selection fallback the screen now inherits is
+covered by `tests/components/copy-button.test.ts` and by the API Docs and Skills passes rather than by this
+pass's browser run. The same label shape without a 44px row also still stands on five other screens (`SettingsSecurityTab`,
+`SettingsLoggingTab`, `OneTimeKeyModal`, `ProxyFormFields`, `ProxyOutboundSettings`); the tables and the
+quota cards already carry it. Sweeping those five is a page-agnostic decision the owner has not given.
 
 ### The Console Log screen on the scale, and the delete that had no confirmation in front of it, 2026-10-20
 

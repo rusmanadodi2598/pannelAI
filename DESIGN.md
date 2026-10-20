@@ -221,7 +221,10 @@ and were painted the same way: a hover wash on `surface-2`, nothing under a pres
 `primitives/button` and keep their identity in the class list it accepts, which is the bottom rule on a tab
 and the chevron, the left-aligned label and the text colour on a fold. Routing them through the primitive
 rather than writing two more class lists is what keeps the exception from becoming the rule: a screen that
-has to remember to add a state is a screen that will forget one.
+has to remember to add a state is a screen that will forget one. `/token-saver`'s bypass copy control was
+that shape inside a card: a hover onto `surface-2` and nothing under a press. The shared control answered it
+twice over, because the one the screen wrote also had a single clipboard path, and `navigator.clipboard`
+does not exist on the insecure origin this panel is usually reached at.
 
 **A switch carries its own state.** The round-robin control is a `role="switch"` track: the thumb moves and
 the track takes the accent, which is the value, not the feedback. It takes the ink wash as well, because the
@@ -238,7 +241,9 @@ class list it accepts, not a second control shape a screen has to remember.
 **One write band, not three.** Every settings tab ends with its commit, its unsaved marker and its outcome
 line, and the three tabs each wrote that row by hand, including the `disabled:opacity-60` the ramp above
 already records as the wrong fade. The band is one component now, taking the answers from the tab that owns
-the draft, so the rule §6.13 states per tab is stated once.
+the draft, so the rule §6.13 states per tab is stated once. `/token-saver`'s section shell was a fourth
+writer of the same row with the same wrong fade on its commit, so the component is `SaveBar` rather than a
+settings file: §6.7 makes the save per section and §6.13 makes it per tab, and those are the same band.
 
 ---
 
