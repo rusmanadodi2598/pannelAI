@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Fifty-two passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Fifty-four passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -279,30 +279,137 @@ Counted by walking each route's own component tree, so the numbers are the page'
 repository's. A control is a `<button>` or an `<a>` written at the call site; the cap is SPEC-UI §10's 250
 lines.
 
-| Page          | Controls left    | Test files over the cap |
-| ------------- | ---------------- | ----------------------- |
-| `/api-docs`   | 1 button, 1 link | none                    |
-| `/changelog`  | 1 button         | none                    |
-| `/login`      | 1 button         | none                    |
-| `/playground` | 3 buttons        | 2: 664, 271             |
-| `/providers`  | 3 links          | none                    |
+| Page         | Controls left    | Test files over the cap |
+| ------------ | ---------------- | ----------------------- |
+| `/api-docs`  | 1 button, 1 link | none                    |
+| `/changelog` | 1 button         | none                    |
+| `/login`     | 1 button         | none                    |
 
 `/media-providers` left this list on 2026-10-20: its six control shapes read the button and its four test files
-are under the cap. `/providers` joined it the same day, measured after its own pass had been recorded as done.
-The walk of that pass read the route file and the components it edited, and stopped there, so it never counted
-`ProviderTable`'s two row links or the custom node row's name link: three anchors written at the call site, one
-of them the heading-shaped link §3.5 rules on and two of them the row action that routes. No file on that screen
-is over the cap.
+are under the cap. `/providers` came back onto it the same day, after its own pass had been recorded as done,
+and left it again with that record corrected: the walk of the earlier pass read the route file and the
+components it edited, and stopped there, so it never counted `ProviderTable`'s two row links or the custom node
+row's name link. Three anchors written at the call site, one of them the heading-shaped link §3.5 rules on and
+two of them the row action that routes. `/playground` left it the same day too: its three buttons read the
+button, and the two test files that had outgrown the screen came down from 664 and 271 lines into six, the
+largest 213, with one support module holding the upstream shape those six read.
 
 Three items belong to no page and wait for a decision of their own: `src/lib/icons.ts` at 281 lines, shared
-by every screen; `tests/schemas/vision-adapter.test.ts` at 268, whose page `/combos` is migrated and whose
-file was not touched by that pass; and the 36px checkbox label on the five files §8.7 still finds short.
+by every screen; the 36px checkbox label on the five files §8.7 still finds short; and the shared
+`tests/support/model-stub.ts` at 898, which is a fixture rather than a screen's.
 
 This table counts what each page's own walk finds. Measured across the whole panel the same day, `src/` has one
-file over the cap (`icons.ts`) and `tests/` has nineteen: two are the `/playground` pair named above, one is the
-`vision-adapter` file named above, and the remaining sixteen sit on screens whose passes are recorded, the largest
-being the shared `tests/support/model-stub.ts` at 898. Each pass cleared its own cluster and no pass has swept the
+file over the cap (`icons.ts`) and `tests/` has eight: `model-stub.ts`, and seven that sit on screens whose
+passes are recorded, `provider-touch-targets` at 308, `bulk-selection` at 301, `provider-custom-models` at 297,
+`combo-editor` at 286, `provider-detail-key-dialog` at 271, `model-catalog-probe` at 265 and
+`provider-thinking-control` at 258. Five of the seven are the provider detail screen's, which is a different
+page from the registry list and a pass of its own. Each pass cleared its own cluster and no pass has swept the
 tree, so that sweep is a decision of its own rather than another page's debt.
+
+Two numbers in this row were stale and are corrected here. `tests/schemas/vision-adapter.test.ts`, listed at
+268 lines, measures 183: the `/combos` pass the row named did split it, and the row was never re-measured.
+And `/providers` was listed with no test file over the cap, while `tests/routes/providers-list.test.ts` was at
+285; the walk that counted the page's files read the components and not the route's own test tree. Both came
+under with this pass.
+
+### The Playground screen on the scale, one slot that wears the accent, and the two files that outgrew the screen, 2026-10-20
+
+Run with Bun 1.3.0. Three controls were written at the call site and none of them painted under a press: the
+retry a failed model read leaves behind, and the composer's send and stop, which share one slot. The composer
+is the screen's only way to spend money, so the row that needed a ruling was not the states but the colour.
+
+Send and stop are one control read two ways, so both take the primary treatment and only one of them is ever
+on screen: the accent stays on exactly one visible control rather than moving to a second when a stream
+begins, and `DESIGN.md` §11 now carries that reason. A disabled send leaves the accent the way §3.5 says a
+filled control does, which also retires the hand-written `disabled:opacity-50` the composer had: the same
+fade this scale already records as the wrong one. The retry is an underlined action, so it is the ghost
+variant with `underline` in the class list it accepts, and it keeps no colour of its own.
+
+| File                                                   | Was | Now                                                                                 |
+| ------------------------------------------------------ | --- | ----------------------------------------------------------------------------------- |
+| `tests/api/playground.test.ts`                         | 271 | 76, the models read alone                                                           |
+| `tests/api/playground-send.test.ts`                    | -   | 212, taking the send: the body, the credential it refuses, and each way to fail     |
+| `tests/server/playground-relay.test.ts`                | 664 | 213, the pipe, the translation and the credential                                   |
+| `tests/server/playground-relay-request-id.test.ts`     | -   | 159, the forwarded id, which is the one header the key can hide inside              |
+| `tests/server/playground-relay-gateway-fields.test.ts` | -   | 180, the gateway's three error fields and the replacement that can recreate the key |
+| `tests/server/playground-relay-fallback.test.ts`       | -   | 107, the sentences the panel writes itself                                          |
+| `tests/support/playground-relay-redaction.ts`          | -   | 74, the upstream shape and the field loop those three files each read               |
+| `components/PlaygroundComposer.svelte`                 | 112 | 107, send and stop on the button                                                    |
+| `routes/playground/+page.svelte`                       | 178 | 177, the retry on the button                                                        |
+| `tests/routes/playground-control-states.test.ts`       | -   | 79, the walk this screen had no file for                                            |
+
+Every split is along a `describe` boundary the file already had, and the cluster's 82 cases stayed 82 across
+the seven files this pass wrote; the new state walk adds 3, so the cluster reads 85 across 13. The upstream failure shape and
+the per-field assertion loop had been written once inside the 664-line file and were read by three of the
+split's four subjects, so they moved to `tests/support/` rather than being copied into each file that needed
+them.
+
+| Check                       | Result                                                                                                                                                                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                   |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                                                                                                                                                                                                  |
+| `bun run test`              | 3316 tests passed across 257 files, exit 0 (3310 across 240 at the last recorded row)                                                                                                                                                                                  |
+| Playground cluster          | 85 tests across 13 files, exit 0. The 82 cases the cluster held before the split are all still there and the new state walk adds 3                                                                                                                                     |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.hover\:bg-[var(--color-state-hover)]:hover` and `.active\:bg-[var(--color-state-press)]:active`, with the accent ramp's hover and press tokens declared in both the light root and `.dark` |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                                                                                                                                                                                                           |
+| File size                   | No playground file is over the cap in `src` or in `tests`, after 664 and 271 came down to 213 and 76                                                                                                                                                                   |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The one design reading is in `DESIGN.md` §11                                                                                                                                  |
+
+Not yet verified: no Chromium pass, for the same reason the `/providers` row records: Playwright is not
+installed here and the screen's send writes a real usage record, so nothing was clicked in a browser. The send
+and the stop are asserted as roles, as `type`, as `disabled`, and as class lists, and the accent is asserted to
+be on exactly one control at a time, which is the §3.4 reading this pass had to decide. What jsdom cannot see
+is what the coral actually looks like under a finger at 1440 and at 390; the accent ramp's steps are measured
+in `tests/tokens/state-scale.test.ts` and were measured on the pointer for the filled commit in the
+`/endpoint-keys` pass.
+
+### The Provider registry's three row links on the scale, and the route test that outgrew the page, 2026-10-20
+
+Run with Bun 1.3.0. Three anchors were still written at the call site and none of them painted under a press:
+the registry row's `Open`, the same row's `Add endpoint` when the provider has no endpoint yet, and the custom
+node row's name. The screen's own pass had been recorded as done on 2026-10-19, and the walk that recorded it
+read the route file and the components that pass had edited, then stopped: the registry table was never
+opened, so its two row actions and the node row's heading-shaped link were outside the count.
+
+An action link is a control (§3.5), so all three go through `primitives/button`, which renders an anchor when
+it is given `href`. The role stays `link` and the navigation stays real, and the four states come from the one
+component every other control on the panel reads. The label stays where it was: `Open` beside its glyph is
+what the operator reads, and the accessible name still comes from the text rather than from an `aria-label` a
+call site has to remember, which is also why the glyph keeps `aria-hidden`.
+
+The same stopped-short walk is why the row of this ledger that read `/providers`, no test file over the cap was
+wrong: `tests/routes/providers-list.test.ts` measured 285. It is split here along the two subjects it already
+held, the registry's own reads and the search's server contract, and both halves come in under the cap.
+
+| File                                            | Was | Now                                                                    |
+| ----------------------------------------------- | --- | ---------------------------------------------------------------------- |
+| `components/ProviderTable.svelte`               | 77  | 82, both row actions on the button                                     |
+| `components/CustomProviderSection.svelte`       | 114 | 117, the node's name on the button                                     |
+| `tests/routes/providers-control-states.test.ts` | 58  | 89, the walk extended to anchors, the three hrefs added                |
+| `tests/routes/providers-list.test.ts`           | 285 | 167, the registry's own reads                                          |
+| `tests/routes/providers-search.test.ts`         | -   | 139, the six rows whose contract is the server's (`?q`, and the bound) |
+
+The walk now reads `button, a[data-slot="button"]` rather than `button`, which is what let the three links sit
+outside it, and its mock resolves the parameterised route instead of returning the bracket, so an href is
+asserted as the address a browser would follow rather than as a template. The 14 cases the route test held are
+the 8 plus the 6 above, and the page's cluster reads 57 tests across 7 files with nothing moved out of scope.
+
+| Check                       | Result                                                                                                                                                                                                                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                         |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                                                                                                                                                                                                        |
+| `bun run test`              | 3316 tests passed across 257 files, exit 0, measured against a tree that also carries the uncommitted provider OAuth split and the `app-serv` refusal work, so the total is this pass's to report but not to claim. The counts it is answerable for are the two cluster rows |
+| Providers cluster           | 57 tests across 7 files, exit 0: `providers-list` (8), `providers-search` (6), `providers-custom-section` (2), `providers-control-states` (3), `provider-touch-targets` (14), `provider-custom-models` (16), `provider-custom-models-node` (8)                               |
+| `scrypts/gates/antislop.sh` | PASS, exit 0. `src/` still has exactly one file over the cap, `icons.ts` at 281, deferred by the owner until the pages are done, and three pages are done short of that                                                                                                      |
+| File size                   | No file on this screen is over the cap in `src` or in `tests`, after 285 came down to 167 and 139                                                                                                                                                                            |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The rule these three follow is already §3.5                                                                                                                                         |
+
+Not yet verified: no Chromium pass. Playwright is not installed in this environment and the screen sits behind
+the panel's own session, so what is proved here is the class contract, the href, and the 44px box as jsdom
+reads them, plus the emitted stylesheet, not a pointer landing on a row action. The hover and pressed washes
+these three controls now inherit are the ones the token scale measures in `tests/tokens/state-scale.test.ts`,
+and they were measured on the pointer in the `/media-providers` and `/skills` passes, which route the same
+shapes through the same component.
 
 ### The Media Provider screen on the scale, the title that is also a link, and the four files that outgrew their subject, 2026-10-20
 
