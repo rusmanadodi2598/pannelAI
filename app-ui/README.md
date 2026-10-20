@@ -298,6 +298,12 @@ Three items belong to no page and wait for a decision of their own: `src/lib/ico
 by every screen; `tests/schemas/vision-adapter.test.ts` at 268, whose page `/combos` is migrated and whose
 file was not touched by that pass; and the 36px checkbox label on the five files §8.7 still finds short.
 
+This table counts what each page's own walk finds. Measured across the whole panel the same day, `src/` has one
+file over the cap (`icons.ts`) and `tests/` has nineteen: two are the `/playground` pair named above, one is the
+`vision-adapter` file named above, and the remaining sixteen sit on screens whose passes are recorded, the largest
+being the shared `tests/support/model-stub.ts` at 898. Each pass cleared its own cluster and no pass has swept the
+tree, so that sweep is a decision of its own rather than another page's debt.
+
 ### The Media Provider screen on the scale, the title that is also a link, and the four files that outgrew their subject, 2026-10-20
 
 Run with Bun 1.3.0. Six control shapes were written at the call site and none of them painted under a press:
