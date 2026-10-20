@@ -7,10 +7,9 @@
 // Reading a control's state is `tests/support/dom.ts`, which the component tests share.
 
 import { vi } from 'vitest';
+import type { TokenSaver } from '$lib/schemas/token-saver';
 
-export function tokenSaverDocument(
-	overrides: Record<string, unknown> = {}
-): Record<string, unknown> {
+export function tokenSaverDocument(overrides: Partial<TokenSaver> = {}): TokenSaver {
 	return {
 		rtk: { enabled: false, filters: [] },
 		headroom: { enabled: false, url: '', compress_user_messages: false },
@@ -21,7 +20,7 @@ export function tokenSaverDocument(
 
 export type TokenSaverStub = {
 	puts: Record<string, unknown>[];
-	config: Record<string, unknown>;
+	config: TokenSaver;
 	readStatus: number;
 	writeStatus: number;
 };
