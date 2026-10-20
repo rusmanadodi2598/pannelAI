@@ -223,6 +223,18 @@ the track takes the accent, which is the value, not the feedback. It takes the i
 finger that has not flipped it yet is still asking whether the press landed, and a hover rule gated behind
 `(hover: hover)` answers nothing on a touch screen.
 
+**An action link is a control.** A standalone link that routes the operator somewhere is pressed as often as
+a button, and `/settings`' two pointer tabs were bare underlines carrying no state rule at all: nothing
+painted under a press, and there was no hover to survive a touch screen either. `primitives/button` renders an
+anchor when it is given `href`, so the link keeps its role and takes the scale from the same component. A
+discard written as an underlined button is the same case: it is the ghost variant with `underline` in the
+class list it accepts, not a second control shape a screen has to remember.
+
+**One write band, not three.** Every settings tab ends with its commit, its unsaved marker and its outcome
+line, and the three tabs each wrote that row by hand, including the `disabled:opacity-60` the ramp above
+already records as the wrong fade. The band is one component now, taking the answers from the tab that owns
+the draft, so the rule §6.13 states per tab is stated once.
+
 ---
 
 ## 4. Typography

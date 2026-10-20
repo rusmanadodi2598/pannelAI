@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty-six passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty-seven passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -255,7 +255,64 @@ the same day: ten controls with no pressed colour, a chosen pause chip wearing t
 selection, and a read loop that moved out of the route before the route could pass the line limit.
 The forty-sixth is the Usage screen, measured the next day:
 twenty-one controls with no pressed colour, four chips choosing `surface-2`, sort headers with no touch
-target of their own, and four test files that had each outgrown the subject they were named for.
+target of their own, and four test files that had each outgrown the subject they were named for. The
+forty-seventh is the Settings screen, measured the same day: ten hand-written controls, three copies of one
+write band, two action links carrying no state rule at all, and the largest schema file in the panel at 426
+lines with five subjects inside it.
+
+### The Settings screen on the scale, one write band instead of three, and the schema file with five subjects, 2026-10-20
+
+Run with Bun 1.3.0. Ten controls written at the call site, none of them painted under a press. Three of them
+were the tabs' commit, each carrying its own `bg-[var(--color-accent)] ... disabled:opacity-60`: the 60% fade
+§3.5 already records as wrong for a filled control, found again on three more buttons. Three more were the
+discards beside them, bare underlined buttons with no ground at all. Then the retry a failed load leaves
+behind, the password form's submit, and the two pointer tabs' links.
+
+The links were the sharpest finding: `min-h-11 self-start underline` is a tap target with no state rule
+behind it, so the only way off two of the five tabs answered nothing on any device. `primitives/button`
+renders an anchor when it is given `href`, so those two are still links, with `role="link"`, an `href`, and
+the same four states as every control on the screen. The two cards they sat in became one
+`SettingsPointerPanel`, because "this tab is a pointer, not an editor" is one rule rather than two copies.
+
+The three tabs also ended with the same row of markup, so that row is now `SettingsSaveBar`, taking `saving`,
+`dirty` and the last message from the tab that owns the draft. The proxy screen's outbound card has a fourth
+reading of the same row and keeps it: its band answers a `saved` flag and reports a refusal on its own alert
+line, which is a different question from the one message these tabs carry.
+
+| File                                             | Was | Now                                                                                                                                                                                                                                            |
+| ------------------------------------------------ | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schemas/settings.ts`                            | 426 | 233, with the strategy vocabulary in `settings-strategies.ts` (35), the provider overrides in `settings-provider-overrides.ts` (65), the thinking map in `settings-provider-thinking.ts` (75) and the dirty answer in `settings-dirty.ts` (45) |
+| `components/SettingsRoutingTab.svelte`           | 322 | 214, with the park windows in `SettingsKeyParkFields.svelte` (85) and the draft mapping in `schemas/settings-routing-draft.ts` (49)                                                                                                            |
+| `tests/components/settings.test.ts`              | 418 | 194 plus `settings-class-editor.test.ts` (176), on the shared `support/settings-stub.ts` (79)                                                                                                                                                  |
+| `tests/schemas/settings-forms.test.ts`           | 291 | 142 plus `settings-routing-form.test.ts` (116) and `settings-dirty.test.ts` (47)                                                                                                                                                               |
+| `tests/schemas/settings-failure-classes.test.ts` | 285 | 129 plus `settings-failure-classes-mapping.test.ts` (162)                                                                                                                                                                                      |
+
+The case counts are unchanged where nothing was added: 50 in the forms file before and 50 across its three
+after, 39 in the class file before and 39 across the two after. The screen file went from 18 to 19 because
+the band made one case worth pinning, that a pressed Discard returns the draft to the loaded value without
+writing anything. Three files come with the modules they cover: `settings-key-park` (4 cases, the writeback
+the park component does through a bindable prop rather than by mutating a field), `settings-routing-draft`
+(4, the narrowing and the copying), and `routes/settings-control-states` (6).
+
+Moving the provider-scoped names out of `settings.ts` changed one import line in eight files that belong to
+other screens: the provider detail surface (its proxy card, rotation switch, thinking control, the two model
+tables and the thinking store, plus `proxy-binding`), the proxy screen's outbound card, and the settings API
+module. No behaviour moved with them; those names were never this screen's to hold.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `bun run test`              | 3277 tests passed across 226 files. The run started one case before the discard test was written, so the tree now carries 3278; the settings cluster was re-run whole against the final tree, 172 tests across 14 files, all passing                                                                                                                                                                                                                                                                                                                                                                         |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries the accent hover and press steps, the ink wash pair, `aria-[pressed=true]:hover:bg-[var(--color-state-deep)]`, and the `aria-busy` rule that keeps a write in flight on its own accent                                                                                                                                                                                                                                                                                                                                             |
+| Browser measurement         | Chromium against the dev server with the settings document stubbed, both themes: 7 controls each report three distinct computed colours across rest, hover and held (the accent write 184/65/42 to 171/49/28 to 156/36/18 in light and 229/106/74 to 240/122/90 to 250/138/108 in dark; the destructive commit in the password dialog 179/38/30 to 161/24/21 to 144/7/12, carrying `danger-ink` rather than the accent's label pair). At 390px the tab, the write, the discard and the pointer link measure 44px tall, and pressing Discard returned the sticky limit from 9 to the loaded 3 without a PATCH |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| File size                   | `src/` files over the cap now: 1 (`icons.ts` 281), shared by every screen and so not this page's to split. No settings file is over it, and the five that were are listed above                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+
+Not yet verified: a refused write still lands on the band's `role="status"` line in muted ink rather than the
+danger `role="alert"` the proxy screen's card uses. That is how the three tabs wrote it before this pass and
+it is unchanged here; the band moved the control, not the reporting.
 
 ### The Usage screen on the scale, the chosen chips that wore the hovered ground, and the test tree's four overgrown files, 2026-10-20
 
