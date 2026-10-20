@@ -14,13 +14,13 @@
 
 import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
+import { schemaNetworkSettings } from '$lib/schemas/settings';
 import {
 	PROXY_POOL_NONE,
-	schemaNetworkSettings,
 	schemaProviderProxiesPatch,
 	schemaProviderProxy,
 	schemaProviderProxyPatch
-} from '$lib/schemas/settings';
+} from '$lib/schemas/settings-provider-overrides';
 
 describe('schemaProviderProxy', () => {
 	const cases = [
