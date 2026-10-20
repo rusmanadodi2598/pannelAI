@@ -8,6 +8,7 @@
 	// The component does not own the applied values: they come from the URL, and `synced` records which
 	// applied state the boxes were last filled from, so a back or forward navigation moves the boxes as well
 	// as the table while typing is never overwritten by the mirror.
+	import { Button } from '$lib/primitives/button/index.js';
 	import { logFiltersApplied, type LogSearch } from '$lib/schemas/log-search';
 	import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from '$lib/schemas/primitives';
 	import { USAGE_PERIODS, USAGE_PERIOD_LABELS } from '$lib/schemas/usage';
@@ -97,20 +98,17 @@
 			/>
 		</label>
 
-		<button
-			type="submit"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			>Apply filters</button
-		>
+		<Button type="submit" variant="outline">Apply filters</Button>
 	</form>
 
 	{#if filtered}
-		<button type="button" class="min-h-11 underline" onclick={onclear}>Clear filters</button>
+		<Button variant="ghost" class="underline" onclick={onclear}>Clear filters</Button>
 	{/if}
 
-	<button
-		type="button"
-		class="ml-auto min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-danger)] px-3 text-sm text-[var(--color-danger)]"
-		onclick={onpurge}>Purge captured logs</button
+	<!-- The quiet destructive shape: this opens the dialog that commits, and a red block beside the
+	     filters would claim the danger the commit itself carries. Its border is the one thing that says
+	     "this one deletes", so it stays. -->
+	<Button variant="destructive-ghost" class="ml-auto border-[var(--color-danger)]" onclick={onpurge}
+		>Purge captured logs</Button
 	>
 </div>

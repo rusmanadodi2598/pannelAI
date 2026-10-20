@@ -7,6 +7,7 @@
 	// tab.
 	import { resolve } from '$app/paths';
 	import { ScrollText } from '@lucide/svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import LogsRequestsTab from '$lib/components/LogsRequestsTab.svelte';
 </script>
 
@@ -16,10 +17,10 @@
 		<p class="text-sm text-[var(--color-text-muted)]">What the gateway recorded, newest first.</p>
 	</div>
 
-	<a href={resolve('/console-log')} class="inline-flex min-h-11 items-center gap-2 text-sm">
+	<Button href={resolve('/console-log')} variant="ghost" class="self-start">
 		<ScrollText class="size-4" aria-hidden="true" />
 		Console log
-	</a>
+	</Button>
 
 	<LogsRequestsTab />
 </section>
