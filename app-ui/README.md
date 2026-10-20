@@ -270,6 +270,24 @@ Skills screen, measured the same day: four hand-written controls, an off-site li
 other affordance and answered nothing under a finger, and a copy control shipped in its table shape on the
 one screen whose whole job is that control.
 
+### What each remaining page still owes, measured 2026-10-20
+
+Counted by walking each route's own component tree, so the numbers are the page's rather than the
+repository's. A control is a `<button>` or an `<a>` written at the call site; the cap is SPEC-UI §10's 250
+lines.
+
+| Page               | Controls left      | Test files over the cap |
+| ------------------ | ------------------ | ----------------------- |
+| `/api-docs`        | 1 button, 1 link   | none                    |
+| `/changelog`       | 1 button           | none                    |
+| `/login`           | 1 button           | none                    |
+| `/media-providers` | 2 buttons, 4 links | 4: 398, 326, 313, 263   |
+| `/playground`      | 3 buttons          | 2: 664, 271             |
+
+Three items belong to no page and wait for a decision of their own: `src/lib/icons.ts` at 281 lines, shared
+by every screen; `tests/schemas/vision-adapter.test.ts` at 268, whose page `/combos` is migrated and whose
+file was not touched by that pass; and the 36px checkbox label on the five files §8.7 still finds short.
+
 ### The Skills screen on the scale, the source link that routes off-site, and the copy control's dense shape, 2026-10-20
 
 Run with Bun 1.3.0. Four controls written at the call site, none painted under a press: the retry a failed
