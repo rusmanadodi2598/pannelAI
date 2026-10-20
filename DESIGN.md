@@ -202,7 +202,9 @@ and no contrast test caught it: the two tokens hold the same value in both theme
 to the ramp anyway, because a re-tune of the accent would move a destructive label with it. The quiet shape
 is not only a glyph: `/logs`'s purge is a labelled control at the end of the filter bar, and it takes the
 same ramp with a danger border, because the border is the one thing that says this one deletes while the
-commit that actually deletes waits in the dialog.
+commit that actually deletes waits in the dialog. `/console-log`'s clear arrived from the other side of the
+same rule: a neutral outline that deleted the server-side buffer on the first click. It wears the border now,
+and the DELETE waits behind the confirmation §6.14 already asks for.
 
 **A disabled control says it is disabled in one way.** Ghost, outline, and link controls fade to 50%
 opacity, the panel's single value (it was 60% on the two filled buttons, which faded a label and its own

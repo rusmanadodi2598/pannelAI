@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty-eight passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty-nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -260,7 +260,61 @@ forty-seventh is the Settings screen, measured the same day: ten hand-written co
 write band, two action links carrying no state rule at all, and the largest schema file in the panel at 426
 lines with five subjects inside it. The forty-eighth is the Logs screen, measured the same day: eleven
 controls, a second action link with no state rule, a danger outline the primitive had no name for, and two
-test files that each held three subjects.
+test files that each held three subjects. The forty-ninth is the Console Log screen, measured the same day:
+four hand-written controls, a third action link with no state rule, a clear that emptied the gateway's
+buffer on the first click with no confirmation in front of it, and a checkbox label 4px short of the target
+the rest of its screen meets.
+
+### The Console Log screen on the scale, and the delete that had no confirmation in front of it, 2026-10-20
+
+Run with Bun 1.3.0. Four controls written at the call site, none painted under a press: the pause, the clear,
+the cross-link to `/logs`, and the retry a failed read leaves behind. The link is the third instance of the
+defect `/settings` and `/logs` recorded on the same day, and it is the twin of the pointer that leads here,
+so the two routes between the screen's halves now take their states from one component and read the same.
+
+The screen had also shipped without the confirmation §6.14 names. `Clear buffer` sent
+`DELETE /api/v1/logs/console` on the first click, emptying the ring on the gateway for every panel open on
+it, with nothing between a finger and the loss. The commit sits in `ClearConsoleDialog` now, which says the
+lines go from the server rather than from the view, and the trigger takes the quiet danger shape with the
+border `/logs`'s purge set.
+
+A failed delete is a write, not a read. It set the same `error` the load uses, so a refused clear replaced
+the whole buffer with "Could not read the console log", the screen claiming it could not see what it had
+just failed to destroy. The error stays in the dialog now, the buffer stays on the page, and the
+acknowledgement for a clear that did land is one status row rather than a count: the ring is already
+refilling by the time the re-read lands.
+
+The touch pass found the row it was not looking for. The "Follow newest" label is the target, because
+clicking the words toggles the checkbox, and it measured 40px on a screen whose seven other targets are 44.
+
+| File                                   | Was | Now                                                                                                      |
+| -------------------------------------- | --- | -------------------------------------------------------------------------------------------------------- |
+| `components/ConsoleLog.svelte`         | 159 | 183: four controls on the scale, and the delete it fired on the first click now hands over to the dialog |
+| `components/ClearConsoleDialog.svelte` | -   | 48, new: the §6.14 confirmation this screen did not have                                                 |
+| `tests/components/console-log.test.ts` | 168 | 109, plus `console-log-clear.test.ts` (76) on the shared `support/console-stub.ts` (68)                  |
+
+Nothing on this screen was over the 250-line cap before and nothing is over it now, so the debt this pass
+cleared is the missing confirmation rather than a file size. The case count goes from 9 to 18: the eight
+screen rows, the four around the clear, and six in `tests/routes/console-log-control-states.test.ts` that
+walk every rendered control.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `bun run test`              | 3292 tests passed across 232 files, exit 0 (3283 across 230 at the last row). The nine tests and the two files are this pass: the clear family and the control-state walk. The console cluster was re-run whole against the final tree: 18 tests across 3 files                                                                                                                                                                                                                                                                                                                                                                             |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.hover\:text-\[var\(--color-danger-hover\)\]:hover`, `.active\:text-\[var\(--color-danger-press\)\]:active`, `.hover\:bg-\[var\(--color-danger-hover\)\]:hover`, `.active\:bg-\[var\(--color-danger-press\)\]:active` and `border-color:var(--color-danger)`, the ramp the trigger and the dialog's commit need from the same two tokens at two different weights                                                                                                                                                                                                |
+| Browser measurement         | Chromium against the dev server with the console routes stubbed, both themes: 8 controls each report three distinct computed colours across rest, hover and held (the pause, the refresh, the cross-link, the retry, and the dialog's dismiss, commit and close; the trigger steps its own ink 179/38/30 to 161/24/21 to 144/7/12 in light and 240/138/132 to 253/153/146 to 255/170/163 in dark, over the same 9% then 16% wash, while its border holds). At 390px the seven pressable targets and the follow label are 44px tall, nothing stretches past the viewport, and a tapped confirmation empties the buffer and closes the dialog |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| File size                   | `src/` files over the cap: 1 (`icons.ts` 281), shared by every screen. No console-log file is over it, in `src` or in `tests`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decision is in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+
+Not yet verified: the confirmation was measured against a stubbed gateway. The real `DELETE /api/v1/logs/console`
+was not called during this pass, so the wording that names the server-side consequence rests on SPEC-API §7.13
+rather than on an observed response, and the app-serv tree was left untouched as instructed. The 40px checkbox
+label is a shape the other screens carry too (`SettingsSecurityTab`, `SettingsLoggingTab`, `QuotaCards`,
+`OneTimeKeyModal`, the Token Saver field sets, `VisionAdapterForm`): this pass fixed the one on its own screen,
+and a sweep across the rest is a page-agnostic decision the owner has not given.
 
 ### The Logs screen on the scale, and the two test files that held three subjects, 2026-10-20
 
