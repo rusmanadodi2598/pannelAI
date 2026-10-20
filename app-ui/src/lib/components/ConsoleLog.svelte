@@ -6,16 +6,17 @@
 	// is hidden, and §6.14 says the control is labelled "Auto refresh", not "Live", because a poll is not
 	// a stream and calling it live would be a false claim.
 	//
-	// Lines are rendered verbatim, oldest first, in a monospace block (§7.5.2). "Follow newest" pins the
-	// view to the last line after each read; a pause stops the timer but leaves the buffer on the page,
-	// which is what "pause" is for.
+	// "Follow newest" pins the view to the last line after each read; a pause stops the timer but leaves
+	// the buffer on the page, which is what "pause" is for.
 	//
-	// The cross-link to `/logs` is the way the operator moves between the two §7.13 surfaces. It is a real
-	// destination, so it carries a visible label and an icon whose meaning is written in the icon map.
+	// Clearing empties the ring on the server, so the commit sits behind a confirmation and a failed delete
+	// is reported there rather than as a read error: the buffer on screen is still the last one read.
 	import { ScrollText } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
+	import ClearConsoleDialog from '$lib/components/ClearConsoleDialog.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { clearConsoleLog, fetchConsoleLog } from '$lib/api/log';
 	import type { ApiError } from '$lib/api/errors';
 	import { CONSOLE_POLL_MS, pollDue, pollIntervalLabel, type PollState } from '$lib/polling';
@@ -30,7 +31,10 @@
 
 	let auto = $state(true);
 	let follow = $state(true);
+	let clearOpen = $state(false);
 	let busy = $state(false);
+	let clearError = $state<ApiError | null>(null);
+	let cleared = $state('');
 	let lastLoadedAt = $state(0);
 
 	let scroll = $state<HTMLElement | null>(null);
@@ -69,19 +73,30 @@
 		lastRead = new Date().toLocaleTimeString('en-US');
 	}
 
-	async function clear(): Promise<void> {
-		if (busy) return;
+	function openClear(): void {
+		clearError = null;
+		cleared = '';
+		clearOpen = true;
+	}
+
+	function closeClear(): void {
+		clearError = null;
+		clearOpen = false;
+	}
+
+	async function confirmClear(): Promise<void> {
 		busy = true;
 		const result = await clearConsoleLog();
 		busy = false;
 
 		if (!result.ok) {
-			error = result.error;
+			clearError = result.error;
 			return;
 		}
 
-		error = null;
+		clearOpen = false;
 		lines = [];
+		cleared = 'Console buffer cleared on the gateway.';
 		await load();
 	}
 </script>
@@ -92,10 +107,10 @@
 			<span class="text-[var(--color-text-muted)]"
 				>Auto refresh, {pollIntervalLabel(CONSOLE_POLL_MS)}</span
 			>
-			<button type="button" class="min-h-11 underline" onclick={() => (auto = !auto)}>
+			<Button variant="ghost" class="px-2 underline" onclick={() => (auto = !auto)}>
 				{auto ? 'Pause auto refresh' : 'Resume auto refresh'}
-			</button>
-			<label class="flex items-center gap-2">
+			</Button>
+			<label class="flex min-h-11 items-center gap-2">
 				<input
 					type="checkbox"
 					checked={follow}
@@ -112,36 +127,45 @@
 			<!-- §8.6.2's explicit control sits beside the poll it distrusts: a paused poll must not be the
 			     only way to get a current buffer, and the "Last read" stamp above it is the acknowledgement. -->
 			<RefreshControl onrefresh={load} />
-			<button
-				type="button"
-				disabled={busy}
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50"
-				onclick={clear}>Clear buffer</button
+			<!-- The quiet destructive shape (DESIGN.md §3.5): this opens the dialog that commits, and the
+			     border is the one thing that says this one deletes. -->
+			<Button variant="destructive-ghost" class="border-[var(--color-danger)]" onclick={openClear}
+				>Clear console buffer</Button
 			>
 		</div>
 	</div>
 
-	<a href={resolve('/logs')} class="inline-flex min-h-11 items-center gap-2 text-sm">
+	<ClearConsoleDialog
+		open={clearOpen}
+		{busy}
+		result={clearError}
+		onclose={closeClear}
+		onconfirm={confirmClear}
+	/>
+
+	{#if cleared}
+		<p class="text-sm text-[var(--color-text-muted)]" role="status">{cleared}</p>
+	{/if}
+
+	<!-- The way back to the other §7.13 surface. It routes, so it is pressed like a button and takes the
+	     same states as the pointer on `/logs` that leads here. -->
+	<Button href={resolve('/logs')} variant="ghost" class="self-start">
 		<ScrollText class="size-4" aria-hidden="true" />
 		Request logs
-	</a>
+	</Button>
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the console log" />
 	{:else if error}
 		<StateMessage kind="error" title="Could not read the console log" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={load}>Try again</button
-				>
+				<Button variant="ghost" class="px-2 underline" onclick={load}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if lines.length === 0}
 		<StateMessage
 			kind="empty"
-			title="Console log is empty"
+			title="Console buffer is empty"
 			description="Output is kept only while running. A restart clears it."
 		/>
 	{:else}
