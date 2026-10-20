@@ -1,4 +1,4 @@
-// Shared fixture and fake API for the Media Provider screen tests (docs/SPEC-UI/001-SPEC-UI.md §6.8).
+// Shared fixture and fake API for the Media Provider tests (docs/SPEC-UI/001-SPEC-UI.md §6.8).
 //
 // The stub keeps the rows and applies every save to them, resolving each field the way the server
 // does: an empty override falls back to what the registry declares, and the source reports which of
@@ -11,6 +11,7 @@
 // Reading a control's state is `tests/support/dom.ts`, which the component tests share.
 
 import { vi } from 'vitest';
+import type { MediaKindBlock } from '$lib/schemas/media-provider';
 
 export function mediaRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	return {
@@ -27,6 +28,20 @@ export function mediaRow(overrides: Record<string, unknown> = {}): Record<string
 	};
 }
 
+/** One kind block as the API sends it: nothing overridden, nothing declared. */
+export function mediaBlock(overrides: Partial<MediaKindBlock> = {}): MediaKindBlock {
+	return {
+		kind: 'tts',
+		base_url: '',
+		base_url_source: 'registry',
+		default_model: '',
+		default_model_source: 'registry',
+		endpoint_count: 0,
+		models: [],
+		...overrides
+	};
+}
+
 export type MediaStub = {
 	rows: Record<string, unknown>[];
 	/** What the registry declares per provider, which is what clearing an override resolves to. */
@@ -35,6 +50,8 @@ export type MediaStub = {
 	reads: string[];
 	readStatus: number;
 	writeStatus: number;
+	/** Holds the PATCH open, so a test can read the card while its write is in flight. */
+	writePending: boolean;
 };
 
 /** What a row's own values tell us the registry declares, for the fields the registry is serving. */
@@ -63,6 +80,7 @@ export function stubMediaProviders(overrides: Partial<MediaStub> = {}): MediaStu
 		reads: [],
 		readStatus: 200,
 		writeStatus: 200,
+		writePending: false,
 		...overrides
 	};
 	stub.rows = rows;
@@ -92,6 +110,8 @@ export function stubMediaProviders(overrides: Partial<MediaStub> = {}): MediaStu
 		if (method === 'PATCH' && byId) {
 			const id = decodeURIComponent(byId[1]);
 			stub.patches.push({ id, body });
+
+			if (stub.writePending) return new Promise<Response>(() => {});
 
 			if (stub.writeStatus !== 200) {
 				return refusal('VALIDATION_ERROR', 'The gateway refused this value.', stub.writeStatus);
