@@ -199,7 +199,10 @@ which takes the danger colour as its fill and needs a fixed label pair (`danger-
 four in a table row, which stays quiet because a red block on every row shouts. The quiet glyph steps its
 own colour along the same ramp. Four dialogs paired that fill with `accent-text` instead of `danger-ink`,
 and no contrast test caught it: the two tokens hold the same value in both themes today. The pairing belongs
-to the ramp anyway, because a re-tune of the accent would move a destructive label with it.
+to the ramp anyway, because a re-tune of the accent would move a destructive label with it. The quiet shape
+is not only a glyph: `/logs`'s purge is a labelled control at the end of the filter bar, and it takes the
+same ramp with a danger border, because the border is the one thing that says this one deletes while the
+commit that actually deletes waits in the dialog.
 
 **A disabled control says it is disabled in one way.** Ghost, outline, and link controls fade to 50%
 opacity, the panel's single value (it was 60% on the two filled buttons, which faded a label and its own
