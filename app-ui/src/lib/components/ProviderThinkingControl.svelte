@@ -23,7 +23,7 @@
 		THINKING_MODES,
 		thinkingModeLabel,
 		type ThinkingMode
-	} from '$lib/schemas/settings';
+	} from '$lib/schemas/settings-provider-thinking';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 

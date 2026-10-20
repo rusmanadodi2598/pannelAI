@@ -5,6 +5,7 @@
 	// value, because the API does not return stored secrets and a prefilled field would be a lie.
 	import { changePassword } from '$lib/api/auth';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { schemaChangePasswordForm } from '$lib/schemas/auth';
 
@@ -78,11 +79,7 @@
 		<p class="text-sm text-[var(--color-text-muted)]" role="status">{message}</p>
 	{/if}
 
-	<button
-		type="submit"
-		disabled={working}
-		class="min-h-11 self-start rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-60"
-	>
+	<Button variant="outline" type="submit" disabled={working} aria-busy={working} class="self-start">
 		{working ? 'Changing' : 'Change password'}
-	</button>
+	</Button>
 </form>

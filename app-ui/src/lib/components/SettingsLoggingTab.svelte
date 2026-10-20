@@ -10,15 +10,12 @@
 	// the submit before Zod sees the value, so the message would be the browser's rather than the
 	// schema's. The floors live in the schema and the hint text.
 	import { untrack } from 'svelte';
-	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import SettingsSaveBar from '$lib/components/SettingsSaveBar.svelte';
 	import { patchLoggingSettings } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
-	import {
-		schemaLoggingSettingsForm,
-		settingsGroupDirty,
-		type LoggingSettingsForm
-	} from '$lib/schemas/settings';
+	import { schemaLoggingSettingsForm, type LoggingSettingsForm } from '$lib/schemas/settings';
+	import { settingsGroupDirty } from '$lib/schemas/settings-dirty';
 
 	type Props = {
 		loaded: LoggingSettingsForm;
@@ -128,21 +125,12 @@
 		</span>
 	</div>
 
-	<div class="flex flex-wrap items-center gap-3">
-		<button
-			type="button"
-			disabled={saving}
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-			onclick={save}>Save logging settings</button
-		>
-		{#if dirty}
-			<button type="button" class="min-h-11 underline" onclick={discard}>Discard changes</button>
-			<span class="text-sm font-medium text-[var(--color-text-muted)]">Unsaved changes</span>
-		{/if}
-		{#if message}
-			<p class="text-sm text-[var(--color-text-muted)]" role="status">
-				<ApiErrorText error={message} />
-			</p>
-		{/if}
-	</div>
+	<SettingsSaveBar
+		saveLabel="Save logging settings"
+		{saving}
+		{dirty}
+		{message}
+		onsave={() => void save()}
+		ondiscard={discard}
+	/>
 </div>

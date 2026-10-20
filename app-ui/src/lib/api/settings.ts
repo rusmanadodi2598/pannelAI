@@ -10,9 +10,6 @@
 import {
 	schemaLoggingSettingsPatch,
 	schemaNetworkSettingsPatch,
-	schemaProviderProxiesPatch,
-	schemaProviderStrategiesPatch,
-	schemaProviderThinkingPatch,
 	schemaRoutingSettingsPatch,
 	schemaSecuritySettingsPatch,
 	schemaSettings,
@@ -21,17 +18,24 @@ import {
 	type NetworkSettingsForm,
 	type NetworkSettingsPatch,
 	type PanelSettings,
-	type ProviderProxiesPatch,
-	type ProviderProxyPatch,
-	type ProviderStrategiesPatch,
-	type ProviderStrategy,
-	type ProviderThinkingPatch,
 	type RoutingSettingsForm,
 	type RoutingSettingsPatch,
 	type SecuritySettingsForm,
-	type SecuritySettingsPatch,
-	type ThinkingMode
+	type SecuritySettingsPatch
 } from '$lib/schemas/settings';
+import {
+	schemaProviderProxiesPatch,
+	schemaProviderStrategiesPatch,
+	type ProviderProxiesPatch,
+	type ProviderProxyPatch,
+	type ProviderStrategiesPatch,
+	type ProviderStrategy
+} from '$lib/schemas/settings-provider-overrides';
+import {
+	schemaProviderThinkingPatch,
+	type ProviderThinkingPatch,
+	type ThinkingMode
+} from '$lib/schemas/settings-provider-thinking';
 import { emptyResponse, type EmptyResponse } from '$lib/schemas/primitives';
 import { apiRequest, type ApiResult } from './client';
 

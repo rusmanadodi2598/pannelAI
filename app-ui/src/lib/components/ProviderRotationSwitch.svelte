@@ -13,11 +13,11 @@
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { fetchSettings, patchProviderStrategy } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
+	import { type ProviderStrategy } from '$lib/schemas/settings-provider-overrides';
 	import {
 		CREDENTIAL_ROTATION_LABELS,
-		type CredentialRotation,
-		type ProviderStrategy
-	} from '$lib/schemas/settings';
+		type CredentialRotation
+	} from '$lib/schemas/settings-strategies';
 
 	let { providerId }: { providerId: string } = $props();
 

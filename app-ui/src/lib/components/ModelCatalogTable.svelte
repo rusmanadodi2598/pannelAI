@@ -28,7 +28,7 @@
 	import { catalogModelLabel, catalogSourceLabel, type CatalogModel } from '$lib/schemas/model';
 	import { disabledRefKey } from '$lib/schemas/model-disabled';
 	import { isChatRoutable } from '$lib/schemas/model-test';
-	import { thinkingSuffix } from '$lib/schemas/settings';
+	import { thinkingSuffix } from '$lib/schemas/settings-provider-thinking';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';

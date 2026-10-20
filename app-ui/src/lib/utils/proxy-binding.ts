@@ -2,8 +2,11 @@
 // (docs/PORT/009-PORT-PROVIDER-PROXY.md D4). A derivation rather than markup, because the ordering it
 // states is the engine's: a pinned pool leads and the others follow, so a pin never disables failover.
 
-import { PROXY_POOL_NONE, PROXY_STRATEGY_LABELS } from '$lib/schemas/settings';
-import type { ProviderProxyStrategy } from '$lib/schemas/settings';
+import { PROXY_POOL_NONE } from '$lib/schemas/settings-provider-overrides';
+import {
+	PROXY_STRATEGY_LABELS,
+	type ProviderProxyStrategy
+} from '$lib/schemas/settings-strategies';
 
 export type ProxyBinding = {
 	/** The select's pool: '' for the global setting, the sentinel for direct, or a pool id. */

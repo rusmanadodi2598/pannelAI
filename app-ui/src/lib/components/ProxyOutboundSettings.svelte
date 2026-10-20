@@ -29,13 +29,9 @@
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { fetchSettings, patchNetworkSettings } from '$lib/api/settings';
 	import { registerDirtyForm } from '$lib/dirty-guard';
-	import {
-		PROXY_STRATEGIES,
-		PROXY_STRATEGY_LABELS,
-		schemaNetworkSettingsForm,
-		settingsGroupDirty,
-		type NetworkSettingsForm
-	} from '$lib/schemas/settings';
+	import { schemaNetworkSettingsForm, type NetworkSettingsForm } from '$lib/schemas/settings';
+	import { settingsGroupDirty } from '$lib/schemas/settings-dirty';
+	import { PROXY_STRATEGIES, PROXY_STRATEGY_LABELS } from '$lib/schemas/settings-strategies';
 
 	const SaveIcon = CONTROL_ICONS.save.icon;
 

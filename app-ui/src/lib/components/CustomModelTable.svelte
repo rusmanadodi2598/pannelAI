@@ -16,7 +16,7 @@
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { Button } from '$lib/primitives/button/index.js';
 	import { customModelLabel, type CustomModel } from '$lib/schemas/custom-model';
-	import { thinkingSuffix } from '$lib/schemas/settings';
+	import { thinkingSuffix } from '$lib/schemas/settings-provider-thinking';
 	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 	import { formatTimestamp } from '$lib/utils/time';

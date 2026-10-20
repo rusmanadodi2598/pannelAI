@@ -15,7 +15,7 @@
 
 import { fetchSettings, patchProviderThinking } from '$lib/api/settings';
 import type { ApiError } from '$lib/api/errors';
-import type { ThinkingMode } from '$lib/schemas/settings';
+import type { ThinkingMode } from '$lib/schemas/settings-provider-thinking';
 
 export function createProviderThinkingStore() {
 	// The stored mode, and the provider it was stored for. Empty is not a mode: it is the absent entry,

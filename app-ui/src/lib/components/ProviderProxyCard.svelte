@@ -23,15 +23,17 @@
 	import type { ApiError } from '$lib/api/errors';
 	import type { Proxy } from '$lib/schemas/proxy';
 	import { describeProxyBinding } from '$lib/utils/proxy-binding';
+	import { type PanelSettings } from '$lib/schemas/settings';
 	import {
 		PROXY_POOL_NONE,
+		type ProviderProxy,
+		type ProviderProxyPatch
+	} from '$lib/schemas/settings-provider-overrides';
+	import {
 		PROXY_STRATEGIES,
 		PROXY_STRATEGY_LABELS,
-		type PanelSettings,
-		type ProviderProxy,
-		type ProviderProxyPatch,
 		type ProviderProxyStrategy
-	} from '$lib/schemas/settings';
+	} from '$lib/schemas/settings-strategies';
 
 	let { providerId }: { providerId: string } = $props();
 
