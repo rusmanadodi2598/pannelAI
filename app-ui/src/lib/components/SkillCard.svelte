@@ -10,6 +10,7 @@
 	// The leading marker is DESIGN.md §6's identity motif, carrying this row's availability. It is never
 	// alone: the sentence beside it says the same thing in words.
 	import CopyButton from '$lib/components/CopyButton.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { installLine, type SourceProbe } from '$lib/schemas/skill-source';
 	import type { Skill } from '$lib/schemas/skill';
 	import { SKILLS_COPY as copy, causeSentence } from '$lib/strings/skills';
@@ -56,7 +57,7 @@
 		{#if available}
 			<div class="flex flex-wrap items-center gap-3">
 				<span class="text-xs text-[var(--color-text-muted)]">{copy.sources.agentAddress}</span>
-				<CopyButton value={installLine(skill)} label={copy.sources.copyInstall} />
+				<CopyButton value={installLine(skill)} label={copy.sources.copyInstall} touchTarget />
 			</div>
 
 			<!-- The address stays beside the control, so a refused clipboard write still leaves the
@@ -64,9 +65,15 @@
 			<code class="font-mono text-xs break-all text-[var(--color-text-muted)]">{skill.raw_url}</code
 			>
 
+			<!-- An action link is a control (DESIGN.md §3.5), and this one routes off-site, so it goes
+			     through the primitive with its own target and rel kept. -->
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- the blob URL is the source host's own absolute URL, never a route of this app -->
-			<a class="text-xs underline" href={skill.blob_url} target="_blank" rel="noreferrer"
-				>{copy.sources.readOnGitHub}</a
+			<Button
+				href={skill.blob_url}
+				variant="ghost"
+				class="self-start px-2 text-xs underline"
+				target="_blank"
+				rel="noreferrer">{copy.sources.readOnGitHub}</Button
 			>
 		{:else if probe?.state === 'unavailable'}
 			<p class="text-xs text-[var(--color-text-muted)]">{causeSentence(probe.cause)}</p>

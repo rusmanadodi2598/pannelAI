@@ -8,6 +8,7 @@
 	// shipped. So the line and its control appear only once the entry skill's own source has answered, and
 	// the block states the cause in their place otherwise.
 	import CopyButton from '$lib/components/CopyButton.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { installLine, type SourceProbe } from '$lib/schemas/skill-source';
 	import type { Skill } from '$lib/schemas/skill';
 	import { SKILLS_COPY as copy, causeSentence } from '$lib/strings/skills';
@@ -37,9 +38,7 @@
 	</div>
 
 	{#if available}
-		<div class="flex flex-wrap items-center gap-3">
-			<CopyButton value={installLine(skill)} label={copy.sources.copyInstall} />
-		</div>
+		<CopyButton value={installLine(skill)} label={copy.sources.copyInstall} touchTarget />
 
 		<!-- The line stays on screen beside the control, so a refused clipboard write still leaves the
 		     operator something to select. -->
@@ -48,9 +47,14 @@
 				>{installLine(skill)}</code
 			></pre>
 
+		<!-- The page's one off-site route, so it takes the scale like any other control here. -->
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- the blob URL is the source host's own absolute URL, never a route of this app -->
-		<a class="text-xs underline" href={skill.blob_url} target="_blank" rel="noreferrer"
-			>{copy.sources.readOnGitHub}</a
+		<Button
+			href={skill.blob_url}
+			variant="ghost"
+			class="self-start px-2 text-xs underline"
+			target="_blank"
+			rel="noreferrer">{copy.sources.readOnGitHub}</Button
 		>
 	{:else if probe?.state === 'unavailable'}
 		<p class="text-xs text-[var(--color-text-muted)]">{causeSentence(probe.cause)}</p>
