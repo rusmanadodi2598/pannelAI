@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Forty-five passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Forty-six passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -253,6 +253,58 @@ section fold and the tab strip every other screen is built from, four more copie
 two files' worth of the same bulk orchestration written twice. The forty-fifth is the Quota Tracker, measured
 the same day: ten controls with no pressed colour, a chosen pause chip wearing the hovered ground as its
 selection, and a read loop that moved out of the route before the route could pass the line limit.
+The forty-sixth is the Usage screen, measured the next day:
+twenty-one controls with no pressed colour, four chips choosing `surface-2`, sort headers with no touch
+target of their own, and four test files that had each outgrown the subject they were named for.
+
+### The Usage screen on the scale, the chosen chips that wore the hovered ground, and the test tree's four overgrown files, 2026-10-20
+
+Run with Bun 1.3.0. Twenty-one controls across ten components, none painted under a press. Four of them were
+the defect `/quota` recorded the day before, found again: the live row's pause chip and the three chart chips
+(the measure pair on a bar chart, the Tokens/Cost pair on the value chart) marked themselves chosen with
+`aria-pressed:bg-[var(--color-surface-2)]`, which is the ground §3.2 hands a _hovered_ control. All four read
+the toggle variant now, so the chosen state sits on `surface-3`, lifts to `state-deep` under a pointer, and
+a bar chart's chip no longer needs the segment box to draw its own.
+
+The breakdown's sort headers had no touch target at all: the class was `underline decoration-dotted` and
+nothing else, so the control was measured at the height of its text line rather than the 44px the panel asks
+of anything a finger presses (§8.7). As a ghost control it carries the floor and the states from the same place every
+other control does. The dotted underline stays, because it is what says "this column can be sorted" before
+anything is pressed.
+
+Two other readings came out of the screen rather than into it. Its paging band was an eighth copy of the
+Previous / Page n of m / Next row, so the breakdown now renders the shared one. And the records tab's band
+did not: its counter carries the request total beside the page number, which the shared component does not
+have room for, so that one stays written out and the two steps read the primitive.
+
+The debt here was mostly in the test tree, and one of it was this pass's own making:
+
+| File                                        | Was | Now                                                                                                                                     |
+| ------------------------------------------- | --- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `schemas/usage-view.ts`                     | 264 | 208, with the series arithmetic in `usage-series.ts` (64)                                                                               |
+| `tests/schemas/usage-view.test.ts`          | 463 | 176, plus `usage-series.test.ts` (108) and `usage-search.test.ts` (195)                                                                 |
+| `tests/components/usage-records.test.ts`    | 418 | 179, plus `usage-record-drawer.test.ts` (97), `usage-records-paging.test.ts` (112) and the shared `support/usage-records-stub.ts` (121) |
+| `tests/schemas/usage.test.ts`               | 364 | 173, plus `usage-record.test.ts` (196)                                                                                                  |
+| `tests/schemas/usage-topology-view.test.ts` | 263 | 213, plus `usage-topology-terminals.test.ts` (62)                                                                                       |
+
+Every split is along a describe boundary that was already a second subject in one file, and the case counts
+are unchanged: 19 in the records file before, 19 across the three after; the series and search cases moved
+with the module they test. Two dead imports from the quota split the day before turned up here, which is
+disclosed in the record below.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent. The quota pass recorded the same two gates as clean with a truncated read of the output, which is how two dead imports shipped; they are removed here and the check is read whole                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `bun run test`              | 3262 tests passed across 219 files (3257 across 212 at the last row). This pass adds 5 rows in the new `tests/routes/usage-control-states.test.ts`; the other seven files are the four overgrown ones split along their describe boundaries, and the cases inside them are the same count, so nothing moved against its grain                                                                                                                                                                                                                                                                                                                                                  |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.active\:bg-[var(--color-state-press)]:active`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Browser measurement         | Chromium against the dev server with the usage routes stubbed, both themes: 8 controls each report three distinct computed colours across rest, hover and held (the outline wash on the page surface 0/0/0 to 26/22/20 at 9% to 16% in light, 237/234/230 at the same two steps in dark; the ghost row open 95/87/78 to 26/22/20 to 26/22/20 over a lifted wash), the chosen measure chip measured separately as resting on `surface-3` and sharing one ground when pressed, which is what §3.5 records for a chosen control. At 390px the seven controls measured are 44px tall in both themes, the sort header among them, which is the target its old class never asked for |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| File size                   | `src/` files over the cap now: 3 (`schemas/settings.ts` 426, `SettingsRoutingTab.svelte` 322, `icons.ts` 281). No usage test file is over it any more, and the four that were are listed above                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+
+Not yet verified: the records band's counter keeps the request total outside the shared component's
+sentence, which is the one place in the panel where a paged list states its size.
 
 ### The Quota Tracker on the scale, and the six test files that held two subjects, 2026-10-19
 
