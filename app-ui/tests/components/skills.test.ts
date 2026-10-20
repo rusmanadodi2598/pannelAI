@@ -6,61 +6,10 @@
 // count is measured, and pressing it again really re-reads.
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import SkillsPage from '../../src/routes/skills/+page.svelte';
 import { DEFAULT_ROWS, skillCatalog } from '../support/skill-catalog';
-
-type SourceAnswer = number | 'network';
-
-let catalogReads = 0;
-let sourceReads: { url: string; method: string }[] = [];
-
-function stubFetch(
-	catalogBody: unknown,
-	sourceAnswer: (url: string) => SourceAnswer = () => 200,
-	catalogStatus = 200
-): void {
-	vi.stubGlobal('fetch', async (input: unknown, init?: { method?: string }) => {
-		const url = String(input);
-
-		if (url.startsWith('/api/v1/skills')) {
-			catalogReads += 1;
-			return new Response(JSON.stringify(catalogBody), {
-				status: catalogStatus,
-				headers: { 'content-type': 'application/json' }
-			});
-		}
-
-		sourceReads.push({ url, method: init?.method ?? 'GET' });
-		const answer = sourceAnswer(url);
-
-		if (answer === 'network') throw new Error('Failed to fetch');
-
-		return new Response(null, { status: answer });
-	});
-}
-
-/** The entry block, which is a section rather than a list row. */
-function entryBlock(): HTMLElement {
-	const heading = screen.getByRole('heading', { name: 'Paste this into an AI client' });
-	return heading.closest('section') as HTMLElement;
-}
-
-/** The list row for one capability, found by the id its addresses carry. */
-function rowFor(id: string): HTMLElement {
-	const row = screen
-		.getAllByRole('listitem')
-		.find((item) => item.textContent?.includes(`/skills/${id}/`));
-
-	if (!row) throw new Error(`no list row for ${id}`);
-
-	return row as HTMLElement;
-}
-
-beforeEach(() => {
-	catalogReads = 0;
-	sourceReads = [];
-});
+import { entryBlock, rowFor, stubSkills, type SourceAnswer } from '../support/skills-stub';
 
 afterEach(() => {
 	cleanup();
@@ -77,7 +26,11 @@ describe('SkillsPage states', () => {
 	});
 
 	it('reports a failed catalog read and reads again when asked', async () => {
-		stubFetch({ error: { code: 'UNAUTHORIZED', message: 'Session expired.' } }, () => 200, 401);
+		const stub = stubSkills(
+			{ error: { code: 'UNAUTHORIZED', message: 'Session expired.' } },
+			() => 200,
+			401
+		);
 		render(SkillsPage);
 
 		expect(await screen.findByText('Could not read the skill catalog')).toBeTruthy();
@@ -85,11 +38,11 @@ describe('SkillsPage states', () => {
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
-		expect(catalogReads).toBe(2);
+		expect(stub.catalogReads).toBe(2);
 	});
 
 	it('states an empty catalog instead of rendering an empty page', async () => {
-		stubFetch(skillCatalog([]));
+		stubSkills(skillCatalog([]));
 		render(SkillsPage);
 
 		expect(await screen.findByText('The gateway serves no skill')).toBeTruthy();
@@ -99,7 +52,7 @@ describe('SkillsPage states', () => {
 	});
 
 	it('states the catalog it read', async () => {
-		stubFetch(skillCatalog());
+		stubSkills(skillCatalog());
 		render(SkillsPage);
 
 		expect(await screen.findByText('Read from GET /skills.')).toBeTruthy();
@@ -118,7 +71,7 @@ describe('SkillsPage entry skill', () => {
 			},
 			configurable: true
 		});
-		stubFetch(skillCatalog());
+		stubSkills(skillCatalog());
 		render(SkillsPage);
 
 		const line = `Read this skill and use it: ${DEFAULT_ROWS[0].raw_url}`;
@@ -133,7 +86,7 @@ describe('SkillsPage entry skill', () => {
 	});
 
 	it('withholds the install line when the entry skill is not published, and names the cause', async () => {
-		stubFetch(skillCatalog(), (url) => (url.includes('/pannelai/') ? 404 : 200));
+		stubSkills(skillCatalog(), (url) => (url.includes('/pannelai/') ? 404 : 200));
 		render(SkillsPage);
 
 		expect(
@@ -148,7 +101,7 @@ describe('SkillsPage entry skill', () => {
 	});
 
 	it('states that the catalog carries no entry skill rather than inventing a line', async () => {
-		stubFetch(skillCatalog(DEFAULT_ROWS.slice(1)));
+		stubSkills(skillCatalog(DEFAULT_ROWS.slice(1)));
 		render(SkillsPage);
 
 		expect(
@@ -160,7 +113,7 @@ describe('SkillsPage entry skill', () => {
 
 describe('SkillsPage capability rows', () => {
 	it('renders one row per capability, with its route and its two addresses', async () => {
-		stubFetch(skillCatalog());
+		stubSkills(skillCatalog());
 		render(SkillsPage);
 
 		// The rows render as soon as the catalog lands; the addresses wait for the check, so the count is
@@ -177,7 +130,7 @@ describe('SkillsPage capability rows', () => {
 	});
 
 	it('leaves no copy control and no link on a row whose document did not answer', async () => {
-		stubFetch(skillCatalog(), (url) => (url.includes('/pannelai-image/') ? 404 : 200));
+		stubSkills(skillCatalog(), (url) => (url.includes('/pannelai-image/') ? 404 : 200));
 		render(SkillsPage);
 
 		await screen.findByText('2 of 3 sources are published.');
@@ -197,19 +150,19 @@ describe('SkillsPage capability rows', () => {
 	});
 
 	it('asks the source host for the file without downloading it', async () => {
-		stubFetch(skillCatalog());
+		const stub = stubSkills(skillCatalog());
 		render(SkillsPage);
 
 		await screen.findByText('Capability skills');
 
-		expect(sourceReads.length).toBe(3);
-		expect(sourceReads.every((read) => read.method === 'HEAD')).toBe(true);
+		expect(stub.sources.length).toBe(3);
+		expect(stub.sources.every((read) => read.method === 'HEAD')).toBe(true);
 	});
 });
 
 describe('SkillsPage source check', () => {
 	it('reports the measured count rather than claiming every source is fine', async () => {
-		stubFetch(skillCatalog(), (url) => (url.includes('/pannelai-image/') ? 500 : 200));
+		stubSkills(skillCatalog(), (url) => (url.includes('/pannelai-image/') ? 500 : 200));
 		render(SkillsPage);
 
 		expect(await screen.findByText('2 of 3 sources are published.')).toBeTruthy();
@@ -218,7 +171,9 @@ describe('SkillsPage source check', () => {
 
 	it('re-reads every source when Check again is pressed', async () => {
 		let imageStatus: SourceAnswer = 404;
-		stubFetch(skillCatalog(), (url) => (url.includes('/pannelai-image/') ? imageStatus : 200));
+		const stub = stubSkills(skillCatalog(), (url) =>
+			url.includes('/pannelai-image/') ? imageStatus : 200
+		);
 		render(SkillsPage);
 
 		expect(await screen.findByText('2 of 3 sources are published.')).toBeTruthy();
@@ -227,14 +182,14 @@ describe('SkillsPage source check', () => {
 		await fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
 
 		expect(await screen.findByText('3 of 3 sources are published.')).toBeTruthy();
-		expect(sourceReads.length).toBe(6);
+		expect(stub.sources.length).toBe(6);
 		expect(
 			within(rowFor('pannelai-image')).getByRole('button', { name: 'Copy install line' })
 		).toBeTruthy();
 	});
 
 	it('reports a request that never completed rather than calling the file broken', async () => {
-		stubFetch(skillCatalog(), () => 'network');
+		stubSkills(skillCatalog(), () => 'network');
 		render(SkillsPage);
 
 		expect((await screen.findAllByText(/did not complete: Failed to fetch/)).length).toBe(3);
