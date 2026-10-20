@@ -120,7 +120,7 @@
 		onsave={() => void saveSection('rtk')}
 		ondiscard={discard}
 	>
-		<label class="flex items-start gap-3 text-sm">
+		<label class="flex min-h-11 items-start gap-3 text-sm">
 			<input type="checkbox" class="mt-1 size-4" bind:checked={draft.rtk.enabled} />
 			<span>
 				Compress tool results with the native filters

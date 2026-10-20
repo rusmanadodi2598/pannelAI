@@ -8,7 +8,7 @@
 	// concern across two places.
 	import { untrack } from 'svelte';
 	import Modal from '$lib/components/Modal.svelte';
-	import SettingsSaveBar from '$lib/components/SettingsSaveBar.svelte';
+	import SaveBar from '$lib/components/SaveBar.svelte';
 	import { Button } from '$lib/primitives/button/index.js';
 	import PasswordChangeForm from '$lib/components/PasswordChangeForm.svelte';
 	import { patchSecuritySettings } from '$lib/api/settings';
@@ -106,7 +106,7 @@
 		</span>
 	</label>
 
-	<SettingsSaveBar
+	<SaveBar
 		saveLabel="Save access settings"
 		{saving}
 		{dirty}

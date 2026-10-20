@@ -10,7 +10,7 @@
 	// the submit before Zod sees the value, so the message would be the browser's rather than the
 	// schema's. The floors live in the schema and the hint text.
 	import { untrack } from 'svelte';
-	import SettingsSaveBar from '$lib/components/SettingsSaveBar.svelte';
+	import SaveBar from '$lib/components/SaveBar.svelte';
 	import { patchLoggingSettings } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
@@ -125,7 +125,7 @@
 		</span>
 	</div>
 
-	<SettingsSaveBar
+	<SaveBar
 		saveLabel="Save logging settings"
 		{saving}
 		{dirty}

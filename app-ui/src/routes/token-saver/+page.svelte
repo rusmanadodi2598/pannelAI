@@ -10,6 +10,7 @@
 	import { onMount } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import TokenSaverForm from '$lib/components/TokenSaverForm.svelte';
 	import { getTokenSaver } from '$lib/api/token-saver';
@@ -48,10 +49,7 @@
 	{:else if error && config === null}
 		<StateMessage kind="error" title="Token saver settings not loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => void load()}>Try again</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>

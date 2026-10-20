@@ -15,7 +15,7 @@
 	import { untrack } from 'svelte';
 	import SettingsFailureClassesEditor from '$lib/components/SettingsFailureClassesEditor.svelte';
 	import SettingsKeyParkFields from '$lib/components/SettingsKeyParkFields.svelte';
-	import SettingsSaveBar from '$lib/components/SettingsSaveBar.svelte';
+	import SaveBar from '$lib/components/SaveBar.svelte';
 	import { patchRoutingSettings } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
@@ -203,7 +203,7 @@
 		</span>
 	</div>
 
-	<SettingsSaveBar
+	<SaveBar
 		saveLabel="Save routing settings"
 		{saving}
 		{dirty}

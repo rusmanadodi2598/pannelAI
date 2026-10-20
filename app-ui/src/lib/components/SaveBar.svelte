@@ -1,7 +1,8 @@
 <script lang="ts">
-	// The band every settings tab ends with (docs/SPEC-UI/001-SPEC-UI.md §6.13): one write, the unsaved
-	// marker §6.13 asks for, and the outcome line. Three tabs share the rule and each owns its own draft,
-	// so the band takes the answers rather than holding them.
+	// The band a per-section write ends with (docs/SPEC-UI/001-SPEC-UI.md §6.7, §6.13): one commit, the
+	// unsaved marker, and the outcome line. Both sections make the save per group, so each group needs its
+	// own answers, and four editors share the rule: three settings tabs and the token saver's section shell.
+	// The band takes the answers rather than holding them, so no caller can drift from the others.
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { Button } from '$lib/primitives/button/index.js';
 	import { CONTROL_ICONS } from '$lib/icons';

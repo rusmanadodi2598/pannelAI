@@ -15,7 +15,7 @@
 	const warning = $derived(headroomUrlWarning(value));
 </script>
 
-<label class="flex items-start gap-3 text-sm">
+<label class="flex min-h-11 items-start gap-3 text-sm">
 	<input type="checkbox" class="mt-1 size-4" bind:checked={value.enabled} />
 	<span>
 		Compress through Headroom
@@ -40,7 +40,7 @@
 	</span>
 </div>
 
-<label class="flex items-start gap-3 text-sm">
+<label class="flex min-h-11 items-start gap-3 text-sm">
 	<input type="checkbox" class="mt-1 size-4" bind:checked={value.compress_user_messages} />
 	<span>
 		Compress user messages too
