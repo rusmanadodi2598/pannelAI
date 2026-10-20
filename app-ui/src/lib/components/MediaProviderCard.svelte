@@ -11,6 +11,7 @@
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { saveMediaOverride } from '$lib/api/media-providers';
 	import type { ApiError } from '$lib/api/errors';
 	import {
@@ -117,12 +118,13 @@
 	<div class="flex flex-wrap items-baseline justify-between gap-2">
 		<div class="flex flex-col">
 			<h2 id={`media-${provider.provider_id}`} class="text-base font-medium">
-				<a
+				<Button
 					href={resolve('/providers/[provider_id]', { provider_id: provider.provider_id })}
-					class="inline-flex min-h-11 items-center px-2 underline"
+					variant="ghost"
+					class="px-2 text-base underline"
 				>
 					{provider.provider_name}
-				</a>
+				</Button>
 			</h2>
 			<p class="text-sm text-[var(--color-text-muted)]">{provider.provider_id}</p>
 		</div>
@@ -191,13 +193,8 @@
 	{/if}
 
 	<div>
-		<button
-			type="button"
-			onclick={() => void save()}
-			disabled={saving}
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-		>
+		<Button variant="outline" disabled={saving} aria-busy={saving} onclick={() => void save()}>
 			{saving ? 'Saving' : 'Save'}
-		</button>
+		</Button>
 	</div>
 </article>
