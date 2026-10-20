@@ -18,6 +18,7 @@
 	import PlaygroundAnswer from '$lib/components/PlaygroundAnswer.svelte';
 	import PlaygroundComposer from '$lib/components/PlaygroundComposer.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		PLAYGROUND_MODELS_PATH,
 		fetchPlaygroundModels,
@@ -138,11 +139,9 @@
 			requestId={playgroundFailureRequestId(loadFailure)}
 		>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => void load()}>{copy.models.retry}</button
-				>
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>
+					{copy.models.retry}
+				</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if models && models.length === 0}
