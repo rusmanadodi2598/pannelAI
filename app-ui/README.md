@@ -114,7 +114,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Fifty-eight passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Fifty-nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -284,7 +284,10 @@ retry written at the call site, and a fixture that existed only inside one test 
 API Docs screen, measured the same day: a retry, and the jump list that is the reference's table of contents,
 the one control in the panel where the 44px floor costs visible height. The fifty-eighth is the icon maps,
 measured the same day: the last file over the cap in `src/`, split by where a glyph is used so that a screen
-reading the sidebar's icons no longer pulls the toolbar's into its module graph.
+reading the sidebar's icons no longer pulls the toolbar's into its module graph. The fifty-ninth is the eight
+test files over the cap, measured 2026-10-21: seven screens' suites split along the subjects each already held,
+and the shared model stub, which was the largest at 898 lines, into four route handlers behind the same
+exports. No file in `src/` or `tests/` is over the cap now.
 
 ### What each page still owes, measured 2026-10-21
 
@@ -300,22 +303,65 @@ row's name link. `/playground` left it the same day too: its three buttons read 
 files that had outgrown the screen came down from 664 and 271 lines into six, the largest 213.
 
 What remains is not a page's. `src/lib/icons.ts` was the last file over the cap in `src/` at 281 lines, shared
-by every screen and deferred by the owner until the pages were done; it is split now, recorded below. The 36px
-checkbox label §8.7 still finds short on five files is another item of the same kind. So are the shared
-`tests/support/model-stub.ts` at 898 and the seven test files on screens whose passes are recorded:
-`provider-touch-targets` at 308, `bulk-selection` at 301, `provider-custom-models` at 297, `combo-editor` at
-286, `provider-detail-key-dialog` at 271, `model-catalog-probe` at 265 and `provider-thinking-control` at 258.
-Five of those seven are the provider detail screen's, which is a different page from the registry list.
+by every screen and deferred by the owner until the pages were done; it is split, recorded below. The eight
+test files that were over the cap are split too, in the record below them: the seven the earlier row named,
+and the shared `tests/support/model-stub.ts` at 898. The 36px checkbox label this row used to name is closed:
+the six that were short were fixed on 2026-10-20 (`6836910`), and `tests/tokens/touch-targets.test.ts` now
+walks every checkbox label in `src/` and fails on one without `min-h-11`.
 
-Measured across the whole panel on 2026-10-21, `src/` has no file over the cap and `tests/` has eight, the
-largest `model-stub.ts` at 898. Each pass cleared its own cluster and no pass has swept the tree, so that
-sweep is a decision of its own rather than another page's debt.
+Measured across the whole panel on 2026-10-21, no file is over the cap in `src/` or in `tests/`, and no
+checkbox label is below the 44px row. The sweep the earlier row deferred is done, and the two numbers that
+were stale in it were corrected on the way.
 
 Two numbers in the earlier version of this row were stale and were corrected on 2026-10-20.
 `tests/schemas/vision-adapter.test.ts`, listed at 268 lines, measures 183: the `/combos` pass the row named
 did split it, and the row was never re-measured. And `/providers` was listed with no test file over the cap,
 while `tests/routes/providers-list.test.ts` was at 285; the walk that counted the page's files read the
 components and not the route's own test tree. Both came under with that day's passes.
+
+### The eight test files over the cap, and the stub they shared, 2026-10-21
+
+Run with Bun 1.3.0. The ledger above carried these as a list of names; they were split in one batch because
+four of the seven read the same fixture, and the fixture itself was the largest of the eight.
+
+Each split follows a describe boundary the file already had, and each shared piece moved to `tests/support/`
+rather than being copied: the catalog render and the 44px class contract for the touch-target pair, the parsed
+row casts for the two selection files, the page entry for the two custom-model files, the three combo fixtures,
+the key-dialog entry, the catalog probe's render and row lookup, and the settings document for the two
+thinking files. No case was dropped: the counts held at 14, 15, 16, 9, 11, 12 and 13.
+
+| File                                           | Was | Now                                                               |
+| ---------------------------------------------- | --- | ----------------------------------------------------------------- |
+| `provider-touch-targets.test.ts`               | 308 | 98, with 154 in `provider-touch-retries`                          |
+| `bulk-selection.test.ts`                       | 301 | 214, with 85 in `bulk-selection-tables`                           |
+| `provider-custom-models.test.ts`               | 297 | 115, with 167 in `provider-custom-models-add`                     |
+| `combo-editor.test.ts`                         | 286 | 123, with 142 in `combo-editor-save`                              |
+| `provider-detail-key-dialog.test.ts`           | 271 | 92, with 171 in `provider-detail-key-modes`                       |
+| `model-catalog-probe.test.ts`                  | 265 | 118, with 133 in `model-catalog-sweep`                            |
+| `provider-thinking-control.test.ts`            | 258 | 165, with 96 in `provider-thinking-wiring`                        |
+| `tests/support/model-stub.ts`                  | 898 | 155, the dispatcher and the stub's state                          |
+| `tests/support/model-stub-types.ts`            | -   | 156, the state type                                               |
+| `tests/support/model-stub-fixtures.ts`         | -   | 113, the six row builders and the auth-mode derivation            |
+| `tests/support/model-stub-context.ts`          | -   | 19, what a handler reads                                          |
+| `tests/support/model-stub-routes-providers.ts` | -   | 127, settings, proxies, the node and the provider reads           |
+| `tests/support/model-stub-routes-endpoints.ts` | -   | 154, the endpoint detail, list, create, delete and bulk create    |
+| `tests/support/model-stub-routes-oauth.ts`     | -   | 94, the OAuth status, start, refresh and the device round         |
+| `tests/support/model-stub-routes-models.ts`    | -   | 209, the disabled set, custom rows, combos, tests and the catalog |
+
+The stub needed a decision rather than a cut. Its 515-line fetch body held twenty-four branches, and two of
+them match one path: a provider id and an endpoint id both end in a path segment, so the order of the single
+`if` chain is behaviour, not style. The body is four handlers by resource now, and the dispatcher asks them in
+the order the chain had. Every import still resolves through `model-stub.ts`, so no test moved.
+
+| Check                       | Result                                                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                             |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                                            |
+| `bun run test`              | 3323 tests passed across 267 files, exit 0 (3323 across 260 before the splits: the seven added files, not cases) |
+| `bun run build`             | succeeds, output in `build/`                                                                                     |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                                                     |
+| File size                   | No file over the cap in `src/` or in `tests/`; the largest is 246 in `tests/navigation/` and 242 in `src/`       |
+| SYSTEM_MAP.md               | N/A: test-support modules only, no boundary, data shape, or interaction changed                                  |
 
 ### The icon maps split by where a glyph is used, 2026-10-21
 
