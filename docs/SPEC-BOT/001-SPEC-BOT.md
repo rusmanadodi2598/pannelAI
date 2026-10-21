@@ -256,7 +256,8 @@ degrades to a deterministic fallback (§6.3), not to a failed generation.
 {
   "version": "mpv2",
   "modality": "image",
-  "role": "senior automotive photographer with editorial experience",
+  "role_family": "visual_designer",
+  "role": "senior visual designer with campaign experience",
   "task": "create a hero image of an orange cat riding a skateboard through Jakarta",
   "context": {
     "subject": "an orange cat riding a skateboard",
@@ -289,7 +290,8 @@ Field rules:
 
 | Section           | Field                        | Type            | Rule                                                                  |
 | ----------------- | ---------------------------- | --------------- | --------------------------------------------------------------------- |
-| Role              | `role`                       | string          | Required, 3 to 200 runes, describe a visual specialist, not a task    |
+| Role              | `role_family`                | enum            | Required: `visual_designer`, `photographer`, `illustrator`, `motion_designer`, `three_d_visualizer` |
+| Role              | `role`                       | string          | Required, 3 to 200 runes, a visual or creative specialist inside the family, never a task |
 | Task              | `task`                       | string          | Required, 5 to 400 runes, one sentence stating what to create          |
 | Context           | `context.subject`            | string          | Required, 1 to 300 runes                                               |
 | Context           | `context.action`             | string          | Optional, 0 to 200 runes                                               |
@@ -318,6 +320,9 @@ Rules that are enforced, not advisory:
 
 - Unknown fields are rejected with `DisallowUnknownFields`, so a model that invents a section fails validation
   instead of silently losing it.
+- `role` must describe visual, design, or creative work inside the declared `role_family`. A role that names a
+  non-visual profession, a single brand, a single product, or a single industry vertical is refused with
+  `BOT_PROMPT_ROLE_SCOPE`, then remapped to the family's neutral descriptor before preview.
 - A `modality: image` document with `duration_s` set, or a `modality: video` document without one, is refused with
   `BOT_PROMPT_UNSUPPORTED_FIELD`.
 - `stop_conditions.aspect_ratio` and `output.aspect_ratio` must match. A disagreement is a builder defect, not a user
@@ -359,11 +364,13 @@ validation is not shown to the user; it is retried, then replaced by the fallbac
 #### 6.3.1 Semantic checks after decode
 
 1. All six sections are present and non-empty after normalization.
-2. `task` and `context.subject` do not contradict each other on modality (a video task with an image asset fails).
-3. No field contains a URL, a newline-only payload, or a control character after normalization.
-4. `reasoning` must mention at least one element from `context` (a cheap relevance check against the compiled
+2. `role` belongs to `role_family` and stays product neutral: no brand name, no single product name, no vertical
+   that narrows the role to one catalogue.
+3. `task` and `context.subject` do not contradict each other on modality (a video task with an image asset fails).
+4. No field contains a URL, a newline-only payload, or a control character after normalization.
+5. `reasoning` must mention at least one element from `context` (a cheap relevance check against the compiled
    document, not a second model call). A reasoning string that is generic filler fails the check.
-5. The compiled prompt from §6.4 stays inside `stop_conditions.max_characters`.
+6. The compiled prompt from §6.4 stays inside `stop_conditions.max_characters`.
 
 #### 6.3.2 Deterministic fallback builder
 
@@ -374,8 +381,9 @@ without a model:
 2. Pull `aspect` tokens and duration tokens out of the text.
 3. Pull a style term and a camera motion term from the closed vocabulary in the metadata document.
 4. The first sentence becomes `task` and `context.subject`; a second sentence becomes `context.action`.
-5. `role` becomes `visual director`, `reasoning` becomes a fixed sentence naming the extracted elements, and
-   `stop_conditions` uses the configured baseline negatives.
+5. `role_family` defaults to `visual_designer` for image and `motion_designer` for video, `role` becomes the family's
+   neutral descriptor, `reasoning` becomes a fixed sentence naming the extracted elements, and `stop_conditions`
+   uses the configured baseline negatives.
 
 The result is labelled `builder: "fallback"` in the job row and in the preview message, so the user knows the prompt
 was not model-expanded. The label is honest, not decorative.
@@ -386,7 +394,7 @@ The compiler maps six sections onto two outputs: the upstream prompt string and 
 
 | Section           | Goes to the prompt string                                  | Goes to request parameters            |
 | ----------------- | ---------------------------------------------------------- | ------------------------------------- |
-| Role              | A style descriptor, only when it maps to the closed vocabulary; otherwise kept as metadata and left out of the string | none |
+| Role              | `role_family` selects the style descriptor; the title refines it only when it maps to the vocabulary, otherwise it is kept as metadata | none |
 | Task              | Subject and action clause                                  | none                                  |
 | Context           | Environment, composition phrase, lighting, style, details  | aspect ratio, size, duration          |
 | Reasoning         | Never sent upstream; stored and shown truncated in preview | none                                  |

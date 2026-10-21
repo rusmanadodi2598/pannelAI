@@ -43,7 +43,10 @@ Rules:
 1. Reply with one JSON object only. No markdown, no code fence, no commentary.
 2. Every string field is written in English, because the generation models follow English best. Quoted on-screen
    text inside the image keeps the user's original language.
-3. Role names a visual specialist, not a task. "senior automotive photographer" is a role. "take a photo" is a task.
+3. Role is a visual, design, or creative specialist working across products, not a task and not a single scope.
+   "senior automotive photographer" is a valid title inside the photography family. "take a photo" is a task.
+   "growth strategist", "iPhone photographer", and "our brand designer" are refused: non-visual, single product,
+   and single brand respectively.
 4. Task is one sentence and states the asset being created.
 5. Context carries the visual facts: subject, action, environment, composition, lighting, style, details.
 6. Reasoning is 2 to 4 sentences that name at least one concrete element from Context and defend the choice.
@@ -74,7 +77,8 @@ decoder cannot drift.
 {
   "version": "mpv2",
   "modality": "image",
-  "role": "senior automotive photographer with editorial experience",
+  "role_family": "visual_designer",
+  "role": "senior visual designer with campaign experience",
   "task": "create a hero image of an orange cat riding a skateboard through Jakarta",
   "context": {
     "subject": "an orange cat riding a skateboard",
@@ -111,22 +115,29 @@ migration bug.
 The model may only use these values where the field is an enum. The compiler refuses an unknown value rather than
 passing it through, so a vocabulary miss is caught in preview, not in the provider bill.
 
-### 4.1 Role descriptors
+### 4.1 Role families
 
-| Value                            | Use when the request is about            |
-| -------------------------------- | ---------------------------------------- |
-| `editorial photographer`         | people, lifestyle, documentary framing   |
-| `product photographer`           | objects, packshots, commercial stills    |
-| `automotive photographer`        | vehicles, motion, street scenes          |
-| `cinematographer`                | cinematic frames, film lighting          |
-| `concept artist`                 | world building, fantasy, sci-fi           |
-| `3d artist`                      | renders, materials, isometric scenes      |
-| `illustrator`                    | drawn, painted, graphic work              |
-| `animator`                       | motion-first video concepts               |
-| `documentary photographer`       | reportage, candid, available light        |
+`role` answers one question: who is visualizing this? The family is broad, the title is specific, and neither is tied to
+a product, a brand, or one industry. Visualization and design are the default families.
 
-A role outside this table is replaced by the nearest descriptor before compilation and the substitution is recorded on
-the job. It is not silently dropped.
+| `role_family`        | Covers                                              | Example titles                                              | Style descriptor           |
+| -------------------- | --------------------------------------------------- | ----------------------------------------------------------- | -------------------------- |
+| `visual_designer`    | Visualisasi, desain grafis, art direction, kampanye | visual designer, graphic designer, art director, promo designer | professional visual design |
+| `photographer`       | Foto still dan motion                               | editorial photographer, product photographer, food photographer | professional photography |
+| `illustrator`        | Ilustrasi drawn, painted, digital                   | illustrator, character designer, editorial illustrator      | illustration               |
+| `motion_designer`    | Motion, animasi, visual video                       | motion designer, animator, video editor                     | motion design              |
+| `three_d_visualizer` | CGI, render produk, visualisasi spasial             | 3d artist, cgi generalist, architectural visualizer          | 3d render                  |
+
+Rules:
+
+1. The title must stay inside the declared family. A `photographer` role cannot be "motion designer".
+2. The title must stay product neutral. A brand name, a single product name ("iPhone photographer"), or a single
+   industry vertical ("only automotive") is refused and remapped to the family descriptor.
+3. A non-visual profession is refused: growth strategist, product manager, lawyer, and similar are not roles this
+   service can compile.
+4. The family list is closed. A new family is a spec change with a new vocabulary version.
+5. When the builder omits `role_family`, the fallback is `visual_designer` for image and `motion_designer` for
+   video. The title defaults to the family name, never to an invented specialist.
 
 ### 4.2 Composition
 
@@ -214,3 +225,4 @@ because it would change what a user already paid for.
 | Date       | Change                                                        |
 | ---------- | ------------------------------------------------------------- |
 | 2026-10-21 | v1: six-section builder, vocabulary seed, upstream mapping.   |
+| 2026-10-21 | Role simplified to five visual families, visualization and design first, product neutral. |
