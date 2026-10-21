@@ -286,12 +286,12 @@ labels, where its job is to be scannable and clearly not a clickable item.
 
 ## 5. Radius, borders, elevation
 
-| Token           | Value  | Used for                      |
-| --------------- | ------ | ----------------------------- |
-| `--radius-sm`   | 6px    | Input, button, chip, menu row |
-| `--radius-md`   | 8px    | Panel, card, table container  |
-| `--radius-lg`   | 12px   | Dialog, drawer                |
-| `--radius-full` | 9999px | Avatar and the logo only      |
+| Token           | Value  | Used for                                    |
+| --------------- | ------ | ------------------------------------------- |
+| `--radius-sm`   | 6px    | Input, button, chip, menu row               |
+| `--radius-md`   | 8px    | Panel, card, table container                |
+| `--radius-lg`   | 12px   | Dialog, drawer                              |
+| `--radius-full` | 9999px | Avatar, the logo, and the 3px status marker |
 
 Radius is a hierarchy tool (R-11). Nothing else is a pill: no pill buttons, no pill inputs, no pill
 badges beyond a real status chip whose shape is shared with every other status chip.
@@ -378,7 +378,7 @@ provider and a toggle, so both modes are kept and both are verified per screen b
 | Logo source                                           | `assets/static/logo.png`, the owner's original 1254x1254 file                                | Kept as the source of truth                    |
 | Favicon                                               | `static/favicon.png`                                                                         | Derived from the same source                   |
 | Icon set                                              | `@lucide/svelte`, one set, no mixing                                                         | Real                                           |
-| Icons in navigation                                   | Each has a written reason in `src/lib/icon-maps/`, re-exported by `src/lib/icons.ts`        | Real                                           |
+| Icons in navigation                                   | Each has a written reason in `src/lib/icon-maps/`, re-exported by `src/lib/icons.ts`         | Real                                           |
 | Avatars, photography, illustrations                   | None                                                                                         | Not used. The panel shows no people.           |
 | Statistics, testimonials, uptime or compliance claims | None anywhere in the panel                                                                   | Forbidden (R-17, R-18, R-36)                   |
 

@@ -114,7 +114,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Sixty passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Sixty-one passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -290,7 +290,10 @@ and the shared model stub, which was the largest at 898 lines, into four route h
 exports. No file in `src/` or `tests/` is over the cap now. The sixtieth is the panel side of the contract
 gate, measured the same day: 46 response schemas read against the committed `openapi.json`, which named
 every field the panel requires except two, and those two are a contract gap recorded in the test rather
-than waived.
+than waived. The sixty-first is the two rules that were still applied by hand, measured the same day: the
+250-line cap and "every custom property is declared", each a test now, and the second found a live one:
+`--radius-full` was read by four components and declared nowhere, so the 3px status markers rendered
+square.
 
 ### What each page still owes, measured 2026-10-21
 
@@ -321,6 +324,35 @@ Two numbers in the earlier version of this row were stale and were corrected on 
 did split it, and the row was never re-measured. And `/providers` was listed with no test file over the cap,
 while `tests/routes/providers-list.test.ts` was at 285; the walk that counted the page's files read the
 components and not the route's own test tree. Both came under with that day's passes.
+
+### The two rules that were still enforced by hand, and the radius token nobody declared, 2026-10-21
+
+Run with Bun 1.3.0. Two rule classes had no gate. The 250-line cap was measured by hand in every page pass,
+which is how two ledger rows drifted before they were caught. And "no undeclared custom property" was the bug
+the proxy pass found by eye, when `--color-primary-contrast` and `--color-surface-1` resolved to nothing
+because an undeclared var falls through silently instead of failing.
+
+Both are tests now. `tests/tokens/file-size.test.ts` walks `src/` and `tests/` and fails on the file that grew,
+with the generated `src/lib/primitives/` out of scope for the same reason the antislop gate excludes it.
+`tests/tokens/declared-tokens.test.ts` collects every `--name:` declaration in CSS files and computed style
+strings and every `var(--name` use, and fails on a name with no declaration.
+
+The second gate found a live defect on its first run. `--radius-full` is listed in `DESIGN.md` §5 and read by
+four components (the status markers on the changelog, the skill rows and the playground answer, and the nav
+row's), but it was declared nowhere: `border-radius: var(--radius-full)` resolved to nothing and those 3px
+markers rendered square. The token is declared in `src/app.css` and §5's row now names the marker among its
+uses. The same walk showed two sidebar names the generated primitive reads as raw properties
+(`--sidebar-accent`, `--sidebar-border`); the alias layer supplies them rather than the generated file being
+edited, which is the rule that file carries.
+
+| Check                       | Result                                                                      |
+| --------------------------- | --------------------------------------------------------------------------- |
+| File size                   | 300+ files walked, none over 250 lines                                      |
+| Declared tokens             | every name the panel reads resolves; 0 undeclared                           |
+| `bun run check`             | 0 errors, 0 warnings                                                        |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                       |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                |
+| SYSTEM_MAP.md               | N/A: two tests and one token declaration, no boundary or data shape changed |
 
 ### The eight test files over the cap, and the stub they shared, 2026-10-21
 
@@ -2968,8 +3000,12 @@ gateway.
    `has_refresh_token` although the service's DTO serves them, and the gate fails the day the contract
    catches up so the exception cannot outlive the gap. See spec §14 Q3.
 2. `AGENTS.md` scopes itself to the Go services (`app-*/**`), so it does not govern this panel. The
-   panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and they are applied by
-   hand here. The panel's gates live in `scrypts/gates/panel-check.sh`.
+   panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and most of them are
+   machine-checked rather than reviewed: the toolchain in `scrypts/gates/panel-check.sh`, the line cap in
+   `tests/tokens/file-size.test.ts`, the declared-token rule in `tests/tokens/declared-tokens.test.ts`,
+   contrast and the state scale in `tests/tokens/`, tap targets in `tests/tokens/touch-targets.test.ts`,
+   icon relevance in `tests/navigation/icons.test.ts`, and navigation destinations in
+   `tests/navigation/navigation.test.ts`.
 3. Gateway key `status` values are not enumerated in SPEC-API §7.3. The panel currently writes `active`
    and `disabled` and renders any other value verbatim; see §14 Q9.
 
