@@ -44,6 +44,78 @@
   ],
   "entries": [
     {
+      "provider": "agnes",
+      "model": "agnes-2.5-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-3.0-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-image-2.0-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-image-2.1-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-image-2.5-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-video-2.5-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
       "provider": "antigravity",
       "model": "claude-opus-4-6-thinking",
       "rates": {

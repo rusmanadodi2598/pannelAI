@@ -708,6 +708,14 @@ itself or whose operation shape and segments are not a plain resource path, beca
 spliced into a URL. Its credential is exchanged for a bearer before each phase. A completed generation
 whose asset came back inline (no storage URI) carries it in `b64_json` instead of `url`.
 
+Agnes AI is the fifth dialect: the creation posts to the block's `/v1/videos`, and the poll reads
+`GET /agnesapi?video_id=…&model_name=…` on the same host, because keyframe and reference tasks are refused
+without the model name while a poll carries no model. The creation therefore answers a task id that encodes
+the retrieval id and the model (base64url), and the poll decodes both; a client polling with the provider's
+own video id is accepted and the model parameter is omitted, which the provider reads for text-mode jobs.
+`completed` and `failed` map onto the envelope's terminal states, the asset arrives in `url`, and progress
+is read when the answer carries it.
+
 A provider format without an adapter remains an explicit `PROVIDER_NOT_ROUTABLE` refusal naming the
 format; this is the incremental G5 boundary, not a claim that all reference adapters are present. Five
 formats stay on that boundary, registered as G21 in the P2 gap register: AssemblyAI STT (upload →
@@ -1731,3 +1739,20 @@ into `reasoning_content` and never replayed: Gemini 3 requires a `thoughtSignatu
 call of each model turn is signed with the product's known-good filler and its siblings stay unsigned. Draft 061
 §5.6 records why the reference's two storage mechanisms were not adopted, and §8 what a live round still has to
 confirm._
+
+_Changelog 2026-10-21: §7.4 adds Agnes AI and §7.10 its video dialect. The provider is an OpenAI-compatible
+hub (`https://apihub.agnes-ai.com/v1`) whose public catalog carries two chat models, three image models, and
+one video model; the documented 2.5-pro, 2.5-pro-beta, and 3.0-pro ids are absent from `GET /v1/models`, so
+the entry carries only what the endpoint serves. The reference has no agnes entry, so the whole provider is
+an app-serv declaration carried by the generator's `APP_SERV_PROVIDER_ENTRIES` table. The committed document
+already diverges from a fresh generation in other providers, so the entry was applied to it directly rather
+than by regenerating the file; the generator holds the same declaration so a later regeneration reproduces
+it. Its image block declares the bearer placement the reference's image blocks omit, because a block that
+names no credential sends none. The video dialect creates at `/v1/videos` and polls
+`GET /agnesapi?video_id=…&model_name=…`: a poll carries no model, keyframe and reference tasks require it,
+so the creation answers `base64url(video_id + "|" + model)` as the task id and the poll rebuilds both
+parameters, accepting a raw video id for the text mode that does not need the model. The two chat models
+declare their 512K context and 65,536-token output ceilings; no token price is declared, because the
+reference's pricing tables do not know the provider, so usage records zero for these pairs rather than a
+guessed rate (the vendor's own page lists all six at $0 under a current promotion), and the regenerated
+pricing corpus pins that answer as unpriced._

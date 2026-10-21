@@ -201,6 +201,18 @@ func mediaCallEntries() []registry.Provider {
 			},
 		},
 		{
+			// Agnes retrieves a job from /agnesapi on the same host rather than
+			// from the create collection, so its dialect carries a poll builder
+			// (media_video_agnes.go).
+			ID: "agnes", Display: registry.Display{Name: "Agnes AI"}, Priority: 17, Category: "apikey",
+			Media: registry.MediaConfigs{
+				registry.MediaVideo: {
+					BaseURL:  "https://apihub.agnes-ai.com/v1/videos",
+					AuthType: registry.AuthAPIKey, AuthHeader: "bearer", Format: "openai",
+				},
+			},
+		},
+		{
 			// vertex names the project, location, and model in the path and
 			// mints a bearer from the stored service-account JSON, so its
 			// dialect needs its own request builders (media_video_vertex.go).

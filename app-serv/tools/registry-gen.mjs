@@ -650,6 +650,104 @@ const APP_SERV_PROVIDER_EXTENSIONS = {
   },
 };
 
+// APP_SERV_PROVIDER_ENTRIES are whole provider entries app-serv serves that the
+// reference carries no entry for. Agnes AI (https://www.agnes-ai.com, measured
+// 2026-10-21) is an OpenAI-compatible hub at https://apihub.agnes-ai.com/v1
+// whose catalog mixes chat, image, and video models. Its video API is
+// asynchronous: POST /v1/videos creates a task, and
+// GET /agnesapi?video_id=<id>&model_name=<model> reports it, which is why the
+// service carries an agnes video plan rather than the collection path alone.
+// The catalog lists exactly the ids GET /v1/models advertises; the documented
+// 2.5-pro, 2.5-pro-beta, and 3.0-pro ids are absent from that feed and stay out
+// until the endpoint serves them.
+const APP_SERV_PROVIDER_ENTRIES = {
+  agnes: {
+    priority: 340,
+    alias: "agnes",
+    aliases: ["agnesai", "agnes-ai"],
+    uiAlias: "agnes",
+    category: "apikey",
+    passthroughModels: true,
+    display: {
+      name: "Agnes AI",
+      icon: "hub",
+      color: "#0F766E",
+      textIcon: "AG",
+      website: "https://www.agnes-ai.com",
+      notice: {
+        text: "OpenAI-compatible gateway for chat, image, and video models.",
+        apiKeyUrl: "https://www.agnes-ai.com",
+      },
+    },
+    transport: {
+      format: "openai",
+      baseUrl: "https://apihub.agnes-ai.com/v1/chat/completions",
+      validateUrl: "https://apihub.agnes-ai.com/v1/models",
+    },
+    models: [
+      {
+        id: "agnes-2.5-flash",
+        name: "Agnes 2.5 Flash",
+        contextLength: 512000,
+        maxOutputTokens: 65536,
+        description: "General-purpose model with tool calling and image understanding.",
+      },
+      {
+        id: "agnes-3.0-flash",
+        name: "Agnes 3.0 Flash",
+        contextLength: 512000,
+        maxOutputTokens: 65536,
+        description: "Faster 3.0 generation with tool calling and image understanding.",
+      },
+      {
+        id: "agnes-image-2.0-flash",
+        name: "Agnes Image 2.0 Flash",
+        kind: "image",
+        params: ["size", "ratio", "image", "return_base64"],
+        capabilities: ["textToImage", "edit"],
+      },
+      {
+        id: "agnes-image-2.1-flash",
+        name: "Agnes Image 2.1 Flash",
+        kind: "image",
+        params: ["size", "ratio", "image", "return_base64"],
+        capabilities: ["textToImage", "edit"],
+      },
+      {
+        id: "agnes-image-2.5-flash",
+        name: "Agnes Image 2.5 Flash",
+        kind: "image",
+        params: ["size", "ratio", "image", "return_base64"],
+        capabilities: ["textToImage", "edit"],
+      },
+      {
+        id: "agnes-video-2.5-flash",
+        name: "Agnes Video 2.5 Flash",
+        kind: "video",
+        params: [
+          "mode",
+          "seconds",
+          "size",
+          "aspect_ratio",
+          "seed",
+          "first_frame",
+          "last_frame",
+          "images",
+          "audios",
+          "videos",
+        ],
+      },
+    ],
+    imageConfig: {
+      base_url: "https://apihub.agnes-ai.com/v1/images/generations",
+      auth_type: "apikey",
+      auth_header: "bearer",
+    },
+    videoConfig: { base_url: "https://apihub.agnes-ai.com/v1/videos" },
+    serviceKinds: ["llm", "image", "video"],
+  },
+};
+
 // APP_SERV_MODEL_KINDS narrows a provider's catalog to the model kinds this
 // port serves. vertex declares four chat models and four video models, and
 // only the video half has a wire this gateway speaks; listing a chat model the
@@ -749,10 +847,14 @@ function mapEntry(entry) {
 
 // Sort by priority then id: the reference order is incidental, and the router
 // reads priority explicitly. A deterministic order keeps the diff honest.
-const providers = entries
-  .filter(kept)
-  .map(mapEntry)
-  .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999) || a.id.localeCompare(b.id));
+const providers = [
+  ...entries.filter(kept).map(mapEntry),
+  // An app-serv entry yields to a reference entry the KEEP set later carries,
+  // the same precedence the media extensions use.
+  ...Object.entries(APP_SERV_PROVIDER_ENTRIES)
+    .filter(([id]) => !kept({ id }))
+    .map(([id, entry]) => mapEntry({ id, ...entry })),
+].sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999) || a.id.localeCompare(b.id));
 
 const droppedProviders = entries.filter((entry) => !kept(entry)).map((entry) => entry.id);
 
@@ -763,6 +865,7 @@ const droppedProviders = entries.filter((entry) => !kept(entry)).map((entry) => 
 const extendedProviders = providers
   .filter(
     (provider) =>
+      APP_SERV_PROVIDER_ENTRIES[provider.id] ||
       APP_SERV_PROVIDER_EXTENSIONS[provider.id] ||
       APP_SERV_MEDIA_EXTENSIONS[provider.id] ||
       APP_SERV_MEDIA_OVERRIDES[provider.id]

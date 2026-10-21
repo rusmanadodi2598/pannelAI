@@ -53,6 +53,14 @@ func TestMediaCallService_GenerateVideoJob_CreatePlan(t *testing.T) {
 			wantTaskID: "job-1",
 		},
 		{
+			name:       "agnes posts to its collection and encodes the retrieval id",
+			model:      "agnes/agnes-video-2.5-flash",
+			answer:     `{"id":"task_1","task_id":"task_1","video_id":"video_1","model":"agnes-video-2.5-flash","status":"queued"}`,
+			wantURL:    "https://apihub.agnes-ai.com/v1/videos",
+			wantModel:  "agnes-video-2.5-flash",
+			wantTaskID: "dmlkZW9fMXxhZ25lcy12aWRlby0yLjUtZmxhc2g",
+		},
+		{
 			name:       "tokenrouter posts to its declared collection and reads the envelope",
 			model:      "tokenrouter/kling-v1",
 			answer:     `{"code":0,"message":"ok","data":{"task_id":"tr-1","status":"QUEUED"}}`,
@@ -159,6 +167,14 @@ func TestMediaCallService_PollVideoJob(t *testing.T) {
 			wantURLOut: "https://cdn/v.mp4",
 		},
 		{
+			name:       "the agnes poll rebuilds the model the create encoded",
+			provider:   "agnes",
+			answer:     `{"id":"task_1","status":"completed","progress":100,"url":"https://cdn.agnes/v.mp4"}`,
+			wantURL:    "https://apihub.agnes-ai.com/agnesapi?model_name=agnes-video-2.5-flash&video_id=video_1",
+			wantStatus: schema.VideoJobSucceeded,
+			wantURLOut: "https://cdn.agnes/v.mp4",
+		},
+		{
 			name:       "the tokenrouter poll reads its envelope",
 			provider:   "tokenrouter",
 			answer:     `{"code":0,"message":"ok","data":{"task_id":"tr-1","status":"IN_PROGRESS","progress":55}}`,
@@ -177,6 +193,9 @@ func TestMediaCallService_PollVideoJob(t *testing.T) {
 			}
 			if tc.provider == "tokenrouter" {
 				taskID = "tr-1"
+			}
+			if tc.provider == "agnes" {
+				taskID = "dmlkZW9fMXxhZ25lcy12aWRlby0yLjUtZmxhc2g"
 			}
 			job, _, err := svc.PollVideoJob(context.Background(), tc.provider, "ep-"+tc.provider, taskID, "")
 			if err != nil {
