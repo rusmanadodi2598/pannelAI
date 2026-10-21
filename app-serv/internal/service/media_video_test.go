@@ -237,3 +237,40 @@ func TestMediaCallService_PollVideoJob_EscapesTheTaskID(t *testing.T) {
 		t.Fatalf("poll URL = %q, want the escaped segment", got)
 	}
 }
+
+// TestReadTokenRouterVideoJob_ReadsTheDocumentedProgress pins the progress
+// member's real shape: TokenRouter's documented query example answers a
+// percentage string ("100%"), and a plain number is read too. A job that
+// answered is served either way, because the percentage is cosmetic.
+func TestReadTokenRouterVideoJob_ReadsTheDocumentedProgress(t *testing.T) {
+	cases := []struct {
+		name     string
+		progress string
+		want     int
+		hasWant  bool
+	}{
+		{name: "the documented percentage string", progress: `"100%"`, want: 100, hasWant: true},
+		{name: "a bare percentage string", progress: `"55"`, want: 55, hasWant: true},
+		{name: "a number", progress: `55`, want: 55, hasWant: true},
+		{name: "null is no progress", progress: `null`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			body := `{"code":"success","message":"","data":{"task_id":"task_1","status":"SUCCESS",` +
+				`"result_url":"https://example.com/v.mp4","progress":` + tc.progress + `}}`
+			job, err := readTokenRouterVideoJob([]byte(body), false)
+			if err != nil {
+				t.Fatalf("readTokenRouterVideoJob() error = %v, want a served job", err)
+			}
+			if job.Status != schema.VideoJobSucceeded || job.URL != "https://example.com/v.mp4" {
+				t.Fatalf("job = %+v, want the succeeded job the envelope reports", job)
+			}
+			switch {
+			case tc.hasWant && (job.Progress == nil || *job.Progress != tc.want):
+				t.Fatalf("progress = %v, want %d", job.Progress, tc.want)
+			case !tc.hasWant && job.Progress != nil:
+				t.Fatalf("progress = %v, want none", *job.Progress)
+			}
+		})
+	}
+}

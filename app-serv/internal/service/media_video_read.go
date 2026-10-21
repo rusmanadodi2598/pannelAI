@@ -97,18 +97,19 @@ func readOpenRouterVideoJob(body []byte, requireTask bool) (schema.VideoJob, err
 
 // tokenRouterVideoAnswer is TokenRouter's envelope: the job's own fields under
 // `data`, beside the gateway-level `code` and `message`. A creation names the
-// task at the top level or under `data`, so both are read.
+// task at the top level or under `data`, so both are read. The progress member
+// stays raw here because the vendor writes it as a percentage string.
 type tokenRouterVideoAnswer struct {
-	TaskID    string `json:"task_id"`
-	Status    string `json:"status"`
-	ResultURL string `json:"result_url"`
-	Progress  *int   `json:"progress"`
-	Message   string `json:"message"`
+	TaskID    string          `json:"task_id"`
+	Status    string          `json:"status"`
+	ResultURL string          `json:"result_url"`
+	Progress  json.RawMessage `json:"progress"`
+	Message   string          `json:"message"`
 	Data      *struct {
-		TaskID    string `json:"task_id"`
-		Status    string `json:"status"`
-		ResultURL string `json:"result_url"`
-		Progress  *int   `json:"progress"`
+		TaskID    string          `json:"task_id"`
+		Status    string          `json:"status"`
+		ResultURL string          `json:"result_url"`
+		Progress  json.RawMessage `json:"progress"`
 	} `json:"data"`
 }
 
@@ -122,7 +123,7 @@ func readTokenRouterVideoJob(body []byte, requireTask bool) (schema.VideoJob, er
 		TaskID:   answer.TaskID,
 		Status:   answer.Status,
 		URL:      answer.ResultURL,
-		Progress: answer.Progress,
+		Progress: videoProgressFrom(answer.Progress),
 	}
 	if answer.Data != nil {
 		if job.TaskID == "" {
@@ -135,7 +136,7 @@ func readTokenRouterVideoJob(body []byte, requireTask bool) (schema.VideoJob, er
 			job.URL = answer.Data.ResultURL
 		}
 		if job.Progress == nil {
-			job.Progress = answer.Data.Progress
+			job.Progress = videoProgressFrom(answer.Data.Progress)
 		}
 	}
 	job.Status = canonicalVideoStatus(job.Status, tokenRouterVideoStatuses)
