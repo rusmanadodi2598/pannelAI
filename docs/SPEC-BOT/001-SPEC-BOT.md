@@ -231,93 +231,189 @@ Bot : refunds the hold when the job fails or times out
 An asset larger than the cap is not uploaded. The bot sends a short message plus the upstream URL when the URL is
 publicly reachable, and refuses otherwise. The refusal is a stated behavior, not a silent truncation.
 
-## 6. Master prompt
+## 6. Master prompt (six sections)
 
 ### 6.1 Design rule
 
-The user writes intent. The bot writes structure. The upstream receives one deterministic string compiled from a
-typed structure, so the same draft always produces the same upstream prompt and a test can pin it.
+The user writes intent. The bot elaborates it into a master prompt with six labeled sections: **Role**, **Task**,
+**Context**, **Reasoning**, **Stop conditions**, **Output**. The section model is the owner's master prompt builder
+concept and is normative for this service.
 
-v1 compiles deterministically from the user's text plus a closed vocabulary. It does not call a language model to
-expand the prompt. That keeps cost and latency predictable and makes the compiler fuzzable. An LLM enhancer can be
-added later as `mpv2` behind a flag, with the v1 compiler kept as the fallback.
+Two stages, with different guarantees:
 
-### 6.2 Structured schema (`mpv1`)
+1. **Builder** (creative, non-deterministic): one language model call through the gateway's chat route turns the user
+   text plus the selected modality into a typed master prompt document. The model never writes free text into the
+   pipeline; it returns JSON that is decoded, validated, and rejected when it does not fit §6.2.
+2. **Compiler** (deterministic, pure): maps the validated document onto the upstream request, producing one prompt
+   string plus request parameters. Same document, same bytes, so a golden test can pin the output.
+
+Splitting the stages keeps the creative part replaceable and the part that costs money auditable. A builder outage
+degrades to a deterministic fallback (§6.3), not to a failed generation.
+
+### 6.2 Master prompt schema (`mpv2`)
 
 ```json
 {
-  "version": "mpv1",
+  "version": "mpv2",
   "modality": "image",
-  "subject": "an orange cat riding a skateboard",
-  "action": "rolling through a busy street",
-  "environment": "Jakarta, late afternoon",
-  "composition": {
-    "shot": "medium",
-    "angle": "eye_level",
-    "aspect_ratio": "16:9"
+  "role": "senior automotive photographer with editorial experience",
+  "task": "create a hero image of an orange cat riding a skateboard through Jakarta",
+  "context": {
+    "subject": "an orange cat riding a skateboard",
+    "action": "rolling through a busy street",
+    "environment": "Jakarta, late afternoon, street vendors",
+    "composition": {"shot": "medium", "angle": "eye_level", "aspect_ratio": "16:9"},
+    "lighting": "warm golden hour, soft shadows",
+    "style": {"medium": "cinematic photo", "palette": ["warm orange", "teal shadow"], "mood": "playful"},
+    "details": ["motion blur in the wheels", "street vendors in the background"]
   },
-  "lighting": "warm golden hour, soft shadows",
-  "style": {
-    "medium": "cinematic photo",
-    "palette": ["warm orange", "teal shadow"],
-    "mood": "playful"
+  "reasoning": "The subject is playful and local, so a warm street scene with motion reads faster than a studio setup. Medium shot keeps the cat and the board legible at phone size.",
+  "stop_conditions": {
+    "negative": ["watermark", "text artifacts", "extra limbs"],
+    "max_characters": 3500,
+    "aspect_ratio": "16:9",
+    "duration_s": null
   },
-  "details": ["motion blur in the wheels", "street vendors in the background"],
-  "text_overlay": null,
-  "negative": ["watermark", "text artifacts", "extra limbs"],
-  "seed": null,
-  "duration_s": null,
-  "motion": null,
-  "camera_motion": null
+  "output": {
+    "asset": "image",
+    "aspect_ratio": "16:9",
+    "count": 1,
+    "format": "png",
+    "duration_s": null
+  },
+  "seed": null
 }
 ```
 
 Field rules:
 
-| Field                        | Type            | Rule                                                                  |
-| ---------------------------- | --------------- | --------------------------------------------------------------------- |
-| `subject`                    | string          | Required, 1 to 300 runes after normalization                          |
-| `action`                     | string          | Optional, 0 to 200 runes                                              |
-| `environment`                | string          | Optional, 0 to 200 runes                                              |
-| `composition.shot`           | enum            | `wide`, `medium`, `close_up`, `macro`, `aerial`                       |
-| `composition.angle`          | enum            | `eye_level`, `low`, `high`, `top_down`                                |
-| `composition.aspect_ratio`   | enum            | `1:1`, `3:4`, `4:3`, `9:16`, `16:9`                                   |
-| `lighting`                   | string          | Optional, 0 to 120 runes                                              |
-| `style.medium`               | enum            | `photo`, `cinematic photo`, `illustration`, `3d render`, `anime`, `watercolor` |
-| `style.palette`              | string array    | Max 4 entries, each max 32 runes                                      |
-| `style.mood`                 | string          | Optional, max 48 runes                                                |
-| `details`                    | string array    | Max 6 entries, each max 120 runes                                     |
-| `text_overlay.text`          | string          | Optional, max 80 runes; refused for video in v1                        |
-| `negative`                   | string array    | Max 10 entries, each max 60 runes                                     |
-| `seed`                       | integer or null | `0` to `2147483647`                                                   |
-| `duration_s`                 | integer or null | Video only, 1 to 10                                                   |
-| `motion`                     | string          | Video only, max 120 runes                                             |
-| `camera_motion`              | enum            | Video only: `static`, `pan_left`, `pan_right`, `push_in`, `pull_out`, `orbit` |
+| Section           | Field                        | Type            | Rule                                                                  |
+| ----------------- | ---------------------------- | --------------- | --------------------------------------------------------------------- |
+| Role              | `role`                       | string          | Required, 3 to 200 runes, describe a visual specialist, not a task    |
+| Task              | `task`                       | string          | Required, 5 to 400 runes, one sentence stating what to create          |
+| Context           | `context.subject`            | string          | Required, 1 to 300 runes                                               |
+| Context           | `context.action`             | string          | Optional, 0 to 200 runes                                               |
+| Context           | `context.environment`        | string          | Optional, 0 to 200 runes                                               |
+| Context           | `context.composition.shot`   | enum            | `wide`, `medium`, `close_up`, `macro`, `aerial`                        |
+| Context           | `context.composition.angle`  | enum            | `eye_level`, `low`, `high`, `top_down`                                 |
+| Context           | `context.composition.aspect_ratio` | enum      | `1:1`, `3:4`, `4:3`, `9:16`, `16:9`                                    |
+| Context           | `context.lighting`           | string          | Optional, 0 to 120 runes                                               |
+| Context           | `context.style.medium`       | enum            | `photo`, `cinematic photo`, `illustration`, `3d render`, `anime`, `watercolor` |
+| Context           | `context.style.palette`      | string array    | Max 4 entries, each max 32 runes                                       |
+| Context           | `context.style.mood`         | string          | Optional, max 48 runes                                                 |
+| Context           | `context.details`            | string array    | Max 6 entries, each max 120 runes                                      |
+| Reasoning         | `reasoning`                  | string          | Required, 20 to 600 runes, why these choices serve the task            |
+| Stop conditions   | `stop_conditions.negative`   | string array    | Max 10 entries, each max 60 runes                                      |
+| Stop conditions   | `stop_conditions.max_characters` | integer     | 500 to 3500; the compiler budget for this document                     |
+| Stop conditions   | `stop_conditions.aspect_ratio` | enum          | Same enum as composition; must agree with `output.aspect_ratio`        |
+| Stop conditions   | `stop_conditions.duration_s` | integer or null | Video only, 1 to 10                                                   |
+| Output            | `output.asset`               | enum            | `image`, `video`; must equal `modality`                                |
+| Output            | `output.aspect_ratio`        | enum            | Same enum                                                              |
+| Output            | `output.count`               | integer         | 1 only in v1; more than 1 refused with `BOT_PROMPT_UNSUPPORTED_FIELD`  |
+| Output            | `output.format`              | enum            | `png`, `jpeg`, `webp` for image; `mp4` for video                       |
+| Output            | `output.duration_s`          | integer or null | Video only, 1 to 10                                                    |
+| Top level         | `seed`                       | integer or null | `0` to `2147483647`                                                    |
 
-Unknown fields are rejected, not ignored. A `mpv1` document with `modality: video` that carries `text_overlay` is
-refused with `BOT_PROMPT_UNSUPPORTED_FIELD`.
+Rules that are enforced, not advisory:
 
-### 6.3 Compiler rules
+- Unknown fields are rejected with `DisallowUnknownFields`, so a model that invents a section fails validation
+  instead of silently losing it.
+- A `modality: image` document with `duration_s` set, or a `modality: video` document without one, is refused with
+  `BOT_PROMPT_UNSUPPORTED_FIELD`.
+- `stop_conditions.aspect_ratio` and `output.aspect_ratio` must match. A disagreement is a builder defect, not a user
+  error, and is retried once before falling back.
+- Every string is normalized (NFC, control characters removed, whitespace collapsed) before validation. A field that
+  is empty after normalization is treated as missing.
+- A URL in any field is refused with `BOT_PROMPT_UNSUPPORTED_FIELD`. The builder is not a fetch tool.
 
-1. Section order is fixed: subject and action, environment, composition, lighting, style, details, quality suffix,
-   negative prompt.
+### 6.3 Builder call
+
+| Item          | Value                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| Route         | `POST /api/v1/chat/completions` on `GATEWAY_BASE_URL`, gateway key auth                        |
+| Model         | `BUILDER_MODEL`, a cheap chat model selected by the owner, never hardcoded                     |
+| Temperature   | `0.2`                                                                                          |
+| Max tokens    | `BUILDER_MAX_TOKENS`, default `700`                                                            |
+| Timeout       | `BUILDER_TIMEOUT`, default `20s`                                                               |
+| Response      | JSON object, no markdown fence, decoded with `DisallowUnknownFields`                           |
+| Attempts      | 2. The second attempt appends the validator error and asks for a corrected document           |
+| Fallback      | Deterministic builder (§6.3.2) when both attempts fail, marked `builder: "fallback"`           |
+| Budget        | One builder call per draft, at most 2 attempts, at most 60 builder calls per user per day      |
+
+The system prompt is fixed text from `docs/SPEC-BOT/002-MASTER-PROMPT-METADATA.md`. The user's text is placed in a
+single user message inside a JSON envelope, never concatenated into the system prompt:
+
+```json
+{
+  "modality": "image",
+  "locale": "id",
+  "user_prompt": "<the user's text, max 2000 runes>",
+  "defaults": {"aspect_ratio": "16:9", "style": "cinematic photo"}
+}
+```
+
+The gateway response is read for three things: the JSON document, the model id that answered, and `usage` token
+counts. Token usage is stored on the job for cost reconciliation. A builder response that is valid JSON but fails
+validation is not shown to the user; it is retried, then replaced by the fallback.
+
+#### 6.3.1 Semantic checks after decode
+
+1. All six sections are present and non-empty after normalization.
+2. `task` and `context.subject` do not contradict each other on modality (a video task with an image asset fails).
+3. No field contains a URL, a newline-only payload, or a control character after normalization.
+4. `reasoning` must mention at least one element from `context` (a cheap relevance check against the compiled
+   document, not a second model call). A reasoning string that is generic filler fails the check.
+5. The compiled prompt from §6.4 stays inside `stop_conditions.max_characters`.
+
+#### 6.3.2 Deterministic fallback builder
+
+When the builder is unavailable, over budget, or returns invalid output twice, the service builds the document
+without a model:
+
+1. Normalize the input and cap it at 2000 runes.
+2. Pull `aspect` tokens and duration tokens out of the text.
+3. Pull a style term and a camera motion term from the closed vocabulary in the metadata document.
+4. The first sentence becomes `task` and `context.subject`; a second sentence becomes `context.action`.
+5. `role` becomes `visual director`, `reasoning` becomes a fixed sentence naming the extracted elements, and
+   `stop_conditions` uses the configured baseline negatives.
+
+The result is labelled `builder: "fallback"` in the job row and in the preview message, so the user knows the prompt
+was not model-expanded. The label is honest, not decorative.
+
+### 6.4 Compiler rules
+
+The compiler maps six sections onto two outputs: the upstream prompt string and the request parameters.
+
+| Section           | Goes to the prompt string                                  | Goes to request parameters            |
+| ----------------- | ---------------------------------------------------------- | ------------------------------------- |
+| Role              | A style descriptor, only when it maps to the closed vocabulary; otherwise kept as metadata and left out of the string | none |
+| Task              | Subject and action clause                                  | none                                  |
+| Context           | Environment, composition phrase, lighting, style, details  | aspect ratio, size, duration          |
+| Reasoning         | Never sent upstream; stored and shown truncated in preview | none                                  |
+| Stop conditions   | Negative prompt, character budget                          | duration cap                          |
+| Output            | Quality and format suffix when the modality supports it     | asset count, format, aspect, duration |
+
+Compilation rules:
+
+1. Section order is fixed: task (subject and action), environment, composition, lighting, style, details, quality
+   suffix, negative prompt.
 2. Sections join with `", "`. Empty sections are skipped, never rendered as `", ,"`.
 3. Duplicate tokens are removed case-insensitively after trimming, keeping the first occurrence.
 4. Whitespace is collapsed, control characters are removed, and the result is NFC normalized.
-5. Character budgets are enforced after compilation: 3500 for image, 1800 for video. Over budget is a validation
-   error, not a truncation.
+5. Character budgets are enforced after compilation: 3500 for image, 1800 for video, and never above
+   `stop_conditions.max_characters`. Over budget is a validation error, not a truncation.
 6. The compiled string contains no delimiters that look like instructions to a model. User text is data, and the
    compiler never wraps it in `system:` or similar markers.
-7. Output is deterministic: same input, same bytes. The only exception is an explicit `seed` the user supplied.
+7. Output is deterministic: same document, same bytes. The only exception is an explicit `seed` the user supplied.
 8. Number formatting is locale independent. A duration renders as `10 seconds`, never `10,0`.
 
-Template v1, image:
+Template, image:
 
 ```
 {subject}{", " + action}{", " + environment}{", " + composition_phrase}{", " + lighting}{", " + style_phrase}{", " + details}{", high detail, sharp focus, professional composition"}{", avoid: " + negative}
 ```
 
-Template v1, video:
+Template, video:
 
 ```
 {subject}{", " + action}{", " + environment}{", " + composition_phrase}{", " + lighting}{", " + style_phrase}{", " + motion}{", camera: " + camera_motion}{", " + duration_s + " seconds"}{", " + details}{", avoid: " + negative}
@@ -326,40 +422,51 @@ Template v1, video:
 `composition_phrase` renders as `<shot> shot, <angle> angle, <aspect_ratio> aspect ratio`, with `_` replaced by a
 space. `style_phrase` renders as `<medium>, <palette joined by " and ">, <mood> mood`.
 
-### 6.4 From free text to structure
+Video fields (`motion`, `camera_motion`) arrive in `context.details` and `context.composition` under the metadata
+vocabulary. A video document without a camera motion gets `static`, never a guessed move.
 
-v1 uses a deterministic extractor, not a model:
+### 6.5 Preview and edit
 
-1. Normalize the input and cap it at 2000 runes.
-2. Pull `aspect` tokens (`16:9`, `9:16`, `1:1`, `3:4`, `4:3`) out of the text.
-3. Pull a style term from the closed vocabulary when it appears as a whole word.
-4. Pull a duration (`5 detik`, `10 seconds`) for video.
-5. Pull camera motion terms from the closed vocabulary.
-6. Everything left becomes `subject`, with the first sentence kept as `subject` and a second sentence, when present,
-   as `action`.
-7. Fill defaults: `shot=medium`, `angle=eye_level`, `negative` from the configured baseline list.
+Before any credit is held, the bot shows the elaboration as one message, capped at 3500 characters:
 
-The draft is always shown to the user before generation. The user can change the aspect ratio and the style with
-buttons, and can resend the text to re-extract. The structured draft is stored with the job, so a support question can
-be answered from data rather than from a guess.
+```
+MASTER PROMPT
+Role: senior automotive photographer
+Task: hero image of an orange cat riding a skateboard through Jakarta
+Context: medium shot, eye level, 16:9, golden hour, cinematic photo
+Reasoning: playful subject, local street scene reads faster than a studio setup
+Stop: avoid watermark, text artifacts, extra limbs; max 3500 chars
+Output: 1 image, 16:9, png
 
-### 6.5 Prompt injection and abuse
+[Generate image - 1 credit] [Aspect] [Style] [Edit text] [Cancel]
+```
 
-- User text is never concatenated into an instruction that addresses the model as a system message.
-- Length caps apply before compilation and again after.
-- A prompt that is only whitespace, only control characters, or only a URL is refused with
-  `BOT_PROMPT_EMPTY`.
-- Repeated attempts to break the compiler are rate limited per user, and the refusal is logged under A09.
-- The compiled prompt is stored, but the raw Telegram message is not retained beyond the job row (§13.5).
+The Reasoning line is truncated to 160 characters in the preview and stored in full on the job. The user can edit the
+source text, change aspect ratio, or change style, each of which rebuilds the document. Generating from the preview is
+the only path that holds credits.
 
-### 6.6 Metadata handoff
+### 6.6 Prompt injection and abuse
 
-The owner will supply the master prompt metadata that describes the vocabulary and the per-modality enrichment. Until
-then, this section is the contract for the compiler and the vocabulary lives in
-`internal/masterprompt/vocabulary.go` as typed data. The metadata lands as
-`docs/SPEC-BOT/002-MASTER-PROMPT-METADATA.md` and a new vocabulary version. A vocabulary change is a spec change:
-same PR, same tests, no silent recompilation of historical jobs.
+- The builder system prompt is fixed and never contains user text. The user message is a JSON data envelope.
+- The builder's output is data. It cannot request a tool call, a URL fetch, or a second model call, and any such
+  content fails schema validation.
+- A URL in any field is refused. So is a field made only of instruction phrases from the configured blocklist.
+- Length caps apply before the builder, after the builder, and after compilation.
+- A prompt that is only whitespace, only control characters, or only a URL is refused with `BOT_PROMPT_EMPTY`.
+- Repeated attempts to break the builder are rate limited per user and logged under A09.
+- The compiled prompt and the master prompt document are stored with the job. The raw Telegram message is not
+  retained beyond the job row (§13.5).
 
+### 6.7 Metadata and vocabulary
+
+`docs/SPEC-BOT/002-MASTER-PROMPT-METADATA.md` holds the builder system prompt, the six-section contract as the model
+sees it, the closed vocabulary (style terms, camera moves, negative baseline), and the per-modality enrichment rules.
+The owner maintains that document; code reads the vocabulary as typed data in `internal/masterprompt/vocabulary.go`.
+
+A vocabulary change is a spec change: same PR, same tests, and no silent recompilation of historical jobs. The
+`version` field on every stored document is what makes that possible.
+
+## 7. Plans, credits, and billing
 ## 7. Plans, credits, and billing
 
 ### 7.1 Plan matrix (PROPOSED, owner to confirm)
@@ -533,6 +640,8 @@ CREATE TABLE bot.generation_jobs (
     model             TEXT NOT NULL,
     master_prompt     JSONB NOT NULL,
     compiled_prompt   TEXT NOT NULL,
+    builder           TEXT NOT NULL DEFAULT 'model',
+    builder_model     TEXT NOT NULL DEFAULT '',
     provider_task_id  TEXT NOT NULL DEFAULT '',
     result_url        TEXT NOT NULL DEFAULT '',
     cost_credits      INTEGER NOT NULL CHECK (cost_credits > 0),
@@ -810,7 +919,11 @@ present, `job_id` when present, `user_hash` (first 16 hex of SHA-256 of the Tele
 | `IMAGE_CREDITS`              | no       | `1`                | Overridden per plan row                      |
 | `VIDEO_CREDITS`              | no       | `8`                | Overridden per plan row                      |
 | `FREE_REFERRAL_CREDITS`      | no       | `10`               | Campaign default only                        |
-| `PROMPT_MAX_CHARS`           | no       | `2000`             | Pre-compile cap                              |
+| `PROMPT_MAX_CHARS`           | no       | `2000`             | Pre-builder cap                              |
+| `BUILDER_MODEL`              | yes      | none               | Chat model for the six-section builder        |
+| `BUILDER_MAX_TOKENS`         | no       | `700`              | Output cap per attempt                        |
+| `BUILDER_TIMEOUT`            | no       | `20s`              | One attempt                                   |
+| `BUILDER_DAILY_CAP`          | no       | `60`               | Builder calls per user per day                |
 | `IMAGE_MAX_BYTES`            | no       | `10485760`         | 10 MB                                        |
 | `VIDEO_MAX_BYTES`            | no       | `52428800`         | 50 MB                                        |
 | `VIDEO_POLL_BUDGET`          | no       | `15m`              | Terminal after this                          |
@@ -834,7 +947,9 @@ then. No `t.Skip`, no `-run` filter in CI, `go test -race ./...` is a gate for e
 | Package                | Test focus                                                                         | Cases |
 | ---------------------- | ---------------------------------------------------------------------------------- | ----- |
 | `masterprompt`         | Compile golden output; empty sections; duplicate tokens; budget overflow; unknown field; injection markers kept as data | 6 |
-| `masterprompt`         | Extractor: aspect tokens, style vocabulary, duration words, no match fallback        | 5 |
+| `masterprompt`         | Builder decode: valid document; unknown field; missing section; aspect mismatch; URL field; over-length reasoning | 6 |
+| `masterprompt`         | Fallback builder: aspect tokens, style vocabulary, duration words, no match, builder unavailable | 5 |
+| `masterprompt`         | Preview render: full document; truncated reasoning; fallback label; over 3500 chars refused | 4 |
 | `billing/plans`        | Entitlement by plan; free cannot video; unknown plan denied; enterprise concurrency  | 5 |
 | `billing/credits`      | Hold, settle, refund; insufficient balance; concurrent hold; ledger uniqueness       | 6 |
 | `referral`             | Valid code; exhausted; expired; self referral; second redemption; case folding       | 6 |
@@ -901,7 +1016,7 @@ Each phase is one PR into `development`, reviewed before merge. Branch names fol
 | P0    | `feat(app-bot)-spec`            | This document                                                        | Owner approves scope and the PROPOSED numbers  |
 | P1    | `feat(app-bot)-fase-1`          | Module, config, logx, router, health, migration 001, CI gates         | Binary boots, `/readyz` green, tests green      |
 | P2    | `feat(app-bot)-fase-2`          | Webhook intake, dedupe, stream, worker skeleton, Telegram send client | Duplicate update test, ack under 300 ms        |
-| P3    | `feat(app-bot)-fase-3`          | Master prompt schema, compiler, extractor, preview keyboard           | Golden tests, budget tests, preview flow       |
+| P3    | `feat(app-bot)-fase-3`          | Master prompt schema, builder call, fallback, compiler, preview keyboard | Golden tests, builder validation tests, preview flow |
 | P4    | `feat(app-bot)-fase-4`          | Image generation, download, upload, ledger hold and settle            | One real image end to end with refund path     |
 | P5    | `feat(app-bot)-fase-5`          | Video generation, poller, progress edits, timeout refund              | One real video end to end, late success handled |
 | P6    | `feat(app-bot)-fase-6`          | Plan rows, entitlements, concurrency, `/plan`, `/credits`, `/history` | Plan gating tests, concurrency test            |
@@ -928,7 +1043,7 @@ Each phase is one PR into `development`, reviewed before merge. Branch names fol
 
 | # | Decision                                                                 | Owner input needed | Default until answered                          |
 | - | ------------------------------------------------------------------------ | ------------------ | ----------------------------------------------- |
-| 1 | Master prompt metadata and vocabulary per modality                        | Owner will supply  | Deterministic v1 vocabulary in code             |
+| 1 | Master prompt vocabulary per modality (six-section concept received 2026-10-21) | Owner extends 002 | Seed vocabulary in `002-MASTER-PROMPT-METADATA.md` |
 | 2 | Final pricing and monthly credits                                         | Owner              | PROPOSED table in §7.1                          |
 | 3 | Free campaign capacity and window                                         | Owner              | 500 redemptions, 10 credits, 90 days            |
 | 4 | Bot hostname and DNS                                                      | Owner              | `app-bot.kentang.ai.id`                         |
@@ -944,3 +1059,4 @@ Each phase is one PR into `development`, reviewed before merge. Branch names fol
 | Date       | Change                                        |
 | ---------- | --------------------------------------------- |
 | 2026-10-21 | Initial draft, spec first, no implementation. |
+| 2026-10-21 | Master prompt reworked to the owner's six-section builder (Role, Task, Context, Reasoning, Stop conditions, Output), with an LLM builder stage and a deterministic fallback. |
