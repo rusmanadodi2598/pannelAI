@@ -57,7 +57,7 @@ Checked on the deployment host on 2026-10-21:
 | Item                | Value                                                                                     |
 | ------------------- | ----------------------------------------------------------------------------------------- |
 | OS                  | Ubuntu 24.04.4 LTS, kernel 7.0.0, 2 vCPU, 1 GB RAM, 35 GB free                            |
-| Go toolchain        | `go1.27.2 linux/amd64` at `~/sdk/go`; `app-serv/go.mod` still declares `go 1.26`          |
+| Go toolchain        | `go1.27.2 linux/amd64` at `~/sdk/go`; `app-bot` and `app-serv` pin `go 1.26` with `toolchain go1.26.5` |
 | Redis               | 7.0.15, listening on `127.0.0.1:6379`, password required                                  |
 | PostgreSQL          | 17.11, listening on `127.0.0.1:5432`, service active                                       |
 | Nginx               | active on 80 and 443, TLS termination in place                                             |
@@ -67,8 +67,9 @@ Checked on the deployment host on 2026-10-21:
 
 Consequences for this spec:
 
-1. `app-bot` is a new Go module that declares `go 1.27` and `toolchain go1.27.2`. The `app-serv` module is not bumped
-   in this work.
+1. `app-bot` is a new Go module that declares `go 1.26` and `toolchain go1.26.5`, matching `app-serv`. The host has
+   `go1.27.2`, but the CI linter pins (`staticcheck` 0.8.1, `golangci-lint` 2.9.0) cannot read Go 1.27 export data, so
+   the module stays on 1.26.5 until those pins move. The `app-serv` module is not bumped in this work.
 2. The webhook needs one new hostname, `app-bot.kentang.ai.id`, with a certbot certificate and an Nginx server block.
    Until DNS and the certificate exist, local testing uses a tunnel and a webhook secret, never a public IP over HTTP.
 3. The host has 1 GB RAM. Worker concurrency is bounded and documented in §14.3, not left to defaults.
@@ -1109,3 +1110,4 @@ Each phase is one PR into `development`, reviewed before merge. Branch names fol
 | 2026-10-21 | Initial draft, spec first, no implementation. |
 | 2026-10-21 | Master prompt reworked to the owner's six-section builder (Role, Task, Context, Reasoning, Stop conditions, Output), with an LLM builder stage and a deterministic fallback. |
 | 2026-10-21 | Builder model selection made a benchmarked phase with eligibility gates and a blind owner review. |
+| 2026-10-21 | app-bot pinned to Go 1.26.5 to match the CI linter pins; 1.27.2 stays available on the host. |
