@@ -15,6 +15,7 @@
 	import ApiDocsGroup from '$lib/components/ApiDocsGroup.svelte';
 	import ApiDocsOverview from '$lib/components/ApiDocsOverview.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { fetchOpenAPIDocument, OPENAPI_PATH } from '$lib/api/docs';
 	import { documentGroups, groupAnchor } from '$lib/schemas/openapi-catalog';
 	import { publicOperationCount, schemeUses } from '$lib/schemas/openapi-credentials';
@@ -61,11 +62,9 @@
 	{:else if error}
 		<StateMessage kind="error" title={copy.document.errorTitle} apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => void load()}>{copy.document.retry}</button
-				>
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>
+					{copy.document.retry}
+				</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if doc}
@@ -93,15 +92,16 @@
 					<h2 class="text-base font-medium">{copy.catalog.heading}</h2>
 					<p class="text-sm text-[var(--color-text-muted)]">{copy.catalog.intro}</p>
 
-					<!-- A jump list, because a reference with twenty groups is read by looking one up. -->
-					<nav aria-label={copy.catalog.indexLabel} class="flex flex-wrap gap-x-4 gap-y-1 pt-1">
+					<!-- A jump list, because a reference with twenty groups is read by looking one up. Each entry
+					     is an action link and keeps the 44px row the rest of the panel's controls meet. -->
+					<nav aria-label={copy.catalog.indexLabel} class="flex flex-wrap gap-x-2 gap-y-1 pt-1">
 						{#each groups as group (group.name)}
-							<a class="text-sm underline" href={`#${groupAnchor(group.name)}`}>
+							<Button variant="ghost" class="px-2 underline" href={`#${groupAnchor(group.name)}`}>
 								{group.name}
 								<span class="text-xs text-[var(--color-text-muted)]"
 									>({group.operations.length})</span
 								>
-							</a>
+							</Button>
 						{/each}
 					</nav>
 				</div>
