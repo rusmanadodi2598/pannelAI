@@ -378,7 +378,7 @@ provider and a toggle, so both modes are kept and both are verified per screen b
 | Logo source                                           | `assets/static/logo.png`, the owner's original 1254x1254 file                                | Kept as the source of truth                    |
 | Favicon                                               | `static/favicon.png`                                                                         | Derived from the same source                   |
 | Icon set                                              | `@lucide/svelte`, one set, no mixing                                                         | Real                                           |
-| Icons in navigation                                   | Each has a written reason in `src/lib/icons.ts`                                              | Real                                           |
+| Icons in navigation                                   | Each has a written reason in `src/lib/icon-maps/`, re-exported by `src/lib/icons.ts`        | Real                                           |
 | Avatars, photography, illustrations                   | None                                                                                         | Not used. The panel shows no people.           |
 | Statistics, testimonials, uptime or compliance claims | None anywhere in the panel                                                                   | Forbidden (R-17, R-18, R-36)                   |
 

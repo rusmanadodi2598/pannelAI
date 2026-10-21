@@ -101,7 +101,8 @@ src/lib/components/  panel components (shell, sidebar, header, dialogs, table ro
 src/lib/primitives/  shadcn-svelte components, generated, not hand-edited
 src/lib/stores/      session, theme, and sidebar preference state
 src/lib/navigation.ts  the sidebar tree as data, five groups and 20 nodes
-src/lib/icons.ts     the one icon map, one written reason per icon
+src/lib/icons.ts     the icon-map barrel; the four maps sit in src/lib/icon-maps/, one written reason per icon
+src/lib/icon-maps/   the sidebar's rows, the non-nav section headers, the row actions, and the other controls
 src/lib/utils.ts     class-name helper (clsx plus tailwind-merge)
 src/app.css          the token layer: DESIGN.md §3 to §5
 assets/static/       owner-supplied source assets (the logo original)
@@ -113,7 +114,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Fifty-four passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Fifty-eight passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -271,46 +272,170 @@ other affordance and answered nothing under a finger, and a copy control shipped
 one screen whose whole job is that control. The fifty-second is the Media Provider screen, measured the same
 day: six control shapes written at the call site, of which four were links and one of those is a card's heading,
 a commit that cannot take the accent because every card carries one, and four test files that had each outgrown
-the subject they were named for.
+the subject they were named for. The fifty-third is the Provider registry list, measured 2026-10-20: three
+anchors still written at the call site, missed by a pass that had recorded the screen as done because its walk
+read the components it edited and never opened the table. The fifty-fourth is the Playground screen, measured
+the same day: the retry a failed model read leaves behind and the send and stop that share one slot, none of
+them painted under a press, plus the two test files in the panel that had outgrown the screen, at 664 and 271
+lines. The fifty-fifth is the Login screen, measured 2026-10-21: the last primary action written as a hand-made
+accent fill, carrying the `disabled:opacity-60` that §3.5 already records as the wrong fade, and a sign-in that
+greyed under the finger while it worked. The fifty-sixth is the Changelog screen, measured the same day: one
+retry written at the call site, and a fixture that existed only inside one test file. The fifty-seventh is the
+API Docs screen, measured the same day: a retry, and the jump list that is the reference's table of contents,
+the one control in the panel where the 44px floor costs visible height. The fifty-eighth is the icon maps,
+measured the same day: the last file over the cap in `src/`, split by where a glyph is used so that a screen
+reading the sidebar's icons no longer pulls the toolbar's into its module graph.
 
-### What each remaining page still owes, measured 2026-10-20
+### What each page still owes, measured 2026-10-21
 
-Counted by walking each route's own component tree, so the numbers are the page's rather than the
-repository's. A control is a `<button>` or an `<a>` written at the call site; the cap is SPEC-UI §10's 250
-lines.
-
-| Page         | Controls left    | Test files over the cap |
-| ------------ | ---------------- | ----------------------- |
-| `/api-docs`  | 1 button, 1 link | none                    |
-| `/changelog` | 1 button         | none                    |
-| `/login`     | 1 button         | none                    |
+Every route has now had its pass. The three that were left owed one control each, and each is recorded below:
+`/login`'s submit, `/changelog`'s retry, and `/api-docs`'s retry plus the jump list that is its table of
+contents. No page's own tree has a call-site control left, and no page-specific test file is over the cap.
 
 `/media-providers` left this list on 2026-10-20: its six control shapes read the button and its four test files
 are under the cap. `/providers` came back onto it the same day, after its own pass had been recorded as done,
 and left it again with that record corrected: the walk of the earlier pass read the route file and the
 components it edited, and stopped there, so it never counted `ProviderTable`'s two row links or the custom node
-row's name link. Three anchors written at the call site, one of them the heading-shaped link §3.5 rules on and
-two of them the row action that routes. `/playground` left it the same day too: its three buttons read the
-button, and the two test files that had outgrown the screen came down from 664 and 271 lines into six, the
-largest 213, with one support module holding the upstream shape those six read.
+row's name link. `/playground` left it the same day too: its three buttons read the button, and the two test
+files that had outgrown the screen came down from 664 and 271 lines into six, the largest 213.
 
-Three items belong to no page and wait for a decision of their own: `src/lib/icons.ts` at 281 lines, shared
-by every screen; the 36px checkbox label on the five files §8.7 still finds short; and the shared
-`tests/support/model-stub.ts` at 898, which is a fixture rather than a screen's.
+What remains is not a page's. `src/lib/icons.ts` was the last file over the cap in `src/` at 281 lines, shared
+by every screen and deferred by the owner until the pages were done; it is split now, recorded below. The 36px
+checkbox label §8.7 still finds short on five files is another item of the same kind. So are the shared
+`tests/support/model-stub.ts` at 898 and the seven test files on screens whose passes are recorded:
+`provider-touch-targets` at 308, `bulk-selection` at 301, `provider-custom-models` at 297, `combo-editor` at
+286, `provider-detail-key-dialog` at 271, `model-catalog-probe` at 265 and `provider-thinking-control` at 258.
+Five of those seven are the provider detail screen's, which is a different page from the registry list.
 
-This table counts what each page's own walk finds. Measured across the whole panel the same day, `src/` has one
-file over the cap (`icons.ts`) and `tests/` has eight: `model-stub.ts`, and seven that sit on screens whose
-passes are recorded, `provider-touch-targets` at 308, `bulk-selection` at 301, `provider-custom-models` at 297,
-`combo-editor` at 286, `provider-detail-key-dialog` at 271, `model-catalog-probe` at 265 and
-`provider-thinking-control` at 258. Five of the seven are the provider detail screen's, which is a different
-page from the registry list and a pass of its own. Each pass cleared its own cluster and no pass has swept the
-tree, so that sweep is a decision of its own rather than another page's debt.
+Measured across the whole panel on 2026-10-21, `src/` has no file over the cap and `tests/` has eight, the
+largest `model-stub.ts` at 898. Each pass cleared its own cluster and no pass has swept the tree, so that
+sweep is a decision of its own rather than another page's debt.
 
-Two numbers in this row were stale and are corrected here. `tests/schemas/vision-adapter.test.ts`, listed at
-268 lines, measures 183: the `/combos` pass the row named did split it, and the row was never re-measured.
-And `/providers` was listed with no test file over the cap, while `tests/routes/providers-list.test.ts` was at
-285; the walk that counted the page's files read the components and not the route's own test tree. Both came
-under with this pass.
+Two numbers in the earlier version of this row were stale and were corrected on 2026-10-20.
+`tests/schemas/vision-adapter.test.ts`, listed at 268 lines, measures 183: the `/combos` pass the row named
+did split it, and the row was never re-measured. And `/providers` was listed with no test file over the cap,
+while `tests/routes/providers-list.test.ts` was at 285; the walk that counted the page's files read the
+components and not the route's own test tree. Both came under with that day's passes.
+
+### The icon maps split by where a glyph is used, 2026-10-21
+
+Run with Bun 1.3.0. `src/lib/icons.ts` was the last file over the cap in `src/` at 281 lines, and the owner
+deferred it until every page had passed. The four maps inside it had nothing to do with each other except that
+they all name a glyph: the sidebar's rows, the section headers that are not nav rows, the row actions of the
+tables, and the controls that are neither.
+
+Each map now owns a file under `src/lib/icon-maps/` and imports only the glyphs it uses, so the glyphs a
+screen never reads are no longer evaluated in the module that defines the ones it does. `src/lib/icons.ts`
+stays the barrel, so every `$lib/icons` import and `tests/navigation/icons.test.ts` are unchanged; that test
+still cross-checks the maps against `src/lib/navigation.ts` and still holds every reason to at least 20
+characters.
+
+| File                               | Was | Now                                                          |
+| ---------------------------------- | --- | ------------------------------------------------------------ |
+| `src/lib/icons.ts`                 | 281 | 26, the barrel and the two lookups                           |
+| `src/lib/icon-maps/nav.ts`         | -   | 77, the sidebar rows and the non-nav section headers         |
+| `src/lib/icon-maps/row-actions.ts` | -   | 68, the table row actions and their `RowAction` type         |
+| `src/lib/icon-maps/controls.ts`    | -   | 116, the copy, toolbar, paging, fold and selection glyphs    |
+| `src/lib/icon-maps/types.ts`       | -   | 10, the `IconEntry` shape, inferred from one installed glyph |
+
+| Check                       | Result                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                  |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                 |
+| Icon map tests              | 18 tests, exit 0, unchanged: the maps are the same data, read through the same barrel |
+| `bun run test`              | 3323 tests passed across 260 files, exit 0 (3316 across 257 before this batch)        |
+| `bun run build`             | succeeds, output in `build/`                                                          |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                          |
+| File size                   | `src/` now has no file over the cap, the largest being 116 lines                      |
+| SYSTEM_MAP.md               | N/A: an internal module split with no boundary, data shape, or interaction change     |
+
+### The API Docs screen on the scale, the jump list that is its table of contents, and the height the 44px floor costs, 2026-10-21
+
+Run with Bun 1.3.0. Two shapes were written at the call site and neither painted under a press: the retry a
+failed document read leaves behind, and the jump list above the groups, which is this screen's table of
+contents.
+
+The jump list is the one place in the panel where the 44px row visibly costs height: twenty entries at 44px
+wrap onto more lines than a run of underlined text did. It keeps the floor anyway, because a reference opened
+on a phone is read by touching one of those entries, and the row is what the rest of the panel's controls meet.
+The spacing moved with it: the old list was separated by a 16px column gap, so the entries now carry `px-2` and
+the gap is 8px, which leaves the distance between two labels unchanged while every label owns its own box.
+Each entry keeps the destination it always had, the `h3` id `ApiDocsGroup` renders for that group.
+
+The retry is the ghost variant with `underline` in the class list it accepts, the shape every other screen's
+retry wears.
+
+| File                                           | Was | Now                                               |
+| ---------------------------------------------- | --- | ------------------------------------------------- |
+| `routes/api-docs/+page.svelte`                 | 117 | 118, the retry and every jump entry on the button |
+| `tests/routes/api-docs-control-states.test.ts` | -   | 67, the walk this screen had no file for          |
+
+| Check                       | Result                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                  |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                 |
+| API Docs cluster            | 17 tests across 2 files, exit 0 (the screen's 14 plus the walk's 3)                   |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                          |
+| File size                   | No file on this screen is over the cap in `src` or in `tests`                         |
+| SYSTEM_MAP.md               | N/A: no structural change. The rule these controls follow is already `DESIGN.md` §3.5 |
+
+Not yet verified: no Chromium pass. The jump list is the one control on these three screens whose density
+changed, and what a 44px row does to a twenty-entry wrap at 390 is measured here as class tokens rather than as
+a rendered height. The full panel suite and the emitted stylesheet are recorded once, under the Login record
+below, because all three pages were verified in one run.
+
+### The Changelog screen on the scale, the stub the walk and the screen now share, 2026-10-21
+
+Run with Bun 1.3.0. One control was written at the call site: the retry a failed release read leaves behind, an
+underline that painted nothing under a press. It is the screen's second action after the refresh control, and
+on the touch layout where `hover:` never applies it answered nothing at all.
+
+The screen's fixture had been written twice in effect, once as the render test's local stub and once as the
+shape any other test would have to rebuild. It is `tests/support/changelog-stub.ts` now, answering both routes
+the screen reads and recording the requests, so the state walk and the render tests ask the same fake. The
+render test dropped 32 lines and kept every case.
+
+| File                                            | Was | Now                                                      |
+| ----------------------------------------------- | --- | -------------------------------------------------------- |
+| `routes/changelog/+page.svelte`                 | 189 | 188, the retry on the button                             |
+| `tests/components/changelog.test.ts`            | 226 | 194, reading the shared stub                             |
+| `tests/support/changelog-stub.ts`               | -   | 50, both reads, their fixtures, and the request recorder |
+| `tests/routes/changelog-control-states.test.ts` | -   | 46, the walk this screen had no file for                 |
+
+| Check             | Result                                                        |
+| ----------------- | ------------------------------------------------------------- |
+| Changelog cluster | 15 tests across 2 files, exit 0 (the screen's 13 plus 2)      |
+| File size         | No file on this screen is over the cap in `src` or in `tests` |
+| SYSTEM_MAP.md     | N/A: no structural change                                     |
+
+### The Login screen on the scale, and the filled control that now stays filled while it works, 2026-10-21
+
+Run with Bun 1.3.0. The last screen in the panel whose primary action was hand-painted: an accent fill written
+at the call site with `disabled:opacity-60`, the exact fade `DESIGN.md` §3.5 records as the wrong one, because
+opacity moves a label and its own fill toward the page together.
+
+The swap also settles a state the screen had never expressed: while the sign-in is out, the control keeps the
+accent and says `aria-busy`, instead of greying under the finger that pressed it. That is §3.5's in-flight
+rule, and it is why the disabled attribute alone would not have been enough here.
+
+| File                                        | Was | Now                                                |
+| ------------------------------------------- | --- | -------------------------------------------------- |
+| `routes/login/+page.svelte`                 | 95  | 94, the sign-in on the button, busy while it works |
+| `tests/routes/login-control-states.test.ts` | -   | 68, the walk this screen had no file for           |
+
+| Check                       | Result                                                                                                                                                         |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                           |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                                                                                          |
+| `bun run test`              | 3323 tests passed across 260 files, exit 0 (3316 across 257 before this batch)                                                                                 |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet carries the state and accent ramp rules the three controls read                                           |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                                                                                                   |
+| File size                   | No file on this screen is over the cap in `src` or in `tests`; the `src/` debt this row used to name, `icons.ts` at 281, is closed by the split recorded above |
+| SYSTEM_MAP.md               | N/A: no structural change                                                                                                                                      |
+
+Not yet verified: no Chromium pass, for the reason the two later records already state. `/login` is the one
+screen in the panel reachable without a session, so it is the one these passes could have driven in a browser
+had a harness been installed; what is proved here is the class contract, the submit type, and the busy pair.
 
 ### The Playground screen on the scale, one slot that wears the accent, and the two files that outgrew the screen, 2026-10-20
 
