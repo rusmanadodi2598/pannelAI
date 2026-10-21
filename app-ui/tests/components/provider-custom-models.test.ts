@@ -1,18 +1,15 @@
-// Custom model write tests (docs/SPEC-UI/001-SPEC-UI.md §6.3).
+// Custom model reads and removal (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
-// The page is the unit under test for the same reason as the disabled-set tests: a custom row joins the
-// catalog, so the form's success has to reach the list above it. The stub refuses what the server refuses,
-// which is what makes the local-refusal tests meaningful: a test that presses Add with a bad model id and
-// asserts no request was sent proves the panel caught it, not that the stub was lenient.
+// The page is the unit under test because a custom row joins the catalog, so the list has to be read where
+// the operator reads it. The add path, with the refusals the panel proves before the wire, has its own file,
+// `provider-custom-models-add.test.ts`.
 
-import { cleanup, render, screen, waitFor, within } from '@testing-library/svelte';
+import { cleanup, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
-import { catalogRow, customRow, stubModels, type ModelStub } from '../support/model-stub';
+import { customModelStub, renderProvider, waitForCustomTable } from '../support/custom-model-page';
 import { expectIconOnly } from '../support/icon-only';
-import { squashed, value } from '../support/dom';
-import { forEachCase } from '../support/tables';
-import { openAllSections } from '../support/provider-sections';
+import { squashed } from '../support/dom';
+import type { ModelStub } from '../support/model-stub';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -24,59 +21,13 @@ vi.mock('$app/paths', () => ({
 let stub: ModelStub;
 
 beforeEach(() => {
-	stub = stubModels({
-		catalog: [catalogRow()],
-		custom: [
-			customRow(),
-			customRow({
-				id: 'mdl_02',
-				provider_id: 'anthropic',
-				model_id: 'claude-3-haiku',
-				display_name: 'Claude 3 Haiku'
-			})
-		]
-	});
+	stub = customModelStub();
 });
 
 afterEach(() => {
 	cleanup();
 	vi.unstubAllGlobals();
 });
-
-async function renderProvider(providerId = 'openai'): Promise<void> {
-	render(ProviderDetailPage, { props: { params: { provider_id: providerId }, data: {} } });
-	await openAllSections('Models');
-}
-
-/** Fills the add form. The fields are found by their label, so a renamed field fails here. */
-function fillForm(fields: {
-	model_id?: string;
-	display_name?: string;
-	capabilities?: string;
-}): void {
-	if (fields.model_id !== undefined) {
-		const input = screen.getByLabelText('Model id') as HTMLInputElement;
-		input.value = fields.model_id;
-		input.dispatchEvent(new Event('input', { bubbles: true }));
-	}
-	if (fields.display_name !== undefined) {
-		const input = screen.getByLabelText('Display name (optional)') as HTMLInputElement;
-		input.value = fields.display_name;
-		input.dispatchEvent(new Event('input', { bubbles: true }));
-	}
-	if (fields.capabilities !== undefined) {
-		const input = screen.getByLabelText('Capabilities (optional)') as HTMLInputElement;
-		input.value = fields.capabilities;
-		input.dispatchEvent(new Event('input', { bubbles: true }));
-	}
-}
-
-async function waitForCustomTable(): Promise<void> {
-	await waitFor(() =>
-		expect(screen.getByRole('table', { name: /custom models declared/i })).toBeTruthy()
-	);
-}
-
 describe('the custom model list', () => {
 	it('lists this provider only, with a count that says so', async () => {
 		await renderProvider();
@@ -101,139 +52,6 @@ describe('the custom model list', () => {
 
 		const table = screen.getByRole('table', { name: /custom models declared/i });
 		expect(within(table).getByText('tools')).toBeTruthy();
-	});
-});
-
-describe('adding a custom model', () => {
-	it('sends the provider from the screen, the parsed capabilities, and shows the row', async () => {
-		await renderProvider();
-		await waitForCustomTable();
-
-		fillForm({
-			model_id: 'gpt-5-mini',
-			display_name: 'GPT-5 mini',
-			capabilities: 'vision, tools, vision'
-		});
-		screen.getByRole('button', { name: 'Add the model' }).click();
-
-		await waitFor(() => expect(stub.customCreates).toHaveLength(1));
-		expect(stub.customCreates[0]).toEqual({
-			provider_id: 'openai',
-			model_id: 'gpt-5-mini',
-			display_name: 'GPT-5 mini',
-			capabilities: ['vision', 'tools']
-		});
-
-		await waitFor(() => expect(screen.getByText('GPT-5 mini')).toBeTruthy());
-	});
-
-	it('adds the new model to the catalog, because a custom row is a catalog row', async () => {
-		await renderProvider();
-		await waitForCustomTable();
-
-		fillForm({ model_id: 'gpt-5-mini', display_name: 'GPT-5 mini' });
-		screen.getByRole('button', { name: 'Add the model' }).click();
-
-		await waitFor(() => {
-			const catalog = screen.getByRole('table', { name: /model catalog/i });
-			expect(within(catalog).getByText('GPT-5 mini')).toBeTruthy();
-		});
-	});
-
-	it('clears the form after a successful add', async () => {
-		await renderProvider();
-		await waitForCustomTable();
-
-		fillForm({ model_id: 'gpt-5-mini', display_name: 'GPT-5 mini', capabilities: 'vision' });
-		screen.getByRole('button', { name: 'Add the model' }).click();
-
-		await waitFor(() => expect(screen.getByText('GPT-5 mini')).toBeTruthy());
-		expect(value(screen.getByLabelText('Model id'))).toBe('');
-		expect(value(screen.getByLabelText('Display name (optional)'))).toBe('');
-		expect(value(screen.getByLabelText('Capabilities (optional)'))).toBe('');
-	});
-
-	it('names the model it added, so the list change is not the only signal', async () => {
-		await renderProvider();
-		await waitForCustomTable();
-
-		fillForm({ model_id: 'gpt-5-mini', display_name: 'GPT-5 mini' });
-		screen.getByRole('button', { name: 'Add the model' }).click();
-
-		await waitFor(() =>
-			expect(screen.getByText('openai/gpt-5-mini was added to the catalog.')).toBeTruthy()
-		);
-	});
-
-	// The wire requires a non-empty display name (`schema/model.go`, `CreateCustomModelRequest.DisplayName`)
-	// while the reference adds a model from its id alone, so the body carries the id as the name. Blank is
-	// also the state the form opens in, which is what makes this the case an operator hits first.
-	it('stores the model id as the display name when the name is left blank', async () => {
-		await renderProvider();
-		await waitForCustomTable();
-
-		fillForm({ model_id: 'gpt-5-mini' });
-		screen.getByRole('button', { name: 'Add the model' }).click();
-
-		await waitFor(() => expect(stub.customCreates).toHaveLength(1));
-		expect(stub.customCreates[0]).toEqual({
-			provider_id: 'openai',
-			model_id: 'gpt-5-mini',
-			display_name: 'gpt-5-mini',
-			capabilities: []
-		});
-		// The screen names the row it added, which is what proves the write reached the page rather than
-		// only the stub. The table's own cells are not queried: the id and the name are the same string
-		// here, so a text query would match the row twice over.
-		await waitFor(() =>
-			expect(screen.getByText('openai/gpt-5-mini was added to the catalog.')).toBeTruthy()
-		);
-	});
-
-	describe('refuses locally what the API would refuse', () => {
-		forEachCase(
-			[
-				{
-					name: 'a model id with a space',
-					fields: { model_id: 'gpt 5', display_name: 'GPT-5' },
-					message: 'A model id cannot contain spaces.'
-				},
-				{
-					name: 'an empty model id',
-					fields: { model_id: '', display_name: 'GPT-5' },
-					message: 'A model id is required.'
-				},
-				{
-					name: 'a model id past the API bound',
-					fields: { model_id: 'a'.repeat(201), display_name: 'GPT-5' },
-					message: 'Use 200 characters or fewer.'
-				}
-			],
-			async ({ fields, message }) => {
-				await renderProvider();
-				await waitForCustomTable();
-
-				fillForm(fields);
-				screen.getByRole('button', { name: 'Add the model' }).click();
-
-				const issues = await screen.findByRole('alert');
-				expect(squashed(issues)).toContain(message);
-				expect(stub.customCreates).toEqual([]);
-			}
-		);
-	});
-
-	it('reports the server refusal, including a pair that is already declared', async () => {
-		await renderProvider();
-		await waitForCustomTable();
-
-		// `openai/gpt-4o` is in the catalog, so the server answers 409 for the duplicate pair.
-		fillForm({ model_id: 'gpt-4o', display_name: 'GPT-4o again' });
-		screen.getByRole('button', { name: 'Add the model' }).click();
-
-		await waitFor(() =>
-			expect(screen.getByText(/model already exists: models_custom_pair/)).toBeTruthy()
-		);
 	});
 });
 

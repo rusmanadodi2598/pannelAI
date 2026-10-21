@@ -1,35 +1,19 @@
-// The bulk selection surface (docs/SPEC-UI/001-SPEC-UI.md §6.2, §6.9, §8.11.9).
+// The bulk action bar and the endpoint table's selection (docs/SPEC-UI/001-SPEC-UI.md §6.2, §8.11.9).
 //
 // Two promises are tested here and neither is cosmetic. The first is the owner's rule that these controls
-// are icon-only: no word in the button, the accessible name in `title`, the glyph decorative. The second
-// is D9's: a Select-All speaks with the server's count, so a ten-row page of a forty-seven row set has to
-// say forty-seven, and clearing has to name the number it is dropping. A bar that counted the rows on
+// are icon-only: no word in the button, the accessible name in `aria-label`, the glyph decorative. The
+// second is D9's: a Select-All speaks with the server's count, so a ten-row page of a forty-seven row set has
+// to say forty-seven, and clearing has to name the number it is dropping. A bar that counted the rows on
 // screen would look correct and be a lie.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import BulkActionBar from '$lib/components/BulkActionBar.svelte';
 import EndpointTable from '$lib/components/EndpointTable.svelte';
-import ProxyTable from '$lib/components/ProxyTable.svelte';
-import EndpointKeysTable from '$lib/components/EndpointKeysTable.svelte';
 import { expectIconOnly } from '../support/icon-only';
 import { squashed } from '../support/dom';
 import { rowChecked, toggleRow } from '$lib/utils/selection';
-import { endpointKeyRow, endpointRow } from '../support/endpoint-stub';
-import { proxyRow } from '../support/proxy-stub';
-import type { Endpoint } from '$lib/schemas/endpoint';
-import type { Proxy } from '$lib/schemas/proxy';
-import type { EndpointKey } from '$lib/schemas/endpoint';
-
-const endpointKey = (overrides: Record<string, unknown> = {}): EndpointKey =>
-	endpointKeyRow(overrides) as unknown as EndpointKey;
-
-// The row builders answer the wire shape, and these components take the parsed one. Casting at the
-// fixture boundary keeps the builders shared rather than duplicated for the typed call sites.
-const endpoint = (overrides: Record<string, unknown> = {}): Endpoint =>
-	endpointRow(overrides) as unknown as Endpoint;
-const proxy = (overrides: Record<string, unknown> = {}): Proxy =>
-	proxyRow(overrides) as unknown as Proxy;
+import { endpoint } from '../support/selection-fixtures';
 
 afterEach(() => cleanup());
 
@@ -226,76 +210,5 @@ describe('the endpoint table selection', () => {
 	it('renders no checkbox column when the caller cannot act on a set', () => {
 		render(EndpointTable, { endpoints: [endpoint()], onopen: vi.fn() });
 		expect(screen.queryByRole('checkbox')).toBeNull();
-	});
-});
-
-describe('the proxy table selection', () => {
-	it('promotes Enabled from a text cell to an icon toggle that names its row', async () => {
-		const ontoggle = vi.fn();
-		render(ProxyTable, {
-			proxies: [proxy({ id: 'prx_1', label: 'pool-a', enabled: true })],
-			testingId: null,
-			onedit: vi.fn(),
-			ontest: vi.fn(),
-			ondelete: vi.fn(),
-			ontoggle
-		});
-
-		const name = 'Disable pool-a';
-		const button = screen.getByRole('button', { name });
-		expectIconOnly(button, name);
-		await fireEvent.click(button);
-		expect(ontoggle).toHaveBeenCalledWith(expect.objectContaining({ id: 'prx_1' }), false);
-		// The word stays beside the glyph, so the state reads without depending on hue. The header
-		// carries the same word, so the assertion is scoped to the cell's own text.
-		expect(screen.getByText('Enabled', { selector: 'td span' })).toBeTruthy();
-	});
-
-	it('puts the row checkbox in the same cell as Edit, Test and Delete', async () => {
-		const onselect = vi.fn();
-		render(ProxyTable, {
-			proxies: [proxy({ id: 'prx_1', label: 'pool-a' }), proxy({ id: 'prx_2', label: 'pool-b' })],
-			testingId: null,
-			onedit: vi.fn(),
-			ontest: vi.fn(),
-			ondelete: vi.fn(),
-			ontoggle: vi.fn(),
-			selected: [],
-			onselect
-		});
-
-		const box = screen.getByRole('checkbox', { name: 'Select pool-b for bulk actions' });
-		const edit = screen.getByRole('button', { name: 'Edit pool-b' });
-		expect(
-			box.closest('div')?.contains(edit),
-			'checkbox and the action icons are not one group'
-		).toBe(true);
-
-		await fireEvent.click(box);
-		expect(onselect).toHaveBeenCalledWith('prx_2', true);
-	});
-});
-
-describe('the credential table inside one endpoint drawer', () => {
-	it('renders a checkbox per credential beside its own actions', () => {
-		render(EndpointKeysTable, {
-			keys: [
-				endpointKey({ id: 'uky_1', label: 'primary' }),
-				endpointKey({ id: 'uky_2', label: 'spare', tags: ['event-week'] })
-			],
-			authType: 'api_key',
-			testing: null,
-			now: Date.now(),
-			ontest: vi.fn(),
-			onsettled: vi.fn(),
-			onremove: vi.fn(),
-			selected: [],
-			onselect: vi.fn()
-		});
-
-		// The credential drawer selects per row; its Select-All is the bar's, scoped to this endpoint.
-		expect(screen.getByRole('checkbox', { name: 'Select primary for bulk actions' })).toBeTruthy();
-		// The label rides in the chip set the drawer renders, not in a ninth column.
-		expect(screen.getByText('event-week')).toBeTruthy();
 	});
 });
