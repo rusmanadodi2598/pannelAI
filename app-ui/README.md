@@ -114,7 +114,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Fifty-nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Sixty passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -287,7 +287,10 @@ measured the same day: the last file over the cap in `src/`, split by where a gl
 reading the sidebar's icons no longer pulls the toolbar's into its module graph. The fifty-ninth is the eight
 test files over the cap, measured 2026-10-21: seven screens' suites split along the subjects each already held,
 and the shared model stub, which was the largest at 898 lines, into four route handlers behind the same
-exports. No file in `src/` or `tests/` is over the cap now.
+exports. No file in `src/` or `tests/` is over the cap now. The sixtieth is the panel side of the contract
+gate, measured the same day: 46 response schemas read against the committed `openapi.json`, which named
+every field the panel requires except two, and those two are a contract gap recorded in the test rather
+than waived.
 
 ### What each page still owes, measured 2026-10-21
 
@@ -2952,15 +2955,18 @@ gateway.
 
 ## Open items that block later phases
 
-1. **The panel's response schemas are not compared against the served contract by a gate.** The
+1. **The panel's response schemas are compared against the served contract by a gate, for names.** The
    error-code half is wired: `scrypts/gates/contract-drift.sh` compares SPEC-API §8 with the panel's own
    enum in `src/lib/schemas/error.ts`, and it runs in `scrypts/gates/all.sh`. The document half is pinned
    twice: `scrypts/gates/contract-openapi.sh` compares the served `GET /api/v1/openapi.json` with
    `docs/CONTRACT/001-CONTRACT-API-V1.yaml`, and `TestOpenAPICoversEveryRegisteredRoute` (in
-   `app-serv/internal/router`) pins the document to the router. What is left is the panel side of a field
-   rename: a field the panel reads strictly is caught by that resource's tests only where a fixture covers
-   it. The file this item originally waited for (`docs/SPEC-API/002-SPEC-API-openapi.md`) is superseded;
-   see spec §14 Q3.
+   `app-serv/internal/router`) pins the document to the router. The panel half is
+   `tests/contract/panel-schemas.test.ts`: it reads the committed `openapi.json` and asks, of 46 response
+   schemas, whether the contract names every field the panel requires. It compares property names, not
+   types, so a renamed or removed field fails here and a retyped one is still the resource tests' job. It
+   carries one recorded divergence: `EndpointOAuthResponse` does not declare `has_access_token` or
+   `has_refresh_token` although the service's DTO serves them, and the gate fails the day the contract
+   catches up so the exception cannot outlive the gap. See spec §14 Q3.
 2. `AGENTS.md` scopes itself to the Go services (`app-*/**`), so it does not govern this panel. The
    panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and they are applied by
    hand here. The panel's gates live in `scrypts/gates/panel-check.sh`.
