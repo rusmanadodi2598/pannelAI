@@ -6,9 +6,9 @@ track histori"**.
 
 |                      |                                                                                                                                                                                                                                                                                                                                                                       |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | **CLOSED 2026-10-21** untuk registrasi, katalog, dan dialek video. Live generation belum dijalankan: deployment ini belum punya API key Agnes. Dua commit lokal, `cf2d543` dan `c06caa4`, belum di-push.                                                                                                                                                                |
+| **Status**           | **CLOSED 2026-10-21** untuk registrasi, katalog, dan dialek video. Live dengan key asli: chat, tool, streaming, thinking, image, dan jalur poll terverifikasi lewat gateway; create video belum, karena antrean vendor penuh sepanjang jendela tes. Tiga commit lokal, `cf2d543`, `c06caa4`, `bbda3f6`, belum di-push. |
 | **Mechanism**        | DURING (antislop)                                                                                                                                                                                                                                                                                                                                                     |
-| **Permintaan owner** | Provider Agnes AI terdaftar dan bisa dipakai, bukan hanya masuk daftar. Fokus pass ini registrasi + jalur chat/image/video; pembuktian live menunggu key.                                                                                                                                                                                                              |
+| **Permintaan owner** | Provider Agnes AI terdaftar dan bisa dipakai, bukan hanya masuk daftar. Key live diterima 2026-10-21 dan dipakai untuk menutup pembuktian chat, image, dan jalur video.                                                                                                                                                                                                  |
 | **Kaitan**           | SPEC-API §7.4 dan §7.10 (diamendemen) + changelog 2026-10-21; `SYSTEM_MAP.md`; AGENTS.md §1.1, §1.2, §1.9, §2.4; PORT 011 (bentuk route video) dan PORT 012 (dialek video keempat)                                                                                                                                                                                      |
 | **Tanggal**          | 2026-10-21                                                                                                                                                                                                                                                                                                                                                            |
 | **Reference**        | `https://wiki.agnes-ai.com/en/docs/{overview,quickstart,agnes-25-flash,agnes-30-flash,agnes-image-25-flash,agnes-video-25,agnes-video-25-flash,pricing}.md`, diukur 2026-10-21; `GET https://apihub.agnes-ai.com/v1/models` (publik, tanpa auth). Reference 9Router `39e36d3d` tidak punya entri `agnes`.                                                              |
@@ -71,23 +71,39 @@ promosi, sehingga nol adalah angka yang benar hari ini, bukan angka yang hilang.
 | `go-test.sh`          | PASS: `go test -race -count=1 ./...` seluruh `app-serv`, 20 paket `ok`; suite integrasi di-skip karena `PANNELAI_TEST_POSTGRES_DSN` tidak diekspor |
 | `go test -race`       | PASS terarah untuk `./internal/registry` dan `./internal/service` (23,4s dan 82,2s)                    |
 | HEAD terisolasi       | `git worktree` di `c06caa4`: `go build ./...` sukses, registry dan service hijau                       |
-| Live tanpa key        | `POST /v1/videos`, `GET /agnesapi`, `POST /v1/images/generations` menjawab **401 "Token not provided"** |
+| Live, upstream langsung | chat `agnes-3.0-flash` 200 (`pong`), tool call 200 (`get_weather({"city":"Jakarta"})`), streaming 8 frame SSE + `[DONE]`, thinking 200 dengan `reasoning_content` lewat `chat_template_kwargs`, image `agnes-image-2.5-flash` 200 (URL, 10,2s) |
+| Live, lewat gateway   | chat `agnes/agnes-3.0-flash` 200, `agnes-2.5-flash` 200, tool 200 (`tool_calls`), streaming 9 frame SSE + `[DONE]`, thinking 200 (`reasoning_content` diteruskan), image 200 (URL, 12,7s) |
+| Video create          | **Belum bisa**: Agnes menjawab 503 `video_queue_full` pada 20 percobaan selama ~16 menit, langsung maupun lewat gateway (gateway meneruskan 502 dengan pesan vendor). Poll dengan task id palsu menjawab 502 "task not found", jadi URL `/agnesapi` dan bearer-nya benar |
+| Model berbayar        | `agnes-2.5-pro-alpha` dan `agnes-video-2.5` menjawab 403 `insufficient_user_quota` (saldo akun $0); model gratis tetap jalan |
 
-Probe 401 itu bukan bukti generasi bekerja, hanya bukti URL dan penempatan bearer yang ditulis blok registry
-memang yang dibaca vendor. Yang belum diukur adalah satu putaran create + poll dengan key asli.
+Yang belum diukur hanya satu putaran create sukses + poll sampai `url` terisi, karena antrean video vendor penuh
+sepanjang jendela tes. Semua jalur lain (chat, tool, streaming, thinking, image, poll error, usage/log) sudah
+melewati gateway dengan key asli.
+
+Catatan operasional: provider ini dipin ke pool proxy `__none__` di `settings.network.provider_proxies`, karena
+pool proxy global yang aktif membuat setiap panggilan berhenti di deadline 30s. Tanpa pin itu chat Agnes tidak
+pernah sampai ke upstream.
 
 ## 4. Residu
 
-- **R1 (blocked, butuh key).** Live generation belum dijalankan. Yang harus dikonfirmasi: jawaban create
-  menggemakan `model`, karena task id keyframe/reference bergantung padanya; tanpa echo itu poll jatuh ke mode
-  `text`.
+- **R1 (blocked, antrean vendor).** Create video belum pernah sukses, jadi jawaban create yang sebenarnya belum
+  terlihat. Yang harus dikonfirmasi saat antrean terbuka: jawaban itu menggemakan `model`, karena task id
+  keyframe/reference bergantung padanya; tanpa echo itu poll jatuh ke mode `text`.
 - **R2 (MEDIUM, pass terpisah).** Dokumen registry yang di-commit menyimpang dari generasi penuh di provider
   lain. Selama drift itu ada, regenerasi utuh bukan operasi yang aman.
 - **R3 (MEDIUM, pass terpisah).** Blok image provider lain (`openai`, `xai`, `openrouter`, dan seterusnya)
   masih tidak menamai kredensial, sehingga media plane mengirim request tanpa bearer. Agnes adalah satu-satunya
   blok image yang sudah benar.
-- **R4 (LOW).** `agnes-video-2.5` (non-flash, berbayar) dan keluarga pro belum didaftarkan karena tidak ada di
-  `/v1/models`; `agnes-3.0-pro` masih "coming soon" di docs.
-- **R5 (LOW).** Thinking vendor ditulis sebagai `chat_template_kwargs.enable_thinking`, bukan dialek reasoning
-  yang diporting. Model tidak ditandai reasoning, jadi gateway tidak menyuntik field itu sendiri; klien masih
-  bisa mengirimnya lewat body.
+- **R4 (LOW).** `agnes-video-2.5` (non-flash), `agnes-2.5-pro-alpha`, dan `agnes-2.5-pro-beta` terlihat di
+  `/v1/models` milik akun ini tetapi tidak didaftarkan: katalog publik tidak menyajikannya dan saldo akun $0
+  membuat ketiganya 403. `agnes-3.0-pro` masih "coming soon" di docs.
+- **R5 (LOW, terverifikasi).** Thinking vendor ditulis sebagai `chat_template_kwargs.enable_thinking`, bukan
+  dialek reasoning yang diporting. Model tidak ditandai reasoning, jadi gateway tidak menyuntik field itu
+  sendiri; klien mengirimnya lewat body dan `reasoning_content` diteruskan balik, sudah diuji lewat gateway.
+- **R6 (MEDIUM, bug klasifikasi).** Agnes menjawab 403 `insufficient_user_quota` untuk model berbayar, dan
+  classifier memark key sebagai `AUTH_INVALID` (`consecutive_auth=1`, `status=error`), padahal key-nya sah.
+  Efeknya model gratis ikut `NO_PROVIDER_AVAILABLE` selama jendela park. Bukti: `agnes-2.5-pro-alpha` 403 pada
+  13:35, key langsung `status=error`.
+- **R7 (LOW, perilaku desain).** `video_queue_full` adalah 5xx, jadi key dipark 30s dan percobaan berikutnya
+  menjawab `NO_PROVIDER_AVAILABLE`; percobaan berselang-seling 502/503 selama antrean penuh. Ini aturan 5xx
+  yang sudah ada, bukan bug baru, tetapi membuat pesan vendor hilang di separuh percobaan.
