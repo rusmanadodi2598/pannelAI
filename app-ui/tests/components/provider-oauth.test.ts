@@ -10,13 +10,11 @@
 // write to the shared reactive stand-in: the assertion is then on the URL the panel produced rather than on
 // the fact that it called something.
 
-import { cleanup, render, screen, waitFor, within } from '@testing-library/svelte';
+import { cleanup, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
 import { oauthEndpointRow, stubModels, type ModelStub } from '../support/model-stub';
 import { pageState, visit } from '../support/page.svelte';
-import { squashed } from '../support/dom';
-import { openAllSections } from '../support/provider-sections';
+import { accountsTable, renderProvider, waitForAccounts } from '../support/provider-oauth-harness';
 
 vi.mock('$app/state', async () => {
 	const { pageState: page } = await import('../support/page.svelte');
@@ -60,21 +58,6 @@ afterEach(() => {
 	cleanup();
 	vi.unstubAllGlobals();
 });
-
-async function renderProvider(tab = 'Connections'): Promise<void> {
-	render(ProviderDetailPage, { props: { params: { provider_id: 'xai' }, data: {} } });
-	await openAllSections(tab);
-}
-
-async function waitForAccounts(): Promise<void> {
-	await waitFor(() =>
-		expect(screen.getByRole('table', { name: /connected oauth accounts/i })).toBeTruthy()
-	);
-}
-
-function accountsTable(): HTMLElement {
-	return screen.getByRole('table', { name: /connected oauth accounts/i });
-}
 
 describe('when the section appears', () => {
 	it('is absent for a provider the registry does not list as OAuth', async () => {
@@ -170,195 +153,4 @@ describe('the flows the panel cannot start', () => {
 			expect(screen.queryByRole('button', { name: 'Start the authorization' })).toBeNull();
 		});
 	}
-});
-
-describe('the device round', () => {
-	beforeEach(() => {
-		stub.oauthFlow = 'device';
-	});
-
-	it('shows the vendor page as a link and a code, and opens nothing itself', async () => {
-		await renderProvider();
-		await waitForAccounts();
-
-		screen.getByRole('button', { name: 'Start the device authorization' }).click();
-		await waitFor(() => expect(stub.oauthDeviceStarts).toEqual(['xai']));
-
-		const link = await waitFor(() => screen.getByRole('link', { name: 'Open the device page' }));
-		expect(link.getAttribute('href')).toBe(stub.oauthDeviceStart.verification_url as string);
-		// The address is readable without following it, which is why the link is not its only copy.
-		expect(screen.getByText(stub.oauthDeviceStart.verification_url as string)).toBeTruthy();
-		expect(screen.getByTestId('device-user-code').textContent).toBe('AB12CD34');
-		// The round is polled with the single-use code alone: the verifier and the machine id the
-		// gateway staged never reach this screen.
-		expect(JSON.stringify(stub.oauthDevicePolls)).not.toContain('challenge');
-	});
-
-	// A vendor-minted state round has no short code: the screen shows the page to open and
-	// waits, and does not invent a code the vendor never asked the operator to enter.
-	it('renders a round that carries no short code without a code block', async () => {
-		stub.oauthDeviceStart = {
-			device_code: 'vendor-state-7f3a',
-			verification_url: 'https://www.codebuddy.test/auth?state=vendor-state-7f3a',
-			interval_seconds: 0,
-			expires_in: 300
-		};
-		stub.oauthDevicePollAnswers = [{ status: 'pending' }];
-		await renderProvider();
-		await waitForAccounts();
-
-		screen.getByRole('button', { name: 'Start the device authorization' }).click();
-
-		const link = await waitFor(() => screen.getByRole('link', { name: 'Open the device page' }));
-		expect(link.getAttribute('href')).toBe(
-			'https://www.codebuddy.test/auth?state=vendor-state-7f3a'
-		);
-		await waitFor(() => expect(screen.getByText(/waiting for the vendor/i)).toBeTruthy());
-		expect(screen.queryByText('Your code')).toBeNull();
-		expect(screen.queryByTestId('device-user-code')).toBeNull();
-		// The round still polls with the handle it was given, which here is the vendor's state.
-		await waitFor(() => expect(stub.oauthDevicePolls.length).toBeGreaterThan(0));
-		expect(
-			stub.oauthDevicePolls.every((ask) => ask.device_code === 'vendor-state-7f3a')
-		).toBeTruthy();
-	});
-
-	it('asks until the vendor grants the token, then re-reads the accounts', async () => {
-		stub.oauthDevicePollAnswers = [
-			{ status: 'pending' },
-			{ status: 'connected', endpoint_id: 'ep_qoder_1', token_hint: 'dt-…7c2f', created: true }
-		];
-		await renderProvider();
-		await waitForAccounts();
-
-		screen.getByRole('button', { name: 'Start the device authorization' }).click();
-
-		await waitFor(() => expect(screen.getByText(/waiting for the vendor/i)).toBeTruthy());
-		await waitFor(() => expect(screen.getByText(/Connected \(ep_qoder_1\)/)).toBeTruthy());
-		expect(stub.oauthDevicePolls.map((ask) => ask.device_code)).toEqual(['dev_1', 'dev_1']);
-		// The connect moved a row, so the section read the state again rather than guessing it.
-		await waitFor(() =>
-			expect(stub.reads.filter((read) => read === 'oauth:status').length).toBeGreaterThan(1)
-		);
-	});
-
-	it('reports a refused ask and stops asking', async () => {
-		stub.oauthDevicePollRefusalAt = 1;
-		await renderProvider();
-		await waitForAccounts();
-
-		screen.getByRole('button', { name: 'Start the device authorization' }).click();
-
-		await waitFor(() =>
-			expect(screen.getByRole('alert').textContent).toMatch(/device token endpoint refused/)
-		);
-		expect(screen.queryByText(/waiting for the vendor/i)).toBeNull();
-		await new Promise((resolve) => setTimeout(resolve, 20));
-		expect(stub.oauthDevicePolls).toHaveLength(1);
-	});
-
-	it('reports a round the gateway could not start and offers another attempt', async () => {
-		stub.oauthDeviceStartRefusal = {
-			status: 400,
-			code: 'VALIDATION_ERROR',
-			message: 'provider xai does not declare a complete device flow'
-		};
-		await renderProvider();
-		await waitForAccounts();
-
-		screen.getByRole('button', { name: 'Start the device authorization' }).click();
-
-		await waitFor(() =>
-			expect(screen.getByRole('alert').textContent).toMatch(/complete device flow/)
-		);
-		expect(screen.queryByText('Your code')).toBeNull();
-	});
-});
-
-describe('refreshing an account', () => {
-	it('refreshes the account the row names and re-reads the state it moved', async () => {
-		stub.oauthEndpoints = [oauthEndpointRow({ refresh_state: 'due' })];
-		await renderProvider();
-		await waitForAccounts();
-		expect(within(accountsTable()).getByText(/inside its refresh window/)).toBeTruthy();
-
-		within(accountsTable()).getByRole('button', { name: 'Refresh' }).click();
-
-		await waitFor(() => expect(stub.oauthRefreshes).toEqual(['ep_oauth_1']));
-		await waitFor(() =>
-			expect(screen.getByText('The gateway refreshed 1 account: ep_oauth_1.')).toBeTruthy()
-		);
-		// The stub moves the token, and the panel's re-read is what shows it.
-		await waitFor(() =>
-			expect(within(accountsTable()).getByText(/outside its refresh window/)).toBeTruthy()
-		);
-	});
-
-	it('reports the refusal and leaves the row as it was', async () => {
-		stub.oauthRefreshRefusal = {
-			status: 400,
-			code: 'VALIDATION_ERROR',
-			message: 'the account has no refresh token'
-		};
-		await renderProvider();
-		await waitForAccounts();
-
-		within(accountsTable()).getByRole('button', { name: 'Refresh' }).click();
-
-		await waitFor(() => expect(screen.getByText(/the account has no refresh token/)).toBeTruthy());
-		expect(within(accountsTable()).getByText('xAI account')).toBeTruthy();
-	});
-
-	it('offers no refresh when no account is connected, because the action belongs to a row', async () => {
-		stub.oauthEndpoints = [];
-		await renderProvider();
-		await waitFor(() => expect(screen.getByText(/No OAuth account is connected/)).toBeTruthy());
-		expect(screen.queryByRole('button', { name: 'Refresh' })).toBeNull();
-	});
-});
-
-describe('the callback return', () => {
-	it('reports a connected account and drops the outcome from the address', async () => {
-		visit('/providers/xai', 'oauth=connected&endpoint_id=ep_oauth_1');
-		await renderProvider();
-
-		await waitFor(() =>
-			expect(screen.getByText('The gateway connected an account (ep_oauth_1).')).toBeTruthy()
-		);
-		// The keys are gone from the address, so a reload does not announce a past result. The cleanup runs
-		// once the status read settles, so this waits for it rather than assuming the same tick.
-		await waitFor(() => expect(pageState.url.searchParams.has('oauth')).toBe(false));
-		expect(pageState.url.searchParams.has('endpoint_id')).toBe(false);
-		expect(pageState.url.pathname).toBe('/providers/xai');
-		// The message survives the cleanup, because the section holds it rather than reading it again.
-		expect(screen.getByText('The gateway connected an account (ep_oauth_1).')).toBeTruthy();
-	});
-
-	it('reports the gateway reason for a failure', async () => {
-		visit(
-			'/providers/xai',
-			'oauth=error&oauth_error=the+state+is+unknown%2C+expired%2C+or+already+used'
-		);
-		await renderProvider();
-
-		await waitFor(() =>
-			expect(screen.getByText(/the state is unknown, expired, or already used/)).toBeTruthy()
-		);
-		expect(
-			squashed(screen.getByRole('alert')).startsWith('The authorization did not complete.')
-		).toBe(true);
-	});
-
-	it('renders nothing about OAuth for an outcome the panel does not know, and still cleans up', async () => {
-		visit('/providers/xai', 'oauth=pending&page=2');
-		await renderProvider();
-
-		await waitForAccounts();
-		expect(screen.queryByText(/The authorization did not complete/)).toBeNull();
-		expect(screen.queryByText(/The gateway connected an account/)).toBeNull();
-		// The keys are the panel's, so they are dropped even when the value was not understood; a query key
-		// that belongs to something else is left alone.
-		await waitFor(() => expect(pageState.url.searchParams.has('oauth')).toBe(false));
-		expect(pageState.url.searchParams.get('page')).toBe('2');
-	});
 });
