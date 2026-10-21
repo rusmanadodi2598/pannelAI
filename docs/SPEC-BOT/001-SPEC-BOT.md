@@ -474,6 +474,41 @@ The owner maintains that document; code reads the vocabulary as typed data in `i
 A vocabulary change is a spec change: same PR, same tests, and no silent recompilation of historical jobs. The
 `version` field on every stored document is what makes that possible.
 
+### 6.8 Builder model selection
+
+`BUILDER_MODEL` is not chosen by preference. It is chosen by a benchmark that measures four things: valid JSON, schema
+and semantic conformance, fidelity to the six sections, and response latency. The harness is `cmd/builderbench`, it
+runs against candidate chat models already present in the gateway catalog, and its report is
+`docs/SPEC-BOT/003-BUILDER-BENCHMARK.md`.
+
+Eligibility gates, applied before any ranking:
+
+| Gate                    | Threshold |
+| ----------------------- | --------- |
+| Valid JSON              | 100%      |
+| Schema pass             | 98%       |
+| Semantic pass           | 95%       |
+| URL or brand leak       | 0         |
+| Six sections present    | 100%      |
+
+Models that pass are ranked by p95 builder latency first, then by cost per 1000 builds. The top three go to a blind
+owner review of prompt quality, because latency and schema validity do not tell you whether the visual direction is
+good. The owner's pick is recorded here and set through configuration.
+
+Rules that keep the benchmark honest:
+
+- Fixtures, not user data. The fixture set lives in the benchmark document and is reviewed like code.
+- The system prompt is the fixed text from `002-MASTER-PROMPT-METADATA.md`. Tuning a model's prompt per fixture is a
+  disqualification, because it measures the tuner, not the model.
+- Temperature, token cap, and timeout are identical for every candidate.
+- Each prompt runs three times. Latency is reported as p50 and p95 across runs, and a model whose output flips between
+  runs is flagged rather than averaged.
+- A retry is counted and reported separately, never folded into the first-attempt success rate.
+
+The benchmark is repeated when a candidate model changes version, when the vocabulary version changes, or when the
+builder system prompt changes.
+
+
 ## 7. Plans, credits, and billing
 ## 7. Plans, credits, and billing
 
@@ -929,6 +964,7 @@ present, `job_id` when present, `user_hash` (first 16 hex of SHA-256 of the Tele
 | `FREE_REFERRAL_CREDITS`      | no       | `10`               | Campaign default only                        |
 | `PROMPT_MAX_CHARS`           | no       | `2000`             | Pre-builder cap                              |
 | `BUILDER_MODEL`              | yes      | none               | Chat model for the six-section builder        |
+| `BUILDER_MODEL_CANDIDATES`   | no       | none               | Comma separated models for `cmd/builderbench`  |
 | `BUILDER_MAX_TOKENS`         | no       | `700`              | Output cap per attempt                        |
 | `BUILDER_TIMEOUT`            | no       | `20s`              | One attempt                                   |
 | `BUILDER_DAILY_CAP`          | no       | `60`               | Builder calls per user per day                |
@@ -958,6 +994,7 @@ then. No `t.Skip`, no `-run` filter in CI, `go test -race ./...` is a gate for e
 | `masterprompt`         | Builder decode: valid document; unknown field; missing section; aspect mismatch; URL field; over-length reasoning | 6 |
 | `masterprompt`         | Fallback builder: aspect tokens, style vocabulary, duration words, no match, builder unavailable | 5 |
 | `masterprompt`         | Preview render: full document; truncated reasoning; fallback label; over 3500 chars refused | 4 |
+| `builderbench`         | Scoring: gate pass, gate fail, flip detection, retry counting, p95 across runs      | 5 |
 | `billing/plans`        | Entitlement by plan; free cannot video; unknown plan denied; enterprise concurrency  | 5 |
 | `billing/credits`      | Hold, settle, refund; insufficient balance; concurrent hold; ledger uniqueness       | 6 |
 | `referral`             | Valid code; exhausted; expired; self referral; second redemption; case folding       | 6 |
@@ -1025,6 +1062,7 @@ Each phase is one PR into `development`, reviewed before merge. Branch names fol
 | P1    | `feat(app-bot)-fase-1`          | Module, config, logx, router, health, migration 001, CI gates         | Binary boots, `/readyz` green, tests green      |
 | P2    | `feat(app-bot)-fase-2`          | Webhook intake, dedupe, stream, worker skeleton, Telegram send client | Duplicate update test, ack under 300 ms        |
 | P3    | `feat(app-bot)-fase-3`          | Master prompt schema, builder call, fallback, compiler, preview keyboard | Golden tests, builder validation tests, preview flow |
+| P3b   | `feat(app-bot)-fase-3b`         | `cmd/builderbench`, fixture set, report, owner pick                  | Report with gates, p95, cost, and a chosen model |
 | P4    | `feat(app-bot)-fase-4`          | Image generation, download, upload, ledger hold and settle            | One real image end to end with refund path     |
 | P5    | `feat(app-bot)-fase-5`          | Video generation, poller, progress edits, timeout refund              | One real video end to end, late success handled |
 | P6    | `feat(app-bot)-fase-6`          | Plan rows, entitlements, concurrency, `/plan`, `/credits`, `/history` | Plan gating tests, concurrency test            |
@@ -1046,6 +1084,8 @@ Each phase is one PR into `development`, reviewed before merge. Branch names fol
 10. `go test -race ./...`, `go vet`, `staticcheck`, `govulncheck`, and the antislop gate are clean on the phase branch.
 11. The production webhook answers at p95 under 300 ms as measured by `bot_webhook_duration_seconds`.
 12. A runbook exists with deploy, rollback, webhook re-registration, and ledger reconciliation steps.
+13. `docs/SPEC-BOT/003-BUILDER-BENCHMARK.md` holds a completed run, every candidate passes the eligibility gates or
+    is excluded with the failed gate named, and `BUILDER_MODEL` matches the owner's recorded pick.
 
 ## 19. Open decisions
 
@@ -1061,6 +1101,7 @@ Each phase is one PR into `development`, reviewed before merge. Branch names fol
 | 8 | Whether free plan may generate video                                      | Owner              | No                                              |
 | 9 | Prompt retention window                                                   | Owner              | 30 days for job rows, raw message not stored    |
 | 10 | Top-up packs in v1 or v1.1                                               | Owner              | v1.1                                            |
+| 11 | Builder model and fallback model                                          | Benchmark P3b      | Candidates from the gateway catalog, benchmarked |
 
 ## 20. Change log
 
@@ -1068,3 +1109,4 @@ Each phase is one PR into `development`, reviewed before merge. Branch names fol
 | ---------- | --------------------------------------------- |
 | 2026-10-21 | Initial draft, spec first, no implementation. |
 | 2026-10-21 | Master prompt reworked to the owner's six-section builder (Role, Task, Context, Reasoning, Stop conditions, Output), with an LLM builder stage and a deterministic fallback. |
+| 2026-10-21 | Builder model selection made a benchmarked phase with eligibility gates and a blind owner review. |
