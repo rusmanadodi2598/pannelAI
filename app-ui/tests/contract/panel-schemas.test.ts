@@ -155,18 +155,10 @@ const RESPONSE_SCHEMAS: { name: string; schema: z.ZodType }[] = [
 	{ name: 'schemaSkill', schema: schemaSkill }
 ];
 
-/**
- * The one divergence this gate knows about, recorded rather than waived.
- *
- * `EndpointOAuthResponse` in the served document declares `flow`, `scopes`, `expires_at` and
- * `account_email`; the service's own DTO (`app-serv/internal/schema/endpoint_response.go`) also serves
- * `has_access_token` and `has_refresh_token`. The panel is right and the contract is incomplete, which is
- * the service side's to fix. The third assertion below fails the day the contract names them, so this
- * entry cannot outlive the gap it records.
- */
-const KNOWN_UNDOCUMENTED: Record<string, string[]> = {
-	schemaEndpointOAuth: ['has_access_token', 'has_refresh_token']
-};
+// Divergences the panel knows about but the contract has not named yet. Empty:
+// `EndpointOAuthResponse` now names every field the panel reads. An entry here fails
+// the third assertion once the contract catches up, so it cannot linger.
+const KNOWN_UNDOCUMENTED: Record<string, string[]> = {};
 
 describe('panel response schemas against the served contract', () => {
 	const documented = documentedPropertyNames();
@@ -175,7 +167,7 @@ describe('panel response schemas against the served contract', () => {
 		expect(documented.size).toBeGreaterThan(100);
 	});
 
-	it('requires no field the contract does not document, beyond the recorded gap', () => {
+	it('requires no field the contract does not document', () => {
 		const missing = RESPONSE_SCHEMAS.flatMap(({ name, schema }) => {
 			const known = new Set(KNOWN_UNDOCUMENTED[name] ?? []);
 			return requiredKeys(schema)

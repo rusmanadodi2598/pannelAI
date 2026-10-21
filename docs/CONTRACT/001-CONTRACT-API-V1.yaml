@@ -3098,8 +3098,6 @@ components:
     EndpointOAuthResponse:
       type: object
       properties:
-        flow:
-          type: string
         scopes:
           type: array
           items:
@@ -3107,8 +3105,22 @@ components:
         expires_at:
           type: string
           format: date-time
+        project_id:
+          type: string
+        account_id:
+          type: string
         account_email:
           type: string
+        last_refresh_at:
+          type: string
+          format: date-time
+        has_access_token:
+          type: boolean
+        has_refresh_token:
+          type: boolean
+      required:
+      - has_access_token
+      - has_refresh_token
       additionalProperties: true
     BulkResultRow:
       type: object

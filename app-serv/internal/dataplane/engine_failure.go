@@ -100,10 +100,18 @@ func failureRetryAfter(err error) time.Duration {
 // A caller that hung up writes nothing: the read died because the request died, and
 // recording it would let one client closing a tab park an account for everyone else.
 // It answers no action, leaving the walk to the code's own rule.
-func (e *Engine) recordFailure(ctx context.Context, selection Selection, cause error) domain.FailureAction {
+func (e *Engine) recordFailure(
+	ctx context.Context,
+	resolution Resolution,
+	selection Selection,
+	cause error,
+) domain.FailureAction {
 	if isClientCancellation(cause) {
 		return ""
 	}
+	// The refusal this class writes no health for still has to be findable, so it is
+	// stated here, where every failed attempt passes, rather than at each caller.
+	e.logRequestRefusal(ctx, resolution, selection, cause)
 	action, err := e.selector.RecordFailure(ctx, selection, failureReason(cause),
 		failureClass(cause), failureRest(cause))
 	if err != nil {

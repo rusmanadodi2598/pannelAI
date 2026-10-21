@@ -2996,9 +2996,10 @@ gateway.
    `tests/contract/panel-schemas.test.ts`: it reads the committed `openapi.json` and asks, of 46 response
    schemas, whether the contract names every field the panel requires. It compares property names, not
    types, so a renamed or removed field fails here and a retyped one is still the resource tests' job. It
-   carries one recorded divergence: `EndpointOAuthResponse` does not declare `has_access_token` or
-   `has_refresh_token` although the service's DTO serves them, and the gate fails the day the contract
-   catches up so the exception cannot outlive the gap. See spec §14 Q3.
+   carried one recorded divergence: `EndpointOAuthResponse` did not declare `has_access_token`,
+   `has_refresh_token`, `project_id`, `account_id`, or `last_refresh_at` although the service's DTO
+   serves them. The contract now declares all five, so the exception is gone and the gate requires the
+   contract to name every field the panel reads. See spec §14 Q3.
 2. `AGENTS.md` scopes itself to the Go services (`app-*/**`), so it does not govern this panel. The
    panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and most of them are
    machine-checked rather than reviewed: the toolchain in `scrypts/gates/panel-check.sh`, the line cap in

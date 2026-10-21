@@ -145,7 +145,7 @@ func (e *Engine) answer(
 ) error {
 	body, usage, err := e.readAnswer(ctx, upstream, resolution, in, sink, outcome)
 	if err != nil {
-		e.recordFailure(ctx, selection, err)
+		e.recordFailure(ctx, resolution, selection, err)
 		outcome.LatencyMS = e.elapsedMS(started)
 		return err
 	}

@@ -148,7 +148,7 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		})
 		if callErr != nil {
 			release()
-			action := e.recordFailure(ctx, selection, callErr)
+			action := e.recordFailure(ctx, resolution, selection, callErr)
 			outcome.LatencyMS = e.elapsedMS(started)
 			failure := e.translateCallError(callErr)
 			if keepsWalking(action, AsError(failure).Code) {

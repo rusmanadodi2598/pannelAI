@@ -81,7 +81,7 @@ func TestEngine_RecordFailureClientCancellationWritesNothing(t *testing.T) {
 	engine, repo, selection := parkedKeyEngine(t)
 	_, before, _ := repo.outcome[selection.Endpoint.ID()].LastError()
 
-	engine.recordFailure(context.Background(), selection, context.Canceled)
+	engine.recordFailure(context.Background(), Resolution{}, selection, context.Canceled)
 
 	_, after, _ := repo.outcome[selection.Endpoint.ID()].LastError()
 	if after != before {
@@ -97,7 +97,7 @@ func TestEngine_RecordFailureUpstreamFailureStillWrites(t *testing.T) {
 
 	// A cancelled context that wrapped a real upstream failure is still an
 	// upstream failure: only a cancellation the read itself returned is silence.
-	engine.recordFailure(context.Background(), selection,
+	engine.recordFailure(context.Background(), Resolution{}, selection,
 		&UpstreamError{Status: 500, Message: "the upstream broke"})
 
 	if _, got, _ := repo.outcome[selection.Endpoint.ID()].LastError(); got != "the upstream broke" {
