@@ -510,7 +510,6 @@ builder system prompt changes.
 
 
 ## 7. Plans, credits, and billing
-## 7. Plans, credits, and billing
 
 ### 7.1 Plan matrix (PROPOSED, owner to confirm)
 
