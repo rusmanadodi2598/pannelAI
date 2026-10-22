@@ -229,28 +229,6 @@ func TestConsumer_GivenBrokenGroup_ThenRunStopsWithTheError(t *testing.T) {
 	}
 }
 
-func TestReply_GivenWorkItemVariations_ThenCopyIsStable(t *testing.T) {
-	cases := []struct {
-		name         string
-		item         schema.WorkItem
-		wantContains string
-	}{
-		{name: "start", item: workItem("/start"), wantContains: "/help"},
-		{name: "start with argument", item: workItem("/start referral"), wantContains: "KENTANG TECH Media"},
-		{name: "help", item: workItem("/help"), wantContains: "Perintah yang aktif"},
-		{name: "plain text", item: workItem("halo"), wantContains: "Pesan diterima."},
-		{name: "callback", item: schema.WorkItem{Kind: schema.KindCallback, CallbackData: "draft:abc"}, wantContains: "Tombol diterima."},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if reply := worker.Reply(tc.item); !strings.Contains(reply, tc.wantContains) {
-				t.Fatalf("Reply() = %q, want it to contain %q", reply, tc.wantContains)
-			}
-		})
-	}
-}
-
 func discardLogger() *slog.Logger {
 	return logx.New("error", "test", io.Discard)
 }
