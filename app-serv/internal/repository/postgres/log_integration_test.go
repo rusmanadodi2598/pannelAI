@@ -71,6 +71,32 @@ func seedLog(t *testing.T, repo *LogRepository, requestID string, ts time.Time, 
 	}
 }
 
+// TestLogRepository_AppendsAReusedRequestID pins the audit rule: a second row
+// with the caller's id is stored, and the detail read answers with the newest.
+func TestLogRepository_AppendsAReusedRequestID(t *testing.T) {
+	repo := newLogRepo(t)
+	ctx := context.Background()
+	base := time.Now().UTC().Truncate(time.Second)
+	seedLog(t, repo, "req_reused", base, domain.RequestLogSuccess, "first-request", "first-response", "")
+	seedLog(t, repo, "req_reused", base.Add(time.Minute), domain.RequestLogSuccess, "second-request", "second-response", "")
+
+	filter := domain.LogFilter{From: base.Add(-time.Minute), To: base.Add(2 * time.Minute)}
+	entries, total, err := repo.List(ctx, filter, repository.PageQuery{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("List error = %v", err)
+	}
+	if total != 2 || len(entries) != 2 {
+		t.Fatalf("entries = %d, total = %d, want both rows", len(entries), total)
+	}
+	detail, err := repo.GetByRequestID(ctx, "req_reused")
+	if err != nil {
+		t.Fatalf("GetByRequestID error = %v", err)
+	}
+	if detail.ResponseBody() != "second-response" {
+		t.Fatalf("detail body = %q, want the newest row", detail.ResponseBody())
+	}
+}
+
 // TestLogRepository_ListOmitsBodiesAndFilters covers the list projection, the
 // filters, and the paging boundary.
 func TestLogRepository_ListOmitsBodiesAndFilters(t *testing.T) {

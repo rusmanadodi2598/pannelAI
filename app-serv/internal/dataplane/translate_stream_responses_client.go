@@ -179,6 +179,11 @@ func (s *ResponsesStreamState) Finish() [][]byte {
 	return append(frames, []byte(SSEDone))
 }
 
+// terminalSeen reports whether the upstream sent a finish reason, which every
+// supported upstream format emits at its closing event. Finish writes the
+// client's closing event from the same field, so a caller reads this before it.
+func (s *ResponsesStreamState) terminalSeen() bool { return s.finishReason != "" }
+
 // Usage reports the accounting the stream observed, or nil when the upstream
 // reported none, so a streamed call records the same number a non-streamed one
 // would.

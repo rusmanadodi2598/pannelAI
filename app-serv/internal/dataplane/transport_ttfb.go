@@ -16,7 +16,12 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"log/slog"
+	"net/http"
+	"runtime/debug"
 	"time"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 )
 
 // firstByteWithin reads the first byte of a streamed body under a cap. On
@@ -65,6 +70,48 @@ func firstByteWithin(body io.ReadCloser, cap time.Duration, cancel context.Cance
 func firstByteSilent(cap time.Duration) error {
 	return wrapDataPlaneError(CodeUpstreamTimeout,
 		"the upstream stream stayed silent for "+cap.String()+" before its first byte", context.DeadlineExceeded)
+}
+
+// openEnvelopeWithin bounds the envelope peek that runs before the first-byte
+// guard; a keepalive-only stream would otherwise hold the request and socket.
+func openEnvelopeWithin(
+	body io.ReadCloser,
+	cap time.Duration,
+	cancel context.CancelFunc,
+	envelope provider.StreamEnvelope,
+) (io.ReadCloser, *provider.StreamFailure, error) {
+	if cap <= 0 {
+		opened, failure := envelope.OpenStream(body)
+		return opened, failure, nil
+	}
+	type answer struct {
+		body    io.ReadCloser
+		failure *provider.StreamFailure
+	}
+	result := make(chan answer, 1)
+	go func() {
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				slog.Error("stream envelope peek panicked", "panic", recovered, "stack", string(debug.Stack()))
+				result <- answer{failure: &provider.StreamFailure{
+					Status:  http.StatusBadGateway,
+					Message: "the provider stream could not be read",
+				}}
+			}
+		}()
+		opened, failure := envelope.OpenStream(body)
+		result <- answer{body: opened, failure: failure}
+	}()
+	timer := time.NewTimer(cap)
+	defer timer.Stop()
+	select {
+	case opened := <-result:
+		return opened.body, opened.failure, nil
+	case <-timer.C:
+		cancel()
+		_ = body.Close()
+		return nil, nil, firstByteSilent(cap)
+	}
 }
 
 // prefixedBody replays the byte the first-byte wait already read ahead of the

@@ -80,7 +80,12 @@ func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Ca
 		// served answer that gets billed.
 		stream := response.Body
 		if envelope, ok := plugin.(provider.StreamEnvelope); ok {
-			unwrapped, failure := envelope.OpenStream(response.Body)
+			unwrapped, failure, openErr := openEnvelopeWithin(response.Body, firstByte, cancel, envelope)
+			if openErr != nil {
+				cancel()
+				_ = response.Body.Close()
+				return nil, nil, openErr
+			}
 			if failure != nil {
 				cancel()
 				// Nothing was piped, so the call is safe to repeat: that is what

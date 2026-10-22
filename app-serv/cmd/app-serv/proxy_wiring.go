@@ -13,6 +13,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -81,7 +83,11 @@ func (p guardedProxyPlanner) Plan(ctx context.Context, providerID, host string) 
 	if len(plan) == 0 {
 		return plan, nil
 	}
-	if err := p.guard.CheckHost(ctx, host); err != nil {
+	destination := strings.Trim(host, "[]")
+	if withoutPort, _, err := net.SplitHostPort(host); err == nil {
+		destination = withoutPort
+	}
+	if err := p.guard.CheckHost(ctx, destination); err != nil {
 		return nil, err
 	}
 	return plan, nil

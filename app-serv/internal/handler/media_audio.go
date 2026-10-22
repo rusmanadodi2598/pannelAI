@@ -2,7 +2,7 @@
 //
 // @file      internal/handler/media_audio.go
 // @for       The §7.10 speech, transcription, and voice routes.
-// @uses      internal/schema, internal/service, net/http.
+// @uses      internal/schema, internal/service, net/http, time.
 // @reason    Three of the six media routes answer with something other than a JSON object the service produced: speech answers bytes (or base64 when asked), and a transcription forwards whatever the upstream said. The handler is where that choice belongs, so the service never writes to a response.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
@@ -14,9 +14,19 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+)
+
+// A 25 MB multipart body outlives the server's 30-second ReadTimeout on a slow
+// link, so this route renews the connection deadlines. The write budget is the
+// server's own two minutes, set on top of the upload window because the upload
+// may have consumed it before the upstream call even starts.
+const (
+	transcriptionReadBudget  = 5 * time.Minute
+	transcriptionWriteBudget = 2 * time.Minute
 )
 
 // Speech serves POST /api/v1/audio/speech. The audio is returned as bytes, or
@@ -69,6 +79,12 @@ func (h *MediaHandler) Transcribe(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	// A writer that cannot carry a deadline (HTTP/2) reports unsupported exactly
+	// like the SSE sink's Flush, and the upload is still read under the server
+	// timeout.
+	controller := http.NewResponseController(w)
+	_ = controller.SetReadDeadline(time.Now().Add(transcriptionReadBudget))
+	_ = controller.SetWriteDeadline(time.Now().Add(transcriptionReadBudget + transcriptionWriteBudget))
 	r.Body = http.MaxBytesReader(w, r.Body, schema.MaxTranscriptionBytes)
 	form, err := schema.ReadTranscriptionForm(r)
 	if err != nil {

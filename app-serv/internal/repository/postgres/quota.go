@@ -79,10 +79,10 @@ func (r *QuotaRepository) ListWindows(ctx context.Context, endpointID string) ([
 }
 
 // UpsertWindows persists a flushed batch in one statement. The row is the
-// durable record and the flush overwrites `used_units` rather than adding to it:
-// the Redis counter is authoritative until cleared, so an incremental update
-// would double-count a batch retried after a partial failure. `resets_at` and
-// `source` carry through unchanged except where the caller supplied them.
+// durable record and the flush mirrors the Redis running total rather than
+// adding to it. A computed total keeps its high-water mark within the same
+// window, so a slow replica's older flush cannot lower a newer count; a reset or
+// a reported source replaces the value.
 // "window" is quoted because it is a PostgreSQL reserved word. `updated_at` is
 // not in the column list: the migration defaults it to now() and the conflict
 // path sets it explicitly.
@@ -96,7 +96,13 @@ INSERT INTO quota_windows
 SELECT * FROM unnest($1::text[], $2::text[], $3::bigint[], $4::bigint[],
                      $5::timestamptz[], $6::text[])
 ON CONFLICT (endpoint_id, "window") DO UPDATE
-   SET used_units = EXCLUDED.used_units,
+   SET used_units = CASE
+         WHEN quota_windows.source = 'computed'
+          AND EXCLUDED.source = 'computed'
+          AND quota_windows.resets_at IS NOT DISTINCT FROM EXCLUDED.resets_at
+         THEN GREATEST(quota_windows.used_units, EXCLUDED.used_units)
+         ELSE EXCLUDED.used_units
+       END,
        limit_units = EXCLUDED.limit_units,
        resets_at = EXCLUDED.resets_at,
        source = EXCLUDED.source,

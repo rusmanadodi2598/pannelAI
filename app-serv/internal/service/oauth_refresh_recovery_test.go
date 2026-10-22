@@ -75,6 +75,9 @@ func TestOAuthRefreshWorkerRevisitsAndRecoversADeadLetteredAccount(t *testing.T)
 		return oauthhttp.TokenResponse{}, domain.NewUpstreamError("the token endpoint is not listening")
 	}
 	for attempt := 1; attempt <= oauthRefreshMaxAttempts; attempt++ {
+		if attempt > 1 {
+			fixture.advance(fixture.retryDelay(t, "ep_outage"))
+		}
 		fixture.worker.Sweep(ctx)
 	}
 	buried, err := fixture.store.GetByID(ctx, "ep_outage")
@@ -132,6 +135,9 @@ func TestOAuthRefreshWorkerVisitsTheGraveOnItsWindow(t *testing.T) {
 		return oauthhttp.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant: invalid_grant")
 	}
 	for attempt := 1; attempt <= oauthRefreshMaxAttempts; attempt++ {
+		if attempt > 1 {
+			fixture.advance(fixture.retryDelay(t, "ep_window"))
+		}
 		fixture.worker.Sweep(ctx)
 	}
 	buried, err := fixture.store.GetByID(ctx, "ep_window")

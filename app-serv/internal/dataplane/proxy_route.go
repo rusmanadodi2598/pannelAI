@@ -35,6 +35,12 @@ type ProxyRoutePlanner interface {
 	ReportFailure(ctx context.Context, proxyID string, ttl time.Duration)
 }
 
+// maxProxyTransports bounds the per-candidate client cache. A pool row that is
+// edited or removed must not leave its transport (and its idle connections)
+// behind forever; the cap keeps the cache to the candidates a rotated pool can
+// plausibly serve in one cycle.
+const maxProxyTransports = 32
+
 // ProxyDialer serves one request through the plan the planner returns: an empty
 // plan (proxying off, the host exempt, nothing usable) reaches the shared
 // client unchanged, a planned walk tries each candidate in order and reports
@@ -44,7 +50,11 @@ type ProxyDialer struct {
 	routes ProxyRoutePlanner
 	// transports caches the per-candidate clients by proxy URL, so a rotating
 	// pool reuses its connections instead of building a fresh pool per request.
-	transports sync.Map // map[string]*http.Client
+	// Insertion order is kept alongside because a map alone cannot say which
+	// entry is oldest when the cache is full.
+	transportMu    sync.Mutex
+	transports     map[string]*http.Client
+	transportOrder []string
 	// logger records which candidate carried the request. Nil falls back to the
 	// process logger, so a wiring that forgets it still leaves the trace.
 	logger *slog.Logger
@@ -142,10 +152,11 @@ func (d *ProxyDialer) clientFor(candidate *url.URL) (*http.Client, error) {
 		return nil, errors.New("the shared client carries no transport to clone the guard from")
 	}
 	key := candidate.String()
-	if cached, ok := d.transports.Load(key); ok {
-		if client, ok := cached.(*http.Client); ok {
-			return client, nil
-		}
+	d.transportMu.Lock()
+	cached, ok := d.transports[key]
+	d.transportMu.Unlock()
+	if ok {
+		return cached, nil
 	}
 	clone := base.Clone()
 	clone.Proxy = http.ProxyURL(candidate)
@@ -158,10 +169,28 @@ func (d *ProxyDialer) clientFor(candidate *url.URL) (*http.Client, error) {
 		checkRedirect = noRedirect
 	}
 	client := &http.Client{Transport: clone, CheckRedirect: checkRedirect}
-	if actual, loaded := d.transports.LoadOrStore(key, client); loaded {
-		if existing, ok := actual.(*http.Client); ok {
-			return existing, nil
+
+	d.transportMu.Lock()
+	defer d.transportMu.Unlock()
+	if d.transports == nil {
+		d.transports = make(map[string]*http.Client, maxProxyTransports)
+	}
+	if existing, ok := d.transports[key]; ok {
+		// Another request cached the same candidate while this one cloned.
+		clone.CloseIdleConnections()
+		return existing, nil
+	}
+	d.transports[key] = client
+	d.transportOrder = append(d.transportOrder, key)
+	for len(d.transportOrder) > maxProxyTransports {
+		oldest := d.transportOrder[0]
+		d.transportOrder = d.transportOrder[1:]
+		evicted, present := d.transports[oldest]
+		if !present {
+			continue
 		}
+		delete(d.transports, oldest)
+		evicted.CloseIdleConnections()
 	}
 	return client, nil
 }

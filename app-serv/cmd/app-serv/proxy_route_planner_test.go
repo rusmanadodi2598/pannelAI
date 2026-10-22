@@ -117,6 +117,17 @@ func TestGuardedProxyPlanner_ValidatesThePlannedDestination(t *testing.T) {
 			t.Fatal("Plan() = empty, want the pool row planned")
 		}
 	})
+
+	t.Run("a destination with an explicit port is checked by host", func(t *testing.T) {
+		adapter, _ := plannerAdapter(t, "127.0.0.1", []string{"127.0.0.0/8"}, true)
+		plan, err := adapter.Plan(context.Background(), "", "destination.example:8443")
+		if err != nil {
+			t.Fatalf("Plan() error = %v, want the host checked without its port", err)
+		}
+		if len(plan) == 0 {
+			t.Fatal("Plan() = empty, want the pool row planned")
+		}
+	})
 }
 
 // TestGuardedProxyPlanner_EmptyPlanSkipsTheCheck pins the degradation: an empty

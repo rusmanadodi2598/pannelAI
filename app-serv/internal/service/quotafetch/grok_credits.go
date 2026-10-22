@@ -42,7 +42,7 @@ func grokCreditsQuota(ctx context.Context, creds Credentials) (Quota, Result, bo
 	}
 	response, err := requestUsage(ctx, http.MethodPost, endpoint, headers, grokEmptyRequest)
 	if err != nil {
-		return Quota{}, Result{Message: fmt.Sprintf("Grok CLI credits error: %s", err)}, false
+		return Quota{}, transientMessage(fmt.Sprintf("Grok CLI credits error: %s", err)), false
 	}
 	if failure, refused := response.softFailure(grokCreditsDisplay); refused {
 		return Quota{}, failure, false

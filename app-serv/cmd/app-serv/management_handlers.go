@@ -23,24 +23,25 @@ import (
 // two of the fields are themselves groupings: a positional call would be a row of
 // same-typed arguments where one swap compiles and misroutes.
 type managementHandlerInputs struct {
-	Provider      *service.ProviderService
-	Validation    *service.CredentialValidationService
-	Endpoint      *service.EndpointService
-	Node          *service.NodeService
-	Catalog       *service.ModelCatalogService
-	Combo         *service.ComboService
-	ComboTest     *service.ComboTestService
-	Proxy         *handler.ProxyHandler
-	Media         *handler.MediaProviderHandler
-	Plane         dataPlane
-	Vision        *service.VisionAdapterService
-	TokenSaver    *service.TokenSaverService
-	Settings      *service.SettingsService
-	OAuth         *handler.OAuthHandler
-	Observability observability
-	Flusher       *service.QuotaFlusher
-	Retention     *service.LogRetentionWorker
-	RefreshWorker *service.OAuthRefreshWorker
+	Provider       *service.ProviderService
+	Validation     *service.CredentialValidationService
+	Endpoint       *service.EndpointService
+	Node           *service.NodeService
+	Catalog        *service.ModelCatalogService
+	Combo          *service.ComboService
+	ComboTest      *service.ComboTestService
+	Proxy          *handler.ProxyHandler
+	Media          *handler.MediaProviderHandler
+	Plane          dataPlane
+	Vision         *service.VisionAdapterService
+	TokenSaver     *service.TokenSaverService
+	Settings       *service.SettingsService
+	OAuth          *handler.OAuthHandler
+	Observability  observability
+	Flusher        *service.QuotaFlusher
+	Retention      *service.LogRetentionWorker
+	UsageRetention *service.UsageRetentionWorker
+	RefreshWorker  *service.OAuthRefreshWorker
 }
 
 // buildManagementHandlers assembles the §7 route groups' handlers and the workers
@@ -86,6 +87,7 @@ func buildManagementHandlers(in managementHandlerInputs) (managementDeps, error)
 		TokenCount:         handler.NewTokenCountHandler(service.NewTokenCountService(), in.Plane.Chat),
 		QuotaFlusher:       in.Flusher,
 		LogRetention:       in.Retention,
+		UsageRetention:     in.UsageRetention,
 		OAuthRefresh:       in.RefreshWorker,
 		UsageEvents:        in.Observability.Publisher,
 		UsageEventConsumer: in.Observability.Consumer,

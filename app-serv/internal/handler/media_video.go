@@ -2,7 +2,7 @@
 //
 // @file      internal/handler/media_video.go
 // @for       The §7.10 async video job routes: the creation and the poll.
-// @uses      internal/dataplane, internal/schema, net/http, strings.
+// @uses      internal/schema, net/http, strings.
 // @reason    A video generation is an async job, so the surface is two routes rather than one: the creation answers the job, and the poll reads it by id. Both decode, authenticate, call, and answer the normalized envelope, so they share this file rather than one file per verb.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
@@ -66,18 +65,16 @@ func (h *MediaHandler) VideoJob(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	providerID := strings.TrimSpace(r.URL.Query().Get("provider"))
-	if providerID == "" {
-		writeDataPlaneError(w, dataplane.ValidationError("query parameter provider is required"))
+	query := schema.MediaVideoPollQuery{
+		Provider: strings.TrimSpace(r.URL.Query().Get("provider")),
+		Endpoint: strings.TrimSpace(r.URL.Query().Get("endpoint")),
+		TaskID:   strings.TrimSpace(r.PathValue("task_id")),
+	}
+	if err := schema.ValidateStruct(query); err != nil {
+		writeDataPlaneError(w, err)
 		return
 	}
-	taskID := strings.TrimSpace(r.PathValue("task_id"))
-	if taskID == "" {
-		writeDataPlaneError(w, dataplane.ValidationError("a video task id is required"))
-		return
-	}
-	job, _, err := h.media.PollVideoJob(r.Context(), providerID,
-		strings.TrimSpace(r.URL.Query().Get("endpoint")), taskID, keyID)
+	job, _, err := h.media.PollVideoJob(r.Context(), query.Provider, query.Endpoint, query.TaskID, keyID)
 	if err != nil {
 		writeDataPlaneError(w, err)
 		return

@@ -19,6 +19,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -113,9 +114,20 @@ func DecodeJSON(r *http.Request, dst any) error {
 	if r.Body == nil {
 		return domain.NewValidationError("request body is required")
 	}
-	dec := jsonDecoder(io.LimitReader(r.Body, MaxBodyBytes))
+	if contentType := r.Header.Get("Content-Type"); contentType != "" &&
+		!strings.HasPrefix(strings.ToLower(contentType), "application/json") {
+		return domain.NewValidationError("content type must be application/json")
+	}
+	limited := &io.LimitedReader{R: r.Body, N: MaxBodyBytes + 1}
+	dec := jsonDecoder(limited)
 	if err := dec.Decode(dst); err != nil {
 		return domain.NewValidationError("invalid request body: " + cleanDecodeError(err))
+	}
+	if err := dec.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return domain.NewValidationError("invalid request body: trailing data after the JSON value")
+	}
+	if limited.N == 0 {
+		return domain.NewValidationError("request body is too large")
 	}
 	return nil
 }

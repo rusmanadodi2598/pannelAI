@@ -107,6 +107,13 @@ else
 fi
 gate_scope_reason
 
+# Pushed commits leave a clean worktree, so the changed-file gates need the exact
+# paths this push carries; their worktree diff would otherwise be empty.
+if [ "${#pushed_paths[@]}" -gt 0 ]; then
+	GATES_CHANGE_FILES="$(printf '%s\n' ${pushed_paths[@]+"${pushed_paths[@]}"})"
+	export GATES_CHANGE_FILES
+fi
+
 gate_start "push scope"
 printf 'go:    %s\npanel: %s\n' "$GATE_SCOPE_GO_WHY" "$GATE_SCOPE_FE_WHY"
 

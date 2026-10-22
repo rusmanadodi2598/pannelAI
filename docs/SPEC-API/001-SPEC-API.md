@@ -132,9 +132,9 @@ CLI tools (Claude Code, Codex, Cursor, ...)          Browser (app-ui)
 | `model_aliases`      | `alias, target, created_at`                                                                                                                                                          | alias → `provider/model` or combo name                                                                                       |
 | `models_custom`      | `id, provider_id, model_id, display_name, capabilities(jsonb), created_at`                                                                                                           | user-added models                                                                                                            |
 | `models_disabled`    | `provider_id, model_id, disabled_at`                                                                                                                                                 | hidden from catalog/routing                                                                                                  |
-| `usage_records`      | `id, request_id, ts, endpoint_id, provider_id, gateway_key_id, model, combo, tokens_in, tokens_out, tokens_cache_read, tokens_cache_write, cost_usd, latency_ms, status, error_code` | partitioned by month; index `(ts)`, `(provider_id, ts)`, `(endpoint_id, ts)`                                                 |
+| `usage_records`      | `id, request_id, ts, endpoint_id, provider_id, gateway_key_id, model, combo, tokens_in, tokens_out, tokens_cache_read, tokens_cache_write, cost_usd, latency_ms, status, error_code` | monthly partitioning is the target, not the current shape; a worker deletes rows older than `USAGE_RETENTION_DAYS`; index `(ts)`, `(provider_id, ts)`, `(endpoint_id, ts)` |
 | `quota_windows`      | `endpoint_id, window, used_units, limit_units, resets_at, source`                                                                                                                    | window ∈ `5h                                                                                                                 | daily | weekly  | monthly`; counters cached in Redis, flushed to PG |
-| `request_logs`       | `request_id, ts, gateway_key_id, endpoint_id, model, status, latency_ms, request_body, response_body, error`                                                                         | bodies stored only when capture enabled; retention job deletes > `retention_days`                                            |
+| `request_logs`       | `id, request_id, ts, gateway_key_id, endpoint_id, model, status, latency_ms, request_body, response_body, error`                                                                     | `id` is the server primary key; `request_id` is a caller trace value and is not unique; bodies stored only when capture enabled; retention job deletes > `retention_days` |
 | `proxies`            | `id, label, protocol, host, port, username, password_encrypted, enabled, status(jsonb), created_at, updated_at`                                                                      | protocol ∈ `http                                                                                                             | https | socks5` |
 | `quota_caps`         | `endpoint_id, monthly_cost_usd, monthly_tokens, updated_at`                                                                                                                          | optional budget caps; a router stops picking an exhausted endpoint (§7.12)                                                   |
 | `settings`           | `key (pk), value(jsonb), updated_at`                                                                                                                                                 | typed accessors, defaults merged at read (mirrors `mergeWithDefaults`)                                                       |
@@ -798,6 +798,8 @@ prevent.
 | PUT    | `/api/v1/quotas/{endpoint_id}`       | S    | Set budget caps `{monthly_cost_usd?, monthly_tokens?}`: router stops picking exhausted endpoints                                         | P2                                                                  |
 | GET    | `/api/v1/quotas/{endpoint_id}/usage` | S    | The provider's own answer for one connection, served from the worker's cache; `?force=1` asks the provider at this instant: `{endpoint_id, provider_id, plan?, fetched_at, message?, cached?, failures?, last_attempt_at?, data[]}`: amounts as decimal strings, `total` absent for an unbounded bucket | P2 |
 
+A summary's `groups[]` carries at most the 100 busiest groups, ordered by request count and then by key; `totals` still covers every row in the filtered window (`AGENTS.md` §1.7). A window with more dimension values than that is answered rather than refused, and the cap is a display bound, not a filter.
+
 Quota worker re-checks windows per provider cadence (5h/daily/weekly/monthly), refresh countdowns,
 and records `resets_at`. Cost figures are estimates for display only (reference parity).
 
@@ -1017,7 +1019,7 @@ v1 settings surface (subset of reference `DEFAULT_SETTINGS`):
   "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "", "outbound_proxy_strategy": "fallback", "provider_proxies": {} },
   "token_saver": { "see §7.9" },
   "reasoning": { "provider_thinking": {} },
-  "logging":  { "request_capture_enabled": false, "retention_days": 7, "capture_body_max_bytes": 65536, "observability_max_records": 1000 }
+  "logging":  { "request_capture_enabled": false, "retention_days": 2, "capture_body_max_bytes": 65536, "observability_max_records": 1000 }
 }
 ```
 

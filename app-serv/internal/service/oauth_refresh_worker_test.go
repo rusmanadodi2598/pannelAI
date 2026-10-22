@@ -22,7 +22,7 @@ import (
 )
 
 // workerFixture assembles the worker over the same fakes the flow tests use,
-// with the clock under the test's control so backoff sleeps are simulated
+// with the clock under the test's control so a retry schedule is advanced
 // rather than waited for.
 type workerFixture struct {
 	worker  *OAuthRefreshWorker
@@ -64,7 +64,11 @@ func newWorkerFixture(t *testing.T, providers ...registry.Provider) *workerFixtu
 		return fixture.clockAt
 	}
 	fixture.worker = NewOAuthRefreshWorker(svc, index)
-	fixture.worker.sleep = func(time.Duration) {}
+	fixture.worker.now = func() time.Time {
+		fixture.clockMu.Lock()
+		defer fixture.clockMu.Unlock()
+		return fixture.clockAt
+	}
 	return fixture
 }
 
@@ -152,19 +156,16 @@ func TestOAuthRefreshWorkerBackoffGrowsPerAttempt(t *testing.T) {
 	fixture.tokens.grantFn = func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
 		return oauthhttp.TokenResponse{}, domain.NewUpstreamError("temporarily unavailable")
 	}
-	var slept []time.Duration
-	fixture.worker.sleep = func(d time.Duration) { slept = append(slept, d) }
-
 	fixture.worker.Sweep(context.Background())
+	firstDelay := fixture.retryDelay(t, "ep_retry")
+	fixture.advance(firstDelay)
 	fixture.worker.Sweep(context.Background())
-	if len(slept) != 2 {
-		t.Fatalf("sleeps = %d, want one per failed attempt", len(slept))
+	secondDelay := fixture.retryDelay(t, "ep_retry")
+	if secondDelay <= firstDelay {
+		t.Fatalf("backoff did not grow: %v then %v", firstDelay, secondDelay)
 	}
-	if slept[1] <= slept[0] {
-		t.Fatalf("backoff did not grow: %v then %v", slept[0], slept[1])
-	}
-	if slept[1] > oauthRefreshBackoffCeiling {
-		t.Fatalf("backoff %v exceeds the ceiling %v", slept[1], oauthRefreshBackoffCeiling)
+	if secondDelay > oauthRefreshBackoffCeiling {
+		t.Fatalf("backoff %v exceeds the ceiling %v", secondDelay, oauthRefreshBackoffCeiling)
 	}
 }
 

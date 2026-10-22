@@ -61,7 +61,7 @@ func TestSettingsRoutes_ThroughMux(t *testing.T) {
 		t.Fatalf("get = %d (body: %s)", getRecorder.Code, getRecorder.Body.String())
 	}
 	body := getRecorder.Body.String()
-	for _, want := range []string{`"require_login":true`, `"require_api_key":true`, `"retention_days":7`} {
+	for _, want := range []string{`"require_login":true`, `"require_api_key":true`, `"retention_days":2`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("get body = %s, want the §7.14 defaults to carry %s", body, want)
 		}
@@ -152,7 +152,7 @@ func TestSettingsRoutes_PatchKeepsUntouchedGroupsIntact(t *testing.T) {
 	if !strings.Contains(body, `"outbound_proxy_url":"http://proxy.internal:8080"`) {
 		t.Fatalf("body = %s, want the second patch's value kept", body)
 	}
-	if !strings.Contains(body, `"retention_days":7`) {
+	if !strings.Contains(body, `"retention_days":2`) {
 		t.Fatalf("body = %s, want the untouched default kept", body)
 	}
 }

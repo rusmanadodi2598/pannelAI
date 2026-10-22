@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 
@@ -52,8 +53,13 @@ func buildOAuth(
 	if err != nil {
 		return nil, nil, fmt.Errorf("management wiring: oauth flow: %w", err)
 	}
-	return handler.NewOAuthHandler(flow, cfg.PublicBaseURL),
-		service.NewOAuthRefreshWorker(flow, index), nil
+	worker := service.NewOAuthRefreshWorker(flow, index)
+	lease, err := redisrepo.NewWorkerLease(client, "oauth-refresh", 30*time.Minute)
+	if err != nil {
+		return nil, nil, fmt.Errorf("management wiring: oauth refresh lease: %w", err)
+	}
+	worker.UseLease(lease)
+	return handler.NewOAuthHandler(flow, cfg.PublicBaseURL), worker, nil
 }
 
 // oauthClientMaterial moves the deployment's OAuth client material across the

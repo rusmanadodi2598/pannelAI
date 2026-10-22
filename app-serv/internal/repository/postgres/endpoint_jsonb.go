@@ -159,23 +159,27 @@ func unmarshalTestStatus(raw *string) (domain.EndpointTestStatus, error) {
 //
 // `global_priority` is written as a pointer so an unset order stores NULL rather
 // than 0: the two mean different things, and a 0 would sort as "tried first".
-func parityColumns(endpoint domain.UpstreamEndpoint) []any {
+// An UPDATE omits consecutive_use_count because that counter belongs to the
+// data-plane outcome write, not to a management or probe write built from a
+// possibly older aggregate.
+func parityColumns(endpoint domain.UpstreamEndpoint, includeUseCount bool) []any {
 	code, message, at := endpoint.LastError()
 	var priority *int
 	if value := endpoint.GlobalPriority(); value != 0 {
 		priority = &value
 	}
-	return []any{
-		priority,
-		endpoint.DefaultModel(),
-		endpoint.ConsecutiveUseCount(),
+	columns := []any{priority, endpoint.DefaultModel()}
+	if includeUseCount {
+		columns = append(columns, endpoint.ConsecutiveUseCount())
+	}
+	return append(columns,
 		nullIfEmpty(message),
 		at,
 		nullIfEmpty(code),
 		nullIfEmpty(endpoint.ProxyPoolID()),
 		endpoint.RefreshRetryAt(),
 		endpoint.RefreshRetryRounds(),
-	}
+	)
 }
 
 // nullIfEmpty stores an empty string as NULL, so "no value" has one

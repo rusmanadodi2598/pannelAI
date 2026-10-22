@@ -13,6 +13,7 @@ package router
 import (
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/clientip"
@@ -38,7 +39,7 @@ func requestRateLimit(next http.Handler, limiter repository.RateLimiter, limit i
 		// load balancer or metrics scraper stays far under, and which AGENTS.md §1.6
 		// asks for precisely so the limit is not a guess.
 		remaining, err := limiter.Allow(r.Context(),
-			clientip.Address(r.RemoteAddr, r.Header.Get("X-Forwarded-For"), trusted), limit, time.Minute)
+			clientip.Address(r.RemoteAddr, strings.Join(r.Header.Values("X-Forwarded-For"), ","), trusted), limit, time.Minute)
 		if err != nil {
 			schema.WriteError(w, err)
 			return

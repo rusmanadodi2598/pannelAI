@@ -52,6 +52,7 @@ func (l usageReadLogs) GetByRequestID(context.Context, string) (domain.RequestLo
 	return l.entry, nil
 }
 func (l usageReadLogs) DeleteOlderThan(context.Context, time.Time) (int64, error) { return 0, nil }
+func (l usageReadLogs) TrimTo(context.Context, int) (int64, error)                { return 0, nil }
 
 type missingUsageReadLogs struct{ usageReadLogs }
 

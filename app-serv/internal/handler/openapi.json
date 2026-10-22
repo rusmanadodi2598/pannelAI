@@ -12792,6 +12792,7 @@
     "/api/v1/usage/summary": {
       "get": {
         "summary": "Totals and group-by over a window",
+        "description": "The group breakdown carries at most the 100 busiest groups, ordered by\nrequest count and then by key. The totals block still covers every row\nthe filter matched, not only the returned groups.\n",
         "tags": [
           "Usage"
         ],

@@ -54,7 +54,12 @@ type Outcome struct {
 	// the health model: a call nobody received proved nothing, and recording it as served
 	// would clear a park a real failure had just earned.
 	StreamAborted bool
-	Truncated     bool
+	// StreamTruncated reports that a streamed answer ended on a clean EOF before the
+	// upstream sent its protocol's finish event. The synthesized finish still releases
+	// the client, and the frames already written are the answer; the flag keeps the
+	// health row from recording a leg that was never finished as served.
+	StreamTruncated bool
+	Truncated       bool
 	// VisionAdapted reports that the model which answered came from the §7.8
 	// vision adapter rather than from anything the request addressed. Whether the
 	// picture was actually read is the upstream's business, but which model it was

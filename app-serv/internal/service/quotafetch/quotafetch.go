@@ -54,6 +54,10 @@ type Result struct {
 	// reads through, throw on a provider error, while the rest answer with a message.
 	// The worker counts a failed poll and backs off; a plain message is an answer.
 	Failed bool
+	// transient marks a read that failed at the transport or answered 5xx/429. The
+	// dispatcher turns it into Failed for the families that follow the polling
+	// policy, while the reference-patched families keep their soft answer.
+	transient bool
 }
 
 // UsageEndpoints is every usage surface one provider's registry entry declares. A

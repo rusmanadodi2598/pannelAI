@@ -50,6 +50,9 @@ type ClaudeStreamState struct {
 	usage *schema.Usage
 	// stopReason is the Anthropic stop reason derived from the upstream's.
 	stopReason string
+	// ended reports that the upstream sent its own message_stop. Finish always
+	// synthesizes one, so this is the only evidence the upstream finished.
+	ended bool
 	// stop is the guard that ends the answer at a `stop_sequences` member the
 	// caller named, and stopSequence is the marker that did. Anthropic reports
 	// both on the closing message_delta, so a cut is distinguishable from a model

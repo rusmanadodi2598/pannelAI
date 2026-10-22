@@ -143,7 +143,7 @@ func buildManagement(
 
 	// The usage, quota, and log services share repositories, so they are built
 	// together (observability_wiring.go).
-	obs, err := buildObservability(usageRepo, quotaRepo, publishedRepo, endpointRepo, logRepo, settingsSvc, client, runtimeIndex, sealer, egress.Client)
+	obs, err := buildObservability(usageRepo, quotaRepo, publishedRepo, endpointRepo, logRepo, settingsSvc, client, runtimeIndex, sealer, egress.Client, cfg.RequestLogMaxRows)
 	if err != nil {
 		return managementDeps{}, err
 	}
@@ -153,7 +153,7 @@ func buildManagement(
 	// index the observability graph already assembled. It reaches runWorkers through
 	// publishedWorker rather than through the returned deps, for the reason stated in
 	// worker_wiring.go.
-	flusher, retention, err := buildWorkers(client, quotaRepo, obs.Log, publishedWorkerInputs{
+	flusher, retention, usageRetention, err := buildWorkers(client, quotaRepo, obs.Log, usageRepo, cfg.UsageRetentionDays, publishedWorkerInputs{
 		Quotas: obs.Quota, Published: publishedRepo, Endpoints: endpointRepo, Index: runtimeIndex,
 		Policy: service.DefaultPublishedPollPolicy().WithSweepLimits(
 			cfg.QuotaPollBudget, cfg.QuotaPollConcurrency),
@@ -208,6 +208,6 @@ func buildManagement(
 		Combo: comboSvc, ComboTest: comboTestSvc, Proxy: proxyHandler, Media: mediaHandler,
 		Plane: plane, Vision: visionSvc, TokenSaver: tokenSaverSvc, Settings: settingsSvc,
 		OAuth: oauthHandler, Observability: obs, Flusher: flusher, Retention: retention,
-		RefreshWorker: refreshWorker,
+		RefreshWorker: refreshWorker, UsageRetention: usageRetention,
 	})
 }

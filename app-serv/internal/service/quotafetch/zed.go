@@ -42,7 +42,7 @@ func fetchZed(ctx context.Context, creds Credentials) Result {
 	}
 	response, err := requestUsage(ctx, http.MethodGet, endpoint, zedHeaders(userID, token, creds.UsageHeaders), "")
 	if err != nil {
-		return Result{Message: fmt.Sprintf("Zed error: %s", err)}
+		return transientMessage(fmt.Sprintf("Zed error: %s", err))
 	}
 	if failure, refused := response.softFailure(zedDisplay); refused {
 		return failure

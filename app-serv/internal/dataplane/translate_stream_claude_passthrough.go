@@ -18,6 +18,11 @@ import "github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 // reported none.
 func (s *ClaudeStreamState) Usage() *schema.Usage { return s.usage }
 
+// terminalSeen reports whether the upstream sent its own message_stop or a
+// semantic stop reason. Finish always writes a message_stop, so a caller reads
+// this before calling it.
+func (s *ClaudeStreamState) terminalSeen() bool { return s.ended || s.stopReason != "" }
+
 // mergeUsage folds one Anthropic usage block into the passthrough stream's
 // accounting, so a message_delta that names only the output side keeps the
 // prompt the message_start reported.
@@ -44,6 +49,9 @@ func (s *ClaudeStreamState) forwardClaude(chunk object) [][]byte {
 			s.mergeUsage(usage)
 		}
 		s.started = true
+		if eventType == schema.EventMessageStop {
+			s.ended = true
+		}
 		return [][]byte{eventFrame(eventType, mustJSON(chunk))}
 	}
 	return nil

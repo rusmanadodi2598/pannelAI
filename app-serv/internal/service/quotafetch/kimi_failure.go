@@ -42,12 +42,16 @@ func kimiFailure(response usageResponse) Result {
 		return Result{Plan: kimiDisplay, Message: kimiFirst(localized, kimiNoPermission)}
 	}
 	if message == "" {
-		return Result{Plan: kimiDisplay, Message: fmt.Sprintf("%s. API Error %d", kimiDisplay, response.status)}
+		return Result{Plan: kimiDisplay,
+			Message:   fmt.Sprintf("%s. API Error %d", kimiDisplay, response.status),
+			transient: transientStatus(response.status)}
 	}
 	if runes := []rune(message); len(runes) > 100 {
 		message = string(runes[:100])
 	}
-	return Result{Plan: kimiDisplay, Message: fmt.Sprintf("%s. API Error %d: %s", kimiDisplay, response.status, message)}
+	return Result{Plan: kimiDisplay,
+		Message:   fmt.Sprintf("%s. API Error %d: %s", kimiDisplay, response.status, message),
+		transient: transientStatus(response.status)}
 }
 
 // kimiErrorBody is a refusal in the Connect-RPC shape the endpoint answers with, nesting the same

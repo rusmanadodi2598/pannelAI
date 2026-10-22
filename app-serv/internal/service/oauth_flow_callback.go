@@ -74,6 +74,19 @@ func (s *OAuthFlowService) requireCodeFlow(providerID string) (registry.Provider
 	return entry, entry.OAuth, nil
 }
 
+// maxOAuthProviderError bounds the provider text a callback may carry into the
+// redirect, so an unauthenticated state cannot make the gateway emit an
+// arbitrarily long URL. The state is consumed before this text is read.
+const maxOAuthProviderError = 200
+
+func boundedProviderError(text string) string {
+	runes := []rune(text)
+	if len(runes) <= maxOAuthProviderError {
+		return text
+	}
+	return string(runes[:maxOAuthProviderError])
+}
+
 // callbackURLFor renders the gateway's own callback route under a base URL.
 func callbackURLFor(base, providerID string) string {
 	return base + "/api/v1/providers/" + providerID + "/oauth/callback"
@@ -100,17 +113,6 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 		return OAuthConnect{}, err
 	}
 	providerID := strings.TrimSpace(in.ProviderID)
-	if in.Error != "" {
-		refusal := in.Error
-		if in.ErrorDescription != "" {
-			refusal = refusal + ": " + in.ErrorDescription
-		}
-		return OAuthConnect{}, domain.NewUpstreamError("the provider refused the authorization: " + refusal)
-	}
-	code := strings.TrimSpace(in.Code)
-	if code == "" {
-		return OAuthConnect{}, domain.NewValidationError("code is required")
-	}
 	state := strings.TrimSpace(in.State)
 	if state == "" {
 		return OAuthConnect{}, domain.NewValidationError("state is required")
@@ -122,6 +124,18 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 	}
 	if !ok {
 		return OAuthConnect{}, domain.NewValidationError("the state is unknown, expired, or already used")
+	}
+	if in.Error != "" {
+		refusal := in.Error
+		if description := strings.TrimSpace(in.ErrorDescription); description != "" {
+			refusal = refusal + ": " + description
+		}
+		return OAuthConnect{}, domain.NewUpstreamError(
+			"the provider refused the authorization: " + boundedProviderError(refusal))
+	}
+	code := strings.TrimSpace(in.Code)
+	if code == "" {
+		return OAuthConnect{}, domain.NewValidationError("code is required")
 	}
 	var payload oauthStatePayload
 	if err := json.Unmarshal(raw, &payload); err != nil {

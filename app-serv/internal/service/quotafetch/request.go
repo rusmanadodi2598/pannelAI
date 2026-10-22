@@ -178,7 +178,23 @@ func (r usageResponse) softFailure(display string) (Result, bool) {
 	if detail != "" {
 		detail = ": " + detail
 	}
-	return Result{Message: fmt.Sprintf("%s quota API error (%d)%s", display, r.status, detail)}, true
+	return Result{
+		Message:   fmt.Sprintf("%s quota API error (%d)%s", display, r.status, detail),
+		transient: transientStatus(r.status),
+	}, true
+}
+
+// transientStatus reports whether a status is a provider outage or throttle rather
+// than an answer. A 4xx is a fact the operator acts on; a 5xx or 429 is a read worth
+// retrying later.
+func transientStatus(status int) bool {
+	return status >= 500 || status == http.StatusTooManyRequests
+}
+
+// transientMessage words a read that never produced an HTTP answer. The driver's
+// sentence stays the card's text; the marker is what the dispatcher reads.
+func transientMessage(message string) Result {
+	return Result{Message: message, transient: true}
 }
 
 // providerDetail quotes a provider's own rejection, with one exception: markup. A moved

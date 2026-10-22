@@ -30,6 +30,10 @@ const qoderUserInfoPath = "/api/v1/userinfo"
 // job token's life, so a renewal cannot serve an identity for a dead token.
 const qoderIdentityTTL = time.Hour
 
+// qoderIdentityTimeout bounds the userinfo read. ApplyAuth reaches it from a
+// streamed attempt, whose context carries no deadline, so the read owns one.
+const qoderIdentityTimeout = 15 * time.Second
+
 // qoderAccount is the non-secret identity one credential belongs to.
 type qoderAccount struct {
 	UserID string
@@ -141,7 +145,9 @@ func (c *Qoder) userInfoURL() string {
 // reads that same set, because a client that picks one of them breaks when the site
 // it talks to changes spelling.
 func (c *Qoder) fetchAccount(ctx context.Context, endpoint, token string) (qoderAccount, error) {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	callCtx, cancel := context.WithTimeout(ctx, qoderIdentityTimeout)
+	defer cancel()
+	request, err := http.NewRequestWithContext(callCtx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return qoderAccount{}, fmt.Errorf("provider %s: the identity request could not be built", c.entry.ID)
 	}

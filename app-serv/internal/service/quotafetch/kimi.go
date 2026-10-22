@@ -68,7 +68,8 @@ func fetchKimi(ctx context.Context, creds Credentials) Result {
 	endpoint := endpointFor(declaredOr(creds.Endpoints.URL, kimiUsageURL), creds.Endpoint)
 	response, err := requestUsage(ctx, http.MethodGet, endpoint, headers, "")
 	if err != nil {
-		return Result{Plan: kimiDisplay, Message: fmt.Sprintf("%s. Unable to fetch usage: %s", kimiDisplay, err)}
+		return Result{Plan: kimiDisplay,
+			Message: fmt.Sprintf("%s. Unable to fetch usage: %s", kimiDisplay, err), transient: true}
 	}
 	if response.status < 200 || response.status >= 300 {
 		return kimiFailure(response)

@@ -38,7 +38,7 @@ func fetchGrok(ctx context.Context, creds Credentials) Result {
 	headers := grokHeaders(token, creds.ProviderSpecificData, creds.UsageHeaders)
 	billingResp, err := requestUsage(ctx, http.MethodGet, billing, headers, "")
 	if err != nil {
-		return Result{Message: fmt.Sprintf("Grok CLI error: %s", err)}
+		return transientMessage(fmt.Sprintf("Grok CLI error: %s", err))
 	}
 	if failure, refused := billingResp.softFailure(grokDisplay); refused {
 		return failure
@@ -62,7 +62,7 @@ func fetchGrok(ctx context.Context, creds Credentials) Result {
 	if ok {
 		return Result{Plan: plan, Quotas: []Quota{row}}
 	}
-	return Result{Plan: plan, Message: fallback.Message}
+	return Result{Plan: plan, Message: fallback.Message, transient: fallback.transient}
 }
 
 // grokEndpoints resolves both REST surfaces; with no declared user_url it rebuilds one from the billing origin, keeping both reads on one host.

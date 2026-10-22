@@ -47,7 +47,7 @@ func fetchGitHub(ctx context.Context, creds Credentials) Result {
 
 	response, err := requestUsage(ctx, http.MethodGet, endpoint, githubHeaders(token, creds.UsageHeaders), "")
 	if err != nil {
-		return Result{Message: fmt.Sprintf("GitHub quota error: %s", err)}
+		return transientMessage(fmt.Sprintf("GitHub quota error: %s", err))
 	}
 	if failure, refused := response.hardFailure(githubDisplay); refused {
 		return failure

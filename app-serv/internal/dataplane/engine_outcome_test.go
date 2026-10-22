@@ -62,6 +62,24 @@ func TestEngine_RecordServedOutcomeAbandonedStreamKeepsThePark(t *testing.T) {
 	}
 }
 
+// TestEngine_RecordServedOutcomeTruncatedStreamKeepsThePark is M12: a clean EOF
+// without the upstream's finish event is logged and keeps the park, but it does
+// not add a failure either; the provider may simply close oddly.
+func TestEngine_RecordServedOutcomeTruncatedStreamKeepsThePark(t *testing.T) {
+	engine, repo, selection := parkedKeyEngine(t)
+	writes := len(repo.outcome)
+
+	engine.recordServedOutcome(context.Background(),
+		&Outcome{StreamTruncated: true, FramesWritten: true}, selection)
+
+	if len(repo.outcome) != writes {
+		t.Fatalf("outcome writes = %d, want %d: a truncated stream records no success", len(repo.outcome), writes)
+	}
+	if repo.health[selection.Key.ID()].RateLimitedUntil() == nil {
+		t.Fatal("the park was cleared by a stream the upstream never finished")
+	}
+}
+
 // TestEngine_RecordServedOutcomeAnsweredCallClearsThePark is the other half: a
 // credential that really did answer comes back into rotation on the next selection.
 func TestEngine_RecordServedOutcomeAnsweredCallClearsThePark(t *testing.T) {

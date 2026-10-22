@@ -160,6 +160,11 @@ func (s *StreamState) Finish() [][]byte {
 	return frames
 }
 
+// terminalSeen reports whether the upstream already closed the answer with a
+// finish frame. Finish sets the same bit when it synthesizes one, so a caller
+// reads this before calling Finish.
+func (s *StreamState) terminalSeen() bool { return s.finishSent }
+
 // Usage reports the accounting the stream observed, or nil when the upstream
 // reported none, so a streamed call records the same number a non-streamed one
 // would.

@@ -70,6 +70,7 @@ func fetchMiniMax(ctx context.Context, creds Credentials) Result {
 	}
 
 	urls, lastError := miniMaxURLs(creds.Endpoints.URLs), ""
+	lastTransient := false
 	for index, familyURL := range urls {
 		canFallback := index < len(urls)-1
 		headers := bearer(apiKey, creds.UsageHeaders)
@@ -77,6 +78,7 @@ func fetchMiniMax(ctx context.Context, creds Credentials) Result {
 		response, err := requestUsage(ctx, http.MethodGet, endpointFor(familyURL, creds.Endpoint), headers, "")
 		if err != nil {
 			lastError = err.Error()
+			lastTransient = true
 			if !canFallback {
 				break
 			}
@@ -98,12 +100,13 @@ func fetchMiniMax(ctx context.Context, creds Credentials) Result {
 		}
 		if response.status < 200 || response.status >= 300 {
 			lastError = fmt.Sprintf("%s usage endpoint error (%d)", miniMaxDisplay, response.status)
+			lastTransient = transientStatus(response.status)
 			// Only a host that does not serve this path at all is worth a second request against.
 			if canFallback && (response.status == http.StatusNotFound ||
 				response.status == http.StatusMethodNotAllowed || response.status >= 500) {
 				continue
 			}
-			return Result{Message: miniMaxDisplay + " connected. " + lastError}
+			return Result{Message: miniMaxDisplay + " connected. " + lastError, transient: lastTransient}
 		}
 		if code != 0 {
 			if message == "" {
@@ -127,7 +130,7 @@ func fetchMiniMax(ctx context.Context, creds Credentials) Result {
 	if lastError != "" {
 		lastError = ": " + lastError
 	}
-	return Result{Message: miniMaxDisplay + " connected. Unable to fetch usage" + lastError}
+	return Result{Message: miniMaxDisplay + " connected. Unable to fetch usage" + lastError, transient: lastTransient}
 }
 
 // miniMaxURLs is the host list MiniMax is asked, in order: every host the registry entry declares,

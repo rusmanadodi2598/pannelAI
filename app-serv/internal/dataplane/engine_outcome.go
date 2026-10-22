@@ -28,6 +28,18 @@ func (e *Engine) recordServedOutcome(ctx context.Context, outcome *Outcome, sele
 	if outcome.StreamAborted {
 		return
 	}
+	if outcome.StreamTruncated {
+		// The client received a terminated stream because the gateway synthesized the
+		// finish. The credential still did not finish the answer it started, so it
+		// records neither a success nor a park; the warning is the trace an operator
+		// can join to the provider.
+		logx.Of(e.logger).Warn("upstream stream ended without a finish event",
+			"provider_id", outcome.ProviderID,
+			"endpoint_id", outcome.EndpointID,
+			"model", outcome.Model,
+			"frames_written", outcome.FramesWritten)
+		return
+	}
 	if err := e.selector.RecordSuccess(ctx, selection); err != nil {
 		logx.Degraded(e.logger, "key health could not be recorded after a served call", err,
 			"endpoint_id", outcome.EndpointID, "key_id", selection.Key.ID())

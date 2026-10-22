@@ -172,7 +172,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
 		oauthJSON, accountJSON, testJSON, endpoint.RateLimitedUntil(),
 		endpoint.LastUsedAt(), endpoint.CreatedAt(), endpoint.UpdatedAt(),
 	}
-	args = append(args, parityColumns(endpoint)...)
+	args = append(args, parityColumns(endpoint, true)...)
 	args = append(args, serviceAccount.ProjectID, serviceAccount.Location, tagsJSON, endpoint.DisabledUntil())
 	if _, err := tx.Exec(ctx, q, args...); err != nil {
 		return translateEndpointError(err)

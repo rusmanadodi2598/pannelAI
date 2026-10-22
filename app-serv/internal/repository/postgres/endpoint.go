@@ -141,9 +141,11 @@ func (r *EndpointRepository) GetByID(ctx context.Context, id string) (domain.Ups
 	return row.aggregate(keysByEndpoint[id])
 }
 
-// Update persists the endpoint's own fields, including its OAuth state (stored
-// as ciphertext) and its account identity. Keys are untouched: they have their
-// own methods because a key change is a different concern.
+// Update persists the endpoint's management fields. Credentials have their own
+// write (`UpdateIfUnchanged` or the import helper), and the data-plane use
+// counter belongs to `RecordUpstreamOutcome`; a management write built from an
+// older aggregate must not restore either. Keys are untouched for the same
+// reason.
 //
 // The statement itself lives in endpoint_oauth_batch.go, because the OAuth import
 // batch needs the same UPDATE inside its transaction and a second copy is how the

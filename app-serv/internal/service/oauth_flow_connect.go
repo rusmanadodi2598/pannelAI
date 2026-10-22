@@ -55,9 +55,13 @@ func (s *OAuthFlowService) connectAccount(ctx context.Context, providerID string
 		if err != nil {
 			return OAuthConnect{}, err
 		}
+		loaded := domain.OAuthCredential{}
+		if current := endpoint.OAuth(); current != nil {
+			loaded = *current
+		}
 		endpoint.SetOAuth(credential, now)
 		endpoint.SetAccount(account, now)
-		if err := s.store.Update(ctx, endpoint); err != nil {
+		if err := s.store.UpdateIfUnchanged(ctx, endpoint, loaded); err != nil {
 			return OAuthConnect{}, err
 		}
 		return OAuthConnect{Endpoint: endpoint, Created: false, TokenHint: hint, RedirectBase: origin}, nil

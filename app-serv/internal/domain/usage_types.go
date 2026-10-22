@@ -26,6 +26,13 @@ const DefaultUsageWindow = 24 * time.Hour
 // the panel's longest period selector, so the cap binds nothing the UI offers.
 const MaxUsageWindow = 90 * 24 * time.Hour
 
+// MaxUsageGroupRows bounds the summary's group breakdown. The group-by columns
+// are not a closed set in practice (a deployment accumulates models, endpoints,
+// and keys), so without a ceiling one summary read could answer as many rows as
+// the window holds. The query orders by request count, so the cap keeps the
+// busiest groups rather than an arbitrary slice (AGENTS.md §1.7).
+const MaxUsageGroupRows = 100
+
 // UsageGroupBy is one dimension of the usage summary breakdown. The set is
 // closed and mirrors the columns the migration indexes (SPEC-API-001 §6).
 type UsageGroupBy string

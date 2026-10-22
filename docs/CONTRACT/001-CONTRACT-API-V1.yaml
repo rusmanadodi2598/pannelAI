@@ -8710,6 +8710,10 @@ paths:
   /api/v1/usage/summary:
     get:
       summary: Totals and group-by over a window
+      description: |
+        The group breakdown carries at most the 100 busiest groups, ordered by
+        request count and then by key. The totals block still covers every row
+        the filter matched, not only the returned groups.
       tags:
       - Usage
       operationId: getApiV1UsageSummary

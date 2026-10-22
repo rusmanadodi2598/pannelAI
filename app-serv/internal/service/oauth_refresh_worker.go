@@ -40,9 +40,15 @@ type OAuthRefreshWorker struct {
 
 	mu       sync.Mutex
 	attempts map[string]int
+	next     map[string]time.Time
 	rng      *mathrand.Rand
-	sleep    func(time.Duration)
+	now      func() time.Time
+	lease    WorkerLease
 }
+
+// UseLease makes the sweep single-owner across replicas. A nil lease keeps the
+// single-process behaviour the tests use.
+func (w *OAuthRefreshWorker) UseLease(lease WorkerLease) { w.lease = lease }
 
 // NewOAuthRefreshWorker builds the worker over a flow service and the provider
 // index it sweeps.
@@ -50,8 +56,9 @@ func NewOAuthRefreshWorker(flow *OAuthFlowService, index ProviderIndex) *OAuthRe
 	return &OAuthRefreshWorker{
 		flow: flow, index: index,
 		attempts: map[string]int{},
+		next:     map[string]time.Time{},
 		rng:      mathrand.New(mathrand.NewSource(time.Now().UnixNano())),
-		sleep:    time.Sleep,
+		now:      time.Now,
 	}
 }
 
@@ -60,17 +67,18 @@ func NewOAuthRefreshWorker(flow *OAuthFlowService, index ProviderIndex) *OAuthRe
 // boundary lives in the composition root's runSupervised, which is where every
 // worker in this process gets it.
 func (w *OAuthRefreshWorker) Run(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-timer.C:
 			refreshed := w.Sweep(ctx)
 			if refreshed > 0 {
 				slog.Info("oauth refresh worker refreshed tokens", "count", refreshed)
 			}
+			timer.Reset(w.nextWake(interval))
 		}
 	}
 }
@@ -81,6 +89,13 @@ func (w *OAuthRefreshWorker) Run(ctx context.Context, interval time.Duration) {
 // are skipped: their cadence belongs to their own connectors, and a provider with no
 // token endpoint has nothing to refresh.
 func (w *OAuthRefreshWorker) Sweep(ctx context.Context) int {
+	release, ok := acquireWorkerLease(ctx, w.lease, slog.Default(), "oauth refresh")
+	if !ok {
+		return 0
+	}
+	if release != nil {
+		defer release()
+	}
 	refreshed := 0
 	for _, provider := range w.index.All() {
 		oauth := provider.OAuth
@@ -94,19 +109,17 @@ func (w *OAuthRefreshWorker) Sweep(ctx context.Context) int {
 			continue
 		}
 		for _, endpoint := range status.Endpoints {
-			if endpoint.RefreshState != domain.RefreshDue {
-				continue
-			}
 			switch endpoint.Status {
 			case string(domain.UpstreamEndpointActive):
+				if endpoint.RefreshState != domain.RefreshDue {
+					continue
+				}
 				if w.sweepOne(ctx, provider.ID, endpoint) {
 					refreshed++
 				}
 			case string(domain.UpstreamEndpointError):
-				// A dead-lettered account is due on every tick, because its token is
-				// expired, so it gets one attempt per ladder window rather than the
-				// burst below: five grants and their sleeps, every tick, against a
-				// vendor that already answered invalid_grant (draft 050 T2).
+				// The ladder window, not the token expiry, decides a grave visit:
+				// an account whose token states no expiry still has to be revisited.
 				if !endpoint.RetryDue {
 					continue
 				}
@@ -145,11 +158,12 @@ func (w *OAuthRefreshWorker) retryDeadLettered(ctx context.Context, providerID s
 // count the attempt, back off below the limit, dead-letter at it. It reports
 // whether the token was refreshed.
 func (w *OAuthRefreshWorker) sweepOne(ctx context.Context, providerID string, endpoint OAuthEndpointState) bool {
+	if !w.due(endpoint.EndpointID, w.now()) {
+		return false
+	}
 	_, err := w.flow.Refresh(ctx, providerID, endpoint.EndpointID)
 	if err == nil {
-		w.mu.Lock()
-		delete(w.attempts, endpoint.EndpointID)
-		w.mu.Unlock()
+		w.clearRetry(endpoint.EndpointID)
 		return true
 	}
 
@@ -167,12 +181,10 @@ func (w *OAuthRefreshWorker) sweepOne(ctx context.Context, providerID string, en
 			slog.Error("oauth refresh worker could not dead-letter the endpoint",
 				"endpoint", endpoint.EndpointID, "error", deadErr)
 		}
-		w.mu.Lock()
-		delete(w.attempts, endpoint.EndpointID)
-		w.mu.Unlock()
+		w.clearRetry(endpoint.EndpointID)
 		return false
 	}
-	w.sleep(w.backoffDelay(attempt))
+	w.scheduleRetry(endpoint.EndpointID, w.now().Add(w.backoffDelay(attempt)))
 	return false
 }
 

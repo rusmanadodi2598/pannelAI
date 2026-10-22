@@ -2,9 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_fingerprint_test.go
-// @for       The tool-level fingerprint rules: exact read/shell names, aliasing a conflicting caller tool, and the canonical declarations that are appended.
+// @for       The tool-level conceal rules: exact read/shell names, aliasing a conflicting caller tool, and keeping a canonical declaration verbatim.
 // @uses      encoding/json, testing.
-// @reason    The upstream compares the description and parameter schema of the declared read/shell tools literally and answers 403 FreeTierError when they differ, so both the canonical definitions and the alias rule that keeps a caller's own tool of the same name are pinned here. The body-level rules (choice retarget, history rename, placeholder note) are pinned in opencode_fingerprint_body_test.go for the AGENTS.md §1.1 budget.
+// @reason    The upstream compares the description and parameter schema of the declared read/shell tools literally and answers 403 FreeTierError when they differ, so the alias rule that keeps a caller's own tool of the same name is pinned here. The canonical declarations and append rule live in opencode_fingerprint_definitions_test.go, and the body-level rules in opencode_fingerprint_body_test.go, for the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -157,101 +157,4 @@ func TestOpenCodeJSONEqual_ComparesByValue(t *testing.T) {
 	if openCodeJSONEqual(json.RawMessage(`{"a":1,"b":2}`), json.RawMessage(`{"a":1,"b":3}`)) {
 		t.Fatal("a different member value must compare unequal")
 	}
-}
-
-// TestOpenCodeFingerprintTool_CarriesTheVerbatimDefinition pins the declarations
-// the upstream compares against: the reference's own wording, the required
-// members, and the wire's own shape.
-func TestOpenCodeFingerprintTool_CarriesTheVerbatimDefinition(t *testing.T) {
-	flat := decodeRaw(t, openCodeFingerprintTool("read", true))
-	if flat["strict"] != false {
-		t.Fatalf("flat strict = %v, want false", flat["strict"])
-	}
-	if _, nested := flat["function"]; nested {
-		t.Fatal("the flat declaration nests its function, want it named on the tool")
-	}
-	parameters, _ := flat["parameters"].(map[string]any)
-	if got, _ := parameters["required"].([]any); len(got) != 1 || got[0] != "path" {
-		t.Fatalf("read required = %v, want [path]", parameters["required"])
-	}
-	if properties, _ := parameters["properties"].(map[string]any); len(properties) != 3 {
-		t.Fatalf("read properties = %v, want path, offset, and limit", parameters["properties"])
-	}
-
-	nested := decodeRaw(t, openCodeFingerprintTool("shell", false))
-	function, ok := nested["function"].(map[string]any)
-	if !ok {
-		t.Fatalf("chat declaration = %v, want a nested function", nested)
-	}
-	if function["description"] != openCodeFingerprintDefinitions["shell"].description {
-		t.Fatal("the shell description is not the verbatim reference text")
-	}
-	shellParameters, _ := function["parameters"].(map[string]any)
-	if got, _ := shellParameters["required"].([]any); len(got) != 1 || got[0] != "command" {
-		t.Fatalf("shell required = %v, want [command]", shellParameters["required"])
-	}
-}
-
-func TestAppendOpenCodeFingerprintTools(t *testing.T) {
-	cases := []struct {
-		name        string
-		tools       []json.RawMessage
-		responses   bool
-		wantNames   []string
-		wantAppends []string
-	}{
-		{
-			name:        "an empty list gains both, in the reference's order",
-			tools:       nil,
-			responses:   true,
-			wantNames:   []string{"read", "shell"},
-			wantAppends: []string{"read", "shell"},
-		},
-		{
-			name:        "a declared canonical read is not duplicated",
-			tools:       []json.RawMessage{openCodeFingerprintTool("read", false)},
-			responses:   false,
-			wantNames:   []string{"read", "shell"},
-			wantAppends: []string{"shell"},
-		},
-		{
-			name:        "an aliased caller tool leaves the canonical name missing",
-			tools:       flatTools("read_client"),
-			responses:   true,
-			wantNames:   []string{"read_client", "read", "shell"},
-			wantAppends: []string{"read", "shell"},
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			tools, appended := appendOpenCodeFingerprintTools(tc.tools, tc.responses)
-			if got := toolNamesOf(tools); len(got) != len(tc.wantNames) {
-				t.Fatalf("names = %v, want %v", got, tc.wantNames)
-			} else {
-				for index := range tc.wantNames {
-					if got[index] != tc.wantNames[index] {
-						t.Fatalf("names = %v, want %v", got, tc.wantNames)
-					}
-				}
-			}
-			if len(appended) != len(tc.wantAppends) {
-				t.Fatalf("appended = %v, want %v", appended, tc.wantAppends)
-			}
-			for index := range tc.wantAppends {
-				if appended[index] != tc.wantAppends[index] {
-					t.Fatalf("appended = %v, want %v", appended, tc.wantAppends)
-				}
-			}
-		})
-	}
-}
-
-// decodeRaw decodes one encoded member for the shape checks above.
-func decodeRaw(t *testing.T, raw json.RawMessage) map[string]any {
-	t.Helper()
-	var decoded map[string]any
-	if err := json.Unmarshal(raw, &decoded); err != nil {
-		t.Fatalf("decoding %s: %v", raw, err)
-	}
-	return decoded
 }

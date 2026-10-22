@@ -176,6 +176,57 @@ func TestIntegration_UpdateIfUnchangedLeavesAnOperatorsEditAlone(t *testing.T) {
 	}
 }
 
+// TestIntegration_UpdateLeavesARotationAndTheUseCountAlone pins the column split:
+// a management write must not restore a credential or counter a later write owns.
+func TestIntegration_UpdateLeavesARotationAndTheUseCountAlone(t *testing.T) {
+	repo := newEndpointRepo(t)
+	ctx := context.Background()
+	first := time.Now().UTC().Truncate(time.Microsecond).Add(time.Second)
+	servedAt := first.Add(time.Second)
+	rotatedAt := servedAt.Add(time.Second)
+	editedAt := rotatedAt.Add(time.Second)
+
+	loaded := storeOAuthEndpoint(t, repo, ctx, "ep-split", "sealed-shared", first)
+	loadedCred := *loaded.OAuth()
+
+	served := loaded
+	served.RecordUpstreamSuccess(servedAt)
+	if err := repo.RecordUpstreamOutcome(ctx, served); err != nil {
+		t.Fatalf("recording a served outcome: %v", err)
+	}
+
+	rotation := loaded
+	rotation.SetOAuth(sealedCredential(t, "sealed-rotated"), rotatedAt)
+	if err := repo.UpdateIfUnchanged(ctx, rotation, loadedCred); err != nil {
+		t.Fatalf("rotating the credential: %v", err)
+	}
+
+	management := loaded
+	if err := management.Update("label-edited", 7, string(domain.UpstreamEndpointDisabled), editedAt); err != nil {
+		t.Fatalf("operator edit: %v", err)
+	}
+	if err := repo.Update(ctx, management); err != nil {
+		t.Fatalf("storing the operator edit: %v", err)
+	}
+
+	stored, err := repo.GetByID(ctx, "ep-split")
+	if err != nil {
+		t.Fatalf("reloading: %v", err)
+	}
+	if got := stored.OAuth().AccessTokenEncrypted(); got != "sealed-rotated" {
+		t.Fatalf("stored token = %q, want the rotation's", got)
+	}
+	if got := stored.ConsecutiveUseCount(); got != 1 {
+		t.Fatalf("stored use count = %d, want the served call's 1", got)
+	}
+	if got := stored.Label(); got != "label-edited" {
+		t.Fatalf("stored label = %q, want the operator's", got)
+	}
+	if got := stored.Priority(); got != 7 {
+		t.Fatalf("stored priority = %d, want the operator's 7", got)
+	}
+}
+
 func isConflict(err error) bool {
 	return err != nil && domain.AsAppError(err).Code == "CONFLICT"
 }
