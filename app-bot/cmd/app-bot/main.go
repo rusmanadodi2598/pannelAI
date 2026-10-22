@@ -26,6 +26,8 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-bot/internal/repository/postgres"
 	"github.com/rusmanadodi2598/pannelAI/app-bot/internal/repository/redis"
 	"github.com/rusmanadodi2598/pannelAI/app-bot/internal/router"
+	"github.com/rusmanadodi2598/pannelAI/app-bot/internal/service"
+	"github.com/rusmanadodi2598/pannelAI/app-bot/internal/telegram"
 )
 
 func main() {
@@ -68,9 +70,24 @@ func run() error {
 	}
 	defer func() { _ = rdb.Close() }()
 
+	botClient, err := telegram.NewClient(cfg.TelegramBotToken, cfg.TelegramAPIBase)
+	if err != nil {
+		return err
+	}
+	webhook := handler.NewWebhook(cfg.TelegramWebhookSecret, service.NewIntake(rdb, rdb, updateDedupTTL), logger)
+	stopWorker, err := startWorker(ctx, logger, rdb, botClient)
+	if err != nil {
+		return err
+	}
+	defer stopWorker()
+
 	server := &http.Server{
-		Addr:              cfg.HTTPAddr,
-		Handler:           router.New(router.Deps{System: handler.NewSystem(pool, rdb, cfg.ReadinessTimeout), Logger: logger}),
+		Addr: cfg.HTTPAddr,
+		Handler: router.New(router.Deps{
+			System:  handler.NewSystem(pool, rdb, cfg.ReadinessTimeout),
+			Webhook: webhook,
+			Logger:  logger,
+		}),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,

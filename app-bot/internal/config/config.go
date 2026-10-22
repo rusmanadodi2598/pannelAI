@@ -13,6 +13,7 @@ package config
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ const (
 	defaultPoolMax          = 10
 	defaultReadinessTimeout = 3 * time.Second
 	defaultShutdownTimeout  = 10 * time.Second
+	defaultTelegramAPIBase  = "https://api.telegram.org"
 )
 
 var allowedEnvs = map[string]bool{"development": true, "staging": true, "production": true}
@@ -43,6 +45,10 @@ type Config struct {
 	LogLevel         string
 	ReadinessTimeout time.Duration
 	ShutdownTimeout  time.Duration
+
+	TelegramBotToken      string
+	TelegramWebhookSecret string
+	TelegramAPIBase       string
 }
 
 // Load reads every setting through getenv, applies defaults, and validates the
@@ -57,6 +63,10 @@ func Load(getenv func(string) string) (Config, error) {
 		LogLevel:         strings.ToLower(valueOr(getenv, "LOG_LEVEL", defaultLogLevel)),
 		ReadinessTimeout: defaultReadinessTimeout,
 		ShutdownTimeout:  defaultShutdownTimeout,
+
+		TelegramBotToken:      strings.TrimSpace(getenv("TELEGRAM_BOT_TOKEN")),
+		TelegramWebhookSecret: strings.TrimSpace(getenv("TELEGRAM_WEBHOOK_SECRET")),
+		TelegramAPIBase:       valueOr(getenv, "TELEGRAM_API_BASE", defaultTelegramAPIBase),
 	}
 
 	if !allowedEnvs[cfg.AppEnv] {
@@ -92,6 +102,10 @@ func Load(getenv func(string) string) (Config, error) {
 		return Config{}, err
 	}
 	cfg.RedisDB = redisDB
+
+	if err := requireTelegram(cfg); err != nil {
+		return Config{}, err
+	}
 
 	if cfg.ReadinessTimeout, err = parseDuration("READINESS_TIMEOUT", getenv("READINESS_TIMEOUT"), cfg.ReadinessTimeout); err != nil {
 		return Config{}, err
@@ -140,4 +154,27 @@ func parseDuration(field, raw string, fallback time.Duration) (time.Duration, er
 		return 0, fmt.Errorf("%s must be a positive duration", field)
 	}
 	return value, nil
+}
+
+var webhookSecretPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{16,256}$`)
+
+// requireTelegram validates the Bot API material without echoing either
+// value, so a boot failure is safe to paste into a ticket.
+func requireTelegram(cfg Config) error {
+	if cfg.TelegramBotToken == "" {
+		return fmt.Errorf("TELEGRAM_BOT_TOKEN is required")
+	}
+	if !strings.Contains(cfg.TelegramBotToken, ":") || len(cfg.TelegramBotToken) < 20 {
+		return fmt.Errorf("TELEGRAM_BOT_TOKEN is not a bot token")
+	}
+	if cfg.TelegramWebhookSecret == "" {
+		return fmt.Errorf("TELEGRAM_WEBHOOK_SECRET is required")
+	}
+	if !webhookSecretPattern.MatchString(cfg.TelegramWebhookSecret) {
+		return fmt.Errorf("TELEGRAM_WEBHOOK_SECRET must be 16 to 256 characters of A-Z, a-z, 0-9, _ or -")
+	}
+	if !strings.HasPrefix(cfg.TelegramAPIBase, "https://") {
+		return fmt.Errorf("TELEGRAM_API_BASE must be an https URL")
+	}
+	return nil
 }

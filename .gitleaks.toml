@@ -33,4 +33,10 @@ regexes = [
   # is the alphabet, not a secret: the entropy comes from crypto/rand, and the
   # alphabet's only design constraint is that it omits ambiguous characters.
   '''abcdefghijkmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWXYZ''',
+
+  # The webhook tests need a shared secret of a realistic length so the
+  # constant-time compare and the 403 path run against the same shape a
+  # deployment uses. This literal is a fixture, never a credential, and only the
+  # exact value is exempt: a real secret in the same file is still caught.
+  '''test-secret-1234567890''',
 ]
