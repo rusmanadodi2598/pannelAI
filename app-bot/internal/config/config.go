@@ -28,6 +28,10 @@ const (
 	defaultReadinessTimeout = 3 * time.Second
 	defaultShutdownTimeout  = 10 * time.Second
 	defaultTelegramAPIBase  = "https://api.telegram.org"
+	defaultBuilderMaxTokens = 700
+	defaultBuilderTimeout   = 20 * time.Second
+	defaultBuilderDailyCap  = 60
+	defaultPromptMaxChars   = 2000
 )
 
 var allowedEnvs = map[string]bool{"development": true, "staging": true, "production": true}
@@ -50,6 +54,14 @@ type Config struct {
 	TelegramBotToken      string
 	TelegramWebhookSecret string
 	TelegramAPIBase       string
+
+	GatewayBaseURL   string
+	GatewayKey       string
+	BuilderModel     string
+	BuilderMaxTokens int
+	BuilderTimeout   time.Duration
+	BuilderDailyCap  int
+	PromptMaxChars   int
 }
 
 // Load reads every setting through getenv, applies defaults, and validates the
@@ -68,6 +80,14 @@ func Load(getenv func(string) string) (Config, error) {
 		TelegramBotToken:      strings.TrimSpace(getenv("TELEGRAM_BOT_TOKEN")),
 		TelegramWebhookSecret: strings.TrimSpace(getenv("TELEGRAM_WEBHOOK_SECRET")),
 		TelegramAPIBase:       strings.TrimRight(valueOr(getenv, "TELEGRAM_API_BASE", defaultTelegramAPIBase), "/"),
+
+		GatewayBaseURL:   strings.TrimRight(valueOr(getenv, "GATEWAY_BASE_URL", ""), "/"),
+		GatewayKey:       strings.TrimSpace(getenv("GATEWAY_KEY")),
+		BuilderModel:     strings.TrimSpace(getenv("BUILDER_MODEL")),
+		BuilderTimeout:   defaultBuilderTimeout,
+		BuilderMaxTokens: defaultBuilderMaxTokens,
+		BuilderDailyCap:  defaultBuilderDailyCap,
+		PromptMaxChars:   defaultPromptMaxChars,
 	}
 
 	if !allowedEnvs[cfg.AppEnv] {
@@ -112,6 +132,22 @@ func Load(getenv func(string) string) (Config, error) {
 		return Config{}, err
 	}
 	if cfg.ShutdownTimeout, err = parseDuration("SHUTDOWN_TIMEOUT", getenv("SHUTDOWN_TIMEOUT"), cfg.ShutdownTimeout); err != nil {
+		return Config{}, err
+	}
+	if cfg.BuilderTimeout, err = parseDuration("BUILDER_TIMEOUT", getenv("BUILDER_TIMEOUT"), cfg.BuilderTimeout); err != nil {
+		return Config{}, err
+	}
+	if cfg.BuilderMaxTokens, err = parseInt("BUILDER_MAX_TOKENS", valueOr(getenv, "BUILDER_MAX_TOKENS", strconv.Itoa(defaultBuilderMaxTokens)), 1, 8000); err != nil {
+		return Config{}, err
+	}
+	if cfg.BuilderDailyCap, err = parseInt("BUILDER_DAILY_CAP", valueOr(getenv, "BUILDER_DAILY_CAP", strconv.Itoa(defaultBuilderDailyCap)), 1, 10000); err != nil {
+		return Config{}, err
+	}
+	if cfg.PromptMaxChars, err = parseInt("PROMPT_MAX_CHARS", valueOr(getenv, "PROMPT_MAX_CHARS", strconv.Itoa(defaultPromptMaxChars)), 100, 4000); err != nil {
+		return Config{}, err
+	}
+
+	if err := requireBuilder(cfg); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil
@@ -185,6 +221,24 @@ func requireTelegram(cfg Config) error {
 
 // minSecretAlphabet rejects a long but trivial secret such as aaaaaaaaaaaaaaaa.
 const minSecretAlphabet = 8
+
+// requireBuilder validates the builder transport without echoing the key.
+func requireBuilder(cfg Config) error {
+	if cfg.GatewayBaseURL == "" {
+		return fmt.Errorf("GATEWAY_BASE_URL is required")
+	}
+	parsed, err := url.Parse(cfg.GatewayBaseURL)
+	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil {
+		return fmt.Errorf("GATEWAY_BASE_URL must be an https URL with a host and no user info")
+	}
+	if cfg.GatewayKey == "" {
+		return fmt.Errorf("GATEWAY_KEY is required")
+	}
+	if cfg.BuilderModel == "" {
+		return fmt.Errorf("BUILDER_MODEL is required")
+	}
+	return nil
+}
 
 func distinctChars(value string) int {
 	seen := make(map[rune]struct{}, len(value))

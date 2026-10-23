@@ -21,6 +21,13 @@ Required environment:
 | `REDIS_ADDR`   | Defaults to `127.0.0.1:6379`                       |
 | `REDIS_PASSWORD` | Required on this host                            |
 | `HTTP_ADDR`    | Defaults to `127.0.0.1:8090`                       |
+| `GATEWAY_BASE_URL` | https base for the chat data plane                |
+| `GATEWAY_KEY`  | Bearer for the gateway, required                   |
+| `BUILDER_MODEL` | Chat model for the six-section builder             |
+| `BUILDER_MAX_TOKENS` | Defaults to `700`                          |
+| `BUILDER_TIMEOUT` | Defaults to `20s` per attempt                  |
+| `BUILDER_DAILY_CAP` | Defaults to `60` calls per user per day        |
+| `PROMPT_MAX_CHARS` | Defaults to `2000`, the pre-builder cap            |
 
 Routes: `GET /healthz`, `GET /readyz`, `GET /metrics` (loopback only).
 
