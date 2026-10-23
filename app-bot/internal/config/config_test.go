@@ -25,6 +25,9 @@ func TestLoad_GivenEnvironmentVariations_ThenConfigIsAcceptedOrRejected(t *testi
 		"DB_POOL_MAX":  "10",
 		"REDIS_ADDR":   "127.0.0.1:6379",
 		"LOG_LEVEL":    "info",
+
+		"TELEGRAM_BOT_TOKEN":      "123456789:AAH-test-token-value",
+		"TELEGRAM_WEBHOOK_SECRET": "test-secret-1234567890",
 	}
 
 	cases := []struct {
@@ -66,6 +69,51 @@ func TestLoad_GivenEnvironmentVariations_ThenConfigIsAcceptedOrRejected(t *testi
 			mutate:  func(env map[string]string) { env["HTTP_ADDR"] = "127.0.0.1" },
 			wantErr: "HTTP_ADDR must be host:port",
 		},
+		{
+			name:    "missing bot token is refused",
+			mutate:  func(env map[string]string) { delete(env, "TELEGRAM_BOT_TOKEN") },
+			wantErr: "TELEGRAM_BOT_TOKEN is required",
+		},
+		{
+			name:    "token without a colon is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_BOT_TOKEN"] = "not-a-bot-token-value" },
+			wantErr: "TELEGRAM_BOT_TOKEN is not a bot token",
+		},
+		{
+			name:    "missing webhook secret is refused",
+			mutate:  func(env map[string]string) { delete(env, "TELEGRAM_WEBHOOK_SECRET") },
+			wantErr: "TELEGRAM_WEBHOOK_SECRET is required",
+		},
+		{
+			name:    "short webhook secret is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_WEBHOOK_SECRET"] = "short" },
+			wantErr: "TELEGRAM_WEBHOOK_SECRET must be 16 to 256 characters",
+		},
+		{
+			name:    "webhook secret with a space is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_WEBHOOK_SECRET"] = "bad secret value 123" },
+			wantErr: "TELEGRAM_WEBHOOK_SECRET must be 16 to 256 characters",
+		},
+		{
+			name:    "plain http api base is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_API_BASE"] = "http://api.telegram.org" },
+			wantErr: "TELEGRAM_API_BASE must be an https URL",
+		},
+		{
+			name:    "api base with a path is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_API_BASE"] = "https://api.telegram.org/bot" },
+			wantErr: "TELEGRAM_API_BASE must not carry a path",
+		},
+		{
+			name:    "api base with credentials is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_API_BASE"] = "https://user:pass@api.telegram.org" },
+			wantErr: "TELEGRAM_API_BASE must be an https URL",
+		},
+		{
+			name:    "webhook secret with a tiny alphabet is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_WEBHOOK_SECRET"] = "aaaaaaaaaaaaaaaaaaaa" },
+			wantErr: "must use at least 8 distinct characters",
+		},
 	}
 
 	for _, tc := range cases {
@@ -106,21 +154,26 @@ func TestLoad_GivenEnvironmentVariations_ThenConfigIsAcceptedOrRejected(t *testi
 			if cfg.RedisAddr != "127.0.0.1:6379" {
 				t.Fatalf("RedisAddr = %q, want 127.0.0.1:6379", cfg.RedisAddr)
 			}
+			if cfg.TelegramAPIBase != "https://api.telegram.org" {
+				t.Fatalf("TelegramAPIBase = %q, want the default", cfg.TelegramAPIBase)
+			}
 		})
 	}
 }
 
 func TestLoad_GivenOptionalOverrides_ThenValuesAreApplied(t *testing.T) {
 	env := map[string]string{
-		"APP_ENV":           "staging",
-		"HTTP_ADDR":         "127.0.0.1:9090",
-		"DATABASE_URL":      "postgres://bot@127.0.0.1:5432/pannelai",
-		"DB_POOL_MAX":       "4",
-		"REDIS_ADDR":        "127.0.0.1:6380",
-		"REDIS_PASSWORD":    "redis-secret",
-		"LOG_LEVEL":         "debug",
-		"READINESS_TIMEOUT": "5s",
-		"SHUTDOWN_TIMEOUT":  "20s",
+		"APP_ENV":                 "staging",
+		"HTTP_ADDR":               "127.0.0.1:9090",
+		"DATABASE_URL":            "postgres://bot@127.0.0.1:5432/pannelai",
+		"DB_POOL_MAX":             "4",
+		"REDIS_ADDR":              "127.0.0.1:6380",
+		"REDIS_PASSWORD":          "redis-secret",
+		"LOG_LEVEL":               "debug",
+		"READINESS_TIMEOUT":       "5s",
+		"SHUTDOWN_TIMEOUT":        "20s",
+		"TELEGRAM_BOT_TOKEN":      "123456789:AAF-test-token-0000000000000000000",
+		"TELEGRAM_WEBHOOK_SECRET": "test-secret-1234567890",
 	}
 
 	cfg, err := config.Load(func(key string) string { return env[key] })

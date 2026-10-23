@@ -2,7 +2,7 @@
 //
 // @file      internal/router/middleware.go
 // @for       Request id, access log, panic recovery, and loopback gating.
-// @uses      crypto/rand, encoding/hex, log/slog, net, net/http, regexp, runtime/debug, time.
+// @uses      crypto/rand, encoding/hex, log/slog, net, net/http, regexp, runtime/debug, strings, time.
 // @reason    These four concerns are cross-cutting and security relevant, so they live together and are tested through the router rather than per handler.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"regexp"
 	"runtime/debug"
+	"strings"
 	"time"
 )
 
@@ -71,19 +72,37 @@ func recoverPanics(logger *slog.Logger, next http.Handler) http.Handler {
 	})
 }
 
+// loopbackOnly admits a request only when the peer is loopback AND, if a proxy
+// forwarded it, the last hop is loopback too. A same-host reverse proxy makes
+// every peer loopback, so the peer address alone cannot mean local.
 func loopbackOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			http.Error(w, "forbidden", http.StatusForbidden)
-			return
-		}
-		if ip := net.ParseIP(host); ip == nil || !ip.IsLoopback() {
+		if !loopbackPeer(r.RemoteAddr) || !loopbackForwarded(r.Header.Get("X-Forwarded-For")) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// loopbackPeer reports whether the TCP peer address is a loopback address.
+func loopbackPeer(remoteAddr string) bool {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		return false
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+// loopbackForwarded reports whether the last hop named in X-Forwarded-For is a
+// loopback address. An absent header means the request was not proxied.
+func loopbackForwarded(header string) bool {
+	if header == "" {
+		return true
+	}
+	hops := strings.Split(header, ",")
+	return loopbackPeer(net.JoinHostPort(strings.TrimSpace(hops[len(hops)-1]), "0"))
 }
 
 type statusRecorder struct {

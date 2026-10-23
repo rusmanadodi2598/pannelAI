@@ -19,8 +19,9 @@ import (
 
 // Deps is the composition root's contribution to the router.
 type Deps struct {
-	System *handler.System
-	Logger *slog.Logger
+	System  *handler.System
+	Webhook http.Handler
+	Logger  *slog.Logger
 }
 
 // New builds the route table. Order of wrapping is deliberate: recovery is
@@ -35,6 +36,9 @@ func New(deps Deps) http.Handler {
 	mux.HandleFunc("GET /healthz", deps.System.Health)
 	mux.HandleFunc("GET /readyz", deps.System.Ready)
 	mux.Handle("GET /metrics", loopbackOnly(http.HandlerFunc(deps.System.Metrics)))
+	if deps.Webhook != nil {
+		mux.Handle("POST /internal/telegram/webhook", deps.Webhook)
+	}
 
 	chain := recoverPanics(deps.Logger, accessLog(deps.Logger, requestID(mux)))
 	return chain
