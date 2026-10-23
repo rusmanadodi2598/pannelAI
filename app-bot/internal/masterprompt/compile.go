@@ -3,7 +3,7 @@
 // @file      internal/masterprompt/compile.go
 // @for       Deterministic compilation to one prompt string and request parameters.
 // @uses      fmt, strings.
-// @reason    Same document must produce the same bytes, so section order and separators are fixed here and pinned by a golden test.
+// @reason    Same document must produce the same bytes, so section order, joiners, and token dedup are fixed here and pinned by a golden test.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable
@@ -36,10 +36,24 @@ const (
 	defaultCamera = "static"
 )
 
+// tokenKind drives the joiner between neighbouring tokens: two palette
+// entries join with " and ", everything else with ", ".
+type tokenKind int
+
+const (
+	kindNormal tokenKind = iota
+	kindPalette
+)
+
+// promptToken is one dedup unit in the compiled prompt.
+type promptToken struct {
+	text string
+	kind tokenKind
+}
+
 // Compile maps a validated document onto the upstream request.
 func Compile(doc Document) (Compiled, error) {
-	segments := promptSegments(doc)
-	text := joinSegments(segments)
+	text := compileText(doc)
 
 	limit := budgetFor(doc.Modality)
 	if doc.StopConditions.MaxCharacters < limit {
@@ -55,79 +69,142 @@ func Compile(doc Document) (Compiled, error) {
 	return Compiled{Text: text, Params: paramsFor(doc)}, nil
 }
 
-func promptSegments(doc Document) []string {
-	segments := []string{
-		doc.Context.Subject,
-		doc.Context.Action,
-		doc.Context.Environment,
-		compositionPhrase(doc.Context.Composition),
-		doc.Context.Lighting,
-		stylePhrase(doc.Context.Style),
-	}
-	if doc.Modality == "video" {
-		segments = append(segments, videoSegments(doc)...)
-	} else {
-		segments = append(segments, doc.Context.Details...)
-		segments = append(segments, qualitySuffix)
-	}
-	return append(segments, avoidPhrase(doc.StopConditions.Negative))
+func compileText(doc Document) string {
+	return joinTokens(dedupeTokens(promptTokens(doc)))
 }
 
-// videoSegments renders motion, camera, duration, and the leftover details in
-// the order the video template states.
-func videoSegments(doc Document) []string {
+func promptTokens(doc Document) []promptToken {
+	tokens := []promptToken{
+		token(doc.Context.Subject, kindNormal),
+		token(doc.Context.Action, kindNormal),
+	}
+	tokens = append(tokens, splitTokens(doc.Context.Environment)...)
+	tokens = append(tokens, compositionTokens(doc.Context.Composition)...)
+	tokens = append(tokens, splitTokens(doc.Context.Lighting)...)
+	tokens = append(tokens, styleTokens(doc.Context.Style)...)
+
+	if doc.Modality == "video" {
+		tokens = append(tokens, videoTokens(doc)...)
+	} else {
+		for _, detail := range doc.Context.Details {
+			tokens = append(tokens, token(detail, kindNormal))
+		}
+		tokens = append(tokens, splitTokens(qualitySuffix)...)
+	}
+	tokens = append(tokens, token(avoidPhrase(doc.StopConditions.Negative), kindNormal))
+	return tokens
+}
+
+// videoTokens renders motion, camera, duration, and leftover details in the
+// order the video template states. A camera move arrives as a detail.
+func videoTokens(doc Document) []promptToken {
 	camera := defaultCamera
 	motion := ""
-	rest := make([]string, 0, len(doc.Context.Details))
+	rest := make([]promptToken, 0, len(doc.Context.Details))
 	for _, detail := range doc.Context.Details {
-		key := phraseValue(strings.ToLower(detail))
-		switch {
-		case cameraMoves[key] && camera == defaultCamera:
-			camera = key
-		case motion == "" && cameraMoves[key] == false:
-			motion = detail
-		default:
-			rest = append(rest, detail)
+		if isCameraMove(detail) {
+			if camera == defaultCamera {
+				camera = cameraName(detail)
+			}
+			continue
 		}
+		if motion == "" {
+			motion = detail
+			continue
+		}
+		rest = append(rest, token(detail, kindNormal))
 	}
 
-	segments := make([]string, 0, len(rest)+3)
+	tokens := make([]promptToken, 0, len(rest)+3)
 	if motion != "" {
-		segments = append(segments, motion)
+		tokens = append(tokens, token(motion, kindNormal))
 	}
-	segments = append(segments, "camera: "+camera)
+	tokens = append(tokens, token("camera: "+camera, kindNormal))
 	if doc.Output.DurationS != nil {
-		segments = append(segments, fmt.Sprintf("%d seconds", *doc.Output.DurationS))
+		tokens = append(tokens, token(fmt.Sprintf("%d seconds", *doc.Output.DurationS), kindNormal))
 	}
-	return append(segments, rest...)
+	return append(tokens, rest...)
 }
 
-func compositionPhrase(composition Composition) string {
-	parts := make([]string, 0, 3)
+func compositionTokens(composition Composition) []promptToken {
+	tokens := make([]promptToken, 0, 3)
 	if composition.Shot != "" {
-		parts = append(parts, phraseValue(composition.Shot)+" shot")
+		tokens = append(tokens, token(phraseValue(composition.Shot)+" shot", kindNormal))
 	}
 	if composition.Angle != "" {
-		parts = append(parts, phraseValue(composition.Angle)+" angle")
+		tokens = append(tokens, token(phraseValue(composition.Angle)+" angle", kindNormal))
 	}
 	if composition.AspectRatio != "" {
-		parts = append(parts, composition.AspectRatio+" aspect ratio")
+		tokens = append(tokens, token(composition.AspectRatio+" aspect ratio", kindNormal))
 	}
-	return strings.Join(parts, ", ")
+	return tokens
 }
 
-func stylePhrase(style Style) string {
-	parts := make([]string, 0, 3)
+func styleTokens(style Style) []promptToken {
+	tokens := make([]promptToken, 0, len(style.Palette)+2)
 	if style.Medium != "" {
-		parts = append(parts, style.Medium)
+		tokens = append(tokens, token(style.Medium, kindNormal))
 	}
-	if len(style.Palette) > 0 {
-		parts = append(parts, strings.Join(style.Palette, " and "))
+	for _, swatch := range style.Palette {
+		tokens = append(tokens, token(swatch, kindPalette))
 	}
 	if style.Mood != "" {
-		parts = append(parts, style.Mood+" mood")
+		tokens = append(tokens, token(style.Mood+" mood", kindNormal))
 	}
-	return strings.Join(parts, ", ")
+	return tokens
+}
+
+func token(value string, kind tokenKind) promptToken {
+	return promptToken{text: NormalizeText(value), kind: kind}
+}
+
+// splitTokens turns a comma separated field into one dedup unit per piece.
+func splitTokens(value string) []promptToken {
+	if value == "" {
+		return nil
+	}
+	tokens := make([]promptToken, 0)
+	for _, piece := range strings.Split(value, ",") {
+		piece = NormalizeText(piece)
+		if piece == "" {
+			continue
+		}
+		tokens = append(tokens, promptToken{text: piece, kind: kindNormal})
+	}
+	return tokens
+}
+
+// dedupeTokens drops a repeated token case-insensitively, keeping the first.
+func dedupeTokens(tokens []promptToken) []promptToken {
+	seen := map[string]bool{}
+	kept := make([]promptToken, 0, len(tokens))
+	for _, tk := range tokens {
+		key := strings.ToLower(tk.text)
+		if key == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		kept = append(kept, tk)
+	}
+	return kept
+}
+
+// joinTokens writes the joiner before each token, so two palette entries
+// read "a and b" and anything else reads "a, b".
+func joinTokens(tokens []promptToken) string {
+	if len(tokens) == 0 {
+		return ""
+	}
+	joined := make([]string, 0, len(tokens))
+	joined = append(joined, tokens[0].text)
+	for i := 1; i < len(tokens); i++ {
+		sep := ", "
+		if tokens[i].kind == kindPalette && tokens[i-1].kind == kindPalette {
+			sep = " and "
+		}
+		joined = append(joined, sep+tokens[i].text)
+	}
+	return strings.Join(joined, "")
 }
 
 // avoidPhrase merges the document negatives with the baseline, keeping the
@@ -139,26 +216,6 @@ func avoidPhrase(negative []string) string {
 		return ""
 	}
 	return "avoid: " + strings.Join(unique, ", ")
-}
-
-// joinSegments skips empty parts and drops a repeated token, so the prompt
-// never carries ", ," or the same phrase twice under a different case.
-func joinSegments(segments []string) string {
-	kept := make([]string, 0, len(segments))
-	seen := map[string]bool{}
-	for _, segment := range segments {
-		clean := NormalizeText(segment)
-		if clean == "" {
-			continue
-		}
-		key := strings.ToLower(strings.TrimSuffix(clean, ","))
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		kept = append(kept, clean)
-	}
-	return strings.Join(kept, ", ")
 }
 
 func dedupe(values []string) []string {
@@ -193,4 +250,19 @@ func paramsFor(doc Document) Params {
 // phraseValue turns an enum member into prose: eye_level reads as eye level.
 func phraseValue(value string) string {
 	return strings.ReplaceAll(value, "_", " ")
+}
+
+// normalizeMove lowers a detail and keys it against the underscored camera
+// vocabulary, so "push in", "PUSH_IN", and "push_in" all read as one move.
+func normalizeMove(detail string) string {
+	return strings.ReplaceAll(strings.ToLower(NormalizeText(detail)), " ", "_")
+}
+
+func isCameraMove(detail string) bool {
+	return cameraMoves[normalizeMove(detail)]
+}
+
+// cameraName renders the chosen move in prose for the "camera: " line.
+func cameraName(detail string) string {
+	return phraseValue(normalizeMove(detail))
 }
