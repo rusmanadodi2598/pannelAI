@@ -58,6 +58,8 @@ func TestRoutes_GivenRequestVariations_ThenStatusAndHeadersAreCorrect(t *testing
 		{name: "unknown route is not found", method: http.MethodGet, path: "/nope", remoteAddr: "127.0.0.1:1234", wantStatus: http.StatusNotFound},
 		{name: "metrics from loopback is allowed", method: http.MethodGet, path: "/metrics", remoteAddr: "127.0.0.1:1234", wantStatus: http.StatusOK},
 		{name: "metrics from a public address is refused", method: http.MethodGet, path: "/metrics", remoteAddr: "10.1.2.3:1234", wantStatus: http.StatusForbidden},
+		{name: "metrics behind a proxy from a public client is refused", method: http.MethodGet, path: "/metrics", remoteAddr: "127.0.0.1:1234", headerKey: "X-Forwarded-For", headerVal: "203.0.113.9", wantStatus: http.StatusForbidden},
+		{name: "metrics behind a proxy from a local client is allowed", method: http.MethodGet, path: "/metrics", remoteAddr: "127.0.0.1:1234", headerKey: "X-Forwarded-For", headerVal: "127.0.0.1", wantStatus: http.StatusOK},
 		{name: "request id is echoed", method: http.MethodGet, path: "/healthz", remoteAddr: "127.0.0.1:1234", headerKey: "X-Request-Id", headerVal: "req-12345678", wantStatus: http.StatusOK, wantHeader: "req-12345678"},
 		{name: "request id is generated when absent", method: http.MethodGet, path: "/healthz", remoteAddr: "127.0.0.1:1234", wantStatus: http.StatusOK},
 		{name: "webhook without a secret is refused", method: http.MethodPost, path: "/internal/telegram/webhook", remoteAddr: "127.0.0.1:1234", wantStatus: http.StatusForbidden},

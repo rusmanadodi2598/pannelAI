@@ -75,7 +75,7 @@ func run() error {
 		return err
 	}
 	webhook := handler.NewWebhook(cfg.TelegramWebhookSecret, service.NewIntake(rdb, rdb, updateDedupTTL), logger)
-	stopWorker, err := startWorker(ctx, logger, rdb, botClient)
+	stopWorker, workerFailures, err := startWorker(logger, rdb, botClient)
 	if err != nil {
 		return err
 	}
@@ -114,6 +114,8 @@ func run() error {
 		if err != nil {
 			return err
 		}
+	case err := <-workerFailures:
+		return err
 	case <-ctx.Done():
 		logger.Info("shutdown requested")
 	}

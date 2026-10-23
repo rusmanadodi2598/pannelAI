@@ -2,7 +2,7 @@
 //
 // @file      internal/config/config.go
 // @for       Typed environment configuration for app-bot, validated once at boot.
-// @uses      fmt, net, strconv, strings, time.
+// @uses      fmt, net, net/url, regexp, strconv, strings, time.
 // @reason    AGENTS.md §1.4 requires env vars to become a typed Config with fail-fast validation, so no raw os.Getenv reaches business logic and a missing value stops the process with one message.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -13,6 +13,7 @@ package config
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -66,7 +67,7 @@ func Load(getenv func(string) string) (Config, error) {
 
 		TelegramBotToken:      strings.TrimSpace(getenv("TELEGRAM_BOT_TOKEN")),
 		TelegramWebhookSecret: strings.TrimSpace(getenv("TELEGRAM_WEBHOOK_SECRET")),
-		TelegramAPIBase:       valueOr(getenv, "TELEGRAM_API_BASE", defaultTelegramAPIBase),
+		TelegramAPIBase:       strings.TrimRight(valueOr(getenv, "TELEGRAM_API_BASE", defaultTelegramAPIBase), "/"),
 	}
 
 	if !allowedEnvs[cfg.AppEnv] {
@@ -173,8 +174,38 @@ func requireTelegram(cfg Config) error {
 	if !webhookSecretPattern.MatchString(cfg.TelegramWebhookSecret) {
 		return fmt.Errorf("TELEGRAM_WEBHOOK_SECRET must be 16 to 256 characters of A-Z, a-z, 0-9, _ or -")
 	}
-	if !strings.HasPrefix(cfg.TelegramAPIBase, "https://") {
-		return fmt.Errorf("TELEGRAM_API_BASE must be an https URL")
+	if distinctChars(cfg.TelegramWebhookSecret) < minSecretAlphabet {
+		return fmt.Errorf("TELEGRAM_WEBHOOK_SECRET must use at least %d distinct characters", minSecretAlphabet)
+	}
+	if err := validateAPIBase(cfg.TelegramAPIBase); err != nil {
+		return err
+	}
+	return nil
+}
+
+// minSecretAlphabet rejects a long but trivial secret such as aaaaaaaaaaaaaaaa.
+const minSecretAlphabet = 8
+
+func distinctChars(value string) int {
+	seen := make(map[rune]struct{}, len(value))
+	for _, char := range value {
+		seen[char] = struct{}{}
+	}
+	return len(seen)
+}
+
+// validateAPIBase refuses a base that would send the bot token somewhere the
+// operator did not mean, including a bare scheme or a path suffix.
+func validateAPIBase(raw string) error {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("TELEGRAM_API_BASE is not a URL")
+	}
+	if parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return fmt.Errorf("TELEGRAM_API_BASE must be an https URL with a host and no user info, query, or fragment")
+	}
+	if parsed.Path != "" && parsed.Path != "/" {
+		return fmt.Errorf("TELEGRAM_API_BASE must not carry a path")
 	}
 	return nil
 }

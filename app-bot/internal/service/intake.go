@@ -18,6 +18,11 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-bot/internal/schema"
 )
 
+// compensationTimeout bounds the release of a duplicate mark after a failed
+// enqueue. It runs on its own context, so a cancelled request cannot turn a
+// queue failure into a seven day silent drop.
+const compensationTimeout = 2 * time.Second
+
 // Deduper is the Redis duplicate guard.
 type Deduper interface {
 	Mark(ctx context.Context, updateID int64, ttl time.Duration) (bool, error)
@@ -55,7 +60,13 @@ func (s *Intake) Accept(ctx context.Context, item schema.WorkItem) (bool, error)
 		return false, nil
 	}
 	if err := s.queue.Enqueue(ctx, item); err != nil {
-		if forgetErr := s.dedupe.Forget(ctx, item.UpdateID); forgetErr != nil {
+		// The request context can already be dead here (client disconnect,
+		// handler deadline). Releasing the mark on that context would fail and
+		// leave a 7 day mark over an update that never reached the queue, so
+		// Telegram's retry is compensated on a context of its own.
+		forgetCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), compensationTimeout)
+		defer cancel()
+		if forgetErr := s.dedupe.Forget(forgetCtx, item.UpdateID); forgetErr != nil {
 			return false, fmt.Errorf("enqueueing update %d: %w (releasing the mark: %v)", item.UpdateID, err, forgetErr)
 		}
 		return false, fmt.Errorf("enqueueing update %d: %w", item.UpdateID, err)

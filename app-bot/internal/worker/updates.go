@@ -1,9 +1,9 @@
 // Package worker consumes queued work with bounded concurrency.
 //
 // @file      internal/worker/updates.go
-// @for       The update stream consumer and its reply text.
-// @uses      context, encoding/json, errors, fmt, log/slog, strings, time, schema.
-// @reason    Telegram work leaves the request path, so one consumer owns retry semantics: an entry is acknowledged only after the send succeeds, and a poison payload is logged and dropped instead of blocking the stream.
+// @for       The update stream loop: read a batch, own each entry, stop on cancel.
+// @uses      context, log/slog, runtime/debug, time, repository/redis.
+// @reason    Telegram work leaves the request path, so this consumer owns when an entry is acked: only after delivery, a dead letter, or a rejected payload, and one bad update never stops the loop.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable
@@ -12,23 +12,27 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log/slog"
-	"strings"
+	"runtime/debug"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-bot/internal/repository/redis"
-	"github.com/rusmanadodi2598/pannelAI/app-bot/internal/schema"
 )
 
-const sendTimeout = 10 * time.Second
+const (
+	sendTimeout = 10 * time.Second
+	dlqTimeout  = 5 * time.Second
+)
+
+// defaultRetryDelays is SPEC-BOT-001 §12.1: three attempts at 1 s, 4 s, 10 s.
+var defaultRetryDelays = []time.Duration{time.Second, 4 * time.Second, 10 * time.Second}
 
 // Queue is the consumer side of the update stream.
 type Queue interface {
 	EnsureGroup(ctx context.Context, stream, group string) error
 	ReadUpdates(ctx context.Context, stream, group, consumer string, count int64, block time.Duration) ([]redis.Entry, error)
 	AckUpdate(ctx context.Context, stream, group, id string) error
+	EnqueueDLQ(ctx context.Context, payload []byte, reason string) error
 }
 
 // Sender delivers one message.
@@ -36,13 +40,21 @@ type Sender interface {
 	SendMessage(ctx context.Context, chatID int64, text string) error
 }
 
-// Config names the stream and the consumer.
+// permanentError marks a failure that must not be retried, such as a blocked
+// user or a bad request. The sender classifies; the worker only obeys.
+type permanentError interface {
+	Permanent() bool
+}
+
+// Config names the stream, the consumer, and the retry shape.
 type Config struct {
-	Stream   string
-	Group    string
-	Consumer string
-	Count    int64
-	Block    time.Duration
+	Stream      string
+	Group       string
+	Consumer    string
+	DLQStream   string
+	Count       int64
+	Block       time.Duration
+	RetryDelays []time.Duration
 }
 
 // Consumer reads one batch at a time.
@@ -53,13 +65,19 @@ type Consumer struct {
 	cfg    Config
 }
 
-// NewConsumer wires the stream, the sender, and the batch shape.
+// NewConsumer wires the stream, the sender, and the retry shape.
 func NewConsumer(queue Queue, sender Sender, logger *slog.Logger, cfg Config) *Consumer {
 	if cfg.Count <= 0 {
 		cfg.Count = 10
 	}
 	if cfg.Block <= 0 {
 		cfg.Block = 5 * time.Second
+	}
+	if len(cfg.RetryDelays) == 0 {
+		cfg.RetryDelays = defaultRetryDelays
+	}
+	if cfg.DLQStream == "" {
+		cfg.DLQStream = redis.DLQStream
 	}
 	return &Consumer{queue: queue, sender: sender, logger: logger, cfg: cfg}
 }
@@ -85,54 +103,42 @@ func (c *Consumer) Run(ctx context.Context) error {
 			continue
 		}
 		for _, entry := range entries {
-			if err := c.handle(ctx, entry); err != nil {
-				c.logger.Error("handling update failed", "entry", entry.ID, "error", err)
-				continue
-			}
-			if err := c.queue.AckUpdate(ctx, c.cfg.Stream, c.cfg.Group, entry.ID); err != nil {
-				c.logger.Error("acking update failed", "entry", entry.ID, "error", err)
-			}
+			c.process(ctx, entry)
 		}
 	}
 }
 
-func (c *Consumer) handle(ctx context.Context, entry redis.Entry) error {
-	var item schema.WorkItem
-	if err := json.Unmarshal(entry.Payload, &item); err != nil {
-		return fmt.Errorf("decoding work item: %w", err)
+// process owns one entry end to end. A panic is contained here, not around the
+// loop, so one update cannot end consumption for the whole process.
+func (c *Consumer) process(ctx context.Context, entry redis.Entry) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			c.logger.Error("update worker panic recovered", "entry", entry.ID, "panic", recovered,
+				"stack", string(debug.Stack()))
+			c.deadLetter(ctx, entry, "panic")
+		}
+	}()
+
+	item, err := decode(entry.Payload)
+	if err != nil {
+		c.logger.Error("decoding work item failed", "entry", entry.ID, "error", err)
+		c.deadLetter(ctx, entry, "decode")
+		return
 	}
 	if err := item.Validate(); err != nil {
-		return fmt.Errorf("validating work item: %w", err)
+		c.logger.Error("validating work item failed", "entry", entry.ID, "error", err)
+		c.deadLetter(ctx, entry, "invalid")
+		return
 	}
-	sendCtx, cancel := context.WithTimeout(ctx, sendTimeout)
+	if err := c.deliver(ctx, item); err != nil {
+		c.logger.Error("sending update failed", "entry", entry.ID, "error", err)
+		c.deadLetter(ctx, entry, "send")
+		return
+	}
+
+	ackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), dlqTimeout)
 	defer cancel()
-	return c.sender.SendMessage(sendCtx, item.ChatID, Reply(item))
-}
-
-// Reply is the P2 copy. It states what the bot does now and promises nothing
-// that is not built yet.
-func Reply(item schema.WorkItem) string {
-	text := strings.TrimSpace(item.Text)
-	switch {
-	case text == "/start" || strings.HasPrefix(text, "/start "):
-		return "Halo, ini KENTANG TECH Media.\n\nBot aktif dan pesanmu sudah diterima.\nGenerator image dan video masuk tahap berikutnya.\nKetik /help untuk daftar perintah."
-	case text == "/help":
-		return "Perintah yang aktif di fase ini:\n/start  mulai dan daftar akun\n/help   bantuan ini\n\nCredit, plan, dan generate menyusul di fase P3-P8."
-	default:
-		if item.Kind == schema.KindCallback {
-			return "Tombol diterima. Aksi generate belum aktif di fase ini."
-		}
-		return "Pesan diterima. Generate image dan video belum aktif di fase ini."
-	}
-}
-
-func sleep(ctx context.Context, delay time.Duration) bool {
-	timer := time.NewTimer(delay)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return false
-	case <-timer.C:
-		return true
+	if err := c.queue.AckUpdate(ackCtx, c.cfg.Stream, c.cfg.Group, entry.ID); err != nil {
+		c.logger.Error("acking update failed", "entry", entry.ID, "error", err)
 	}
 }

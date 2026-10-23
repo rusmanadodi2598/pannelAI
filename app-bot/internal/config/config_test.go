@@ -99,6 +99,21 @@ func TestLoad_GivenEnvironmentVariations_ThenConfigIsAcceptedOrRejected(t *testi
 			mutate:  func(env map[string]string) { env["TELEGRAM_API_BASE"] = "http://api.telegram.org" },
 			wantErr: "TELEGRAM_API_BASE must be an https URL",
 		},
+		{
+			name:    "api base with a path is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_API_BASE"] = "https://api.telegram.org/bot" },
+			wantErr: "TELEGRAM_API_BASE must not carry a path",
+		},
+		{
+			name:    "api base with credentials is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_API_BASE"] = "https://user:pass@api.telegram.org" },
+			wantErr: "TELEGRAM_API_BASE must be an https URL",
+		},
+		{
+			name:    "webhook secret with a tiny alphabet is refused",
+			mutate:  func(env map[string]string) { env["TELEGRAM_WEBHOOK_SECRET"] = "aaaaaaaaaaaaaaaaaaaa" },
+			wantErr: "must use at least 8 distinct characters",
+		},
 	}
 
 	for _, tc := range cases {

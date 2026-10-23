@@ -21,18 +21,20 @@ import (
 )
 
 type fakeDeduper struct {
-	newUpdate bool
-	markErr   error
-	forgot    []int64
-	forgetErr error
+	newUpdate     bool
+	markErr       error
+	forgot        []int64
+	forgetLiveCtx []bool
+	forgetErr     error
 }
 
 func (f *fakeDeduper) Mark(context.Context, int64, time.Duration) (bool, error) {
 	return f.newUpdate, f.markErr
 }
 
-func (f *fakeDeduper) Forget(_ context.Context, updateID int64) error {
+func (f *fakeDeduper) Forget(ctx context.Context, updateID int64) error {
 	f.forgot = append(f.forgot, updateID)
+	f.forgetLiveCtx = append(f.forgetLiveCtx, ctx.Err() == nil)
 	return f.forgetErr
 }
 
@@ -91,6 +93,25 @@ func TestAccept_GivenDedupeAndQueueStates_ThenEnqueueHappensExactlyOnce(t *testi
 				t.Fatalf("forgot = %d, want %d", len(tc.dedupe.forgot), tc.wantForgot)
 			}
 		})
+	}
+}
+
+func TestAccept_GivenCancelledRequest_ThenTheMarkIsStillReleased(t *testing.T) {
+	dedupe := &fakeDeduper{newUpdate: true}
+	queue := &fakeQueue{err: errors.New("stream down")}
+	intake := service.NewIntake(dedupe, queue, time.Hour)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	if _, err := intake.Accept(ctx, validItem()); err == nil {
+		t.Fatalf("Accept() error = nil, want the enqueue failure")
+	}
+	if len(dedupe.forgot) != 1 {
+		t.Fatalf("forgot = %d, want 1", len(dedupe.forgot))
+	}
+	if !dedupe.forgetLiveCtx[0] {
+		t.Fatal("Forget ran on a cancelled context, so the dedupe mark would outlive the failed enqueue and swallow the Telegram retry")
 	}
 }
 

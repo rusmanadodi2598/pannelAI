@@ -25,6 +25,9 @@ import (
 // UpdateStream is the single work queue for Telegram updates.
 const UpdateStream = "bot:stream:updates"
 
+// DLQStream holds work the consumer could not complete, with its reason.
+const DLQStream = "bot:dlq:updates"
+
 const updateKeyPrefix = "bot:upd:"
 
 // Entry is one stream message: the Redis id and its payload.
@@ -65,6 +68,9 @@ func (c *Client) ForgetUpdate(ctx context.Context, updateID int64) error {
 }
 
 // Enqueue appends the work item to the stream.
+//
+// No MAXLEN: the stream is trimmed only once the dead letter path can hold what
+// trimming would drop (SPEC-BOT-001 §9), and a lost entry here is a lost reply.
 func (c *Client) Enqueue(ctx context.Context, item schema.WorkItem) error {
 	payload, err := json.Marshal(item)
 	if err != nil {
@@ -72,14 +78,31 @@ func (c *Client) Enqueue(ctx context.Context, item schema.WorkItem) error {
 	}
 	_, err = c.inner.XAdd(ctx, &redisc.XAddArgs{
 		Stream: UpdateStream,
-		MaxLen: 100_000,
-		Approx: true,
 		// Values is a map because go-redis accepts only its own value shapes
 		// here; this is the client boundary, not application data.
 		Values: map[string]any{"payload": string(payload)},
 	}).Result()
 	if err != nil {
 		return fmt.Errorf("appending update %d: %w", item.UpdateID, err)
+	}
+	return nil
+}
+
+// EnqueueDLQ records work the consumer could not finish, then it is safe to
+// acknowledge the stream entry: the payload and the failure class survive.
+func (c *Client) EnqueueDLQ(ctx context.Context, payload []byte, reason string) error {
+	_, err := c.inner.XAdd(ctx, &redisc.XAddArgs{
+		Stream: DLQStream,
+		// Same client-boundary reason as Enqueue: go-redis wants a map of its
+		// value shapes here.
+		Values: map[string]any{
+			"payload":   string(payload),
+			"reason":    reason,
+			"failed_at": time.Now().UTC().Format(time.RFC3339),
+		},
+	}).Result()
+	if err != nil {
+		return fmt.Errorf("dead lettering update: %w", err)
 	}
 	return nil
 }
@@ -114,6 +137,9 @@ func (c *Client) ReadUpdates(ctx context.Context, stream, group, consumer string
 		for _, message := range streamResult.Messages {
 			payload, ok := message.Values["payload"].(string)
 			if !ok {
+				// Keep the entry so the consumer dead letters it. Skipping it
+				// here would leave it in the pending list with no trace.
+				entries = append(entries, Entry{ID: message.ID})
 				continue
 			}
 			entries = append(entries, Entry{ID: message.ID, Payload: []byte(payload)})
