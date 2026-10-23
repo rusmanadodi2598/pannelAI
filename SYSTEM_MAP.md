@@ -6,7 +6,7 @@ Diperbarui pada PR yang sama ketika topologi atau alur data berubah (AGENTS.md �
 | | |
 |---|---|
 | **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (36 provider, decode ketat; `tokenrouter` dan `vertex` menyusul atas permintaan owner 2026-10-12), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis �? PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan §7.4-§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback: OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media §7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (§7.11). Sebelas format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS, Gemini STT). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 20 dari 21 item; yang terbuka bukan kriteria keluar fase: lima format media sisa (G21: AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
-| **Terakhir diperbarui** | 2026-10-03 (draft 043: nama Combo ikut menyeberangi stream Usage live, dan panel menggambar jalur request penuh) |
+| **Terakhir diperbarui** | 2026-10-21 (app-bot P1: service Telegram media bot, schema `bot`, health dan migrasi 000001-000002) |
 | **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` (semantik), `docs/CONTRACT/001-CONTRACT-API-V1.yaml` (wire contract), `app-serv/internal/handler/openapi.json` (generated served artifact) |
 
 ---
@@ -15,7 +15,7 @@ P2 readiness audit covered all §7.15 chat surfaces; the Playground Chat client 
 
 
 
-Dua aplikasi, satu repositori. Keduanya berbagi PostgreSQL dan Redis secara logis; `app-ui` tidak pernah mengakses keduanya langsung.
+Tiga aplikasi, satu repositori. Ketiganya berbagi PostgreSQL dan Redis secara logis; `app-ui` tidak pernah mengakses keduanya langsung, dan `app-bot` hanya berbicara ke `app-serv` lewat HTTP.
 
 ```mermaid
 flowchart LR
@@ -98,6 +98,33 @@ Setiap provider berbeda dalam konektivitas: ada yang **api_key**, ada yang **OAu
 **Bentuk body adalah seam terpisah: `provider.Transformer` (`TransformRequest(req *Request) error`).** Ini jalan bagi vendor yang tidak menerima list pesan OpenAI apa adanya; core tidak pernah bercabang pada provider id, dan `applyShape` (`internal/dataplane/transport_shape.go`) memanggilnya sebelum URL dibangun. Yang mengimplementasikannya hari ini: OpenCode (`opencode_body.go`), Qoder (`qoder_body.go`), dan CodeBuddy (`codebuddy_body.go`: satu turn `system` leading yang membawa prompt vendor **plus** instruksi system milik caller, konten `user` string diangkat jadi typed blocks, `reasoning_effort` none/off dihapus dan yang lain dicerminkan sebagai `reasoning_summary: "auto"`) karena vendor itu menjawab body polos dengan `11101 invalid request`.
 
 **Qoder (`qoder`, `qoder-cn`) punya connector khusus dan sudah dilayani end-to-end.** Provider ini tidak membaca bearer token: setiap request ditanda tangani (COSY: payload user info terenkripsi + MD5 atas lima bagian, lihat `internal/provider/qoder_cosy.go`), host inference dipilih dari jenis kredensial (`dt-` di `api3`, `jt-`/`pt-` di `api2` untuk intl; CN satu gateway), dan sebuah Personal Access Token lebih dulu ditukar menjadi job token lewat `POST /api/v1/jobToken/exchange` dengan cache berdasar expiry yang vendor nyatakan dalam **milidetik** (draft 036 §5). Body chat bukan hasil translasi OpenAI: `TransformRequest` membangun payload agent (`qoder_body.go`) dengan `model_config` yang dibaca dari katalog hidup milik akun (`qoder_catalog.go`, di-cache satu jam dan di-key per akun, bukan per gateway: vendor menjawab daftar model untuk akun yang bertanya, jadi cache berdasar host saja menyerahkan hak akses satu akun ke akun berikutnya, menolak model yang sebenarnya dipunya, dan menyerahkan 401 milik orang lain ke pemanggil yang tidak menandatanganinya, dan jawaban vendor tiba sebagai **envelope SSE** (`{statusCodeValue, body}` per frame) sehingga dibongkar sebelum di-pipe. Penolakan di frame pertama jadi kegagalan upstream, bukan jawaban yang ditagih (`qoder_envelope.go`, seam opsional `provider.StreamEnvelope`). Kuota dibaca lewat `internal/service/quotafetch/qoder.go` (dua bucket kredit, PAT ditukar lebih dulu) dan sejak 2026-09-28 punya pemanggil produksi: `GET /api/v1/quotas/{endpoint_id}/usage` (§7.12, aturannya di §3.7). Satu completion sukses kini terbukti lewat model yang vendor tagih nol (`qfmodel`), karena akun pengukur tetap kehabisan kuota untuk model berbayar (`code 112`) dan penolakan itu datang sebagai kegagalan kuota, bukan jawaban (draft 036 §5.4).
+
+### 2.2 app-bot: Telegram media bot (P1)
+
+`app-bot` adalah service ketiga di repositori ini dan satu-satunya yang berbicara ke Telegram. Ia bukan bagian dari data plane: ia klien `app-serv`, memanggil `/api/v1/images/generations`, `/api/v1/videos/generations`, dan `/api/v1/videos/{task_id}` dengan gateway key, dan tidak pernah mengimpor `app-serv/internal/...` (AGENTS.md 1.5). Kontrak lengkap ada di `docs/SPEC-BOT/001-SPEC-BOT.md`.
+
+```mermaid
+flowchart LR
+    TG["Telegram Bot API"] -->|"webhook + secret token"| NG["Nginx: app-bot.kentang.ai.id"]
+    NG --> BOT["app-bot (Go 1.26)"]
+    BOT --> PG[("PostgreSQL schema bot")]
+    BOT --> RD[("Redis: dedupe, queue, lock")]
+    BOT -->|"gateway key"| SERV["app-serv data plane"]
+    BOT -->|"S2S HMAC"| PAY["Kentang Tech PG charges"]
+```
+
+Batas domain: schema PostgreSQL `bot`, dimiliki service ini, tanpa foreign key ke tabel `app-serv`. P1 memuat module, config bertipe, logger, router, health, dan migrasi 000001-000002; webhook, builder master prompt, dan worker masuk pada fase berikutnya.
+
+| Surface | Detail |
+|---|---|
+| Route | `GET /healthz`, `GET /readyz`, `GET /metrics` (loopback saja) |
+| Data | `plans`, `users`, `subscriptions`, `credit_ledger`, `generation_jobs`, `referral_campaigns`, `referral_redemptions`, `payments`, `admin_audit` |
+| Migrasi | `app-bot/migrations`, di-embed ke binary, diterapkan dengan `app-bot -migrate` di bawah advisory lock |
+| Runtime | `127.0.0.1:8090` di belakang Nginx; systemd unit menyusul di P9 |
+| Status | P1: boot, health, readiness PostgreSQL + Redis, seed plan |
+
+Tabel `generation_jobs` sudah ada sejak P1 agar migrasi tidak berubah saat P2-P5 mendarat.
+
 
 ---
 
