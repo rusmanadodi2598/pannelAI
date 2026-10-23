@@ -24,6 +24,7 @@ import (
 type fakeGateway struct {
 	replies []string
 	errs    []error
+	usages  []masterprompt.Usage
 	calls   int
 	last    masterprompt.ChatRequest
 	usage   masterprompt.Usage
@@ -39,7 +40,11 @@ func (f *fakeGateway) Complete(_ context.Context, req masterprompt.ChatRequest) 
 	if index >= len(f.replies) {
 		return masterprompt.ChatResult{}, errors.New("the fake gateway ran out of replies")
 	}
-	return masterprompt.ChatResult{ModelID: "fake-model", Content: f.replies[index], Usage: f.usage}, nil
+	usage := f.usage
+	if index < len(f.usages) {
+		usage = f.usages[index]
+	}
+	return masterprompt.ChatResult{ModelID: "fake-model", Content: f.replies[index], Usage: usage}, nil
 }
 
 func validImageJSON(t *testing.T) string {
@@ -162,5 +167,70 @@ func TestBuilder_GivenASuccess_ThenUsageAndTemperatureAreRecorded(t *testing.T) 
 	}
 	if gw.last.Temperature != 0.2 {
 		t.Fatalf("temperature = %v, want 0.2", gw.last.Temperature)
+	}
+}
+
+func TestBuilder_GivenURLOnlyText_ThenItIsRefusedWithoutACall(t *testing.T) {
+	gw := &fakeGateway{}
+	b := masterprompt.NewBuilder(gw, "fake-model", 700, 2000)
+
+	_, err := b.Build(context.Background(), masterprompt.BuildRequest{
+		Modality: "image",
+		UserText: "https://example.com/street",
+	})
+
+	var promptErr *masterprompt.Error
+	if !errors.As(err, &promptErr) {
+		t.Fatalf("Build() error = %v, want a prompt error", err)
+	}
+	if promptErr.Code != masterprompt.CodeEmpty {
+		t.Fatalf("code = %q, want %q for a link-only draft", promptErr.Code, masterprompt.CodeEmpty)
+	}
+	if gw.calls != 0 {
+		t.Fatalf("gateway calls = %d, want none", gw.calls)
+	}
+}
+
+func TestBuilder_GivenUnknownDefaults_ThenTheyAreClampedToTheVocabulary(t *testing.T) {
+	gw := &fakeGateway{replies: []string{validImageJSON(t)}}
+	b := masterprompt.NewBuilder(gw, "fake-model", 700, 2000)
+
+	_, err := b.Build(context.Background(), masterprompt.BuildRequest{
+		Modality: "image",
+		UserText: "create a hero image of an orange cat",
+		Defaults: masterprompt.Defaults{AspectRatio: "99:99", Style: "some free text style"},
+	})
+	if err != nil {
+		t.Fatalf("Build() error = %v, want none", err)
+	}
+	if !strings.Contains(gw.last.System, "Default aspect ratio: 16:9") {
+		t.Fatalf("system = %q, want the unknown aspect clamped to 16:9", gw.last.System)
+	}
+	if !strings.Contains(gw.last.System, "Default style: cinematic photo") {
+		t.Fatalf("system = %q, want the unknown style clamped to a known medium", gw.last.System)
+	}
+}
+
+func TestBuilder_GivenATwoAttemptSuccess_ThenUsageAccumulates(t *testing.T) {
+	valid := validImageJSON(t)
+	gw := &fakeGateway{
+		replies: []string{"{}", valid},
+		usages: []masterprompt.Usage{
+			{PromptTokens: 10, CompletionTokens: 20, TotalTokens: 30},
+			{PromptTokens: 15, CompletionTokens: 25, TotalTokens: 40},
+		},
+	}
+	b := masterprompt.NewBuilder(gw, "fake-model", 700, 2000)
+
+	result, err := b.Build(context.Background(), masterprompt.BuildRequest{
+		Modality: "image",
+		UserText: "create a hero image of an orange cat",
+		Defaults: masterprompt.Defaults{AspectRatio: "16:9", Style: "cinematic photo"},
+	})
+	if err != nil {
+		t.Fatalf("Build() error = %v, want none", err)
+	}
+	if result.Usage.TotalTokens != 70 {
+		t.Fatalf("usage total = %d, want both attempts summed to 70", result.Usage.TotalTokens)
 	}
 }

@@ -143,7 +143,7 @@ func extractCamera(text, modality string) []string {
 		return nil
 	}
 	lower := strings.ToLower(text)
-	for move := range cameraMoves {
+	for _, move := range cameraMoveOrder {
 		if containsWord(lower, phraseValue(move)) {
 			return []string{move}
 		}

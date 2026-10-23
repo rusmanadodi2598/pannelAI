@@ -78,24 +78,25 @@ func NewBuilder(gw Gateway, model string, maxTokens int, promptCap int) *Builder
 // Build runs up to two model attempts and falls back on the second failure.
 // The fallback label is honest: the user sees the prompt was not model-expanded.
 func (b *Builder) Build(ctx context.Context, req BuildRequest) (BuildResult, error) {
-	if NormalizeText(req.UserText) == "" {
+	if NormalizeText(req.UserText) == "" || urlOnly(req.UserText) {
 		return BuildResult{}, &Error{Code: CodeEmpty, Message: "the prompt carries no usable text"}
 	}
 
-	doc, usage, err := b.attempts(ctx, req)
+	defaults := b.safeDefaults(req.Defaults)
+	doc, usage, err := b.attempts(ctx, req, defaults)
 	if err == nil {
 		return BuildResult{Document: doc, Builder: b.model, Usage: usage}, nil
 	}
 
-	fallback, fbErr := Fallback(req.UserText, req.Modality, req.Defaults)
+	fallback, fbErr := Fallback(req.UserText, req.Modality, defaults)
 	if fbErr != nil {
 		return BuildResult{}, fbErr
 	}
 	return BuildResult{Document: fallback, Builder: "fallback"}, nil
 }
 
-func (b *Builder) attempts(ctx context.Context, req BuildRequest) (Document, Usage, error) {
-	user := b.envelope(req)
+func (b *Builder) attempts(ctx context.Context, req BuildRequest, defaults Defaults) (Document, Usage, error) {
+	user := b.envelope(req, defaults)
 	var usage Usage
 	var lastErr error
 	for attempt := 0; attempt < 2; attempt++ {
@@ -104,7 +105,7 @@ func (b *Builder) attempts(ctx context.Context, req BuildRequest) (Document, Usa
 		}
 		reply, callErr := b.gw.Complete(ctx, ChatRequest{
 			Model:       b.model,
-			System:      b.system(req),
+			System:      b.system(req, defaults),
 			User:        user,
 			MaxTokens:   b.maxTokens,
 			Temperature: 0.2,
@@ -113,7 +114,9 @@ func (b *Builder) attempts(ctx context.Context, req BuildRequest) (Document, Usa
 			lastErr = callErr
 			continue
 		}
-		usage = reply.Usage
+		usage.PromptTokens += reply.Usage.PromptTokens
+		usage.CompletionTokens += reply.Usage.CompletionTokens
+		usage.TotalTokens += reply.Usage.TotalTokens
 		decoded, decodeErr := Decode([]byte(reply.Content))
 		if decodeErr != nil {
 			lastErr = decodeErr
@@ -125,7 +128,7 @@ func (b *Builder) attempts(ctx context.Context, req BuildRequest) (Document, Usa
 }
 
 // envelope keeps user text as data inside the JSON body, never in the system prompt.
-func (b *Builder) envelope(req BuildRequest) string {
+func (b *Builder) envelope(req BuildRequest, defaults Defaults) string {
 	body := struct {
 		Modality   string `json:"modality"`
 		Locale     string `json:"locale"`
@@ -139,8 +142,8 @@ func (b *Builder) envelope(req BuildRequest) string {
 		Locale:     "id",
 		UserPrompt: truncate(req.UserText, b.promptCap),
 	}
-	body.Defaults.AspectRatio = req.Defaults.AspectRatio
-	body.Defaults.Style = req.Defaults.Style
+	body.Defaults.AspectRatio = defaults.AspectRatio
+	body.Defaults.Style = defaults.Style
 	raw, _ := json.Marshal(body)
 	return string(raw)
 }
@@ -153,15 +156,41 @@ func correction(user string, failed error) string {
 }
 
 // system fills the fixed 002 template; the model is told the rules, not the user's words.
-func (b *Builder) system(req BuildRequest) string {
+// Defaults are pre-sanitized, so free text never reaches the fixed prompt.
+func (b *Builder) system(req BuildRequest, defaults Defaults) string {
 	return strings.NewReplacer(
 		"{{modality}}", req.Modality,
-		"{{aspect_ratio}}", req.Defaults.AspectRatio,
-		"{{style}}", req.Defaults.Style,
+		"{{aspect_ratio}}", defaults.AspectRatio,
+		"{{style}}", defaults.Style,
 		"{{max_characters}}", strconv.Itoa(budgetFor(req.Modality)),
 		"{{duration_range}}", "1 to 10",
 		"{{schema_json}}", schemaJSON,
 	).Replace(builderSystemTemplate)
+}
+
+// safeDefaults clamps the caller's defaults onto the closed vocabulary, so the
+// system prompt and the envelope only ever carry a known aspect and medium.
+func (b *Builder) safeDefaults(d Defaults) Defaults {
+	if !aspects[d.AspectRatio] {
+		d.AspectRatio = "16:9"
+	}
+	switch {
+	case mediumAlias[d.Style] != "":
+		d.Style = mediumAlias[d.Style]
+	case !mediums[d.Style]:
+		d.Style = "cinematic photo"
+	}
+	return d
+}
+
+// urlOnly reports a prompt that is a link and nothing else; per §6.6 that is
+// refused as empty, not shipped to the model.
+func urlOnly(text string) bool {
+	if !urlShape.MatchString(text) {
+		return false
+	}
+	rest := strings.ToLower(urlShape.ReplaceAllString(text, " "))
+	return !strings.ContainsAny(rest, "0123456789abcdefghijklmnopqrstuvwxyz")
 }
 
 const builderSystemTemplate = `You are a senior prompt engineer for generative image and video models. You turn a user's request into a structured master prompt with exactly six sections: Role, Task, Context, Reasoning, Stop conditions, Output.

@@ -61,6 +61,10 @@ var mediums = wordSet("photo", "cinematic photo", "illustration", "3d render", "
 
 var cameraMoves = wordSet("static", "pan_left", "pan_right", "push_in", "pull_out", "orbit")
 
+// cameraMoveOrder is the deterministic scan order for the fallback, so two
+// moves in one prompt always pick the same winner instead of a map's random order.
+var cameraMoveOrder = []string{"static", "pan_left", "pan_right", "push_in", "pull_out", "orbit"}
+
 var outputFormats = map[string][]string{
 	"image": {"png", "jpeg", "webp"},
 	"video": {"mp4"},
