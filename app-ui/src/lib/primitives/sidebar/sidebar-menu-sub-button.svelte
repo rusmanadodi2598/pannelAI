@@ -25,7 +25,9 @@
 		"data-slot": "sidebar-menu-sub-button",
 		"data-sidebar": "menu-sub-button",
 		"data-size": size,
-		"data-active": isActive,
+		// The data-active variant matches the attribute's presence, so a rendered "false" would style
+		// every row as active.
+		"data-active": isActive ? "true" : undefined,
 		...restProps,
 	});
 </script>

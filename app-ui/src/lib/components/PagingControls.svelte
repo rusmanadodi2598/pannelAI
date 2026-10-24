@@ -1,8 +1,6 @@
 <script lang="ts">
-	// The Previous / Page n of m / Next band every paged list renders (SPEC-UI §6.1's paging rule).
-	//
-	// It was copied on three screens and each copy had drifted: two carried the step icons and one did not,
-	// and their padding differed. One band, one shape, so a list that pages looks like the others.
+	// The Previous / Page n of m / Next band every paged list renders (SPEC-UI §6.1).
+	// One band, one shape, so a paged list looks the same everywhere.
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { Button } from '$lib/primitives/button/index.js';
 

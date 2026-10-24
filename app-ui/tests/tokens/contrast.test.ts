@@ -170,6 +170,13 @@ describe('typography', () => {
 	it('references no third-party font host', () => {
 		expect(stylesheet).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
 	});
+
+	// Preflight fades the placeholder to 50% of the field's text colour, which is 3.67:1 on the page
+	// ground. The muted token is already asserted at AA in both themes above.
+	it('paints placeholders with the muted token rather than a 50% fade', () => {
+		expect(stylesheet).toMatch(/::placeholder\s*\{[^}]*color:\s*var\(--color-text-muted\)/);
+		expect(stylesheet).toMatch(/::placeholder\s*\{[^}]*opacity:\s*1/);
+	});
 });
 
 describe('palette hygiene', () => {

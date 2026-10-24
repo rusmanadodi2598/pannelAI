@@ -29,17 +29,17 @@
 	role={kind === 'error' ? 'alert' : 'status'}
 	aria-live={kind === 'error' ? 'assertive' : 'polite'}
 >
-	<div class="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+	<div class="flex w-full min-w-0 items-center gap-2 text-sm font-medium text-[var(--color-text)]">
 		{#if kind === 'loading'}
 			<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
 		{:else if kind === 'error'}
 			<TriangleAlert class="size-4 text-[var(--color-danger)]" aria-hidden="true" />
 		{/if}
-		<span>{title}</span>
+		<span class="min-w-0 break-words">{title}</span>
 	</div>
 
 	{#if displayedDescription}
-		<p class="text-sm text-[var(--color-text-muted)]">{displayedDescription}</p>
+		<p class="w-full break-words text-sm text-[var(--color-text-muted)]">{displayedDescription}</p>
 	{/if}
 
 	{#if kind === 'error'}

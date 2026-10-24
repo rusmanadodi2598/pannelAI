@@ -41,7 +41,7 @@
 	<div class="ms-auto flex items-center gap-1.5">
 		<button
 			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
+			class="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
 			onclick={() => theme.toggle()}
 			aria-label={theme.name === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
 		>

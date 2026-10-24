@@ -11,6 +11,23 @@ const DATE_TIME = new Intl.DateTimeFormat(undefined, {
 	day: '2-digit'
 });
 
+const DATE_TIME_WITH_CLOCK = new Intl.DateTimeFormat(undefined, {
+	year: 'numeric',
+	month: 'short',
+	day: '2-digit',
+	hour: '2-digit',
+	minute: '2-digit'
+});
+
+const DATE_TIME_WITH_SECONDS = new Intl.DateTimeFormat(undefined, {
+	year: 'numeric',
+	month: 'short',
+	day: '2-digit',
+	hour: '2-digit',
+	minute: '2-digit',
+	second: '2-digit'
+});
+
 const ZONE = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' });
 
 /**
@@ -26,6 +43,35 @@ export function formatTimestamp(value: string): string {
 
 	const zone = ZONE.formatToParts(parsed).find((part) => part.type === 'timeZoneName')?.value;
 	return zone ? `${DATE_TIME.format(parsed)}, ${zone}` : DATE_TIME.format(parsed);
+}
+
+/**
+ * Formats an RFC3339 instant with its time, for a range bound where the date alone would hide the edge.
+ */
+export function formatTimestampWithTime(value: string): string {
+	const parsed = new Date(value);
+	if (Number.isNaN(parsed.getTime())) return 'Invalid timestamp';
+
+	const zone = ZONE.formatToParts(parsed).find((part) => part.type === 'timeZoneName')?.value;
+	return zone
+		? `${DATE_TIME_WITH_CLOCK.format(parsed)}, ${zone}`
+		: DATE_TIME_WITH_CLOCK.format(parsed);
+}
+
+/**
+ * Formats an instant to the second, for a control whose acknowledgement follows a five-second poll.
+ *
+ * A manual refresh inside the same minute would otherwise leave the stamp unchanged, which reads as a
+ * press that did nothing.
+ */
+export function formatTimestampWithSeconds(value: string): string {
+	const parsed = new Date(value);
+	if (Number.isNaN(parsed.getTime())) return 'Invalid timestamp';
+
+	const zone = ZONE.formatToParts(parsed).find((part) => part.type === 'timeZoneName')?.value;
+	return zone
+		? `${DATE_TIME_WITH_SECONDS.format(parsed)}, ${zone}`
+		: DATE_TIME_WITH_SECONDS.format(parsed);
 }
 
 const MINUTE_MS = 60_000;

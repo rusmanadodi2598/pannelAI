@@ -63,4 +63,13 @@ describe('panel header', () => {
 		expect(screen.queryByRole('tab', { name: 'Base URL' })).toBeNull();
 		expect(screen.getByRole('button', { name: 'API base' })).toBeTruthy();
 	});
+
+	it('keeps the theme toggle at a 44px target when its label is hidden on mobile', () => {
+		render(HeaderHarness);
+
+		const toggle = screen.getByRole('button', { name: 'Switch to dark theme' });
+
+		expect(toggle.className).toContain('min-h-11');
+		expect(toggle.className).toContain('min-w-11');
+	});
 });

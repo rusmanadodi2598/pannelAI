@@ -183,6 +183,13 @@ body {
 	outline-offset: 2px;
 }
 
+/* Preflight fades a placeholder to 50% of the text colour, which is 3.67:1 on the page ground.
+   The muted token is the intended secondary tone and clears AA in both themes. */
+::placeholder {
+	color: var(--color-text-muted);
+	opacity: 1;
+}
+
 /* Scrollbars, kept thin so a dense table is not squeezed by its own scroll gutter. */
 * {
 	scrollbar-width: thin;

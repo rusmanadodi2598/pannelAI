@@ -10,7 +10,14 @@
 
 import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
-import { countdownText, elapsedText, formatTimestamp, runningText } from '$lib/utils/time';
+import {
+	countdownText,
+	elapsedText,
+	formatTimestamp,
+	formatTimestampWithSeconds,
+	formatTimestampWithTime,
+	runningText
+} from '$lib/utils/time';
 
 const NOW = Date.parse('2026-09-18T12:00:00Z');
 
@@ -72,6 +79,30 @@ describe('formatTimestamp', () => {
 		// The zone is whatever the runtime is in, so the assertion is on the shape: a zone token after the
 		// date, which is what stops a reader from taking a local time for the API's UTC.
 		expect(formatTimestamp('2026-09-18T12:00:00Z')).toMatch(/,\s*\S+$/);
+	});
+});
+
+describe('formatTimestampWithTime', () => {
+	it('states an unparseable value rather than rendering a native invalid date', () => {
+		expect(formatTimestampWithTime('2026-13-45')).toBe('Invalid timestamp');
+	});
+
+	it('prints the clock beside the date, with the zone named', () => {
+		// A range bound needs the hour: a rolling 24 hours rendered as two dates reads as two whole days.
+		expect(formatTimestampWithTime('2026-09-18T12:00:00Z')).toMatch(/\d{1,2}[.:]\d{2}.*,\s*\S+$/);
+	});
+});
+
+describe('formatTimestampWithSeconds', () => {
+	it('states an unparseable value rather than rendering a native invalid date', () => {
+		expect(formatTimestampWithSeconds('2026-13-45')).toBe('Invalid timestamp');
+	});
+
+	it('prints seconds beside the date and clock, with the zone named', () => {
+		// The console's five-second acknowledgement must move when Refresh is pressed within a minute.
+		expect(formatTimestampWithSeconds('2026-09-18T12:00:00Z')).toMatch(
+			/\d{1,2}[.:]\d{2}[.:]\d{2}.*,\s*\S+$/
+		);
 	});
 });
 
