@@ -59,6 +59,33 @@ describe('Quota caps', () => {
 		expect(screen.getByRole('button', { name: 'Save the cap' })).toBeTruthy();
 	});
 
+	it('offers a retry when the stored cap cannot be read', async () => {
+		stub = stubQuota({ windows: [quotaWindowRow()], capReadStatus: 500 });
+		render(QuotaPage);
+
+		await fireEvent.change(await screen.findByLabelText('Endpoint'), {
+			target: { value: 'ep_1' }
+		});
+
+		expect(await screen.findByRole('alert')).toBeTruthy();
+		stub.capReadStatus = 200;
+		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+		await waitFor(() => expect(screen.getByRole('status', { name: 'Stored cap' })).toBeTruthy());
+		expect(input('Monthly cost (USD)').disabled).toBe(false);
+	});
+
+	it('sizes the cap form for a phone and fixes its width from sm', async () => {
+		stub = stubQuota({ windows: [] });
+		render(QuotaPage);
+
+		const endpoint = (await screen.findByLabelText('Endpoint')) as HTMLSelectElement;
+
+		expect(endpoint.classList.contains('w-full')).toBe(true);
+		expect(endpoint.classList.contains('sm:w-72')).toBe(true);
+		expect(endpoint.closest('label')?.classList.contains('w-full')).toBe(true);
+	});
+
 	it('reads the stored cap when an endpoint is chosen', async () => {
 		stub = stubQuota({
 			windows: [quotaWindowRow()],

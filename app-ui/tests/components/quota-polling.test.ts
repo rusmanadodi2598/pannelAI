@@ -53,6 +53,25 @@ describe('QuotaPage polling', () => {
 		expect(stub.quotaReads.length).toBeGreaterThan(afterFirstRead);
 	});
 
+	it('does not date the figures on screen with a failed poll', async () => {
+		const stub = stubQuota({ windows: [quotaWindowRow()] });
+		render(QuotaPage);
+
+		await screen.findByRole('heading', { name: 'anthropic' });
+		const lastRead = screen.getByText(/Last read/).textContent;
+
+		// Five minutes later the displayed minute would differ, so a stamp that moved on the failed attempt
+		// is visible rather than hidden by the formatter's precision.
+		stub.quotaStatus = 500;
+		await vi.advanceTimersByTimeAsync(5 * 60_000);
+
+		await vi.waitFor(() => {
+			expect(screen.getByRole('alert')).toBeTruthy();
+		});
+		expect(screen.getByText(/Last read/).textContent).toBe(lastRead);
+		expect(screen.getByRole('alert').textContent).toMatch(/Showing the last read at/);
+	});
+
 	it('stops reading while the tab is hidden', async () => {
 		const stub = stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);

@@ -28,7 +28,7 @@
 		schemaQuotaCapForm,
 		type QuotaCap
 	} from '$lib/schemas/quota-cap';
-	import { formatTimestamp } from '$lib/utils/time';
+	import { formatTimestampWithTime } from '$lib/utils/time';
 	import { untrack } from 'svelte';
 
 	type Props = {
@@ -38,9 +38,16 @@
 		windowEndpointIds: string[];
 		/** Whether the screen's endpoint-list read failed, which is why the picker can be empty. */
 		labelsUnread?: boolean;
+		/** The screen's first read is still in flight, so an empty picker is not yet a fact. */
+		endpointsLoading?: boolean;
 	};
 
-	let { labels, windowEndpointIds, labelsUnread = false }: Props = $props();
+	let {
+		labels,
+		windowEndpointIds,
+		labelsUnread = false,
+		endpointsLoading = false
+	}: Props = $props();
 
 	const options = $derived(quotaCapOptions(labels, windowEndpointIds));
 
@@ -55,6 +62,8 @@
 	let saved = $state(false);
 	let issues = $state<string[]>([]);
 	let error = $state<ApiError | null>(null);
+	// A slow read for an endpoint the operator has left must not seed the form now on screen.
+	let loadTicket = 0;
 
 	// One read per choice, and the draft is seeded from that read, so a save replaces the cap the gateway
 	// holds rather than a value the operator could not see.
@@ -64,12 +73,23 @@
 	});
 
 	async function load(id: string): Promise<void> {
-		if (id === '') return;
+		const ticket = ++loadTicket;
+		if (id === '') {
+			loading = false;
+			saved = false;
+			issues = [];
+			error = null;
+			read = undefined;
+			draft = { cost: '', tokens: '' };
+			return;
+		}
 
 		loading = true;
 		saved = false;
 		issues = [];
+		error = null;
 		const result = await getQuotaEndpoint(id);
+		if (ticket !== loadTicket) return;
 		loading = false;
 
 		if (!result.ok) {
@@ -113,7 +133,9 @@
 </script>
 
 <div class="flex flex-col gap-3">
-	{#if options.length === 0}
+	{#if endpointsLoading}
+		<StateMessage kind="loading" title="Loading endpoints" />
+	{:else if options.length === 0}
 		<!-- No link to Endpoint & Key here: this state means the window table is empty too (its endpoint
 		     ids feed the options), so the screen's own empty state is on screen right above and carries
 		     that link already. -->
@@ -136,11 +158,12 @@
 				void submit();
 			}}
 		>
-			<label class="flex flex-col gap-1 text-sm">
+			<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-auto">
 				<span class="text-[var(--color-text-muted)]">Endpoint</span>
 				<select
 					bind:value={selected}
-					class="min-h-11 w-72 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+					disabled={saving}
+					class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50 sm:w-72"
 				>
 					<option value="">Choose an endpoint</option>
 					{#each options as option (option.id)}
@@ -150,7 +173,7 @@
 			</label>
 
 			{#if selected !== ''}
-				<label class="flex flex-col gap-1 text-sm">
+				<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-auto">
 					<span class="text-[var(--color-text-muted)]">Monthly cost (USD)</span>
 					<!-- Read-only until the stored cap has been read: a field the operator could type into
 					     before the answer landed would be overwritten by it. An edit also drops the save
@@ -161,24 +184,25 @@
 						inputmode="decimal"
 						disabled={read === undefined}
 						oninput={() => (saved = false)}
-						class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50"
+						class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50 sm:w-40"
 						placeholder="25"
 					/>
 				</label>
-				<label class="flex flex-col gap-1 text-sm">
+				<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-auto">
 					<span class="text-[var(--color-text-muted)]">Monthly tokens</span>
 					<input
 						bind:value={draft.tokens}
 						inputmode="numeric"
 						disabled={read === undefined}
 						oninput={() => (saved = false)}
-						class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50"
+						class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50 sm:w-40"
 						placeholder="1000000"
 					/>
 				</label>
 				<Button
 					type="submit"
 					variant="outline"
+					class="w-full sm:w-auto"
 					disabled={saving || read === undefined}
 					aria-busy={saving}
 				>
@@ -201,7 +225,7 @@
 					{saved ? 'Saved. ' : ''}{quotaCapSummary(read)}
 					{#if read?.updated_at}
 						<span class="text-[var(--color-text-muted)]"
-							>Stored {formatTimestamp(read.updated_at)}.</span
+							>Stored {formatTimestampWithTime(read.updated_at)}.</span
 						>
 					{/if}
 				</p>
@@ -210,7 +234,12 @@
 			{/if}
 
 			{#if error}
-				<p role="alert" class="text-sm text-[var(--color-danger)]"><ApiErrorText {error} /></p>
+				<div class="flex flex-wrap items-center gap-2">
+					<p role="alert" class="text-sm text-[var(--color-danger)]"><ApiErrorText {error} /></p>
+					<Button variant="ghost" class="px-2 underline" onclick={() => void load(selected)}
+						>Try again</Button
+					>
+				</div>
 			{/if}
 
 			<FormIssues {issues} />

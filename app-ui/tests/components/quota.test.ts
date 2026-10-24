@@ -117,6 +117,10 @@ describe('QuotaPage', () => {
 
 		expect(await screen.findByRole('heading', { name: 'Anthropic primary' })).toBeTruthy();
 		expect(screen.getByRole('heading', { name: 'ep_beyond_the_page' })).toBeTruthy();
+		// The row heading wraps on a phone, and the full label stays in its title as a pointer aid.
+		expect(screen.getByRole('heading', { name: 'Anthropic primary' }).getAttribute('title')).toBe(
+			'Anthropic primary'
+		);
 	});
 
 	it('says a window has no ceiling rather than reporting 0%', async () => {
@@ -151,7 +155,14 @@ describe('QuotaPage', () => {
 		render(QuotaPage);
 
 		expect(await screen.findByText('No quota windows yet')).toBeTruthy();
-		expect(screen.getByText(/No traffic yet\. Send one request/)).toBeTruthy();
+		expect(screen.getByText(/Quota tracking starts after the first routed request/)).toBeTruthy();
+	});
+
+	it('says the page was cut when the gateway reports its row ceiling', async () => {
+		stubQuota({ windows: [quotaWindowRow()], truncated: true });
+		render(QuotaPage);
+
+		expect(await screen.findByText(/row ceiling cut this page/)).toBeTruthy();
 	});
 
 	it('keeps the cards and says so when the endpoint labels cannot be read', async () => {

@@ -44,11 +44,16 @@ export function createQuotaPoll(onread: () => void) {
 		if (document.visibilityState === 'visible') onread();
 	}
 
-	/** Stamps the read that just landed, which is what both the countdown and the "Last read" line read. */
-	function markRead(): void {
+	/**
+	 * Stamps the read attempt that just landed, which is what the countdown reads.
+	 *
+	 * The "Last read" line moves only when the attempt carried quota data: a failed poll must not date the
+	 * figures still on screen, or the screen would claim they are newer than they are.
+	 */
+	function markRead(dataLanded: boolean): void {
 		const at = Date.now();
 		lastLoadedAt = at;
-		readAt = readStamp(at);
+		if (dataLanded) readAt = readStamp(at);
 	}
 
 	return {

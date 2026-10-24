@@ -19,7 +19,7 @@
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { Button } from '$lib/primitives/button/index.js';
 	import { pollIntervalLabel, QUOTA_POLL_MS } from '$lib/polling';
-	import { formatTimestamp } from '$lib/utils/time';
+	import { formatTimestampWithTime } from '$lib/utils/time';
 
 	type Props = {
 		paused: boolean;
@@ -70,7 +70,7 @@
 
 	{#if readAt}
 		<p class="flex items-center text-sm text-[var(--color-text-muted)]">
-			Last read {formatTimestamp(readAt)}.
+			Last read {formatTimestampWithTime(readAt)}.
 		</p>
 	{/if}
 
@@ -79,6 +79,7 @@
 			<span class="text-[var(--color-text-muted)]">Provider</span>
 			<select
 				aria-label="Filter cards by provider"
+				title={provider || 'All providers'}
 				class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
 				value={provider}
 				onchange={(event) => onproviderchange(event.currentTarget.value)}

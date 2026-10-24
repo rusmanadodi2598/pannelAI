@@ -63,10 +63,12 @@ describe('the card set, its folds and its pages', () => {
 
 		await fireEvent.click(toggle);
 		expect(toggle.getAttribute('aria-expanded')).toBe('false');
+		expect(toggle.getAttribute('aria-label')).toBe('Unfold anthropic');
 		expect(screen.queryByText(quotaCountedLine('monthly'))).toBeNull();
 
 		await fireEvent.click(toggle);
 		expect(toggle.getAttribute('aria-expanded')).toBe('true');
+		expect(toggle.getAttribute('aria-label')).toBe('Fold anthropic');
 		expect(screen.getByText(quotaCountedLine('monthly'))).toBeTruthy();
 	});
 
@@ -91,9 +93,9 @@ describe('the card set, its folds and its pages', () => {
 		expect(screen.queryByText(quotaCountedLine('monthly'))).toBeNull();
 		expect(screen.queryByText(quotaCountedLine('daily'))).toBeNull();
 		expect(
-			screen.getByRole('button', { name: 'Fold anthropic' }).getAttribute('aria-expanded')
+			screen.getByRole('button', { name: 'Unfold anthropic' }).getAttribute('aria-expanded')
 		).toBe('false');
-		expect(screen.getByRole('button', { name: 'Fold zeta' }).getAttribute('aria-expanded')).toBe(
+		expect(screen.getByRole('button', { name: 'Unfold zeta' }).getAttribute('aria-expanded')).toBe(
 			'false'
 		);
 
@@ -111,6 +113,24 @@ describe('the card set, its folds and its pages', () => {
 		expect(screen.queryByText('1 selected')).toBeNull();
 		await fireEvent.click(screen.getByRole('button', { name: 'Fold anthropic' }));
 		expect(screen.queryByText(quotaCountedLine('monthly'))).toBeNull();
+	});
+
+	it('raises the bulk bar above the cards and keeps it in view', async () => {
+		stubQuota({ windows: [quotaWindowRow()] });
+		render(QuotaPage);
+		await screen.findByRole('heading', { name: 'anthropic' });
+
+		await fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select anthropic for bulk folding' })
+		);
+		const bar = screen.getByText('1 selected').closest('.sticky') as HTMLElement;
+		const card = screen.getByRole('heading', { name: 'anthropic' });
+
+		// The bar is one screen above the checked card, so a selection made here is answered where the
+		// operator is looking instead of below a page of card bodies.
+		expect(bar.className).toContain('sticky');
+		expect(bar.className).toContain('top-0');
+		expect(bar.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 	});
 
 	it('asks the gateway for its card page, five provider groups to a page', async () => {

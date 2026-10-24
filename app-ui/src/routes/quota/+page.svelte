@@ -31,11 +31,12 @@
 	import { createQuotaPoll } from '$lib/stores/quota-poll.svelte';
 	import type { PublishedQuotaUsage } from '$lib/schemas/quota-published';
 	import { quotaCardGroups, quotaCardProviders, type QuotaWindow } from '$lib/schemas/quota';
-	import { formatTimestamp } from '$lib/utils/time';
+	import { formatTimestampWithTime } from '$lib/utils/time';
 
 	let windows = $state<QuotaWindow[]>([]);
 	let published = $state<PublishedQuotaUsage[]>([]);
 	let publishedNote = $state<string | null>(null);
+	let truncated = $state(false);
 	let labels = $state(new Map<string, string>());
 	let loading = $state(true);
 	let busy = $state(false);
@@ -90,7 +91,7 @@
 				listEndpointLabels({ page: 1, per_page: 100 })
 			]);
 
-			poll.markRead();
+			poll.markRead(quotaResult.ok);
 
 			if (endpointResult.ok) {
 				labelNotice = null;
@@ -108,6 +109,7 @@
 			windows = quotaResult.data.data;
 			published = quotaResult.data.published;
 			publishedNote = quotaResult.data.published_note ?? null;
+			truncated = quotaResult.data.truncated;
 			totalGroups = quotaResult.data.meta.total;
 
 			// The data can shrink between reads (a poll that answers fewer provider groups than the page
@@ -169,7 +171,7 @@
 		<StateMessage
 			kind="empty"
 			title="No quota windows yet"
-			description="No traffic yet. Send one request, then rows appear here."
+			description="Quota tracking starts after the first routed request."
 		>
 			{#snippet action()}
 				<a href={resolve('/endpoint-keys')} class="inline-flex min-h-11 items-center px-2 underline"
@@ -182,8 +184,14 @@
 			<p role="alert" class="text-sm text-[var(--color-danger)]">
 				<ApiErrorText
 					{error}
-					suffix={` Showing the last read at ${formatTimestamp(poll.readAt)}.`}
+					suffix={` Showing the last read at ${formatTimestampWithTime(poll.readAt)}.`}
 				/>
+			</p>
+		{/if}
+
+		{#if truncated}
+			<p role="status" class="text-sm text-[var(--color-text-muted)]">
+				The gateway's row ceiling cut this page, so some accounts are not shown.
 			</p>
 		{/if}
 
@@ -207,6 +215,11 @@
 		<p class="text-sm text-[var(--color-text-muted)]">
 			Monthly ceiling per endpoint, in USD or tokens.
 		</p>
-		<QuotaCaps {labels} {windowEndpointIds} labelsUnread={labelNotice !== null} />
+		<QuotaCaps
+			{labels}
+			{windowEndpointIds}
+			labelsUnread={labelNotice !== null}
+			endpointsLoading={loading}
+		/>
 	</div>
 </section>

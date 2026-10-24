@@ -75,10 +75,11 @@
 
 	// A bulk action must never reach across pages unseen (005 D4): the checkboxes the operator cannot
 	// see right now are not theirs to act on, so the selection starts clean whenever the pager lands
-	// on another server page. A poll over the SAME page must not wipe it, which is why the effect
-	// tracks the page and nothing else.
+	// on another server page or the filter narrows the list. A poll over the SAME page must not wipe
+	// it, which is why the effect tracks the page and the filter and nothing else.
 	$effect(() => {
 		void page;
+		void provider;
 		selected = [];
 	});
 
@@ -137,6 +138,18 @@
 		<p role="status" class="text-sm text-[var(--color-text-muted)]">{publishedNote}</p>
 	{/if}
 
+	{#if selected.length > 0}
+		<div
+			class="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2"
+		>
+			<span role="status" class="text-sm">{selected.length} selected</span>
+			<div class="flex gap-2">
+				<Button variant="outline" onclick={foldSelected}>Fold selected</Button>
+				<Button variant="outline" onclick={unfoldSelected}>Unfold selected</Button>
+			</div>
+		</div>
+	{/if}
+
 	{#each visibleGroups as group (cardKey(group))}
 		{@const key = cardKey(group)}
 		{@const name = cardName(group)}
@@ -158,7 +171,7 @@
 					/>
 				</label>
 				<div class="flex min-w-0 flex-1 flex-col justify-center">
-					<h3 class="truncate text-sm font-medium">{name}</h3>
+					<h3 class="break-all text-sm font-medium" title={name}>{name}</h3>
 					<span class="text-xs tabular-nums text-[var(--color-text-muted)]"
 						>{countsText(group)}</span
 					>
@@ -166,10 +179,10 @@
 				<Button
 					variant="ghost"
 					size="icon"
-					aria-label={`Fold ${name}`}
+					aria-label={`${isFolded(key) ? 'Unfold' : 'Fold'} ${name}`}
 					aria-expanded={!isFolded(key)}
 					aria-controls={bodyId}
-					title={`Fold ${name}`}
+					title={`${isFolded(key) ? 'Unfold' : 'Fold'} ${name}`}
 					onclick={() => toggleFold(key)}
 				>
 					<FoldIcon class="size-4 {isFolded(key) ? '' : 'rotate-180'}" aria-hidden="true" />
@@ -177,8 +190,13 @@
 			</div>
 
 			{#if !isFolded(key)}
+				<!-- The body scrolls its own overflow, so keyboard focus is how its lower rows are reached. -->
+				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 				<div
 					id={bodyId}
+					role="region"
+					aria-label={`${name} connections`}
+					tabindex="0"
 					class="flex max-h-80 flex-col gap-3 overflow-y-auto border-t border-[var(--color-border)] p-3"
 				>
 					<QuotaCardBody {group} {labels} published={publishedByEndpoint} {now} />
@@ -191,19 +209,6 @@
 		<p role="status" class="text-sm text-[var(--color-text-muted)]">
 			No {provider} card on this page. Choose another provider, or turn the page.
 		</p>
-	{/if}
-
-	{#if selected.length > 0}
-		<div
-			role="status"
-			class="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] p-2"
-		>
-			<span class="text-sm">{selected.length} selected</span>
-			<div class="flex gap-2">
-				<Button variant="outline" onclick={foldSelected}>Fold selected</Button>
-				<Button variant="outline" onclick={unfoldSelected}>Unfold selected</Button>
-			</div>
-		</div>
 	{/if}
 
 	{#if groups.length > 0}

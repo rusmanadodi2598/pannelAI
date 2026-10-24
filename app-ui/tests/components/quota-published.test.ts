@@ -73,6 +73,16 @@ describe('the provider numbers on load', () => {
 		expect(apiProbe.published).toEqual([]);
 	});
 
+	it('keeps the ask control short while its name still says what it asks about', async () => {
+		renderWith({ ep_1: publishedUsage('ep_1') });
+		await screen.findByText('12.5 / 3000');
+
+		const ask = within(section()).getByRole('button', {
+			name: 'Ask the provider about Anthropic primary'
+		});
+		expect(ask.textContent?.trim()).toBe('Ask now');
+	});
+
 	it('puts the provider above what this gateway counted', async () => {
 		renderWith({ ep_1: publishedUsage('ep_1') });
 		await screen.findByText('12.5 / 3000');

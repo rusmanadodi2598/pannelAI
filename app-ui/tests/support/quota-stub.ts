@@ -38,6 +38,8 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 		capReadStatus: 200,
 		capWriteRefusal: null,
 		endpointStatus: 200,
+		quotaStatus: 200,
+		truncated: false,
 		quotaReads: [],
 		shrinkTo: null,
 		published: {},
@@ -99,7 +101,8 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 
 		const body: Record<string, unknown> = {
 			data: pageWindows,
-			meta: { page, per_page: perPage, total: totalGroups }
+			meta: { page, per_page: perPage, total: totalGroups },
+			truncated: stub.truncated
 		};
 
 		if (stub.publishedNote !== null) {
@@ -142,6 +145,9 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 			// total group count. The grouping here mirrors the SQL the server runs, which the integration test
 			// proves against a real database.
 			stub.quotaReads.push(url);
+			if (stub.quotaStatus !== 200) {
+				return refusal('INTERNAL_ERROR', 'The quota store is unreachable.', stub.quotaStatus);
+			}
 			const page = Number(parsed.searchParams.get('page') ?? '1');
 			const perPage = Number(parsed.searchParams.get('per_page') ?? '25');
 

@@ -27,6 +27,10 @@ export type QuotaStub = {
 	capWriteRefusal: { status: number; code: string; message: string } | null;
 	/** The endpoint list's own status, for a test that needs the label read to fail. */
 	endpointStatus: number;
+	/** The collection read's status, for a test that needs a poll to fail over data already on screen. */
+	quotaStatus: number;
+	/** Whether the collection read says its row ceiling cut the page. */
+	truncated: boolean;
 	/** Every paged /quotas read's URL, in order, so a test can prove what the screen asked for. */
 	quotaReads: string[];
 	/**
