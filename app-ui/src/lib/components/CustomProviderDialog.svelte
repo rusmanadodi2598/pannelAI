@@ -65,8 +65,8 @@
 		onclose: () => void;
 	} = $props();
 
-	// The footer's two controls: Cancel backs out, the accent-less one commits the form. Both keep their
-	// label and gain the glyph beside it, the same shape every dialog footer in the panel now holds.
+	// The footer's two controls: Cancel backs out, the primary one commits the form. Both keep their label
+	// and gain the glyph beside it, the same shape every dialog footer in the panel now holds.
 	const SaveIcon = ROW_ACTION_ICONS.save.icon;
 	const CancelIcon = ROW_ACTION_ICONS.cancel.icon;
 
@@ -218,7 +218,7 @@
 			Cancel
 		</Button>
 		<Button
-			variant="outline"
+			variant="default"
 			class="px-4"
 			disabled={saving || draft.name.trim() === '' || draft.prefix.trim() === ''}
 			aria-busy={saving}

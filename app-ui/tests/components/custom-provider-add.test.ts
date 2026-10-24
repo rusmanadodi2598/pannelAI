@@ -48,6 +48,16 @@ describe('adding a custom provider', () => {
 		expect(screen.queryByLabelText('API type')).toBeNull();
 	});
 
+	it('gives the dialog commit the accent, so it reads as the primary action', async () => {
+		renderSection(stubProviderNodes());
+
+		await screen.getByRole('button', { name: 'Add OpenAI Compatible' }).click();
+
+		expect(screen.getByRole('button', { name: 'Add the provider' }).className).toContain(
+			'bg-[var(--color-accent)]'
+		);
+	});
+
 	it('posts the typed node, then re-reads so the list shows what the gateway stored', async () => {
 		const stub = stubProviderNodes();
 		const rendered = renderSection(stub);

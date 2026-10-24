@@ -155,7 +155,7 @@
 	>
 		<div class="flex flex-wrap items-start justify-between gap-3">
 			<div class="flex flex-col gap-1">
-				<h2 class="text-base font-medium">{NODE_TYPE_LABELS[type]} Details</h2>
+				<h2 class="text-sm font-medium">{NODE_TYPE_LABELS[type]} Details</h2>
 				<p class="break-all text-sm text-[var(--color-text-muted)]">
 					{nodeEndpointLabel(node)} · {nodeEndpointUrl(node)}
 				</p>

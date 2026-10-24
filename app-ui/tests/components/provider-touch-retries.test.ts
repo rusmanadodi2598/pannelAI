@@ -8,7 +8,6 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, vi } from 'vitest';
 import ProviderCustomModels from '../../src/lib/components/ProviderCustomModels.svelte';
-import CustomProviderSection from '../../src/lib/components/CustomProviderSection.svelte';
 import ProviderEndpoints from '../../src/lib/components/ProviderEndpoints.svelte';
 import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
 import { ApiError } from '../../src/lib/api/errors';
@@ -62,7 +61,6 @@ describe('F3: retry and clear text buttons', () => {
 			{ name: 'custom models load retry', kind: 'custom-retry' },
 			{ name: 'connections load retry', kind: 'endpoints-retry' },
 			{ name: 'custom card load retry', kind: 'card-retry' },
-			{ name: 'custom provider section load retry', kind: 'section-retry' },
 			{ name: 'page breadcrumb link', kind: 'page-breadcrumb' },
 			{ name: 'page load retry', kind: 'page-retry' },
 			{ name: 'page back link', kind: 'page-back' }
@@ -117,21 +115,6 @@ describe('F3: retry and clear text buttons', () => {
 			if (kind === 'endpoints-retry') {
 				stubEndpoints({ listStatus: 500 });
 				render(ProviderEndpoints, { props: { providerId: 'openai' } });
-				const button = await screen.findByRole('button', { name: 'Try again' });
-				expectTouchTextButton(button, name);
-				return;
-			}
-
-			if (kind === 'section-retry') {
-				const onreload = vi.fn(async () => {});
-				render(CustomProviderSection, {
-					props: {
-						nodes: [],
-						loading: false,
-						error: new ApiError(500, 'INTERNAL_ERROR', 'the list is unavailable'),
-						onreload
-					}
-				});
 				const button = await screen.findByRole('button', { name: 'Try again' });
 				expectTouchTextButton(button, name);
 				return;

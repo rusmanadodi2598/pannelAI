@@ -1,14 +1,16 @@
 <script lang="ts">
-	// The facts list on a custom node's detail card (docs/SPEC-UI/001-SPEC-UI.md §6.3).
-	//
-	// It is its own component because the card around it owns the actions and the dialogs, and the facts
-	// are the read-only half: what the node is addressed by, where the gateway sends it, what it speaks,
-	// and when it last changed. Every value comes from the node's own route, which is the only read that
-	// carries the prefix and the api type (the provider read synthesizes an entry without them).
+	// The custom-specific facts on a node's card. The common provider facts are rendered by ProviderFacts
+	// above it; this list adds the prefix, api type, and timestamps the synthesized provider entry does
+	// not carry.
 	import { formatTimestamp } from '$lib/utils/time';
-	import type { ProviderNode } from '$lib/schemas/provider-node';
+	import { NODE_API_TYPE_LABELS, type ProviderNode } from '$lib/schemas/provider-node';
 
 	let { node }: { node: ProviderNode } = $props();
+
+	function apiTypeLabel(value: string | undefined): string {
+		if (value === undefined) return 'Not applicable';
+		return value === 'chat' || value === 'responses' ? NODE_API_TYPE_LABELS[value] : value;
+	}
 </script>
 
 <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -19,12 +21,10 @@
 		</dd>
 	</div>
 	<div class="flex flex-col gap-0.5">
-		<dt class="text-xs text-[var(--color-text-muted)]">Base URL</dt>
-		<dd class="break-all text-sm">{node.base_url}</dd>
-	</div>
-	<div class="flex flex-col gap-0.5">
-		<dt class="text-xs text-[var(--color-text-muted)]">Wire format</dt>
-		<dd class="text-sm">{node.format}</dd>
+		<dt class="text-xs text-[var(--color-text-muted)]">API type</dt>
+		<dd class="text-sm">
+			{apiTypeLabel(node.api_type)}
+		</dd>
 	</div>
 	<div class="flex flex-col gap-0.5">
 		<dt class="text-xs text-[var(--color-text-muted)]">Created</dt>

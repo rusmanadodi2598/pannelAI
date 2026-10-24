@@ -7,9 +7,9 @@
 	// `?q`, which the server matches over id and display name (PORT 002 D1), because §6.3's pagination
 	// discipline forbids pulling the registry into a client-side filter.
 	//
-	// The custom provider section is the exception, and it is why this page owns a second read: a node is
-	// operator-created, so the section writes. Its set is not paginated and not narrowed by either
-	// filter, which is why it is read on its own rather than derived from the registry page.
+	// The custom provider controls create a node, and the gateway synthesizes it into the registry, so the
+	// table is the one place a custom provider appears. The page reads only the registry; a separate node
+	// read would duplicate every custom row. Custom rows carry a Custom marker in the table.
 	import CustomProviderSection from '$lib/components/CustomProviderSection.svelte';
 	import ProvidersFilters from '$lib/components/ProvidersFilters.svelte';
 	import PagingControls from '$lib/components/PagingControls.svelte';
@@ -17,10 +17,8 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { Button } from '$lib/primitives/button/index.js';
 	import { listProviders } from '$lib/api/providers';
-	import { listProviderNodes } from '$lib/api/provider-nodes';
 	import type { ApiError } from '$lib/api/errors';
 	import { schemaProviderQuery, type Provider } from '$lib/schemas/provider';
-	import type { ProviderNode } from '$lib/schemas/provider-node';
 	import { onMount } from 'svelte';
 
 	const PAGE_SIZE = 25;
@@ -38,20 +36,10 @@
 	let searchApplied = $state('');
 	let searchError = $state<string | null>(null);
 
-	let nodes = $state<ProviderNode[]>([]);
-	let nodesLoading = $state(true);
-	let nodesError = $state<ApiError | null>(null);
-
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 	const filtered = $derived(category !== '' || searchApplied !== '');
 
-	onMount(() => void load());
-
-	// One entry point for both reads, so the screen's single refresh control re-reads everything on it
-	// (§8.6.2) rather than the registry alone.
-	async function load(): Promise<void> {
-		await Promise.all([loadProviders(), loadNodes()]);
-	}
+	onMount(() => void loadProviders());
 
 	async function loadProviders(): Promise<void> {
 		loading = true;
@@ -71,20 +59,6 @@
 		error = null;
 		providers = result.data.data;
 		total = result.data.meta.total;
-	}
-
-	async function loadNodes(): Promise<void> {
-		nodesLoading = true;
-		const result = await listProviderNodes();
-		nodesLoading = false;
-
-		if (!result.ok) {
-			nodesError = result.error;
-			return;
-		}
-
-		nodesError = null;
-		nodes = result.data.data;
 	}
 
 	function applyCategory(value: string): void {
@@ -138,17 +112,17 @@
 		{searchError}
 		oncategory={applyCategory}
 		onsearch={applySearch}
-		onrefresh={load}
+		onrefresh={loadProviders}
 	/>
 
-	<CustomProviderSection {nodes} loading={nodesLoading} error={nodesError} onreload={loadNodes} />
+	<CustomProviderSection onsaved={loadProviders} />
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the provider registry" />
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the provider registry" apiError={error}>
 			{#snippet action()}
-				<Button variant="ghost" class="underline" onclick={load}>Try again</Button>
+				<Button variant="ghost" class="underline" onclick={loadProviders}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if providers.length === 0}

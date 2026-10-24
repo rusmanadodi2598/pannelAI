@@ -10,7 +10,7 @@
 // forbids filtering the registry in the browser, so what is typed travels as `?q`. The custom provider node
 // set is a second read with its own state; those cases are in `providers-custom-section.test.ts`.
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProvidersPage from '../../src/routes/providers/+page.svelte';
 import { squashed } from '../support/dom';
@@ -36,6 +36,19 @@ describe('provider registry list', () => {
 		expect(screen.getByText('Anthropic')).toBeTruthy();
 		// The status column states the summary rather than four numbers (statusSummaryText).
 		expect(screen.getAllByText('2 active')).toHaveLength(2);
+	});
+
+	it('marks a synthesized custom node in the same registry table', async () => {
+		stubProviders({
+			rows: [provider(), provider({ id: 'openai-compatible-01J', name: 'Corp gateway' })]
+		});
+
+		render(ProvidersPage);
+
+		const table = await screen.findByRole('table');
+		expect(within(table).getByText('Corp gateway')).toBeTruthy();
+		expect(within(table).getByText('Custom')).toBeTruthy();
+		expect(within(table).getAllByText('Custom')).toHaveLength(1);
 	});
 
 	it('sends the category the operator picked, and returns to the first page to do it', async () => {

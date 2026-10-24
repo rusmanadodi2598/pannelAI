@@ -182,6 +182,7 @@
 
 		<BulkActionBar
 			kind="connections"
+			unit="connection"
 			selected={bulk.count}
 			{total}
 			scope={bulkScope}

@@ -10,13 +10,10 @@
 	// (disabled), which models it declares itself (custom), and what the gateway routes through it (its
 	// connections), followed by the proxy binding and the OAuth section for an OAuth provider.
 	//
-	// A custom node gets the reference's own page instead (`providers/[id]/page.js`), because
-	// none of those five questions is the registry's to answer for it: the node's facts are its own details
-	// card, its models are exactly the ones declared for it (there is no registry catalog behind it), and
-	// the connection that carries its credential is the first thing to set up. So the details card leads,
-	// the connections follow, and the models come after, each in the reference's shape. The registry facts
-	// table, the catalog, and the disabled-model section are not rendered for a node: they describe the
-	// embedded registry, and a node is not in it.
+	// A custom node is a provider the gateway synthesizes, so its Overview leads with the same status and
+	// fact cards as a registry provider, followed by its node details card. Its Models tab carries only the
+	// models declared for it, and Connections carries the endpoint list, proxy, and OAuth when present.
+	// The tabs stay in the same order for both shapes.
 	//
 	// The key dialog belongs to the page rather than to the Connections section, because two places open
 	// it: the section's own button and the node's details card. A successful add has to reach the table
@@ -49,17 +46,20 @@
 
 	const providerId = $derived(params.provider_id);
 
+	// A registry row can deep-link to the Connections tab with the create form open (SPEC-UI §6.3).
+	const query =
+		typeof window === 'undefined'
+			? new URLSearchParams()
+			: new URLSearchParams(window.location.search);
+	const initialTab = query.get('tab') ?? undefined;
+	const initialEndpointForm = initialTab === 'connections' && query.get('add') === 'endpoint';
+
 	// Tabs group the detail into three reads an operator switches between, so the page is not one long run of
-	// plain text. A registry provider and a custom node get the same three tabs with their own contents.
-	const REGISTRY_TABS = [
+	// plain text. Both shapes use the same order, so a custom node never moves the operator's reading path.
+	const TABS = [
 		{ id: 'overview', label: 'Overview' },
 		{ id: 'models', label: 'Models' },
 		{ id: 'connections', label: 'Connections' }
-	];
-	const NODE_TABS = [
-		{ id: 'overview', label: 'Overview' },
-		{ id: 'connections', label: 'Connections' },
-		{ id: 'models', label: 'Models' }
 	];
 
 	// Read once per id, and the node card's own read is separate: a node's prefix and api type are not in
@@ -139,11 +139,11 @@
 			href={resolve('/providers')}
 			class="inline-flex min-h-11 w-fit items-center text-sm underline">Provider</a
 		>
-		<h1 class="text-lg font-semibold tracking-tight">
+		<h1 class="text-lg font-semibold tracking-tight break-words">
 			{provider?.name ?? providerId}
 		</h1>
 		{#if provider}
-			<p class="text-sm text-[var(--color-text-muted)]">{provider.id}</p>
+			<p class="break-all text-sm text-[var(--color-text-muted)]">{provider.id}</p>
 		{/if}
 	</div>
 
@@ -162,29 +162,34 @@
 	{:else if provider}
 		{@const loaded = provider}
 		<PanelTabs
-			tabs={custom ? NODE_TABS : REGISTRY_TABS}
+			tabs={TABS}
 			label={custom ? 'Custom provider sections' : 'Provider sections'}
+			initial={initialTab}
 		>
 			{#snippet panel(tab)}
 				{#if tab === 'overview'}
 					{#if custom}
-						<CustomProviderCard
-							{providerId}
-							onchanged={() => load(providerId)}
-							onaddkey={offersKeys ? openKeyDialog : undefined}
-							onprefix={(prefix) => (nodePrefix = prefix)}
-						/>
+						<div class="flex flex-col gap-4">
+							<ProviderFacts provider={loaded} />
+							<CustomProviderCard
+								{providerId}
+								onchanged={() => load(providerId)}
+								onaddkey={offersKeys ? openKeyDialog : undefined}
+								onprefix={(prefix) => (nodePrefix = prefix)}
+							/>
+						</div>
 					{:else}
 						<ProviderFacts provider={loaded} />
 					{/if}
 				{:else if tab === 'models'}
 					<ProviderModelsSection provider={loaded} {providerId} {custom} {nodePrefix} />
 				{:else if tab === 'connections'}
-					<SectionFold title="Connections">
+					<SectionFold title="Connections" open={initialEndpointForm}>
 						<ProviderConnectionsSection
 							provider={loaded}
 							token={endpointToken}
 							notice={keyNotice}
+							initialCreating={initialEndpointForm}
 							onaddkey={openKeyDialog}
 						/>
 					</SectionFold>

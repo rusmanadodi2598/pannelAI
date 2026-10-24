@@ -79,12 +79,11 @@ describe('the Overview facts on a registry provider', () => {
 	it('offers an icon-only copy control on the base URL', () => {
 		render(ProviderFacts, { props: { provider: detail() } });
 
-		// The control keeps the action as its accessible name and its tooltip; the glyph is the whole visual,
-		// which is what keeps the row compact beside the value it copies.
+		// The control keeps the action as its accessible name and its tooltip; the glyph is the whole visual.
 		const copy = screen.getByRole('button', { name: 'Copy base URL' });
 		expectIconOnly(copy, 'Copy base URL');
-		// A standalone control in a card header is the dense 36px size, the same as the dialogs' copy controls.
-		expect(copy.className).toContain('size-9');
+		// A standalone icon control still has to meet the touch target on a phone.
+		expect(copy.className).toContain('size-11');
 	});
 
 	it('places the base URL copy in the Transport card heading, not in the value', () => {
@@ -144,6 +143,16 @@ describe('the Overview facts on a registry provider', () => {
 		const verdict = statuses.find((s) => /routability/.test(s.textContent ?? '')) as HTMLElement;
 		expect(verdict, 'the status line is not on screen').toBeTruthy();
 		expect(within(verdict).getByText(text)).toBeTruthy();
+	});
+
+	it('does not repeat the missing-endpoint fact in the status line', () => {
+		render(ProviderFacts, { props: { provider: detail() } });
+
+		const statuses = screen.getAllByRole('status');
+		const verdict = statuses.find((status) => /routability/.test(status.textContent ?? ''));
+		const text = verdict?.textContent?.replace(/\s+/g, ' ').trim();
+
+		expect(text).toBe('No endpoint yet Native routability');
 	});
 
 	it('marks the endpoint count as a warning when the provider has none', () => {

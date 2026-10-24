@@ -15,7 +15,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProvidersPage from '../../src/routes/providers/+page.svelte';
 import { expectControlStates, expectEveryControlHasStates } from '../support/control-states';
 import { provider, stubProviders } from '../support/providers-route-stub';
-import { nodeRow } from '../support/provider-node-stub';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -47,21 +46,27 @@ describe('Provider registry control states', () => {
 	});
 
 	it('keeps the three links links, and gives them the states anyway', async () => {
-		stubProviders({ rows: [provider({ endpoint_count: 0 })], nodes: [nodeRow()] });
+		stubProviders({
+			rows: [
+				provider({ endpoint_count: 0 }),
+				provider({ id: 'openai-compatible-01J', name: 'Corp gateway', endpoint_count: 1 })
+			]
+		});
 		render(ProvidersPage);
 		await screen.findByRole('table');
 
-		// The registry row offers both of its actions when it holds no endpoint, and the node row's name
-		// routes to the screen that owns the node's facts.
+		// Both rows use the table's Open action; the zero-endpoint row also gets Add endpoint.
 		const cases: [string, string][] = [
 			['Open', '/providers/openai'],
-			['Add endpoint', '/providers/openai'],
-			['Corp gateway', '/providers/openai-compatible-01J']
+			['Open', '/providers/openai-compatible-01J'],
+			['Add endpoint', '/providers/openai?tab=connections&add=endpoint']
 		];
 
 		for (const [name, href] of cases) {
-			const link = (await screen.findByRole('link', { name })) as HTMLAnchorElement;
-			expect(link.getAttribute('href'), `${name} link`).toBe(href);
+			const link = (await screen.findAllByRole('link', { name })).find(
+				(candidate) => candidate.getAttribute('href') === href
+			) as HTMLAnchorElement;
+			expect(link, `${name} link`).toBeTruthy();
 			expect(link.className, `${name} link lost its 44px target`).toContain('min-h-11');
 			expectControlStates(link);
 		}

@@ -24,6 +24,7 @@ vi.mock('$app/paths', () => ({
 afterEach(() => {
 	cleanup();
 	vi.unstubAllGlobals();
+	window.history.replaceState({}, '', '/');
 });
 
 async function renderProvider(): Promise<void> {
@@ -42,6 +43,18 @@ async function openForm(): Promise<void> {
 }
 
 describe('the endpoint form on a provider', () => {
+	it('opens the Connections tab and the form when a registry row deep-links there', async () => {
+		window.history.replaceState({}, '', '/providers/openai?tab=connections&add=endpoint');
+		stubModels({ authType: 'oauth' });
+
+		render(ProviderDetailPage, { props: { params: { provider_id: 'openai' }, data: {} } });
+
+		expect(await screen.findByText('Add an endpoint for openai')).toBeTruthy();
+		expect(screen.getByRole('tab', { name: 'Connections' }).getAttribute('aria-selected')).toBe(
+			'true'
+		);
+	});
+
 	it('opens and closes from the same control, so the section is not permanently taller', async () => {
 		stubModels({ authType: 'oauth' });
 		await renderProvider();

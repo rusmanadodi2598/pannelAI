@@ -1,10 +1,11 @@
 // The Custom provider card on a node's detail screen: what it states and how it is edited
 // (docs/SPEC-UI/001-SPEC-UI.md §6.3, docs/SPEC-API/001-SPEC-API.md §7.4).
 //
-// A node is a registry entry the gateway synthesized, so the card exists to state the facts that entry
-// does not carry: the prefix its models are addressed by, the wire format, and the path appended to the
-// base URL. The edit path is here too, because the form it opens is seeded from those same facts, and the
-// case that matters is that a save carries only the three fields §7.4 accepts.
+// A node is a registry entry the gateway synthesized, so the card states the facts that entry does not
+// carry: the prefix its models are addressed by, the api type, and the timestamps. The common provider
+// facts now sit above it in ProviderFacts, so the card does not repeat base URL or wire format. The edit
+// path is here too, because the form it opens is seeded from those same facts, and the case that matters
+// is that a save carries only the three fields §7.4 accepts.
 //
 // The probe and the delete are in `custom-provider-card-actions.test.ts`.
 
@@ -38,8 +39,7 @@ describe('the custom provider card', () => {
 			'Chat Completions · https://llm.example.com/v1/chat/completions'
 		);
 		expect(within(facts()).getByText('mycorp/model')).toBeTruthy();
-		expect(within(facts()).getByText('https://llm.example.com/v1')).toBeTruthy();
-		expect(within(facts()).getByText('openai')).toBeTruthy();
+		expect(within(facts()).getByText('Chat Completions')).toBeTruthy();
 	});
 
 	it('states an Anthropic node with its own endpoint', async () => {
@@ -48,7 +48,8 @@ describe('the custom provider card', () => {
 				nodeRow({
 					id: 'anthropic-compatible-01K',
 					type: 'anthropic-compatible',
-					format: 'claude'
+					format: 'claude',
+					api_type: undefined
 				})
 			]
 		});
@@ -60,7 +61,7 @@ describe('the custom provider card', () => {
 		expect(squashed(screen.getByText(/Messages API · https/))).toContain(
 			'Messages API · https://llm.example.com/v1/messages'
 		);
-		expect(within(facts()).getByText('claude')).toBeTruthy();
+		expect(within(facts()).getByText('Not applicable')).toBeTruthy();
 	});
 
 	it('renders a failed read with a retry that reads again', async () => {

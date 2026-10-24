@@ -55,8 +55,8 @@
 	>
 		<span class="font-medium">{verdict.text}</span>
 		<span class="text-[var(--color-text-muted)]">
-			{ROUTABILITY_LABELS[provider.routability] ?? provider.routability} routability,
-			{statusSummaryText(provider.status_summary)}
+			{ROUTABILITY_LABELS[provider.routability] ?? provider.routability} routability{#if provider.status_summary.total > 0},
+				{statusSummaryText(provider.status_summary)}{/if}
 		</span>
 	</p>
 
@@ -74,10 +74,9 @@
 			<header class="flex min-h-9 items-center justify-between gap-2">
 				<h3 id="facts-transport" class="text-sm font-medium">Transport</h3>
 				{#if provider.base_url.trim() !== ''}
-					<!-- The copy sits in the heading row, top right, beside the card's title, so it reads as an action on
-					     the card's value rather than as part of the value's text. It is the dense 36px control (DESIGN.md
-					     §7), the size this panel gives a standalone icon control, where a table row action is 44px. -->
-					<CopyButton value={provider.base_url} label="Copy base URL" iconOnly />
+					<!-- The copy sits in the heading row, beside the value it copies, so it reads as an action on
+					     the card rather than as part of the value's text. -->
+					<CopyButton value={provider.base_url} label="Copy base URL" iconOnly touchTarget />
 				{/if}
 			</header>
 			<dl class="flex flex-col gap-3">
