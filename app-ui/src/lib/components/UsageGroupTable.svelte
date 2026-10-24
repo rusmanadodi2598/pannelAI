@@ -23,6 +23,7 @@
 		type UsageOrder,
 		type UsageSort
 	} from '$lib/schemas/usage';
+	import { resolve } from '$app/paths';
 	import PagingControls from '$lib/components/PagingControls.svelte';
 	import { Button } from '$lib/primitives/button/index.js';
 	import { errorRatePercent, formatCount } from '$lib/schemas/usage-view';
@@ -39,11 +40,13 @@
 		order: UsageOrder;
 		/** The registry's id-to-name map, or null when it could not be read and the ids are shown instead. */
 		providerNames: Map<string, string> | null;
+		/** The Records path behind a row, or null when the dimension has no matching record filter. */
+		recordPath: ((key: string) => `/usage?${string}`) | null;
 		/** The column a header click asks for, or an empty string when the sort is being cleared. */
 		onsort: (field: UsageSort | '') => void;
 	};
 
-	let { groups, groupBy, sort, order, providerNames, onsort }: Props = $props();
+	let { groups, groupBy, sort, order, providerNames, recordPath, onsort }: Props = $props();
 
 	let requestedPage = $state(1);
 	const view = $derived(pageOf(groups, requestedPage, GROUPS_PER_PAGE));
@@ -109,7 +112,17 @@
 		<tbody>
 			{#each view.rows as group (group.key)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td data-label={dimension} class="px-3 py-2">{keyOf(group)}</td>
+					<td data-label={dimension} class="px-3 py-2">
+						{#if recordPath}
+							<a
+								href={resolve(recordPath(group.key))}
+								class="inline-flex min-h-11 items-center underline decoration-dotted"
+								aria-label={`Open requests for ${keyOf(group)} in Records`}>{keyOf(group)}</a
+							>
+						{:else}
+							{keyOf(group)}
+						{/if}
+					</td>
 					<td data-label="Requests" class="px-3 py-2 text-right tabular-nums"
 						>{formatCount(group.totals.requests)}</td
 					>

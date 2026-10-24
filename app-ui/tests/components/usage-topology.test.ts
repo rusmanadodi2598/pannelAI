@@ -73,33 +73,46 @@ describe('UsageTopology', () => {
 	it('explains an empty drawing and links to where a provider is configured', () => {
 		const container = draw({ providers: [] });
 
-		expect(screen.getByText('No provider is configured')).toBeTruthy();
+		expect(screen.getByText('No provider to draw')).toBeTruthy();
 		const link = within(container).getByRole('link', { name: 'Open Providers' });
 		expect(link.getAttribute('href')).toBe('/providers');
 	});
 
-	it('pulses the node that is routing and no other', () => {
+	it('marks the node that is routing with the status marker and no other', () => {
 		const container = draw({ active: [entry('openai')] });
+		const routing = nodeFor(container, 'OpenAI').firstElementChild as HTMLElement;
+		const idle = nodeFor(container, 'Anthropic').firstElementChild as HTMLElement;
 
-		expect(nodeFor(container, 'OpenAI').querySelector('.animate-ping')).toBeTruthy();
-		expect(nodeFor(container, 'Anthropic').querySelector('.animate-ping')).toBeNull();
+		expect(routing.classList.contains('bg-[var(--color-ok)]')).toBe(true);
+		expect(idle.classList.contains('bg-[var(--color-ok)]')).toBe(false);
+		expect(idle.classList.contains('bg-[var(--color-border)]')).toBe(true);
 	});
 
-	it('drops the pulse as soon as the frame stops naming that provider', () => {
+	it('drops the marker state as soon as the frame stops naming that provider', () => {
 		const container = draw({ active: [entry('openai')] });
-		expect(nodeFor(container, 'OpenAI').querySelector('.animate-ping')).toBeTruthy();
+		expect(
+			(nodeFor(container, 'OpenAI').firstElementChild as HTMLElement).classList.contains(
+				'bg-[var(--color-ok)]'
+			)
+		).toBe(true);
 
 		cleanup();
 		const idle = draw({ active: [] });
 
-		expect(nodeFor(idle, 'OpenAI').querySelector('.animate-ping')).toBeNull();
+		expect(
+			(nodeFor(idle, 'OpenAI').firstElementChild as HTMLElement).classList.contains(
+				'bg-[var(--color-ok)]'
+			)
+		).toBe(false);
 	});
 
-	it('lets a reader who asked for less motion turn the pulse off', () => {
+	it('keeps the active node to colour and entry motion, with no endless loop', () => {
 		const container = draw({ active: [entry('openai')] });
-		const ring = nodeFor(container, 'OpenAI').querySelector('.animate-ping');
+		const node = nodeFor(container, 'OpenAI');
 
-		expect(ring?.classList.contains('motion-reduce:hidden')).toBe(true);
+		expect(node.querySelector('.animate-ping')).toBeNull();
+		expect(node.classList.contains('animate-router-pulse')).toBe(false);
+		expect(node.classList.contains('animate-node-enter')).toBe(true);
 	});
 
 	it('carries no sentence of its own, since the live row states the facts', () => {
@@ -142,7 +155,11 @@ describe('UsageTopology', () => {
 		expect(node.classList.contains('[font-size:max(12px,calc(14px*var(--u)))]')).toBe(true);
 		expect(node.classList.contains('px-[calc(8px*var(--u))]')).toBe(true);
 		expect(node.classList.contains('gap-[calc(8px*var(--u))]')).toBe(true);
-		expect(node.querySelector('span')?.classList.contains('size-[8px]')).toBe(true);
+		const dot = Array.from(node.querySelectorAll('span')).find((span) =>
+			span.classList.contains('size-[8px]')
+		);
+		expect(dot).toBeTruthy();
+		expect(node.firstElementChild?.classList.contains('w-[3px]')).toBe(true);
 		expect(within(node).getByText('OpenAI').classList.contains('max-w-[calc(96px*var(--u))]')).toBe(
 			true
 		);

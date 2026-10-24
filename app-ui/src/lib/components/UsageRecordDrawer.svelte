@@ -22,12 +22,15 @@
 	let detail = $state<UsageRecordDetail | null>(null);
 	let loading = $state(false);
 	let error = $state<ApiError | null>(null);
+	// A slow read for a request the drawer has left must not replace the one now open.
+	let loadTicket = 0;
 
 	// Reloads whenever the drawer is handed a different request, so the facts and the bodies always belong
 	// to the row that was opened.
 	$effect(() => {
 		const id = requestId;
 		if (!id) {
+			loadTicket += 1;
 			detail = null;
 			return;
 		}
@@ -35,8 +38,10 @@
 	});
 
 	async function load(id: string): Promise<void> {
+		const ticket = ++loadTicket;
 		loading = true;
 		const result = await getUsageRecord(id);
+		if (ticket !== loadTicket) return;
 		loading = false;
 
 		if (!result.ok) {
@@ -49,14 +54,24 @@
 	}
 </script>
 
-<Modal title={requestId ? `Request ${requestId}` : 'Request'} open={requestId !== null} {onclose}>
+<Modal title="Request detail" open={requestId !== null} {onclose}>
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the request" />
 	{:else if error}
-		<StateMessage kind="error" title="The request could not be loaded" apiError={error} />
+		<StateMessage kind="error" title="The request could not be loaded" apiError={error}>
+			{#snippet action()}
+				<Button variant="ghost" class="px-2 underline" onclick={() => requestId && load(requestId)}
+					>Try again</Button
+				>
+			{/snippet}
+		</StateMessage>
 	{:else if detail}
 		<div class="flex flex-col gap-5 text-sm">
-			<dl class="grid grid-cols-2 gap-3">
+			<dl class="grid grid-cols-1 gap-3 [&>div]:min-w-0 [&_dd]:break-all sm:grid-cols-2">
+				<div class="sm:col-span-2">
+					<dt class="text-[var(--color-text-muted)]">Request ID</dt>
+					<dd>{detail.usage.request_id}</dd>
+				</div>
 				<div>
 					<dt class="text-[var(--color-text-muted)]">Recorded at</dt>
 					<dd>{formatTimestamp(detail.usage.ts)}</dd>
@@ -111,7 +126,7 @@
 			</dl>
 
 			{#if detail.usage.error_code}
-				<p>
+				<p class="break-all">
 					Error code: <span class="font-medium">{detail.usage.error_code}</span>
 				</p>
 			{/if}

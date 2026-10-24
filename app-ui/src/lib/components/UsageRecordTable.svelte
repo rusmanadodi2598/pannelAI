@@ -45,7 +45,9 @@
 		<tbody>
 			{#each records as record (record.id)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td data-label="Timestamp" class="px-3 py-2">{formatTimestamp(record.ts)}</td>
+					<td data-label="Timestamp" class="whitespace-nowrap px-3 py-2"
+						>{formatTimestamp(record.ts)}</td
+					>
 					<td data-label="Request ID" class="px-3 py-2">{record.request_id}</td>
 					<td data-label="Model" class="px-3 py-2">{record.model}</td>
 					<td data-label="Provider" class="px-3 py-2">{record.provider_id}</td>
@@ -69,7 +71,12 @@
 						{/if}
 					</td>
 					<td data-label="Detail" class="px-3 py-2">
-						<Button variant="ghost" class="underline" onclick={() => onopen(record)}>Open</Button>
+						<Button
+							variant="ghost"
+							class="underline"
+							aria-label={`Open request ${record.request_id}`}
+							onclick={() => onopen(record)}>Open</Button
+						>
 					</td>
 				</tr>
 			{/each}

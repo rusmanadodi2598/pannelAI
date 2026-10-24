@@ -1,11 +1,12 @@
 // Beam derivation tests (src/lib/schemas/usage-beam.ts).
 //
-// The beam's numbers are the reference fork's own: six orbs and five sparks per routing edge, each with its
-// own width, speed and phase, and three strokes at two dash patterns. They live in the schema rather than in
-// the drawing so the component computes nothing, and the rows here are the ones a reader cannot check by
-// looking at the screen: the counts, the formulas, and the one invariant the motion depends on, that every
-// pattern divides the normalized path a whole number of times so a cycle has no seam. That last one is the
-// panel's own number rather than the reference's, which is why it is measured rather than assumed.
+// The beam's counts, widths and phases are the reference fork's: six orbs and five sparks per routing edge,
+// and three strokes at two dash patterns. Its travel times are the panel's, slowed so a packet can be
+// followed from source to target. They live in the schema rather than in the drawing so the component
+// computes nothing, and the rows here are the ones a reader cannot check by looking at the screen: the
+// counts, the formulas, and the one invariant the motion depends on, that every pattern divides the
+// normalized path a whole number of times so a cycle has no seam. That last one is the panel's own number
+// rather than the reference's, which is why it is measured rather than assumed.
 
 import { describe, expect, it } from 'vitest';
 import {
@@ -41,7 +42,7 @@ describe('beamOrbs', () => {
 	it('gives every orb its own speed and phase, so they do not travel as one row', () => {
 		const orbs = beamOrbs();
 
-		expect(orbs.map((orb) => orb.travel)).toEqual([0.4, 0.48, 0.56, 0.64, 0.72, 0.8]);
+		expect(orbs.map((orb) => orb.travel)).toEqual([0.9, 0.96, 1.02, 1.08, 1.14, 1.2]);
 		expect(orbs.map((orb) => orb.delay)).toEqual([0, -0.09, -0.18, -0.27, -0.36, -0.45]);
 	});
 
@@ -64,12 +65,12 @@ describe('beamSparks', () => {
 	});
 
 	it('sends them across faster than the orbs, each at its own speed', () => {
-		expect(beamSparks().map((spark) => spark.travel)).toEqual([0.28, 0.33, 0.38, 0.43, 0.48]);
+		expect(beamSparks().map((spark) => spark.travel)).toEqual([0.62, 0.67, 0.72, 0.77, 0.82]);
 		expect(beamSparks().map((spark) => spark.delay)).toEqual([0, -0.11, -0.22, -0.33, -0.44]);
 	});
 
-	it('blinks them on a three-step cycle of their own', () => {
-		expect(beamSparks().map((spark) => spark.blink)).toEqual([0.35, 0.45, 0.55, 0.35, 0.45]);
+	it("carries one calm phase, not the reference's hard blink", () => {
+		expect(beamSparks().map((spark) => spark.blink)).toEqual([1.1, 1.1, 1.1, 1.1, 1.1]);
 	});
 });
 

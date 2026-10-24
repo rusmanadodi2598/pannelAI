@@ -35,11 +35,11 @@ export type UsagePeriod = (typeof USAGE_PERIODS)[number];
 export const DEFAULT_USAGE_PERIOD: UsagePeriod = '24h';
 
 export const USAGE_PERIOD_LABELS: Record<UsagePeriod, string> = {
-	today: 'Today (UTC)',
-	'24h': 'Last 24 hours',
-	'7d': 'Last 7 days',
-	'30d': 'Last 30 days',
-	'60d': 'Last 60 days'
+	today: 'Today UTC',
+	'24h': '24 hours',
+	'7d': '7 days',
+	'30d': '30 days',
+	'60d': '60 days'
 };
 
 export const USAGE_GROUP_BYS = ['provider', 'model', 'endpoint', 'gateway_key'] as const;

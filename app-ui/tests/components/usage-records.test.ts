@@ -53,6 +53,18 @@ describe('UsageRecordsTab', () => {
 		expect(query.get('per_page')).toBeNull();
 	});
 
+	it('sizes each filter for the phone and fixes its width from sm', async () => {
+		stubRecords();
+		await renderRecords();
+
+		const provider = screen.getByRole('combobox', { name: 'Provider' });
+		const label = provider.closest('label') as HTMLElement;
+
+		expect(provider.classList.contains('w-full')).toBe(true);
+		expect(label.classList.contains('w-full')).toBe(true);
+		expect(label.classList.contains('sm:w-56')).toBe(true);
+	});
+
 	it('sends every filter the URL carries', async () => {
 		visit(
 			'/usage',

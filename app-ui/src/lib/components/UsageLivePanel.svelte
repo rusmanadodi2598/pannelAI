@@ -10,13 +10,16 @@
 	// The status line is where R-36 is answered: the stream is called live only while frames are arriving,
 	// and every other state says what it is instead. The panel reads the stream by `fetch`, so it knows the
 	// difference between a route that is not served and a connection that dropped, and it says which.
+	//
+	// The provider registry is read once by the Overview and passed down. The drawing's providers and the
+	// breakdown's names come from that one read, so a failed read produces one notice rather than two.
 	import { onMount } from 'svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import UsageLiveTabs from '$lib/components/UsageLiveTabs.svelte';
 	import UsageTopology from '$lib/components/UsageTopology.svelte';
 	import { listCombos } from '$lib/api/combos';
-	import { listProviders } from '$lib/api/providers';
+	import type { Provider } from '$lib/schemas/provider';
 	import {
 		freshActive,
 		liveFacts,
@@ -28,7 +31,7 @@
 	import { configuredCombos, configuredProviders } from '$lib/schemas/usage-topology-nodeset';
 	import { openUsageLive, type LiveReport, type UsageLiveController } from '$lib/usage-live';
 	import { Button } from '$lib/primitives/button/index.js';
-	import { formatTimestamp } from '$lib/utils/time';
+	import { formatTimestampWithTime } from '$lib/utils/time';
 
 	// How often the staleness guard is re-evaluated while something is in flight. The gateway sends frames
 	// when something changes, and a keepalive is not a frame, so a request that hangs would otherwise stay
@@ -36,15 +39,20 @@
 	// is in flight, so an idle screen runs no clock at all.
 	const ACTIVE_TICK_MS = 1_000;
 
-	// The box the stream's status statement wears: the same 44px the controls beside it take, so one line
-	// holds them all (SPEC-UI §8.6 rule 3). The controls themselves come from the button primitive.
-	const TAB_BOX =
-		'inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm';
+	/** A read problem the panel states under its header, with the API error when there is one. */
+	type Notice = { text: string; apiError?: ApiError };
 
-	let providers = $state<{ id: string; name: string }[]>([]);
-	let providersNotice = $state<{ text: string; apiError?: ApiError } | null>(null);
+	type Props = {
+		/** The full registry, read once by the Overview and shared with its charts and breakdown. */
+		providers: Provider[];
+		/** The registry read's notice, including a paginated read the drawing cannot show in full. */
+		providersNotice: Notice | null;
+	};
+
+	let { providers, providersNotice }: Props = $props();
+
 	let combos = $state<{ id: string; name: string }[]>([]);
-	let combosNotice = $state<{ text: string; apiError?: ApiError } | null>(null);
+	let combosNotice = $state<Notice | null>(null);
 	let live = $state<LiveView | null>(null);
 	let report = $state<LiveReport>({ status: 'idle', reason: null, retrying: false });
 	let now = $state(Date.now());
@@ -59,6 +67,17 @@
 
 	const hasActive = $derived(active.length > 0);
 	const facts = $derived(liveFacts(providers, active, last, error));
+	const drawingProviders = $derived(configuredProviders(providers));
+
+	// The marker reports the connection's real state. It is paired with the state label, so the colour is
+	// never the only statement.
+	const STATUS_MARKER: Record<LiveReport['status'], string> = {
+		idle: 'bg-[var(--color-border)]',
+		connecting: 'bg-[var(--color-warn)]',
+		live: 'bg-[var(--color-ok)]',
+		paused: 'bg-[var(--color-warn)]',
+		unavailable: 'bg-[var(--color-danger)]'
+	};
 
 	$effect(() => {
 		if (!hasActive) return;
@@ -73,7 +92,7 @@
 			case 'live':
 				return live === null
 					? 'Reading the gateway live stream.'
-					: `Reading the gateway live stream. Last frame ${formatTimestamp(new Date(live.receivedAt).toISOString())}.`;
+					: `Reading the gateway live stream. Last frame ${formatTimestampWithTime(new Date(live.receivedAt).toISOString())}.`;
 			case 'connecting':
 				return 'Connecting to the gateway live stream.';
 			case 'paused':
@@ -87,25 +106,6 @@
 
 	function providerName(id: string): string {
 		return providerDisplayName(providers, id);
-	}
-
-	async function loadProviders(): Promise<void> {
-		const result = await listProviders({ per_page: 100 });
-
-		if (!result.ok) {
-			providersNotice = {
-				text: 'Providers could not be read. The drawing has no nodes. ',
-				apiError: result.error
-			};
-			return;
-		}
-
-		const { data, meta } = result.data;
-		providersNotice =
-			meta.total > data.length
-				? { text: `Shows the first ${data.length} of ${meta.total} providers.` }
-				: null;
-		providers = configuredProviders(data);
 	}
 
 	// The combos are the drawing's other node set, and they are read rather than derived: the frame names
@@ -135,7 +135,6 @@
 	const nodeNotices = $derived([providersNotice, combosNotice].filter((notice) => notice !== null));
 
 	onMount(() => {
-		void loadProviders();
 		void loadCombos();
 
 		controller = openUsageLive({
@@ -154,28 +153,21 @@
 	});
 </script>
 
-<section class="flex flex-col gap-3">
-	<div class="flex flex-col gap-1">
-		<h2 class="text-base font-medium">Live routing</h2>
-		<p class="text-sm text-[var(--color-text-muted)]">
-			What the gateway routes right now, from its live stream.
+<section
+	class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3"
+>
+	<!-- One header bar over the drawing: the state readout, the sentence that explains it, and the two
+	     controls that govern the stream. The status is a marker and a label, not a control-shaped box. -->
+	<div class="flex flex-wrap items-center gap-3">
+		<span
+			class={`h-5 w-[3px] shrink-0 rounded-[var(--radius-full)] ${STATUS_MARKER[report.status]}`}
+		></span>
+		<span role="status" aria-live="polite" class="text-sm font-medium"
+			>{streamLabel(report.status)}</span
+		>
+		<p class="w-full min-w-0 text-sm text-[var(--color-text-muted)] sm:w-auto sm:flex-1">
+			{statusLine}
 		</p>
-	</div>
-
-	<div class="flex flex-wrap items-stretch gap-3">
-		<span class={TAB_BOX} role="status" aria-live="polite">{streamLabel(report.status)}</span>
-
-		<!-- eslint-disable svelte/no-useless-mustaches -- label and value sit in adjacent spans and
-		     Svelte drops the whitespace between elements on separate lines, so each `{' '}` below is the
-		     space the sentence needs when a screen reader reads its text content. A flex container lays
-		     whitespace-only runs out as nothing, so the `gap-1` spacing
-		     is unchanged. -->
-		<!-- The live facts, stated in the row rather than in the drawing's frame: a
-		     statement in the matched tab box, not a control. It wraps inside its own box and shrinks
-		     below its content (`min-w-0`), so a long joined provider list breaks at the row's edge
-		     instead of widening the page. No fact means no tab at all, which
-		     keeps the owner's rule that a screen states what happened and never what did not
-		     (2026-09-23). -->
 
 		<Button
 			variant="toggle"
@@ -189,8 +181,6 @@
 			<Button variant="outline" onclick={() => controller?.retry()}>Try again</Button>
 		{/if}
 	</div>
-
-	<p class="text-sm text-[var(--color-text-muted)]">{statusLine}</p>
 
 	{#if nodeNotices.length > 0}
 		<div role="status" class="flex flex-col gap-1 text-sm text-[var(--color-text-muted)]">
@@ -208,10 +198,17 @@
 	<!-- `live` is what the drawing needs to move: motion says "happening now", so it is reserved for a
 	     connection frames are arriving on. A paused or dropped stream leaves the last known state on
 	     screen in colour and stops every moving part. -->
-	<UsageTopology {providers} {combos} {active} {last} {error} live={report.status === 'live'} />
+	<UsageTopology
+		providers={drawingProviders}
+		{combos}
+		{active}
+		{last}
+		{error}
+		live={report.status === 'live'}
+	/>
 
 	<!-- Rendered only when the frame carries finished requests. While none has, the screen's statement of
-	     that is the drawing's colours and the status chip, not a sentence (owner's correction,
+	     that is the drawing's colours and the status readout, not a sentence (owner's correction,
 	     2026-09-23). -->
 	<!-- The live facts and the request lists sit together in one tab component at the bottom of the panel,
 	     below the drawing, so the page reads Node first and the detail after it. `now` rides along because

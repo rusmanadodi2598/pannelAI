@@ -24,7 +24,7 @@ afterEach(() => {
 describe('the In flight rows', () => {
 	it('states each request with its provider in the status colour', async () => {
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		sendInFlight(stub);
@@ -37,7 +37,7 @@ describe('the In flight rows', () => {
 
 	it('names a provider the registry does not carry by its id', async () => {
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		sendInFlight(stub, 'gone-provider');
@@ -57,7 +57,7 @@ describe('the In flight rows', () => {
 				provider({ id: 'anthropic', name: 'Anthropic', endpoint_count: 1 })
 			]
 		});
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		stub.streams[0].send(
@@ -90,7 +90,7 @@ describe('the In flight rows', () => {
 		HTMLElement.prototype.scrollIntoView = scrolled;
 
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		sendInFlight(stub);
@@ -120,7 +120,7 @@ describe('the In flight rows', () => {
 		HTMLElement.prototype.scrollIntoView = scrolled;
 
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		await openTab(/Finished requests/);

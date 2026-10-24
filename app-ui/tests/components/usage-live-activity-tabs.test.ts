@@ -23,8 +23,8 @@ afterEach(() => {
 
 describe('the Live activity tablist', () => {
 	it('sits at the bottom of the panel, after the drawing', async () => {
-		stubPanel();
-		const { container } = render(UsageLivePanel);
+		const stub = stubPanel();
+		const { container } = render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		const figure = container.querySelector('figure');
@@ -35,8 +35,8 @@ describe('the Live activity tablist', () => {
 	});
 
 	it('frames the region, so the three tabs read as one box at the bottom of the page', async () => {
-		stubPanel();
-		render(UsageLivePanel);
+		const stub = stubPanel();
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		// PanelTabs draws the tablist inside its own column, so the region is one level further out.
@@ -48,9 +48,20 @@ describe('the Live activity tablist', () => {
 		expect(region.contains(openPanel())).toBe(true);
 	});
 
+	it('scrolls the strip rather than clipping a tab when the labels outrun a phone', async () => {
+		const stub = stubPanel();
+		render(UsageLivePanel, { props: stub.props });
+		await liveRow();
+
+		expect(liveTabs().classList.contains('overflow-x-auto')).toBe(true);
+		for (const tab of within(liveTabs()).getAllByRole('tab')) {
+			expect(tab.classList.contains('shrink-0')).toBe(true);
+		}
+	});
+
 	it('lists the three tabs in order inside their own tablist, not beside the controls', async () => {
-		stubPanel();
-		render(UsageLivePanel);
+		const stub = stubPanel();
+		render(UsageLivePanel, { props: stub.props });
 		const row = await liveRow();
 
 		const tabs = within(liveTabs()).getAllByRole('tab');
@@ -63,8 +74,8 @@ describe('the Live activity tablist', () => {
 	});
 
 	it('gives every tab a scroll box of one height, so switching does not move the page', async () => {
-		stubPanel();
-		render(UsageLivePanel);
+		const stub = stubPanel();
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		const boxes: string[] = [];
@@ -80,8 +91,8 @@ describe('the Live activity tablist', () => {
 	});
 
 	it('states the empty tabs plainly rather than leaving them blank', async () => {
-		stubPanel();
-		render(UsageLivePanel);
+		const stub = stubPanel();
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		await openTab(/In flight/);
@@ -92,7 +103,7 @@ describe('the Live activity tablist', () => {
 
 	it('states the last finished provider in its tab, plainly', async () => {
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		stub.streams[0].send(
@@ -123,7 +134,7 @@ describe('the Live activity tablist', () => {
 
 	it('keeps the facts out of the figure and the controls row', async () => {
 		const stub = stubPanel();
-		const { container } = render(UsageLivePanel);
+		const { container } = render(UsageLivePanel, { props: stub.props });
 		const row = await liveRow();
 
 		sendInFlight(stub);

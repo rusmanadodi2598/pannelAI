@@ -47,7 +47,7 @@ describe('UsageTopology beam', () => {
 		expect(beamAt(container, 'Anthropic', 'orb')).toHaveLength(0);
 	});
 
-	it('gives every particle the width, speed and phase the reference gives it', () => {
+	it("gives every particle the width and phase the reference gives it, at the panel's slower speed", () => {
 		const container = draw({ active: [entry('openai')] });
 		const orbs = beamAt(container, 'OpenAI', 'orb').map((line) => line.getAttribute('style') ?? '');
 		const sparks = beamAt(container, 'OpenAI', 'spark').map(
@@ -59,12 +59,12 @@ describe('UsageTopology beam', () => {
 		expect(orbs[0]).toContain('stroke-width: calc(8px*var(--u))');
 		expect(orbs[1]).toContain('stroke-width: calc(5px*var(--u))');
 		expect(sparks[0]).toContain('stroke-width: calc(3.6px*var(--u))');
-		expect(orbs[0]).toContain('animation-duration: 0.4s');
+		expect(orbs[0]).toContain('animation-duration: 0.9s');
 		expect(orbs[0]).toContain('animation-delay: 0s');
 		expect(orbs[1]).toContain('animation-delay: -0.09s');
-		expect(orbs[5]).toContain('animation-duration: 0.8s');
-		expect(sparks[0]).toContain('animation-duration: 0.28s, 0.35s');
-		expect(sparks[2]).toContain('animation-duration: 0.38s, 0.55s');
+		expect(orbs[5]).toContain('animation-duration: 1.2s');
+		expect(sparks[0]).toContain('animation-duration: 0.62s, 1.1s');
+		expect(sparks[2]).toContain('animation-duration: 0.72s, 1.1s');
 	});
 
 	it('draws the three strokes at the reference widths scaled by the drawing unit', () => {

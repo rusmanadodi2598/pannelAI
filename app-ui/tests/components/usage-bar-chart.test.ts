@@ -37,7 +37,12 @@ const GROUPS = [
 	group('anthropic', { requests: 10, tokens_in: 800, tokens_out: 200 })
 ];
 
-type Options = { measure?: UsageMeasure; groups?: UsageGroup[]; error?: string | null };
+type Options = {
+	measure?: UsageMeasure;
+	groups?: UsageGroup[];
+	error?: string | null;
+	noun?: string;
+};
 
 function draw(overrides: Options = {}): { onmeasure: ReturnType<typeof vi.fn> } {
 	const measure = overrides.measure ?? 'tokens';
@@ -47,7 +52,7 @@ function draw(overrides: Options = {}): { onmeasure: ReturnType<typeof vi.fn> } 
 		props: {
 			title: 'By provider',
 			caption: 'Usage per provider in this window, largest first.',
-			noun: 'provider',
+			noun: overrides.noun ?? 'provider',
 			set: usageBars(overrides.groups ?? GROUPS, { measure, label: (key) => key }),
 			measure,
 			onmeasure,
@@ -117,6 +122,17 @@ describe('UsageBarChart', () => {
 
 		expect(label.getAttribute('title')).toBe('a-model-name-long-enough-for-the-column-to-cut');
 		expect(label.className).toContain('truncate');
+	});
+
+	it('shows the model segment after the provider path, with the full id in the title and table', () => {
+		const id = 'accounts/fireworks/models/llama-v3p1-405b-instruct';
+		draw({ noun: 'model', groups: [group(id)] });
+
+		const label = within(bars()).getByText('llama-v3p1-405b-instruct');
+		expect(label.getAttribute('title')).toBe(id);
+
+		const table = within(card()).getByRole('table');
+		expect(within(table).getByText(id)).toBeTruthy();
 	});
 
 	it('names the empty measure rather than drawing a group that did not happen', () => {

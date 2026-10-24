@@ -108,7 +108,7 @@ describe('Usage control states', () => {
 		stubRecords();
 		await renderRecords();
 
-		await fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+		await fireEvent.click(screen.getByRole('button', { name: /Open request/ }));
 		expectControlStates(await screen.findByRole('button', { name: 'Close' }));
 	});
 });

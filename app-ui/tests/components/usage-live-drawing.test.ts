@@ -22,14 +22,14 @@ afterEach(() => {
 
 describe('UsageLivePanel drawing', () => {
 	it('draws one node per provider that has an endpoint or needs no credential', async () => {
-		stubPanel({
+		const stub = stubPanel({
 			providers: [
 				provider({ id: 'openai', name: 'OpenAI', endpoint_count: 2 }),
 				provider({ id: 'anthropic', name: 'Anthropic', endpoint_count: 0 }),
 				provider({ id: 'opencode', name: 'OpenCode', no_auth: true })
 			]
 		});
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 
 		// The node labels are the record: the provider list is not restated in words anywhere else on the
 		// drawing, and the awaited label is what says the registry read landed.
@@ -40,7 +40,7 @@ describe('UsageLivePanel drawing', () => {
 
 	it('pulses the node of the provider the frame says is routing', async () => {
 		const stub = stubPanel();
-		const container = render(UsageLivePanel).container;
+		const container = render(UsageLivePanel, { props: stub.props }).container;
 		await screen.findByText('Connecting');
 
 		stub.streams[0].send(
@@ -50,16 +50,21 @@ describe('UsageLivePanel drawing', () => {
 		);
 
 		// Awaited on the row's facts tab for the frame and on the gateway card for the drawing itself:
-		// the tab renders from the stream alone, while the motion below belongs to nodes the registry
-		// read put there, and a row about motion must not pass on an empty drawing.
+		// the tab renders from the stream alone, while the state below belongs to nodes the registry
+		// read put there, and a row about state must not pass on an empty drawing.
 		expect(await screen.findByText('OpenAI (gpt-4o)')).toBeTruthy();
 		expect(await screen.findByText('Gateway')).toBeTruthy();
-		expect(container.querySelector('.animate-ping')).toBeTruthy();
+		expect(container.querySelector('.animate-ping')).toBeNull();
+		expect(
+			(
+				container.querySelector('[title="OpenAI"]') as HTMLElement
+			).parentElement?.classList.contains('border-[var(--color-ok)]')
+		).toBe(true);
 	});
 
 	it('stops the drawing when the operator pauses, and keeps the state it last saw', async () => {
 		const stub = stubPanel();
-		const container = render(UsageLivePanel).container;
+		const container = render(UsageLivePanel, { props: stub.props }).container;
 		await screen.findByText('Connecting');
 
 		stub.streams[0].send(
@@ -86,25 +91,28 @@ describe('UsageLivePanel drawing', () => {
 	});
 
 	it('states that the registry could not be read, so the drawing is empty', async () => {
-		stubPanel({ providersStatus: 500, providersMessage: 'the registry is unreachable' });
-		render(UsageLivePanel);
+		const stub = stubPanel({
+			providersStatus: 500,
+			providersMessage: 'the registry is unreachable'
+		});
+		render(UsageLivePanel, { props: stub.props });
 
 		expect(
 			await screen.findByText(/Providers could not be read\. The drawing has no nodes\./)
 		).toBeTruthy();
-		expect(screen.getByText('No provider is configured')).toBeTruthy();
+		expect(screen.getByText('No provider to draw')).toBeTruthy();
 	});
 
 	it('states that the registry is longer than the drawing reads', async () => {
-		stubPanel({ total: 120 });
-		render(UsageLivePanel);
+		const stub = stubPanel({ total: 120 });
+		render(UsageLivePanel, { props: stub.props });
 
 		expect(await screen.findByText(/Shows the first 1 of 120 providers\./)).toBeTruthy();
 	});
 
 	it('lists the requests the frame says have finished', async () => {
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await screen.findByText('Connecting');
 
 		stub.streams[0].send(
@@ -140,7 +148,7 @@ describe('UsageLivePanel drawing', () => {
 
 	it('keeps the finished requests behind a tab, with no loose heading in the page', async () => {
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await screen.findByText('Connecting');
 
 		stub.streams[0].send(
@@ -167,7 +175,7 @@ describe('UsageLivePanel drawing', () => {
 
 	it('does not count a finished request until the frame reports one', async () => {
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await screen.findByText('Connecting');
 
 		stub.streams[0].send(frameText(frame()));

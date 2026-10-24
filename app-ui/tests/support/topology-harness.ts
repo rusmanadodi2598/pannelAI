@@ -20,7 +20,7 @@ export const COMBOS = [{ id: 'pro-tier', name: 'pro-tier' }];
 /** A stream with nothing in flight and nothing remembered, which is what an idle drawing reads. */
 export const TOPOLOGY_IDLE = { active: [], activeCombos: [], directCount: 0, last: '', error: '' };
 
-/** The active node's glow, which is the reference's `0 0 16px` at a low alpha. */
+/** The glow the old build put on an active node; the drawing now keeps its one glow on the hub. */
 export const GLOW = 'shadow-[0_0_16px_color-mix(in_srgb,var(--color-ok)_25%,transparent)]';
 
 export function entry(providerId: string): UsageLiveActive {

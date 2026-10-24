@@ -61,7 +61,7 @@
 	<ul class="flex flex-col gap-1 text-sm">
 		{#each recent as record (record.request_id)}
 			<li class="flex flex-wrap items-center gap-x-3 gap-y-1">
-				<span class="text-[var(--color-text-muted)]"
+				<span class="text-[var(--color-text-muted)] tabular-nums"
 					>{record.ts === undefined ? 'No time reported' : elapsedText(record.ts, now)}</span
 				>
 				<span class="truncate">{record.model ?? 'No model reported'}</span>

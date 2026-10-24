@@ -59,6 +59,15 @@
 	// A window with requests can still have no tokens in it, so the empty line names the measure rather than
 	// saying the window is empty, which the tab's own empty state already says when it is true.
 	const emptyLine = $derived(`No ${noun} has ${measure} in this window.`);
+
+	// A model id often carries a long provider path whose only shared part is the prefix. The bar shows the
+	// segment that tells the models apart, while the full id stays in the title and the disclosure table.
+	function shownLabel(label: string): string {
+		if (noun !== 'model') return label;
+
+		const cut = label.lastIndexOf('/');
+		return cut === -1 ? label : label.slice(cut + 1);
+	}
 </script>
 
 <figure
@@ -97,7 +106,9 @@
 		<div class="flex flex-col gap-2" aria-hidden="true">
 			{#each set.bars as bar (bar.key)}
 				<div class="flex items-center gap-2">
-					<span class="w-28 shrink-0 truncate text-xs" title={bar.label}>{bar.label}</span>
+					<span class="w-28 shrink-0 truncate text-xs" title={bar.label}
+						>{shownLabel(bar.label)}</span
+					>
 					<span class="min-w-0 flex-1"
 						><span
 							class="block h-3 rounded-r-[2px] bg-[var(--color-accent)]"

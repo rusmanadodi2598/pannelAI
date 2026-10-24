@@ -8,10 +8,13 @@
 // which is why the drawing component renders what these return and computes nothing itself.
 //
 // The beam is the reference fork's (`ProviderTopology.js` and `globals.css`, at commit `a8c9d380`): a halo, a
-// plasma and a core stroke, six orbs and five sparks. Its counts, widths,
-// speeds and phases are the reference's own. The three dash periods are not, and each is named where it is
-// declared: they are the panel's numbers, chosen so that every period divides the normalized path and a
-// cycle has no seam.
+// plasma and a core stroke, six orbs and five sparks. Its counts, widths and phases are the reference's
+// own. The three dash periods are not, and each is named where it is declared: they are the panel's
+// numbers, chosen so that every period divides the normalized path and a cycle has no seam.
+//
+// The travel times are also the panel's. The reference's packets cross in 0.28s to 0.8s, which reads as a
+// streak rather than as a direction; these are slow enough that the eye can follow one packet from the
+// source to the target.
 
 /**
  * The two dashed strokes' patterns. The reference's are `8 6` and `14 10` along its own pixel paths, and
@@ -47,7 +50,7 @@ export type BeamParticle = {
 };
 
 export type BeamSpark = BeamParticle & {
-	/** Seconds for one blink, which the reference gives a shorter cycle than the travel. */
+	/** Seconds for one soft phase, which is a calm carrier rather than the reference's hard blink. */
 	blink: number;
 };
 
@@ -91,20 +94,20 @@ export function beamOrbs(): BeamParticle[] {
 	return Array.from({ length: ORB_COUNT }, (_, index) => ({
 		key: `orb-${index}`,
 		width: index % 2 === 0 ? 8 : 5,
-		travel: seconds(0.4 + index * 0.08),
+		travel: seconds(0.9 + index * 0.06),
 		delay: seconds(-(index * 0.09)),
 		tone: index % 3 === 2 ? 'text' : 'ok'
 	}));
 }
 
-/** The sparks, which travel faster than the orbs and blink on a cycle of their own. */
+/** The sparks, which travel faster than the orbs and carry a soft phase of their own. */
 export function beamSparks(): BeamSpark[] {
 	return Array.from({ length: SPARK_COUNT }, (_, index) => ({
 		key: `spark-${index}`,
 		width: 3.6,
-		travel: seconds(0.28 + index * 0.05),
+		travel: seconds(0.62 + index * 0.05),
 		delay: seconds(-(index * 0.11)),
-		blink: seconds(0.35 + (index % 3) * 0.1),
+		blink: 1.1,
 		tone: 'ok' as BeamTone
 	}));
 }

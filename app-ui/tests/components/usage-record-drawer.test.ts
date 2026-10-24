@@ -3,9 +3,10 @@
 // Split from `usage-records.test.ts`: the drawer has three capture states and two of them are easy to
 // conflate, capture off and capture on with no stored log row, because both would otherwise render as an
 // empty body area.
-import { cleanup, fireEvent, screen, within } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
+import UsageRecordDrawer from '../../src/lib/components/UsageRecordDrawer.svelte';
 import { record, stubRecords, renderRecords } from '../support/usage-records-stub';
 import { visit } from '../support/page.svelte';
 
@@ -67,8 +68,12 @@ describe('the records table and its drawer', () => {
 		const stub = stubRecords();
 		await renderRecords();
 
-		await fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+		await fireEvent.click(screen.getByRole('button', { name: /Open request/ }));
 
+		const dialog = within(await screen.findByRole('dialog'));
+		expect(dialog.getByRole('heading', { name: 'Request detail' })).toBeTruthy();
+		expect(await dialog.findByText('Request ID')).toBeTruthy();
+		expect(await dialog.findByText('req_1')).toBeTruthy();
 		expect(await screen.findByText('Request body')).toBeTruthy();
 		expect(screen.getByText('{"model":"gpt-4o"}')).toBeTruthy();
 		expect(screen.getByText('{"choices":[]}')).toBeTruthy();
@@ -79,7 +84,7 @@ describe('the records table and its drawer', () => {
 		stubRecords({ detail: { usage: record(), capture_enabled: false } });
 		await renderRecords();
 
-		await fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+		await fireEvent.click(screen.getByRole('button', { name: /Open request/ }));
 
 		expect(await screen.findByText(/Capture is off/)).toBeTruthy();
 		expect(screen.queryByText('Request body')).toBeNull();
@@ -89,9 +94,32 @@ describe('the records table and its drawer', () => {
 		stubRecords({ detail: { usage: record(), capture_enabled: true } });
 		await renderRecords();
 
-		await fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+		await fireEvent.click(screen.getByRole('button', { name: /Open request/ }));
 
 		expect(await screen.findByText(/no log remains for this request/)).toBeTruthy();
 		expect(screen.queryByText(/Capture is off/)).toBeNull();
+	});
+
+	it('offers a retry when the detail read fails, and reads again on the same request', async () => {
+		let calls = 0;
+		vi.stubGlobal('fetch', async () => {
+			calls += 1;
+			const body =
+				calls === 1
+					? { error: { code: 'INTERNAL_ERROR', message: 'the store is unreachable' } }
+					: { usage: record(), capture_enabled: false };
+			return new Response(JSON.stringify(body), {
+				status: calls === 1 ? 500 : 200,
+				headers: { 'content-type': 'application/json' }
+			});
+		});
+
+		render(UsageRecordDrawer, { requestId: 'req_1', onclose: () => {} });
+
+		expect(await screen.findByRole('alert')).toBeTruthy();
+		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+		expect(await screen.findByText(/Capture is off/)).toBeTruthy();
+		expect(calls).toBe(2);
 	});
 });

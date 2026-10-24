@@ -14,7 +14,6 @@
 	import { page } from '$app/state';
 	import { Button } from '$lib/primitives/button/index.js';
 	import { untrack } from 'svelte';
-	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import UsageRecordDrawer from '$lib/components/UsageRecordDrawer.svelte';
@@ -127,9 +126,17 @@
 </script>
 
 <div class="flex flex-col gap-5">
-	<UsageRecordsFilters {search} onchange={change} onapply={applyFilters} onclear={clearFilters} />
+	<p class="text-sm text-[var(--color-text-muted)]">
+		The requests the Overview counted, one row each; the filters below narrow these rows.
+	</p>
 
-	<RefreshControl onrefresh={() => load(search)} />
+	<UsageRecordsFilters
+		{search}
+		onchange={change}
+		onapply={applyFilters}
+		onclear={clearFilters}
+		onrefresh={() => load(search)}
+	/>
 
 	{#if perPageNotice !== null || search.notices.length > 0}
 		<div
@@ -160,7 +167,7 @@
 		<StateMessage
 			kind="empty"
 			title="No requests match these filters"
-			description="The period holds records these filters exclude. Clear them."
+			description="No record in this period matches these filters. Clear them to see the window."
 		>
 			{#snippet action()}
 				<Button variant="ghost" class="px-2 underline" onclick={clearFilters}>Clear filters</Button>
@@ -170,7 +177,7 @@
 		<StateMessage
 			kind="empty"
 			title="No requests in this window"
-			description="Nothing routed in this period. No client has used the key yet."
+			description="Nothing was recorded in this period. Widen the window, or check that a client holds an active key."
 		>
 			{#snippet action()}
 				<div class="flex flex-wrap gap-3">

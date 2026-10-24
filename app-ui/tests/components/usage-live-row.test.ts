@@ -32,33 +32,40 @@ afterEach(() => {
 });
 
 describe('the live controls row', () => {
-	it('puts the status chip and the pause control on one wrapping row', async () => {
-		stubPanel();
-		render(UsageLivePanel);
+	it('puts the status readout and the pause control on one wrapping row', async () => {
+		const stub = stubPanel();
+		render(UsageLivePanel, { props: stub.props });
 		const row = await liveRow();
 
 		expect(row.classList.contains('flex')).toBe(true);
 		expect(row.classList.contains('flex-wrap')).toBe(true);
-		expect(row.classList.contains('items-stretch')).toBe(true);
+		expect(row.classList.contains('items-center')).toBe(true);
 		expect(screen.getByRole('button', { name: 'Pause live updates' }).parentElement).toBe(row);
 	});
 
-	it('gives the chip and the pause control the same box', async () => {
-		stubPanel();
-		render(UsageLivePanel);
-		const chip = await screen.findByText('Connecting');
-		const pause = screen.getByRole('button', { name: 'Pause live updates' });
+	it('renders the stream state as a readout, not a control-shaped box', async () => {
+		const stub = stubPanel();
+		render(UsageLivePanel, { props: stub.props });
+		const status = await screen.findByRole('status');
+		const marker = status.previousElementSibling as HTMLElement;
 
-		for (const element of [chip, pause]) {
-			for (const token of CONTROL_BOX) {
-				expect(element.classList.contains(token)).toBe(true);
-			}
+		// A statement that wears a control's border and height reads as pressable (R-26).
+		expect(status.tagName).toBe('SPAN');
+		expect(status.classList.contains('border')).toBe(false);
+		expect(status.classList.contains('min-h-11')).toBe(false);
+		// The 3px marker carries the state's colour; the label carries the words.
+		expect(marker.classList.contains('w-[3px]')).toBe(true);
+		expect(marker.classList.contains('bg-[var(--color-warn)]')).toBe(true);
+
+		const pause = screen.getByRole('button', { name: 'Pause live updates' });
+		for (const token of CONTROL_BOX) {
+			expect(pause.classList.contains(token)).toBe(true);
 		}
 	});
 
 	it('gives the retry control the same box when it appears', async () => {
-		stubPanel({ liveAnswers: [() => new Response('', { status: 404 })] });
-		render(UsageLivePanel);
+		const stub = stubPanel({ liveAnswers: [() => new Response('', { status: 404 })] });
+		render(UsageLivePanel, { props: stub.props });
 		const row = await liveRow();
 
 		const retry = await screen.findByRole('button', { name: 'Try again' });
@@ -69,8 +76,8 @@ describe('the live controls row', () => {
 	});
 
 	it('marks only the controls as hoverable, never the statements', async () => {
-		stubPanel({ liveAnswers: [() => new Response('', { status: 404 })] });
-		render(UsageLivePanel);
+		const stub = stubPanel({ liveAnswers: [() => new Response('', { status: 404 })] });
+		render(UsageLivePanel, { props: stub.props });
 		await liveRow();
 
 		const retry = await screen.findByRole('button', { name: 'Try again' });

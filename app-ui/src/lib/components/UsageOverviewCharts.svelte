@@ -45,7 +45,7 @@
 			: {
 					title: 'Tokens',
 					unit: 'tokens',
-					caption: 'Tokens in plus out per bucket. Cache is in the tiles.',
+					caption: 'Tokens in plus tokens out per bucket. Cache is in the tiles.',
 					points: tokens
 				}
 	);

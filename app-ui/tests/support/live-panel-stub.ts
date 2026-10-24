@@ -9,6 +9,8 @@
 // recovery has to hand the second attempt a body of its own. `liveStreams()` builds those.
 
 import { vi } from 'vitest';
+import { ApiError } from '$lib/api/errors';
+import type { Provider } from '$lib/schemas/provider';
 import { liveStreams, type LiveAnswer, type LiveBody } from './live-stream';
 import { provider } from './providers-route-stub';
 
@@ -53,6 +55,12 @@ export type PanelOptions = {
 	liveAnswers?: LiveAnswer[];
 };
 
+/** The registry props the Overview now passes to the live panel. */
+export type PanelProps = {
+	providers: Provider[];
+	providersNotice: { text: string; apiError?: ApiError } | null;
+};
+
 export type PanelStub = {
 	/** Every request the panel made, in order. */
 	queries: string[];
@@ -62,6 +70,8 @@ export type PanelStub = {
 	liveInits: (RequestInit | undefined)[];
 	/** How many requests went to the live route. */
 	liveCalls: () => number;
+	/** The registry read's result, in the shape the Overview would pass down. */
+	props: PanelProps;
 };
 
 export function stubPanel(options: PanelOptions = {}): PanelStub {
@@ -99,11 +109,32 @@ export function stubPanel(options: PanelOptions = {}): PanelStub {
 		return listResponse(rows, options.total ?? rows.length);
 	});
 
+	const total = options.total ?? rows.length;
+	const props: PanelProps = {
+		providers: (options.providersStatus && options.providersStatus !== 200
+			? []
+			: rows) as unknown as Provider[],
+		providersNotice:
+			options.providersStatus && options.providersStatus !== 200
+				? {
+						text: 'Providers could not be read. The drawing has no nodes. Ids show instead. ',
+						apiError: new ApiError(
+							options.providersStatus,
+							'INTERNAL_ERROR',
+							options.providersMessage ?? 'boom'
+						)
+					}
+				: total > rows.length
+					? { text: `Shows the first ${rows.length} of ${total} providers.` }
+					: null
+	};
+
 	return {
 		queries,
 		streams,
 		liveInits,
-		liveCalls: () => queries.filter((url) => url.includes('/usage/live')).length
+		liveCalls: () => queries.filter((url) => url.includes('/usage/live')).length,
+		props
 	};
 }
 

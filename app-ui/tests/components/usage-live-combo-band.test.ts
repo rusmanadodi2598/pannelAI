@@ -22,8 +22,8 @@ afterEach(() => {
 
 describe('UsageLivePanel combo band', () => {
 	it('draws a node per combo, on the band above the gateway', async () => {
-		stubPanel({ combos: [comboRow('pro-tier'), comboRow('fast')] });
-		const container = render(UsageLivePanel).container;
+		const stub = stubPanel({ combos: [comboRow('pro-tier'), comboRow('fast')] });
+		const container = render(UsageLivePanel, { props: stub.props }).container;
 
 		expect(await screen.findByText('pro-tier')).toBeTruthy();
 		expect(screen.getByText('fast')).toBeTruthy();
@@ -34,13 +34,13 @@ describe('UsageLivePanel combo band', () => {
 		expect(Number.parseFloat(combo)).toBeLessThan(50);
 		expect(Number.parseFloat(upstream)).toBeGreaterThan(50);
 		// The band is drawn from the combo read alone, so a combo nothing is routing still occupies its
-		// place. That is the drawing's idle state, not a claim about now.
+		// place. That is the drawing's idle state, not a claim about now, and it carries no loop.
 		expect(container.querySelector('.animate-ping')).toBeNull();
 	});
 
 	it('names the combo a request entered through, in the row as well as on the band', async () => {
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await screen.findByText('Connecting');
 
 		stub.streams[0].send(
@@ -63,23 +63,22 @@ describe('UsageLivePanel combo band', () => {
 		// the sentence is read off the row rather than off one text node.
 		const routing = await screen.findByText('OpenAI (gpt-4o)');
 		expect(squashed(routing.parentElement as HTMLElement)).toContain('pro-tier → OpenAI (gpt-4o)');
+		const combo = await screen.findByText('pro-tier');
 		expect(
-			(screen.getByText('pro-tier').parentElement as HTMLElement).classList.contains(
-				'border-[var(--color-ok)]'
-			)
+			(combo.parentElement as HTMLElement).classList.contains('border-[var(--color-ok)]')
 		).toBe(true);
 	});
 
 	it('states which combos the drawing leaves out', async () => {
-		stubPanel({ combos: [comboRow('pro-tier')], combosTotal: 12 });
-		render(UsageLivePanel);
+		const stub = stubPanel({ combos: [comboRow('pro-tier')], combosTotal: 12 });
+		render(UsageLivePanel, { props: stub.props });
 
 		expect(await screen.findByText(/Shows the first 1 of 12 combos\./)).toBeTruthy();
 	});
 
 	it('states that the combo list could not be read, and still draws the upstreams it can', async () => {
-		stubPanel({ combosStatus: 500, combosMessage: 'the combo list is unreachable' });
-		const container = render(UsageLivePanel);
+		const stub = stubPanel({ combosStatus: 500, combosMessage: 'the combo list is unreachable' });
+		const container = render(UsageLivePanel, { props: stub.props });
 
 		expect(
 			await screen.findByText(/Combos could not be read\. The drawing has no combo band\./)

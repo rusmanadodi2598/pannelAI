@@ -3,7 +3,7 @@
 	//
 	// Split from `UsageTopology.svelte` on a real seam rather than an arithmetic one: the frame around the
 	// drawing (caption and empty state) is one job, and the drawing is another. The drawing is hidden from
-	// assistive technology; the facts it encodes are stated in words by the live row above the frame.
+	// assistive technology; the facts it encodes are stated in words by the live panel's header.
 	//
 	// Three parts, and the middle one is its own file: this box and the cards it publishes (the gateway,
 	// one card per node on each band, and the two terminals on the vertical axis), the hops
@@ -27,10 +27,10 @@
 	// text inside 47px nodes at 390px, because the text resolved against the page while the padding resolved
 	// against the drawing. Both are on the node and gateway boxes now, and both resolve against the drawing.
 	//
-	// Motion belongs to the live state alone. The two things that move on entry (a card
-	// fading in when it appears, and the box growing when the node count changes) are not that motion: they
-	// say "this drawing is the same drawing, with one more thing on it", and both stop for a reader who
-	// asked for reduced motion.
+	// Motion belongs to the live state alone, and the hub is the only focal mover. The two things that move
+	// on entry (a card settling in when it appears, and the box growing when the node count changes) are not
+	// that motion: they say "this drawing is the same drawing, with one more thing on it", and both stop for
+	// a reader who asked for reduced motion.
 	import UsageTopologyEdges from './UsageTopologyEdges.svelte';
 	import {
 		CLIENT_POSITION,
@@ -50,32 +50,46 @@
 
 	let { layout, inFlight, live }: Props = $props();
 
-	// Per state: the dot's fill, the node's own border, and the label's colour. Active is the only state
-	// that takes the status colour and the reference's soft glow (`ProviderTopology.js`, the same
-	// 16px radius at a quarter alpha), and it keeps them while the stream is down: colour is state, motion
-	// is not.
-	const STATE: Record<TopologyState, { dot: string; node: string; label: string }> = {
-		active: {
-			dot: 'bg-[var(--color-ok)]',
-			node: 'border-[var(--color-ok)] shadow-[0_0_16px_color-mix(in_srgb,var(--color-ok)_25%,transparent)]',
-			label: 'text-[var(--color-ok)]'
-		},
-		last: { dot: 'bg-[var(--color-warn)]', node: 'border-[var(--color-border)]', label: '' },
-		error: { dot: 'bg-[var(--color-danger)]', node: 'border-[var(--color-border)]', label: '' },
-		idle: { dot: 'bg-[var(--color-border)]', node: 'border-[var(--color-border)]', label: '' }
-	};
+	// Per state: the dot's fill, the node's own border, the label's colour, and the 3px leading marker.
+	// Active is the only state that takes the status colour on the border and the label, and it keeps them
+	// while the stream is down: colour is state, motion is not. The marker repeats the panel's one identity
+	// motif, and it never stands alone because the label and dot carry the same state.
+	const STATE: Record<TopologyState, { dot: string; node: string; label: string; marker: string }> =
+		{
+			active: {
+				dot: 'bg-[var(--color-ok)]',
+				node: 'border-[var(--color-ok)]',
+				label: 'text-[var(--color-ok)]',
+				marker: 'bg-[var(--color-ok)]'
+			},
+			last: {
+				dot: 'bg-[var(--color-warn)]',
+				node: 'border-[var(--color-border)]',
+				label: '',
+				marker: 'bg-[var(--color-warn)]'
+			},
+			error: {
+				dot: 'bg-[var(--color-danger)]',
+				node: 'border-[var(--color-border)]',
+				label: '',
+				marker: 'bg-[var(--color-danger)]'
+			},
+			idle: {
+				dot: 'bg-[var(--color-border)]',
+				node: 'border-[var(--color-border)]',
+				label: '',
+				marker: 'bg-[var(--color-border)]'
+			}
+		};
 
-	// The terminals take the same state colours as a node, without the glow: a terminal is lit by what is
-	// crossing it, and it never stands for one provider that is being called. They are pills rather than
-	// boxes, and they carry no state dot, so they read as the ends of the path rather than as two more
+	// The terminals take the same state colours as a node, without the glow or a loop: a terminal is lit by
+	// what is crossing it, and it never stands for one provider that is being called. They are pills rather
+	// than boxes, and they carry no state dot, so they read as the ends of the path rather than as two more
 	// entries in it.
-	function terminalClass(state: TopologyState, moving: boolean): string {
-		if (state === 'active') {
-			return `border-[var(--color-ok)] text-[var(--color-ok)] ${
-				moving ? 'animate-router-pulse motion-reduce:animate-none' : ''
-			}`;
-		}
+	function terminalClass(state: TopologyState): string {
+		if (state === 'active') return 'border-[var(--color-ok)] text-[var(--color-ok)]';
 		if (state === 'last') return 'border-[var(--color-warn)]';
+		if (state === 'error') return 'border-[var(--color-danger)]';
 		return 'border-[var(--color-border)]';
 	}
 
@@ -92,19 +106,17 @@
 >
 	<UsageTopologyEdges {layout} {live} />
 
-	<!-- The gateway, which is the reference's router node (`ProviderTopology.js`): while it is
-	     routing, the card pulses, the mark shakes, the label flickers and the count sits in a glowing
-	     badge (`globals.css`, the same 0.75s, 0.45s and 0.7s cycles). Each of the four keeps one
-	     glow layer in the status colour instead of the reference's four-layer neon stack, which is the dose
-	     cap R-13 asks for. -->
+	<!-- The gateway, which is the reference's router node (`ProviderTopology.js`): while it is routing, the
+	     card pulses, the mark breathes, the label eases and the count sits in a badge. The ring is the one
+	     loop and the one glow the drawing keeps; the badge itself is matte. -->
 	<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
 		<div
 			class={`flex items-center gap-[calc(8px*var(--u))] rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-[calc(12px*var(--u))] py-[calc(8px*var(--u))] font-medium whitespace-nowrap [font-size:max(12px,calc(14px*var(--u)))] animate-node-enter motion-reduce:animate-none ${
-				inFlight > 0 ? 'border-[var(--color-ok)]' : 'border-[var(--color-accent)]'
+				inFlight > 0 ? 'border-[var(--color-ok)]' : 'border-[var(--color-border)]'
 			} ${inFlight > 0 && live ? 'animate-router-pulse motion-reduce:animate-none' : ''}`}
 		>
 			<img
-				src="/logo-mark@128.png"
+				src="/logo-mark@128.svg"
 				alt=""
 				class={`size-[max(14px,calc(16px*var(--u)))] shrink-0 ${inFlight > 0 && live ? 'animate-router-shake motion-reduce:animate-none' : ''}`}
 			/>
@@ -113,7 +125,7 @@
 			>
 			{#if inFlight > 0}
 				<span
-					class="inline-flex min-w-[max(20px,calc(20px*var(--u)))] justify-center rounded-[var(--radius-sm)] bg-[var(--color-ok)] px-[calc(4px*var(--u))] text-[max(11px,0.857em)] font-semibold text-[var(--color-surface)] shadow-[0_0_10px_color-mix(in_srgb,var(--color-ok)_45%,transparent)]"
+					class="inline-flex min-w-[max(20px,calc(20px*var(--u)))] justify-center rounded-[var(--radius-sm)] bg-[var(--color-ok)] px-[calc(4px*var(--u))] text-[max(11px,0.857em)] font-semibold text-[var(--color-surface)]"
 					>{inFlight}</span
 				>
 			{/if}
@@ -128,7 +140,7 @@
 			style={`left: ${terminal.position.x}%; top: ${terminal.position.y}%`}
 		>
 			<div
-				class={`flex items-center rounded-full border bg-[var(--color-surface)] px-[calc(10px*var(--u))] py-[calc(4px*var(--u))] font-medium whitespace-nowrap [font-size:max(11px,calc(13px*var(--u)))] animate-node-enter motion-reduce:animate-none ${terminalClass(terminal.state, live)}`}
+				class={`flex items-center rounded-full border bg-[var(--color-surface)] px-[calc(10px*var(--u))] py-[calc(4px*var(--u))] font-medium whitespace-nowrap [font-size:max(11px,calc(13px*var(--u)))] animate-node-enter motion-reduce:animate-none ${terminalClass(terminal.state)}`}
 			>
 				{terminal.label}
 			</div>
@@ -142,16 +154,14 @@
 			}`}
 			style={`left: ${node.x}%; top: ${node.y}%`}
 		>
+			<span class={`h-5 w-[3px] shrink-0 rounded-[var(--radius-full)] ${STATE[node.state].marker}`}
+			></span>
 			<span class="relative flex size-[8px] shrink-0">
-				{#if node.state === 'active' && live}
-					<span
-						class="absolute inline-flex size-full animate-ping rounded-full bg-[var(--color-ok)] opacity-75 motion-reduce:hidden"
-					></span>
-				{/if}
 				<span class={`relative inline-flex size-full rounded-full ${STATE[node.state].dot}`}></span>
 			</span>
-			<span class={`max-w-[calc(96px*var(--u))] truncate ${STATE[node.state].label}`}
-				>{node.name}</span
+			<span
+				class={`max-w-[calc(96px*var(--u))] truncate ${STATE[node.state].label}`}
+				title={node.name}>{node.name}</span
 			>
 		</div>
 	{/each}
