@@ -47,16 +47,80 @@ describe('ConsoleLog', () => {
 		});
 	});
 
-	it('offers a pause control that really stops the interval', async () => {
-		const stub = stubConsole();
+	it('dates the last read with the day and seconds, not only a time of day', async () => {
+		stubConsole();
+		render(ConsoleLog);
+		await screen.findByText(/gateway booted/);
+
+		const stamp = screen.getByText(/Last read/).textContent ?? '';
+		expect(stamp).toMatch(/\d{4}/);
+		expect(stamp).toMatch(/\d{1,2}[.:]\d{2}[.:]\d{2}/);
+	});
+
+	it('offers a pause control that says the interval is paused', async () => {
+		stubConsole();
 		render(ConsoleLog);
 
-		await waitFor(() => {
-			expect(stub.requested.length).toBeGreaterThan(0);
+		await screen.findByText(/gateway booted/);
+		await fireEvent.click(screen.getByRole('button', { name: 'Pause auto refresh' }));
+
+		expect(screen.getByRole('button', { name: 'Resume auto refresh' })).toBeTruthy();
+		expect(
+			screen.getByText('Auto refresh is paused. It reads every 5 seconds when resumed.')
+		).toBeTruthy();
+	});
+
+	it('makes the buffer a keyboard-focusable region described by its held count', async () => {
+		stubConsole({ lines: ['a', 'b', 'c'], maxRecords: 1000 });
+		render(ConsoleLog);
+
+		const buffer = await screen.findByRole('region', { name: 'Console output' });
+		expect(buffer.getAttribute('tabindex')).toBe('0');
+
+		const describedBy = buffer.getAttribute('aria-describedby');
+		expect(describedBy).toBeTruthy();
+		expect(document.getElementById(describedBy ?? '')?.textContent).toContain(
+			'3 lines held, up to 1,000.'
+		);
+	});
+
+	it('keeps the newest line in view after a later read', async () => {
+		const stub = stubConsole();
+		render(ConsoleLog);
+		await screen.findByText(/gateway booted/);
+
+		const buffer = screen.getByRole('region', { name: 'Console output' });
+		let top = 0;
+		Object.defineProperty(buffer, 'scrollHeight', { configurable: true, get: () => 400 });
+		Object.defineProperty(buffer, 'scrollTop', {
+			configurable: true,
+			get: () => top,
+			set: (value: number) => {
+				top = value;
+			}
 		});
 
-		await fireEvent.click(screen.getByRole('button', { name: 'Pause auto refresh' }));
-		expect(screen.getByRole('button', { name: 'Resume auto refresh' })).toBeTruthy();
+		stub.lines = [...stub.lines, ...Array.from({ length: 40 }, (_, index) => `line ${index}`)];
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		await waitFor(() => expect(top).toBe(400));
+	});
+
+	it('keeps the last buffer, and its stamp, when a later read fails', async () => {
+		const stub = stubConsole();
+		render(ConsoleLog);
+		await screen.findByText(/gateway booted/);
+		const stamp = screen.getByText(/Last read/).textContent;
+
+		stub.status = 500;
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		const alert = await screen.findByRole('alert');
+		expect(screen.getByText(/gateway booted/)).toBeTruthy();
+		expect(screen.getByRole('region', { name: 'Console output' })).toBeTruthy();
+		expect(screen.getByText(/Last read/).textContent).toBe(stamp);
+		expect(alert.textContent).toContain('Showing the last read at');
+		expect(alert.textContent).toContain('The log store is unreachable.');
 	});
 
 	it('re-reads the buffer on request, even while the poll is paused', async () => {

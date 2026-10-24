@@ -47,6 +47,13 @@ export function stubConsole(overrides: Partial<ConsoleStub> = {}): ConsoleStub {
 			return new Response(null, { status: 204 });
 		}
 
+		if (stub.status !== 200) {
+			return json(
+				{ error: { code: 'INTERNAL_ERROR', message: 'The log store is unreachable.' } },
+				stub.status
+			);
+		}
+
 		return json(
 			{ lines: cleared ? stub.afterClear : stub.lines, max_records: stub.maxRecords },
 			stub.status
