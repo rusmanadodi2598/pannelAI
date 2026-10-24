@@ -24,7 +24,13 @@
 
 <div class="flex flex-col gap-1 text-sm">
 	<label for="proxy-label">Label</label>
-	<input id="proxy-label" type="text" bind:value={value.label} class={fieldClass} />
+	<input
+		id="proxy-label"
+		type="text"
+		bind:value={value.label}
+		aria-describedby="proxy-label-help"
+		class={fieldClass}
+	/>
 	<span id="proxy-label-help" class={hintClass}>What the row is called in the pool.</span>
 </div>
 
@@ -47,10 +53,10 @@
 			aria-describedby="proxy-host-help"
 			class={fieldClass}
 		/>
-		<span id="proxy-host-help" class={hintClass}> A host name, IPv4, or bracketed IPv6. </span>
+		<span id="proxy-host-help" class={hintClass}>A host name, IPv4, or bracketed IPv6.</span>
 	</div>
 
-	<div class="flex w-32 flex-col gap-1 text-sm">
+	<div class="flex w-32 flex-col gap-1 text-sm max-sm:w-full">
 		<label for="proxy-port">Port</label>
 		<input
 			id="proxy-port"
@@ -66,7 +72,13 @@
 
 <div class="flex flex-col gap-1 text-sm">
 	<label for="proxy-username">Username</label>
-	<input id="proxy-username" type="text" bind:value={value.username} class={fieldClass} />
+	<input
+		id="proxy-username"
+		type="text"
+		bind:value={value.username}
+		aria-describedby="proxy-username-help"
+		class={fieldClass}
+	/>
 	<span id="proxy-username-help" class={hintClass}>Optional.</span>
 </div>
 
@@ -82,10 +94,14 @@
 	<span id="proxy-password-help" class={hintClass}>{proxyPasswordHelp(target)}</span>
 </div>
 
-<label class="flex items-start gap-3 text-sm">
+<label class="flex min-h-11 items-start gap-3 text-sm">
 	<input type="checkbox" class="mt-1 size-4" bind:checked={value.enabled} />
 	<span>
 		Enabled
-		<span class="block {hintClass}"> Kept in the pool, with its result, but unused. </span>
+		<!-- Both sides are stated because the box's name only covers one of them, and a row that stays
+		     in the pool while carrying nothing is a state the operator has to be able to tell apart. -->
+		<span class="block {hintClass}">
+			On: this candidate carries traffic. Off: it stays in the pool with its result, unused.
+		</span>
 	</span>
 </label>

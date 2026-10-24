@@ -208,3 +208,26 @@ func TestOAuthRefreshSendsTheRefreshGrant(t *testing.T) {
 		t.Fatalf("client id = %q", grant.ClientID)
 	}
 }
+
+// TestMarkRefreshDeadLetterKeepsADisabledAccount is the bulk-disable premise: a
+// worker burying a credential must not vote an account the operator switched off
+// back into the routing pool, and the reason it failed is still worth recording.
+func TestMarkRefreshDeadLetterKeepsADisabledAccount(t *testing.T) {
+	fixture := newOAuthFlowFixture(t, providerWithIdentity("identity-provider"))
+	endpoint := seedOAuthEndpoint(t, fixture, "ep_off", "identity-provider", "off@example.com", "off@example.com", testNow.Add(-time.Minute))
+	disableEndpoint(t, fixture, endpoint)
+
+	if err := fixture.service.MarkRefreshDeadLetter(context.Background(), "ep_off", "the refresh died"); err != nil {
+		t.Fatalf("MarkRefreshDeadLetter() error = %v", err)
+	}
+	stored, err := fixture.store.GetByID(context.Background(), "ep_off")
+	if err != nil {
+		t.Fatalf("reloading: %v", err)
+	}
+	if stored.Status() != domain.UpstreamEndpointDisabled {
+		t.Fatalf("status = %q, want the disable to survive the dead-letter", stored.Status())
+	}
+	if got := stored.TestStatus().Message(); got != "the refresh died" {
+		t.Fatalf("recorded message = %q, want the reason kept", got)
+	}
+}

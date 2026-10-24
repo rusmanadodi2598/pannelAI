@@ -30,6 +30,9 @@ type liveActiveDouble struct {
 	removed []domain.ActiveRequest
 	live    []domain.ActiveRequest
 	err     error
+	// finishCtxErr is what the caller's context reported at the release, so a
+	// test can tell a detached write from one that arrived already cancelled.
+	finishCtxErr error
 }
 
 func (d *liveActiveDouble) Start(_ context.Context, marker domain.ActiveRequest) error {
@@ -45,9 +48,10 @@ func (d *liveActiveDouble) Start(_ context.Context, marker domain.ActiveRequest)
 	return nil
 }
 
-func (d *liveActiveDouble) Finish(_ context.Context, marker domain.ActiveRequest) error {
+func (d *liveActiveDouble) Finish(ctx context.Context, marker domain.ActiveRequest) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	d.finishCtxErr = ctx.Err()
 	d.removed = append(d.removed, marker)
 	kept := make([]domain.ActiveRequest, 0, len(d.live))
 	for _, existing := range d.live {

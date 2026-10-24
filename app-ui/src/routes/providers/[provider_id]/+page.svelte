@@ -10,13 +10,10 @@
 	// (disabled), which models it declares itself (custom), and what the gateway routes through it (its
 	// connections), followed by the proxy binding and the OAuth section for an OAuth provider.
 	//
-	// A custom node gets the reference's own page instead (`providers/[id]/page.js`), because
-	// none of those five questions is the registry's to answer for it: the node's facts are its own details
-	// card, its models are exactly the ones declared for it (there is no registry catalog behind it), and
-	// the connection that carries its credential is the first thing to set up. So the details card leads,
-	// the connections follow, and the models come after, each in the reference's shape. The registry facts
-	// table, the catalog, and the disabled-model section are not rendered for a node: they describe the
-	// embedded registry, and a node is not in it.
+	// A custom node is a provider the gateway synthesizes, so its Overview leads with the same status and
+	// fact cards as a registry provider, followed by its node details card. Its Models tab carries only the
+	// models declared for it, and Connections carries the endpoint list, proxy, and OAuth when present.
+	// The tabs stay in the same order for both shapes.
 	//
 	// The key dialog belongs to the page rather than to the Connections section, because two places open
 	// it: the section's own button and the node's details card. A successful add has to reach the table
@@ -25,22 +22,17 @@
 	import { untrack } from 'svelte';
 	import AddProviderKeysDialog from '$lib/components/AddProviderKeysDialog.svelte';
 	import CustomProviderCard from '$lib/components/CustomProviderCard.svelte';
-	import ModelCatalogList from '$lib/components/ModelCatalogList.svelte';
 	import ProviderConnectionsSection from '$lib/components/ProviderConnectionsSection.svelte';
-	import ProviderCustomModels from '$lib/components/ProviderCustomModels.svelte';
+	import ProviderModelsSection from '$lib/components/ProviderModelsSection.svelte';
 	import SectionFold from '$lib/components/SectionFold.svelte';
-	import ProviderDisabledModels from '$lib/components/ProviderDisabledModels.svelte';
 	import ProviderFacts from '$lib/components/ProviderFacts.svelte';
 	import ProviderOAuth from '$lib/components/ProviderOAuth.svelte';
 	import ProviderProxyCard from '$lib/components/ProviderProxyCard.svelte';
-	import ProviderThinkingControl from '$lib/components/ProviderThinkingControl.svelte';
 	import PanelTabs from '$lib/components/PanelTabs.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { getProvider } from '$lib/api/providers';
-	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
-	import { createModelTestStore } from '$lib/stores/model-test.svelte';
-	import { createProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { isNodeId } from '$lib/schemas/provider-node';
 	import {
 		REQUIRES_KEY_AUTH_TYPES,
@@ -54,17 +46,20 @@
 
 	const providerId = $derived(params.provider_id);
 
+	// A registry row can deep-link to the Connections tab with the create form open (SPEC-UI §6.3).
+	const query =
+		typeof window === 'undefined'
+			? new URLSearchParams()
+			: new URLSearchParams(window.location.search);
+	const initialTab = query.get('tab') ?? undefined;
+	const initialEndpointForm = initialTab === 'connections' && query.get('add') === 'endpoint';
+
 	// Tabs group the detail into three reads an operator switches between, so the page is not one long run of
-	// plain text. A registry provider and a custom node get the same three tabs with their own contents.
-	const REGISTRY_TABS = [
+	// plain text. Both shapes use the same order, so a custom node never moves the operator's reading path.
+	const TABS = [
 		{ id: 'overview', label: 'Overview' },
 		{ id: 'models', label: 'Models' },
 		{ id: 'connections', label: 'Connections' }
-	];
-	const NODE_TABS = [
-		{ id: 'overview', label: 'Overview' },
-		{ id: 'connections', label: 'Connections' },
-		{ id: 'models', label: 'Models' }
 	];
 
 	// Read once per id, and the node card's own read is separate: a node's prefix and api type are not in
@@ -75,20 +70,6 @@
 	let provider = $state<ProviderDetail | null>(null);
 	let loading = $state(true);
 	let error = $state<ApiError | null>(null);
-
-	// The disabled set is global, so it is read once rather than per provider. A node does not read it: the
-	// set narrows the registry catalog, and a node's screen has no catalog to narrow.
-	// One probe store for the screen: a node's declared rows and a registry provider's catalog rows are
-	// the same models addressed the same way, so they carry one verdict rather than one per table.
-	const modelTests = createModelTestStore();
-	const disabled = createModelDisabledStore();
-	let catalogToken = $state(0);
-
-	// The reasoning mode is the models section's own setting (SPEC-API §7.14, §7.15): the picker writes it
-	// and the two model tables read it for the `(level)` suffix they copy, so the page owns the one store
-	// both halves share. It is read for every provider, including one whose picker does not render: a
-	// custom node's rows carry levels too, and the tables below still append the suffix.
-	const thinking = createProviderThinkingStore();
 
 	// The Connections section's own revision, bumped by the key dialog and by nothing else: a key added here
 	// has to appear in the table below without a reload of the whole page.
@@ -130,24 +111,6 @@
 		untrack(() => void load(id));
 	});
 
-	$effect(() => {
-		const node = custom;
-		untrack(() => {
-			if (!node) void disabled.load();
-		});
-	});
-
-	// Reloads with the provider, like the detail read above: the store answers a mode only for the provider
-	// it was last asked about, so a route swap shows no suffix until the new answer lands.
-	$effect(() => {
-		const id = providerId;
-		untrack(() => void thinking.load(id));
-	});
-
-	function bumpCatalog(): void {
-		catalogToken += 1;
-	}
-
 	function openKeyDialog(): void {
 		keyNotice = null;
 		addingKey = true;
@@ -176,11 +139,11 @@
 			href={resolve('/providers')}
 			class="inline-flex min-h-11 w-fit items-center text-sm underline">Provider</a
 		>
-		<h1 class="text-lg font-semibold tracking-tight">
+		<h1 class="text-lg font-semibold tracking-tight break-words">
 			{provider?.name ?? providerId}
 		</h1>
 		{#if provider}
-			<p class="text-sm text-[var(--color-text-muted)]">{provider.id}</p>
+			<p class="break-all text-sm text-[var(--color-text-muted)]">{provider.id}</p>
 		{/if}
 	</div>
 
@@ -189,10 +152,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="This provider could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center underline"
-					onclick={() => load(providerId)}>Try again</button
+				<Button variant="ghost" class="underline" onclick={() => load(providerId)}>Try again</Button
 				>
 				<a href={resolve('/providers')} class="ms-3 inline-flex min-h-11 items-center underline"
 					>Back to the registry</a
@@ -202,73 +162,34 @@
 	{:else if provider}
 		{@const loaded = provider}
 		<PanelTabs
-			tabs={custom ? NODE_TABS : REGISTRY_TABS}
+			tabs={TABS}
 			label={custom ? 'Custom provider sections' : 'Provider sections'}
+			initial={initialTab}
 		>
 			{#snippet panel(tab)}
 				{#if tab === 'overview'}
 					{#if custom}
-						<CustomProviderCard
-							{providerId}
-							onchanged={() => load(providerId)}
-							onaddkey={offersKeys ? openKeyDialog : undefined}
-							onprefix={(prefix) => (nodePrefix = prefix)}
-						/>
+						<div class="flex flex-col gap-4">
+							<ProviderFacts provider={loaded} />
+							<CustomProviderCard
+								{providerId}
+								onchanged={() => load(providerId)}
+								onaddkey={offersKeys ? openKeyDialog : undefined}
+								onprefix={(prefix) => (nodePrefix = prefix)}
+							/>
+						</div>
 					{:else}
 						<ProviderFacts provider={loaded} />
 					{/if}
 				{:else if tab === 'models'}
-					{#if custom}
-						<SectionFold title="Available Models">
-							<div class="flex flex-col gap-3">
-								<ProviderThinkingControl {providerId} levels={loaded.thinking_levels} {thinking} />
-								<ProviderCustomModels
-									{providerId}
-									{thinking}
-									tests={modelTests}
-									{nodePrefix}
-									onchanged={bumpCatalog}
-								/>
-							</div>
-						</SectionFold>
-					{:else}
-						<SectionFold title="Model catalog">
-							<div class="flex flex-col gap-3">
-								<ProviderThinkingControl
-									providerId={loaded.id}
-									levels={loaded.thinking_levels}
-									{thinking}
-								/>
-								<ModelCatalogList
-									tests={modelTests}
-									{providerId}
-									{disabled}
-									{thinking}
-									onchanged={bumpCatalog}
-									token={catalogToken}
-								/>
-							</div>
-						</SectionFold>
-
-						<SectionFold title="Models this provider cannot route">
-							<ProviderDisabledModels {providerId} {disabled} onchanged={bumpCatalog} />
-						</SectionFold>
-
-						<SectionFold title="Custom models">
-							<ProviderCustomModels
-								providerId={loaded.id}
-								{thinking}
-								tests={modelTests}
-								onchanged={bumpCatalog}
-							/>
-						</SectionFold>
-					{/if}
+					<ProviderModelsSection provider={loaded} {providerId} {custom} {nodePrefix} />
 				{:else if tab === 'connections'}
-					<SectionFold title="Connections">
+					<SectionFold title="Connections" open={initialEndpointForm}>
 						<ProviderConnectionsSection
 							provider={loaded}
 							token={endpointToken}
 							notice={keyNotice}
+							initialCreating={initialEndpointForm}
 							onaddkey={openKeyDialog}
 						/>
 					</SectionFold>

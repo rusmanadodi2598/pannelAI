@@ -42,10 +42,16 @@ func (s *ClaudeStreamState) closeBlocks() [][]byte {
 	frames = append(frames, s.closeText()...)
 	for index := 0; index < s.nextIndex; index++ {
 		if isToolBlock(s.toolIndex, index) {
+			// The buffered input is delivered as one corrected delta, and it has
+			// to precede the stop that closes the block it belongs to.
+			if flushed := s.tools.flushFrame(index); flushed != nil {
+				frames = append(frames, flushed)
+			}
 			frames = append(frames, blockStopFrame(index))
 		}
 	}
 	s.toolIndex = make(map[int]int, 0)
+	s.tools = newClaudeToolBlocks()
 	return frames
 }
 

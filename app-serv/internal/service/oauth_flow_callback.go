@@ -74,6 +74,19 @@ func (s *OAuthFlowService) requireCodeFlow(providerID string) (registry.Provider
 	return entry, entry.OAuth, nil
 }
 
+// maxOAuthProviderError bounds the provider text a callback may carry into the
+// redirect, so an unauthenticated state cannot make the gateway emit an
+// arbitrarily long URL. The state is consumed before this text is read.
+const maxOAuthProviderError = 200
+
+func boundedProviderError(text string) string {
+	runes := []rune(text)
+	if len(runes) <= maxOAuthProviderError {
+		return text
+	}
+	return string(runes[:maxOAuthProviderError])
+}
+
 // callbackURLFor renders the gateway's own callback route under a base URL.
 func callbackURLFor(base, providerID string) string {
 	return base + "/api/v1/providers/" + providerID + "/oauth/callback"
@@ -95,22 +108,11 @@ func originFor(base, redirect string) string {
 // the account identity when the provider declares a userinfo endpoint, and
 // stores the sealed token set on the account's endpoint.
 func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) (OAuthConnect, error) {
-	_, oauth, err := s.requireCodeFlow(in.ProviderID)
+	provider, oauth, err := s.requireCodeFlow(in.ProviderID)
 	if err != nil {
 		return OAuthConnect{}, err
 	}
 	providerID := strings.TrimSpace(in.ProviderID)
-	if in.Error != "" {
-		refusal := in.Error
-		if in.ErrorDescription != "" {
-			refusal = refusal + ": " + in.ErrorDescription
-		}
-		return OAuthConnect{}, domain.NewUpstreamError("the provider refused the authorization: " + refusal)
-	}
-	code := strings.TrimSpace(in.Code)
-	if code == "" {
-		return OAuthConnect{}, domain.NewValidationError("code is required")
-	}
 	state := strings.TrimSpace(in.State)
 	if state == "" {
 		return OAuthConnect{}, domain.NewValidationError("state is required")
@@ -123,6 +125,18 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 	if !ok {
 		return OAuthConnect{}, domain.NewValidationError("the state is unknown, expired, or already used")
 	}
+	if in.Error != "" {
+		refusal := in.Error
+		if description := strings.TrimSpace(in.ErrorDescription); description != "" {
+			refusal = refusal + ": " + description
+		}
+		return OAuthConnect{}, domain.NewUpstreamError(
+			"the provider refused the authorization: " + boundedProviderError(refusal))
+	}
+	code := strings.TrimSpace(in.Code)
+	if code == "" {
+		return OAuthConnect{}, domain.NewValidationError("code is required")
+	}
 	var payload oauthStatePayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return OAuthConnect{}, domain.NewInternalError("the staged oauth state could not be decoded")
@@ -131,9 +145,13 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 		return OAuthConnect{}, domain.NewValidationError("the state belongs to another provider")
 	}
 
+	clientID, clientSecret, err := s.clientFor(providerID, oauth)
+	if err != nil {
+		return OAuthConnect{}, err
+	}
 	token, err := s.tokens.Grant(ctx, oauth.TokenURL, tokenEncoding(oauth), oauthhttp.TokenGrant{
 		GrantType: "authorization_code", Code: code,
-		ClientID: oauth.ClientID, ClientSecret: oauth.ClientSecret,
+		ClientID: clientID, ClientSecret: clientSecret,
 		RedirectURI: payload.RedirectURI, CodeVerifier: payload.Verifier,
 	})
 	if err != nil {
@@ -157,5 +175,6 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 	return s.connectAccount(ctx, providerID, connectTokens{
 		AccessToken: token.AccessToken, RefreshToken: token.RefreshToken,
 		Scopes: oauth.ScopeList(), ExpiresAt: tokenExpiry(token, now),
+		ProjectID: s.resolveProject(ctx, provider, token.AccessToken),
 	}, account, payload.Origin, now)
 }

@@ -14,154 +14,20 @@
 
 import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
+import { parsePublishedWindow } from '../support/published-quota-rows';
 import {
 	publishedAmountText,
-	publishedAskedStamp,
-	publishedAttemptFailure,
 	publishedBar,
 	publishedEntriesByEndpoint,
 	publishedPercentText,
-	publishedRefillVerb,
 	publishedWindowView,
 	schemaPublishedQuotaUsage,
-	schemaPublishedQuotaWindow,
-	type PublishedQuotaUsage,
-	type PublishedQuotaWindow
+	type PublishedQuotaUsage
 } from '$lib/schemas/quota-published';
 
-function parsedWindow(row: Record<string, unknown>): PublishedQuotaWindow {
-	return schemaPublishedQuotaWindow.parse(row);
-}
-
 function view(row: Record<string, unknown>) {
-	return publishedWindowView(parsedWindow(row));
+	return publishedWindowView(parsePublishedWindow(row));
 }
-
-describe('the flags a published row carries', () => {
-	forEachCase(
-		[
-			{ name: 'a plain counted bucket', row: { label: 'Personal', used: '1', total: '2' } },
-			{
-				name: 'an unlimited bucket',
-				row: { label: 'Weekly', used: '5', unlimited: true, unit: 'requests' }
-			},
-			{
-				name: 'a credit balance in a named currency',
-				row: { label: 'Credits', used: '12.5', is_credit_balance: true, unit: 'USD' }
-			},
-			{
-				name: 'a one-shot pack that expires',
-				row: {
-					label: 'Bonus Pack 1',
-					used: '40',
-					total: '100',
-					recurring: false,
-					resets_at: '2026-10-09T00:00:00Z'
-				}
-			},
-			{
-				name: 'a spent ceiling, which is a ceiling and not an absent one',
-				row: { label: 'Personal', used: '3000', total: '0' }
-			}
-		],
-		(testCase) => {
-			const parsed = schemaPublishedQuotaWindow.safeParse(testCase.row);
-
-			expect(parsed.success).toBe(true);
-			if (!parsed.success) return;
-			// The amount survives as the string the provider spelled, whatever flags sit beside it.
-			expect(parsed.data.used).toBe(String(testCase.row.used));
-		}
-	);
-
-	forEachCase(
-		[
-			{ name: 'unlimited stated', row: { label: 'A', used: '1', unlimited: true }, want: true },
-			{ name: 'unlimited denied', row: { label: 'A', used: '1', unlimited: false }, want: false },
-			{ name: 'unlimited unstated', row: { label: 'A', used: '1' }, want: false },
-			{
-				name: 'a credit balance stated',
-				row: { label: 'A', used: '1', is_credit_balance: true },
-				want: true
-			},
-			{
-				name: 'a credit balance unstated',
-				row: { label: 'A', used: '1' },
-				want: false
-			}
-		],
-		(testCase) => {
-			expect(view(testCase.row).unlimited || view(testCase.row).creditBalance).toBe(testCase.want);
-		}
-	);
-
-	it('keeps a unit the provider named, and reads a blank one as no unit', () => {
-		// A loop rather than a table: these six are one function's six inputs, not six cases a reviewer
-		// needs named separately.
-		const units: { unit: unknown; want: string | null }[] = [
-			{ unit: 'requests', want: 'requests' },
-			{ unit: 'USD', want: 'USD' },
-			{ unit: '%', want: '%' },
-			{ unit: undefined, want: null },
-			{ unit: null, want: null },
-			{ unit: '   ', want: null }
-		];
-
-		for (const testCase of units) {
-			expect(view({ label: 'A', used: '1', unit: testCase.unit }).unit).toBe(testCase.want);
-		}
-	});
-
-	it('tells a pack that expires from a window that refills, including when the answer is silence', () => {
-		const answers: { recurring: unknown; want: string | null }[] = [
-			{ recurring: true, want: 'Resets' },
-			{ recurring: false, want: 'Expires' },
-			{ recurring: undefined, want: 'Resets' },
-			{ recurring: null, want: 'Resets' }
-		];
-
-		for (const answer of answers) {
-			const row = view({
-				label: 'A',
-				used: '1',
-				total: '2',
-				resets_at: '2026-10-09T00:00:00Z',
-				recurring: answer.recurring
-			});
-
-			// Silence is its own state rather than a denial: the card keeps the word it had before the flag.
-			expect(row.recurring).toBe(answer.recurring ?? null);
-			expect(publishedRefillVerb(row)).toBe(answer.want);
-		}
-	});
-
-	it('marks the poll worker’s stored answer without losing the instant it was taken', () => {
-		const parsed = schemaPublishedQuotaUsage.safeParse({
-			endpoint_id: 'ep_1',
-			provider_id: 'anthropic',
-			fetched_at: '2026-10-01T09:00:00Z',
-			cached: true,
-			data: [{ label: 'Personal', used: '12.5', total: '3000' }]
-		});
-
-		expect(parsed.success).toBe(true);
-		if (!parsed.success) return;
-		expect(parsed.data.cached).toBe(true);
-		expect(parsed.data.fetched_at).toBe('2026-10-01T09:00:00Z');
-	});
-
-	it('reads a live answer as not cached', () => {
-		const parsed = schemaPublishedQuotaUsage.safeParse({
-			endpoint_id: 'ep_1',
-			provider_id: 'anthropic',
-			fetched_at: '2026-10-01T09:00:00Z',
-			data: []
-		});
-
-		if (!parsed.success) throw new Error('a live answer without the flag must parse');
-		expect(parsed.data.cached ?? null).toBeNull();
-	});
-});
 
 describe('publishedAmountText', () => {
 	forEachCase(
@@ -334,84 +200,4 @@ describe('publishedEntriesByEndpoint', () => {
 	it('holds nothing for a page whose provider block came back empty', () => {
 		expect(publishedEntriesByEndpoint([]).size).toBe(0);
 	});
-});
-
-// The "Asked" stamp dates the provider's FIGURES, and the worker stores a soft answer without touching
-// them, so such a row keeps the placeholder instant it was created with. Printing it would tell the
-// operator the sentence was said in year 1, and dating the surviving rows by a later failure would be
-// worse, so the rule is one line: an instant at or before the unix epoch dates nothing.
-describe('publishedAskedStamp', () => {
-	function answer(fetchedAt: string): PublishedQuotaUsage {
-		return schemaPublishedQuotaUsage.parse({
-			endpoint_id: 'ep_1',
-			provider_id: 'qoder',
-			fetched_at: fetchedAt,
-			message: "Qoder reports this account's quota as exceeded.",
-			data: []
-		});
-	}
-
-	forEachCase(
-		[
-			{
-				name: 'a real instant is the stamp',
-				instant: '2026-10-01T09:00:00Z',
-				want: '2026-10-01T09:00:00Z'
-			},
-			{
-				name: "go's zero time prints nothing",
-				instant: '0001-01-01T00:00:00Z',
-				want: null
-			},
-			{
-				name: 'the epoch placeholder prints nothing',
-				instant: '1970-01-01T00:00:00Z',
-				want: null
-			}
-		],
-		(test) => {
-			expect(publishedAskedStamp(answer(test.instant))).toBe(test.want);
-		}
-	);
-});
-
-// A failing poll does not erase the last good figures, so the card owes the operator both facts at
-// once: the numbers, and that the last attempt did not replace them. These cases pin when the second
-// fact is owed, and the placeholder rule keeps it from claiming an instant the row never had.
-describe('publishedAttemptFailure', () => {
-	function answer(overrides: Record<string, unknown>): PublishedQuotaUsage {
-		return schemaPublishedQuotaUsage.parse({
-			endpoint_id: 'ep_1',
-			provider_id: 'glm',
-			fetched_at: '2026-10-01T09:00:00Z',
-			data: [{ label: 'Weekly', used: '4', total: '10' }],
-			cached: true,
-			...overrides
-		});
-	}
-
-	forEachCase(
-		[
-			{ name: 'a healthy answer owes nothing', in: {}, want: null },
-			{ name: 'zero is not a failure', in: { failures: 0 }, want: null },
-			{
-				name: 'a failing run names the count and the attempt',
-				in: { failures: 3, last_attempt_at: '2026-10-01T10:00:00Z' },
-				want: { count: 3, at: '2026-10-01T10:00:00Z' }
-			},
-			{
-				name: 'a failing run without a real instant still counts',
-				in: { failures: 2, last_attempt_at: '0001-01-01T00:00:00Z' },
-				want: { count: 2, at: null }
-			},
-			{
-				name: 'a failing run with no attempt recorded counts alone',
-				in: { failures: 1 },
-				want: { count: 1, at: null }
-			}
-		],
-		(test) => {
-			expect(publishedAttemptFailure(answer(test.in))).toEqual(test.want);
-		}
-	);
 });

@@ -12,6 +12,7 @@
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { nodeTestStateLabel, type ProviderNodeProbe } from '$lib/schemas/provider-node';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -55,15 +56,16 @@
 				class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 sm:w-64"
 			/>
 		</label>
-		<button
-			type="button"
-			class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50 sm:w-auto"
+		<Button
+			variant="outline"
+			class="w-full sm:w-auto"
 			disabled={testing}
+			aria-busy={testing}
 			onclick={run}
 		>
 			<TestIcon class="size-4" aria-hidden="true" />
 			{testing ? 'Testing' : 'Test the endpoint'}
-		</button>
+		</Button>
 	</div>
 
 	{#if error}

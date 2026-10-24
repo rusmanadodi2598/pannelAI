@@ -12,6 +12,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import CombosTab from '../../src/lib/components/CombosTab.svelte';
+import { formatTimestamp } from '$lib/utils/time';
 
 const combo = {
 	id: 'cmb_1',
@@ -106,6 +107,25 @@ describe('the combos toolbar', () => {
 				'min-h-11'
 			);
 		}
+	});
+
+	it('keeps the combo name visible while the summary wraps on a phone', async () => {
+		stubFetch();
+		render(CombosTab);
+
+		const expand = await screen.findByRole('button', { name: /daily/ });
+		expect(expand.className).toContain('flex-wrap');
+		expect(screen.getByText('Fallback · 1 model').className).toContain('max-sm:basis-full');
+	});
+
+	it('shows the updated instant in the panel format, not the wire value', async () => {
+		stubFetch();
+		render(CombosTab);
+
+		await fireEvent.click(await screen.findByRole('button', { name: /daily/ }));
+
+		expect(screen.getByText(formatTimestamp(combo.updated_at))).toBeTruthy();
+		expect(screen.queryByText(combo.updated_at)).toBeNull();
 	});
 
 	it('opens the editor as a modal, not inline above the list', async () => {

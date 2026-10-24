@@ -39,4 +39,14 @@ type ProxyRepository interface {
 	// Delete removes one candidate. A missing row must yield
 	// domain.ErrProxyNotFound.
 	Delete(ctx context.Context, id string) error
+
+	// UpdateBulk writes each candidate's own fields in ONE transaction, which is what
+	// makes a bulk switch land on every selected row or none. The operator's toggle is
+	// the aggregate's own SetEnabled, so this only writes what it decided.
+	UpdateBulk(ctx context.Context, proxies []domain.Proxy) error
+
+	// DeleteBulk removes each candidate in ONE transaction and names the position of a
+	// row that was not there, so a selection that went stale between the operator's
+	// render and their click erases nothing rather than erasing what remains.
+	DeleteBulk(ctx context.Context, ids []string) error
 }

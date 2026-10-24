@@ -65,6 +65,20 @@ describe('UsageOverviewTab', () => {
 		expect(lastQuery(stub, '/usage/timeseries').get('granularity')).toBe('hour');
 	});
 
+	it('draws the nine totals as three lead cells over a six-cell support strip', async () => {
+		stubUsage();
+		const { container } = render(UsageOverviewTab);
+		await screen.findByText('Requests recorded in each bucket.');
+
+		const [lead, support] = Array.from(container.querySelectorAll('dl')) as HTMLElement[];
+
+		expect(lead.children.length).toBe(3);
+		expect(support.children.length).toBe(6);
+		expect(lead.classList.contains('sm:grid-cols-3')).toBe(true);
+		expect(support.classList.contains('sm:grid-cols-3')).toBe(true);
+		expect(container.querySelectorAll('dl').length).toBe(2);
+	});
+
 	it('reads the period out of the URL', async () => {
 		visit('/usage', 'period=7d');
 		const stub = stubUsage();

@@ -6,13 +6,14 @@
 // @reason    The reference calls these models with `Authorization: Bearer public` and no stored key at all (a virtual connection, src/sse/services/auth.js:46), and the upstream gates the whole lane on the request's own shape: it refuses 403 FreeTierError unless the body streams and declares the fingerprint tools. A hermetic test that only checks the connector's transform cannot prove the lane works, because the failure the gate produces is an upstream refusal, not a local error. This file drives the real resolver, selector, transport, and connector against an upstream stand-in that enforces the measured gate, so a regression that drops a required member fails here instead of in production.
 //
 //	The gate encoded below is measured, not invented: every rule was
-//	probed against the live upstream on 2026-09-24 and is listed with its
-//	evidence in §3 of docs/DRAFT/029-OPENCODE-PROVIDER-PARITY.md. The
-//	three model ids are the owner's list: space-bunny-free and
-//	mimo-v2.6-flash-free resolve through the provider's passthrough (the
-//	reference lists them only in its live model fetcher), and
-//	muse-spark-1.3-contributor-free is declared with targetFormat
-//	openai-responses, so it must reach /zen/v1/responses.
+//	probed against the live upstream (v2, /inference/v1) and is listed
+//	with its evidence in §3 of
+//	docs/DRAFT/029-OPENCODE-PROVIDER-PARITY.md. The three model ids are
+//	the owner's list: space-bunny-free and mimo-v2.6-flash-free resolve
+//	through the provider's passthrough (the reference lists them only in
+//	its live model fetcher), and muse-spark-1.3-contributor-free is
+//	declared with targetFormat openai-responses, so it must reach
+//	/inference/v1/responses.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -25,6 +26,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -37,12 +39,10 @@ var openCodeFreeModels = []string{
 	"muse-spark-1.3-contributor-free",
 }
 
-// openCodeFreeRequiredTools is the tool set the live gate actually demands, which
-// is narrower than the reference's fingerprint quartet: measured on 2026-09-24, a
-// body declaring only glob+grep is refused, and one declaring bash+read is
-// accepted. The quartet stays the reference's defense in depth; this list is what
-// the upstream enforces today.
-var openCodeFreeRequiredTools = []string{"bash", "read"}
+// openCodeFreeRequiredTools is the tool set the live v2 gate actually demands
+// (PR #4842): the canonical read/shell declarations. The v1 bash/read quartet
+// was replaced upstream; this list is what the upstream enforces today.
+var openCodeFreeRequiredTools = []string{"read", "shell"}
 
 // openCodeFreeUngated is the model whose lane imposes no shape gate at all: it
 // answers without tools, session, user agent, or credential (measured). The other
@@ -52,7 +52,7 @@ const openCodeFreeUngated = "space-bunny-free"
 
 // openCodeFreeUpstream stands in for the live free tier, enforcing the gate as
 // measured: the public bearer, a CLI user agent, a canonical session header, a
-// streaming body, and the fingerprint quartet declared. A Responses-wire model
+// streaming body, and the read/shell fingerprint declared. A Responses-wire model
 // must arrive on /responses, which is the per-model rule the provider declares.
 //
 // It answers the wire it was asked on, so the engine's own translation is what
@@ -70,6 +70,7 @@ func openCodeFreeUpstream(t *testing.T, seen *[]openCodeFreeCall) *httptest.Serv
 			Authorization: r.Header.Get("Authorization"),
 			UserAgent:     r.Header.Get("User-Agent"),
 			Session:       r.Header.Get("x-opencode-session"),
+			Request:       r.Header.Get("x-opencode-request"),
 			Client:        r.Header.Get("x-opencode-client"),
 			Body:          raw,
 			Tools:         openCodeToolNames(body),
@@ -93,6 +94,10 @@ func openCodeFreeUpstream(t *testing.T, seen *[]openCodeFreeCall) *httptest.Serv
 				refuse("the free tier requires the CLI user agent")
 			case call.Session == "":
 				refuse("the free tier requires a canonical session")
+			case !openCodeSessionCounterIsPinned(call.Session):
+				refuse("the session counter is not the small value the CLI sends")
+			case call.Request != "":
+				refuse("the v2 gate refuses the v1 turn header")
 			case !stream:
 				refuse("the free tier refuses a non-streaming request")
 			}
@@ -107,7 +112,7 @@ func openCodeFreeUpstream(t *testing.T, seen *[]openCodeFreeCall) *httptest.Serv
 		}
 
 		w.Header().Set("Content-Type", "text/event-stream")
-		if call.Path == "/zen/v1/responses" {
+		if call.Path == "/inference/v1/responses" {
 			_, _ = w.Write([]byte(responsesFreeStreamBody(model)))
 			return
 		}
@@ -126,10 +131,31 @@ type openCodeFreeCall struct {
 	Authorization string
 	UserAgent     string
 	Session       string
+	Request       string
 	Client        string
 	Stream        bool
 	Tools         []string
 	Body          []byte
+}
+
+// openCodeSessionCounterIsPinned reads the field OpenCode v2 decodes: the twelve
+// hex characters after `ses_` are the low 48 bits of the complement of
+// `time*0x1000 + counter`, and the upstream refuses a counter past the small
+// values the CLI sends (live probes: 0-16 pass, >=100 fail), which a
+// digest-filled 48-bit prefix produced about 97% of the time. The pinned
+// counter is what makes a digest-derived session acceptable. It is written from
+// the upstream's rule and not from the connector's helper, so the stand-in
+// cannot pass a bug in the code it gates.
+func openCodeSessionCounterIsPinned(session string) bool {
+	if !strings.HasPrefix(session, "ses_") || len(session) < 16 {
+		return false
+	}
+	field, err := strconv.ParseUint(session[4:16], 16, 64)
+	if err != nil {
+		return false
+	}
+	const mask48, scale = uint64(1<<48) - 1, uint64(0x1000)
+	return (^field&mask48)%scale == 1
 }
 
 // openCodeToolNames reads every declared tool name in either wire shape, which
@@ -174,7 +200,7 @@ func missingOpenCodeFreeTools(names []string) []string {
 // openCodeFreePath is the leaf the provider's declared wire answers on.
 func openCodeFreePath(model string) string {
 	if model == "muse-spark-1.3-contributor-free" {
-		return "/zen/v1/responses"
+		return "/inference/v1/responses"
 	}
-	return "/zen/v1/chat/completions"
+	return "/inference/v1/chat/completions"
 }

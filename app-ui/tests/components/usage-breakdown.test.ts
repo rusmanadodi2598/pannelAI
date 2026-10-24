@@ -152,8 +152,39 @@ describe('UsageOverviewTab breakdown', () => {
 
 		const table = screen.getByRole('table', { name: 'Usage broken down by provider' });
 
-		expect(await screen.findByText(/Provider names could not be read/)).toBeTruthy();
+		expect(await screen.findByText(/Providers could not be read/)).toBeTruthy();
 		expect(within(table).getByText('openai')).toBeTruthy();
+	});
+
+	it('links a provider row to the records behind it, with the dimension applied', async () => {
+		visit('/usage', 'group_by=provider');
+		stubUsage({
+			summary: summaryBody({
+				group_by: 'provider',
+				groups: [{ key: 'openai', totals: totals() }]
+			})
+		});
+		await renderOverview();
+
+		const link = await screen.findByRole('link', { name: /Open requests for OpenAI in Records/ });
+		const href = new URL(link.getAttribute('href') ?? '', 'http://panel.test');
+
+		expect(href.pathname).toBe('/usage');
+		expect(href.searchParams.get('tab')).toBe('records');
+		expect(href.searchParams.get('provider_id')).toBe('openai');
+		expect(href.searchParams.get('group_by')).toBe('provider');
+	});
+
+	it('links a model row into Records by model', async () => {
+		stubUsage();
+		await renderOverview();
+
+		const link = await screen.findByRole('link', { name: /Open requests for gpt-4o in Records/ });
+		const href = new URL(link.getAttribute('href') ?? '', 'http://panel.test');
+
+		expect(href.searchParams.get('tab')).toBe('records');
+		expect(href.searchParams.get('model')).toBe('gpt-4o');
+		expect(href.searchParams.get('provider_id')).toBeNull();
 	});
 
 	it('orders the rows and flips the direction when the same column is clicked again', async () => {

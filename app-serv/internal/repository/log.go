@@ -20,8 +20,9 @@ import (
 // RequestLogRepository is the storage boundary for request logs
 // (SPEC-API-001 §7.13).
 type RequestLogRepository interface {
-	// Insert appends one log row. It is idempotent on request_id so a retried
-	// write cannot duplicate a row.
+	// Insert appends one log row under a server-generated id. A client may reuse
+	// a request id, so a second write is a second audit row rather than a
+	// suppressed one.
 	Insert(ctx context.Context, entry domain.RequestLog) error
 
 	// List returns one page of rows without their bodies, newest first, with
@@ -33,8 +34,13 @@ type RequestLogRepository interface {
 	// must yield domain.ErrRequestLogNotFound.
 	GetByRequestID(ctx context.Context, requestID string) (domain.RequestLog, error)
 
-	// DeleteOlderThan removes rows older than the cutoff and reports how many
-	// were removed, which is what both the retention job and the purge route
-	// report.
+	// DeleteOlderThan removes rows older than the cutoff in bounded batches and
+	// reports how many were committed, which is what both the retention job and
+	// the purge route report. A deadline that fires between batches returns the
+	// partial count with the error.
 	DeleteOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
+
+	// TrimTo removes the oldest rows beyond keep, which bounds the table between
+	// retention runs.
+	TrimTo(ctx context.Context, keep int) (int64, error)
 }

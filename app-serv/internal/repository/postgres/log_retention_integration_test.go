@@ -18,6 +18,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -85,5 +86,68 @@ func TestLogRepository_RetentionPurgeOverAnEmptyTable(t *testing.T) {
 	}
 	if deleted != 0 {
 		t.Fatalf("deleted = %d, want 0", deleted)
+	}
+}
+
+// TestLogRepository_TrimToKeepsTheNewestRows pins the cap that bounds the table
+// between the two-day retention runs.
+func TestLogRepository_TrimToKeepsTheNewestRows(t *testing.T) {
+	repo := newLogRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	previous := retentionBatchSize
+	retentionBatchSize = 2
+	t.Cleanup(func() { retentionBatchSize = previous })
+
+	for i := 0; i < 5; i++ {
+		seedLog(t, repo, fmt.Sprintf("req_trim_%d", i), now.Add(-time.Duration(5-i)*time.Minute),
+			domain.RequestLogSuccess, "", "", "")
+	}
+	deleted, err := repo.TrimTo(ctx, 2)
+	if err != nil {
+		t.Fatalf("TrimTo() error = %v", err)
+	}
+	if deleted != 3 {
+		t.Fatalf("trimmed = %d, want the three oldest rows", deleted)
+	}
+	for _, id := range []string{"req_trim_0", "req_trim_1", "req_trim_2"} {
+		if _, err := repo.GetByRequestID(ctx, id); !errorsIs(err, domain.ErrRequestLogNotFound) {
+			t.Fatalf("%s still present: %v", id, err)
+		}
+	}
+	for _, id := range []string{"req_trim_3", "req_trim_4"} {
+		if _, err := repo.GetByRequestID(ctx, id); err != nil {
+			t.Fatalf("%s was trimmed: %v", id, err)
+		}
+	}
+}
+
+// TestLogRepository_RetentionPurgeInBatches pins the progress a backlog makes:
+// every batch commits before the next, so a timeout keeps the rows removed.
+func TestLogRepository_RetentionPurgeInBatches(t *testing.T) {
+	repo := newLogRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	cutoff := domain.RetentionCutoff(now, 7)
+
+	previous := retentionBatchSize
+	retentionBatchSize = 2
+	t.Cleanup(func() { retentionBatchSize = previous })
+
+	for i := 0; i < 5; i++ {
+		seedLog(t, repo, fmt.Sprintf("req_old_%d", i), cutoff.Add(-time.Duration(i+1)*time.Second),
+			domain.RequestLogSuccess, "", "", "")
+	}
+	seedLog(t, repo, "req_keep", now, domain.RequestLogSuccess, "", "", "")
+
+	deleted, err := repo.DeleteOlderThan(ctx, cutoff)
+	if err != nil {
+		t.Fatalf("DeleteOlderThan error = %v", err)
+	}
+	if deleted != 5 {
+		t.Fatalf("deleted = %d, want all 5 rows across three batches", deleted)
+	}
+	if _, err := repo.GetByRequestID(ctx, "req_keep"); err != nil {
+		t.Fatalf("row at the boundary was removed: %v", err)
 	}
 }

@@ -59,7 +59,11 @@ func (e *Engine) relayFusion(ctx context.Context, in Request, resolution Resolut
 			outcome = answers[0].outcome
 			break
 		}
-		outcome, err = e.relayOnce(ctx, in, answers[0].member, sink)
+		// A re-issue is one leg for one member, so it gets its own budget. Fusion
+		// members run in parallel rather than as a chain, which is why the fan-out
+		// below opens one per member instead of sharing a counter no two goroutines
+		// may touch.
+		outcome, err = e.relayOnce(ctx, in, answers[0].member, sink, e.newRequestBudget(ctx))
 		if err != nil {
 			return outcome, err
 		}
@@ -129,7 +133,9 @@ func (e *Engine) fanOut(ctx context.Context, in Request, combo domain.Combo, mem
 				}
 			}()
 			member.Combo = combo
-			outcome, err := e.relayOnce(ctx, in, member, nil)
+			// One budget per panel member: the walk each runs is its own, and a
+			// shared counter would be a data race on the fan-out.
+			outcome, err := e.relayOnce(ctx, in, member, nil, e.newRequestBudget(ctx))
 			if err != nil {
 				results[index] = result{answer: fusionAnswer{member: member, outcome: outcome}, err: err}
 				return
@@ -176,5 +182,5 @@ func (e *Engine) judge(ctx context.Context, in Request, resolution Resolution, a
 	if err != nil {
 		return Outcome{}, err
 	}
-	return e.relayOnce(ctx, request, judgeResolution, sink)
+	return e.relayOnce(ctx, request, judgeResolution, sink, e.newRequestBudget(ctx))
 }

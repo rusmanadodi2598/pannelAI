@@ -1,7 +1,7 @@
 // Command app-serv wires the background workers to the process lifecycle.
 //
 // @file      cmd/app-serv/worker_wiring.go
-// @for       Starts the quota flush, log retention, OAuth refresh, and published-quota poll workers on a context the shutdown path owns, each with a panic boundary and a joinable stop.
+// @for       Starts the quota flush, log and usage retention, OAuth refresh, and published-quota poll workers on a context the shutdown path owns, each with a panic boundary and a joinable stop.
 // @uses      internal/repository, internal/repository/postgres, internal/repository/redis, internal/service, context, fmt, log/slog, runtime/debug, time, github.com/redis/go-redis/v9.
 // @reason    AGENTS.md §1.6 requires every goroutine to recover from a panic and to stop with the process, and SPEC-API-001 §6 gives all three workers their schedule. They live in one file because their shape is identical, construct, run until ctx is cancelled, supervise the panic, so a new worker has a pattern to follow rather than a new place to invent one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
@@ -57,27 +57,39 @@ type publishedWorkerInputs struct {
 var publishedWorker *service.QuotaPublishedWorker
 
 // buildWorkers constructs the workers that read state the management graph already
-// built. The first two are returned rather than started here so the caller runs them
-// only once the server is listening; the published-quota poll worker cannot be returned
-// for that reason and is handed over instead, see publishedWorker.
+// built. The first three are returned rather than started here so the caller runs
+// them only once the server is listening; the published-quota poll worker cannot be
+// returned for that reason and is handed over instead, see publishedWorker.
 func buildWorkers(
 	client redis.UniversalClient,
 	quotas *postgres.QuotaRepository,
 	logs *service.LogService,
+	usageRetentionRepo repository.UsageRetentionRepository,
+	usageRetentionDays int,
 	published publishedWorkerInputs,
-) (*service.QuotaFlusher, *service.LogRetentionWorker, error) {
+) (*service.QuotaFlusher, *service.LogRetentionWorker, *service.UsageRetentionWorker, error) {
 	flusher, err := service.NewQuotaFlusher(
 		redisrepo.NewQuotaCounterStore(client), quotas, service.DefaultQuotaFlushPolicy(), slog.Default(),
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("management wiring: quota flusher: %w", err)
+		return nil, nil, nil, fmt.Errorf("management wiring: quota flusher: %w", err)
 	}
+	flushLease, err := redisrepo.NewWorkerLease(client, "quota-flush", 5*time.Minute)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("management wiring: quota flush lease: %w", err)
+	}
+	flusher.UseLease(flushLease)
 	// The retention worker shares the log service's purge, so the scheduled
 	// deletion and the panel's purge route apply the same cutoff from the same
 	// settings read.
 	retention, err := service.NewLogRetentionWorker(logs, service.DefaultLogRetentionPolicy(), slog.Default())
 	if err != nil {
-		return nil, nil, fmt.Errorf("management wiring: log retention: %w", err)
+		return nil, nil, nil, fmt.Errorf("management wiring: log retention: %w", err)
+	}
+	usageRetention, err := service.NewUsageRetentionWorker(usageRetentionRepo,
+		service.DefaultUsageRetentionPolicy(usageRetentionDays), slog.Default())
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("management wiring: usage retention: %w", err)
 	}
 	// The poll worker is the only thing that fills the published-quota cache, so a
 	// wiring gap here would leave the screen reading an empty cache forever rather
@@ -87,9 +99,14 @@ func buildWorkers(
 		Providers: published.Index, Policy: published.Policy, Logger: slog.Default(),
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("management wiring: published quota poll: %w", err)
+		return nil, nil, nil, fmt.Errorf("management wiring: published quota poll: %w", err)
 	}
-	return flusher, retention, nil
+	pollLease, err := redisrepo.NewWorkerLease(client, "published-quota", 5*time.Minute)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("management wiring: published quota lease: %w", err)
+	}
+	publishedWorker.UseLease(pollLease)
+	return flusher, retention, usageRetention, nil
 }
 
 // workerGroup is the background half of the process. Its context is deliberately not
@@ -122,6 +139,9 @@ func runWorkers(parent context.Context, deps managementDeps) *workerGroup {
 	}
 	if deps.LogRetention != nil {
 		group.start("log retention", func() { deps.LogRetention.Run(group.ctx) })
+	}
+	if deps.UsageRetention != nil {
+		group.start("usage retention", func() { deps.UsageRetention.Run(group.ctx) })
 	}
 	if deps.OAuthRefresh != nil {
 		group.start("oauth refresh", func() { deps.OAuthRefresh.Run(group.ctx, oauthRefreshInterval) })

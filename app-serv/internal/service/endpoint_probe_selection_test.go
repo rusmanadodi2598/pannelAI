@@ -29,7 +29,7 @@ func TestEndpointService_TestSelectsTheKey(t *testing.T) {
 		wantIndex  int
 		wantCode   string
 	}{
-		{name: "the default is the lowest-priority active key", priorities: []int{2, 1, 3}, wantIndex: 1},
+		{name: "the default is the lowest-priority enabled key", priorities: []int{2, 1, 3}, wantIndex: 1},
 		{name: "an explicit key wins", priorities: []int{1, 2}, wantIndex: 1,
 			keyID: func(e domain.UpstreamEndpoint) string { return e.Keys()[1].ID() }},
 		{name: "an unknown key id is not found", priorities: []int{1}, wantCode: "NOT_FOUND",
@@ -76,22 +76,41 @@ func TestEndpointService_TestSelectsTheKey(t *testing.T) {
 // probe: a disabled key set, an unreadable stored credential, and an unconfigured
 // prober.
 func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
-	t.Run("no active key is a validation failure", func(t *testing.T) {
+	t.Run("no enabled key is a validation failure", func(t *testing.T) {
 		svc, store := newEndpointSvc(t)
 		svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK)}}
 		ctx := context.Background()
 		endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
-		// The no-active-key shape is reached through the circuit, which owns the
-		// error state, not through a PATCH: the aggregate refuses disabling the
-		// last active key, exactly as it refuses removing it.
 		stored := store.keysByEndpoint[endpoint.ID()]
 		stored[0] = domain.RehydrateUpstreamKey(stored[0].ID(), stored[0].EndpointID(),
 			stored[0].Label(), stored[0].EncryptedValue(), stored[0].Hint(), stored[0].Priority(),
-			domain.UpstreamKeyError, nil, "", 0, nil, stored[0].CreatedAt(), stored[0].UpdatedAt())
+			domain.UpstreamKeyDisabled, nil, "", 0, domain.KeyRotationState{}, nil, stored[0].CreatedAt(), stored[0].UpdatedAt(), domain.OperatorState{})
 		store.keysByEndpoint[endpoint.ID()] = stored
 
 		_, _, err := svc.Test(ctx, endpoint.ID(), "")
 		mustAppError(t, err, "VALIDATION_ERROR")
+	})
+
+	t.Run("a key the circuit parked is still testable", func(t *testing.T) {
+		svc, store := newEndpointSvc(t)
+		svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK), Status: 200}}
+		ctx := context.Background()
+		endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
+		// Draft 050 T6: the error state is written by health tracking and only
+		// cleared by a served call, so refusing it here left an operator with no
+		// way to prove a credential they had just fixed.
+		stored := store.keysByEndpoint[endpoint.ID()]
+		stored[0] = domain.RehydrateUpstreamKey(stored[0].ID(), stored[0].EndpointID(),
+			stored[0].Label(), stored[0].EncryptedValue(), stored[0].Hint(), stored[0].Priority(),
+			domain.UpstreamKeyError, nil, "", 1, domain.KeyRotationState{}, nil, stored[0].CreatedAt(), stored[0].UpdatedAt(), domain.OperatorState{})
+		store.keysByEndpoint[endpoint.ID()] = stored
+
+		if _, _, err := svc.Test(ctx, endpoint.ID(), ""); err != nil {
+			t.Fatalf("Test() error = %v, want the parked key chosen for the probe", err)
+		}
+		if got := store.keysByEndpoint[endpoint.ID()][0].LastUsedAt(); got == nil {
+			t.Fatal("the parked key was not stamped, so the probe did not run against it")
+		}
 	})
 
 	t.Run("an unreadable stored credential is a validation failure", func(t *testing.T) {
@@ -105,7 +124,7 @@ func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 		stored := store.keysByEndpoint[endpoint.ID()]
 		stored[0] = domain.RehydrateUpstreamKey(stored[0].ID(), stored[0].EndpointID(),
 			stored[0].Label(), "v1:AAAA:c2VhbGVk", stored[0].Hint(), stored[0].Priority(),
-			stored[0].Status(), nil, "", 0, nil, stored[0].CreatedAt(), stored[0].UpdatedAt())
+			stored[0].Status(), nil, "", 0, domain.KeyRotationState{}, nil, stored[0].CreatedAt(), stored[0].UpdatedAt(), domain.OperatorState{})
 		store.keysByEndpoint[endpoint.ID()] = stored
 
 		_, _, err := svc.Test(ctx, endpoint.ID(), "")
@@ -134,7 +153,7 @@ func keyedEndpointWith(t *testing.T, svc *EndpointService, providerID, label str
 }
 
 // keyedEndpointWithPriorities seeds an endpoint whose keys hold the given priorities,
-// so a test can prove the default target is the lowest-priority active key.
+// so a test can prove the default target is the lowest-priority enabled key.
 func keyedEndpointWithPriorities(t *testing.T, svc *EndpointService, priorities []int) domain.UpstreamEndpoint {
 	t.Helper()
 	keys := make([]KeyInput, 0, len(priorities))

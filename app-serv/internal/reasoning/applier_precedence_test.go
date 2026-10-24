@@ -106,6 +106,25 @@ func TestApplier_ResolvesThePrecedence(t *testing.T) {
 			call:     Call{Wire: "openai", ProviderID: "kimi", ModelID: "kimi-k3"},
 			want:     `{"model":"m","reasoning_effort":"max"}`,
 		},
+		{
+			// nemotron's own list starts at low; one stored mode reaches every model.
+			name:     "a stored level below the model's list is raised to its lowest",
+			settings: settingsWithThinking("opencode", "minimal"),
+			call:     Call{Wire: "openai", ProviderID: "opencode", ModelID: "nemotron-3.5-lightning-free"},
+			want:     `{"model":"m","reasoning_effort":"low"}`,
+		},
+		{
+			name:     "a stored level above the model's list is lowered to its highest",
+			settings: settingsWithThinking("opencode", "xhigh"),
+			call:     Call{Wire: "openai", ProviderID: "opencode", ModelID: "nemotron-3.5-lightning-free"},
+			want:     `{"model":"m","reasoning_effort":"high"}`,
+		},
+		{
+			name:     "the Responses shape asks the model's list the same question",
+			settings: settingsWithThinking("opencode", "max"),
+			call:     Call{Wire: "openai-responses", ProviderID: "opencode", ModelID: "muse-spark-1.3-contributor-free"},
+			want:     `{"model":"m","reasoning":{"effort":"xhigh","summary":"auto"}}`,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

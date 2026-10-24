@@ -25,8 +25,11 @@ import (
 const endpointColumns = `id, provider_id, label, auth_type, priority, status,
 	oauth, account, test_status, rate_limited_until, last_used_at, created_at, updated_at,
 	global_priority, default_model, consecutive_use_count,
-	last_error, last_error_at, error_code, proxy_pool_id,
-	sa_project_id, sa_location`
+	last_error, last_error_at, error_code, proxy_pool_id, quota_cooldown_until,
+	oauth_retry_at, oauth_retry_rounds,
+	sa_project_id, sa_location,
+	consecutive_errors, last_selected_at,
+	tags, disabled_until`
 
 // endpointRow is one upstream_endpoints row, kept as raw column values rather
 // than as an aggregate so the page's keys can be attached from one batched read
@@ -51,10 +54,25 @@ type endpointRow struct {
 	lastErrorAt         *time.Time
 	errorCode           *string
 	proxyPoolID         *string
+	quotaCooldownUntil  *time.Time
+	oauthRetryAt        *time.Time
+	oauthRetryRounds    int
 
 	// The service-account columns. Both are NOT NULL with an empty default,
 	// so a row created before migration 000016 reads back as empty.
 	saProjectID, saLocation string
+
+	// The account breaker run and the rotation stamp. consecutive_errors is NOT
+	// NULL with a zero default, so a row created before migration 000020 reads
+	// back as an account that has never failed, which is what it is.
+	consecutiveErrors int
+	lastSelectedAt    *time.Time
+
+	// The operator's marks: the tag set a bulk action addresses this account by, and
+	// the deadline its park runs out at. A row created before migrations 000022 and
+	// 000023 reads back the column defaults, which are the same values.
+	tagsJSON      *string
+	disabledUntil *time.Time
 }
 
 // scanEndpointRow reads one endpoint row, including its window count when the
@@ -67,7 +85,10 @@ func scanEndpointRow(s scanner, extra ...any) (endpointRow, error) {
 		&row.rateLimitedUntil, &row.lastUsedAt, &row.createdAt, &row.updatedAt,
 		&row.globalPriority, &row.defaultModel, &row.consecutiveUseCount,
 		&row.lastError, &row.lastErrorAt, &row.errorCode, &row.proxyPoolID,
+		&row.quotaCooldownUntil, &row.oauthRetryAt, &row.oauthRetryRounds,
 		&row.saProjectID, &row.saLocation,
+		&row.consecutiveErrors, &row.lastSelectedAt,
+		&row.tagsJSON, &row.disabledUntil,
 	}
 	dest = append(dest, extra...)
 	if err := s.Scan(dest...); err != nil {
@@ -92,6 +113,10 @@ func (row endpointRow) aggregate(keys []domain.UpstreamKey) (domain.UpstreamEndp
 	if err != nil {
 		return domain.UpstreamEndpoint{}, err
 	}
+	tags, err := unmarshalTags(row.tagsJSON)
+	if err != nil {
+		return domain.UpstreamEndpoint{}, err
+	}
 	return domain.RehydrateUpstreamEndpoint(
 		row.id, row.providerID, row.label,
 		domain.UpstreamAuthType(row.authType), row.priority,
@@ -99,6 +124,7 @@ func (row endpointRow) aggregate(keys []domain.UpstreamKey) (domain.UpstreamEndp
 		row.rateLimitedUntil, row.lastUsedAt, row.createdAt, row.updatedAt, keys,
 		domain.ServiceAccountRef{ProjectID: row.saProjectID, Location: row.saLocation},
 		row.parity(),
+		domain.OperatorState{Tags: tags, DisabledUntil: row.disabledUntil},
 	), nil
 }
 
@@ -112,6 +138,11 @@ func (row endpointRow) parity() domain.EndpointParity {
 		DefaultModel:        row.defaultModel,
 		ConsecutiveUseCount: row.consecutiveUseCount,
 		LastErrorAt:         row.lastErrorAt,
+		QuotaCooldownUntil:  row.quotaCooldownUntil,
+		RefreshRetryAt:      row.oauthRetryAt,
+		RefreshRetryRounds:  row.oauthRetryRounds,
+		ConsecutiveErrors:   row.consecutiveErrors,
+		LastSelectedAt:      row.lastSelectedAt,
 	}
 	if row.globalPriority != nil {
 		parity.GlobalPriority = *row.globalPriority

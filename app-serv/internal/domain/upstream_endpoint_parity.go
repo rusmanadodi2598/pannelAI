@@ -43,6 +43,19 @@ type EndpointParity struct {
 	LastErrorMessage    string
 	LastErrorAt         *time.Time
 	ProxyPoolID         string
+	// QuotaCooldownUntil travels with the parity block because it is read on the
+	// same load and written by the same outcome call; it is the published-quota
+	// poller's wait (§7.12), not a serving input.
+	QuotaCooldownUntil *time.Time
+	// The OAuth dead-letter ladder rides the same load for the same reason: it is
+	// read on every status listing and written by the refresh path (§7.4).
+	RefreshRetryAt     *time.Time
+	RefreshRetryRounds int
+	// ConsecutiveErrors is an account's own breaker run and LastSelectedAt the moment
+	// rotation last chose it. Both ride this load because selection reads them on a row it
+	// already reads, and only a keyless endpoint needs them: a keyed one parks its key.
+	ConsecutiveErrors int
+	LastSelectedAt    *time.Time
 }
 
 // Accessors for the parity fields. They are grouped here rather than beside the
@@ -114,13 +127,16 @@ func (e *UpstreamEndpoint) RecordUse(now time.Time) {
 // RecordUpstreamSuccess resets the run and clears the recorded error, because the
 // endpoint has demonstrably recovered: leaving the error in place would show a
 // failure the operator has already fixed.
+//
+// It releases the account's own circuit too, on the same evidence: a served call is the
+// upstream answering, and a park outliving the recovery is a deadline nobody can explain.
 func (e *UpstreamEndpoint) RecordUpstreamSuccess(now time.Time) {
 	e.consecutiveUseCount = 0
 	e.lastErrorCode = ""
 	e.lastErrorMessage = ""
 	e.lastErrorAt = nil
 	e.lastUsedAt = &now
-	e.updatedAt = now
+	e.RecordAccountSuccess(now)
 }
 
 // RecordUpstreamError stores the last error that was not a test result.

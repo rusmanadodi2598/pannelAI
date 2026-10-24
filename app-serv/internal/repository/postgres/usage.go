@@ -12,6 +12,7 @@ package postgres
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -135,11 +136,13 @@ func (r *UsageRepository) Summary(ctx context.Context, filter domain.UsageFilter
 	// groupBy.Column() comes from the closed UsageGroupBy set and is validated
 	// immediately above; PostgreSQL cannot parameterize an identifier, so this
 	// is the one place a column name is interpolated and it can never be caller
-	// text (AGENTS.md §1.7).
+	// text (AGENTS.md §1.7). The LIMIT keeps a summary read bounded when the
+	// window holds more dimension values than a screen can show.
 	query := `SELECT coalesce(` + groupBy.Column() + `, '') AS group_key, ` + usageTotalsProjection +
 		usageFilterClause + `
 	 GROUP BY group_key
-	 ORDER BY count(*) DESC, group_key ASC`
+	 ORDER BY count(*) DESC, group_key ASC
+	 LIMIT ` + strconv.Itoa(domain.MaxUsageGroupRows)
 
 	rows, err := r.pool.Query(ctx, query, filterArgs(filter)...)
 	if err != nil {

@@ -54,12 +54,13 @@ type managementDeps struct {
 	SystemOne  *handler.SystemOneHandler
 	TokenCount *handler.TokenCountHandler
 
-	// QuotaFlusher, LogRetention, and OAuthRefresh are returned so the caller
-	// can run them after the server is listening, rather than leaving
+	// QuotaFlusher, LogRetention, UsageRetention, and OAuthRefresh are returned so
+	// the caller can run them after the server is listening, rather than leaving
 	// goroutines nothing supervises.
-	QuotaFlusher *service.QuotaFlusher
-	LogRetention *service.LogRetentionWorker
-	OAuthRefresh *service.OAuthRefreshWorker
+	QuotaFlusher   *service.QuotaFlusher
+	LogRetention   *service.LogRetentionWorker
+	UsageRetention *service.UsageRetentionWorker
+	OAuthRefresh   *service.OAuthRefreshWorker
 
 	// UsageEvents is the publisher half of the §2.3 usage domain event and
 	// UsageEventConsumer is its subscriber. Both are returned for the same

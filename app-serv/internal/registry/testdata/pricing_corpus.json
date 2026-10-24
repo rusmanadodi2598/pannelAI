@@ -44,6 +44,78 @@
   ],
   "entries": [
     {
+      "provider": "agnes",
+      "model": "agnes-2.5-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-3.0-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-image-2.0-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-image-2.1-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-image-2.5-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "agnes",
+      "model": "agnes-video-2.5-flash",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
       "provider": "antigravity",
       "model": "claude-opus-4-6-thinking",
       "rates": {
@@ -4905,7 +4977,73 @@
     },
     {
       "provider": "opencode",
+      "model": "big-pickle",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "opencode",
+      "model": "cat-jam-free",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "opencode",
+      "model": "deepseek-v4.1-flash-free",
+      "rates": {
+        "input": "0.14",
+        "output": "0.28",
+        "cached": "0.0028",
+        "reasoning": "0.28",
+        "cache_creation": "0.14"
+      },
+      "costs": {
+        "plain": "0.00002814",
+        "cached": "0.00003276",
+        "reasoning": "0.00020468",
+        "input-only": "140.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "opencode",
       "model": "jev-1.13-free",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "opencode",
+      "model": "longcat-2.5-preview-free",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "opencode",
+      "model": "mimo-v2.6-flash-free",
       "rates": {
         "input": null,
         "output": null,
@@ -4941,7 +5079,31 @@
     },
     {
       "provider": "opencode",
-      "model": "union-alpha",
+      "model": "nemotron-3.5-lightning-free",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "opencode",
+      "model": "space-bunny-free",
+      "rates": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "cache_creation": null
+      },
+      "costs": {}
+    },
+    {
+      "provider": "opencode",
+      "model": "step-5-preview-free",
       "rates": {
         "input": null,
         "output": null,

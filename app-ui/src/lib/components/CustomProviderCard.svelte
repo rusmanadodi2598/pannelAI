@@ -26,6 +26,7 @@
 	import ProviderNodeFacts from '$lib/components/ProviderNodeFacts.svelte';
 	import SectionFold from '$lib/components/SectionFold.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import { listEndpointLabels } from '$lib/api/endpoints';
@@ -46,10 +47,6 @@
 	const AddKeyIcon = CONTROL_ICONS.addKey.icon;
 	const EditIcon = ROW_ACTION_ICONS.edit.icon;
 	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
-
-	// One target size and one hover wash for the icon-only pair, so the two read as a set.
-	const iconActionBase =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)]';
 
 	let {
 		providerId,
@@ -149,9 +146,7 @@
 {:else if error}
 	<StateMessage kind="error" title="This custom provider could not be loaded" apiError={error}>
 		{#snippet action()}
-			<button type="button" class="inline-flex min-h-11 items-center underline" onclick={reload}
-				>Try again</button
-			>
+			<Button variant="ghost" class="underline" onclick={reload}>Try again</Button>
 		{/snippet}
 	</StateMessage>
 {:else if node}
@@ -160,25 +155,21 @@
 	>
 		<div class="flex flex-wrap items-start justify-between gap-3">
 			<div class="flex flex-col gap-1">
-				<h2 class="text-base font-medium">{NODE_TYPE_LABELS[type]} Details</h2>
+				<h2 class="text-sm font-medium">{NODE_TYPE_LABELS[type]} Details</h2>
 				<p class="break-all text-sm text-[var(--color-text-muted)]">
 					{nodeEndpointLabel(node)} · {nodeEndpointUrl(node)}
 				</p>
 			</div>
 			<div class="flex flex-wrap gap-2">
 				{#if onaddkey}
-					<button
-						type="button"
-						class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-						onclick={onaddkey}
-					>
+					<Button variant="outline" onclick={onaddkey}>
 						<AddKeyIcon class="size-4" aria-hidden="true" />
 						Add API Key
-					</button>
+					</Button>
 				{/if}
-				<button
-					type="button"
-					class="{iconActionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+				<Button
+					variant="ghost"
+					size="icon"
 					aria-label="Edit"
 					title="Edit"
 					onclick={() => {
@@ -188,16 +179,16 @@
 					}}
 				>
 					<EditIcon class="size-4" aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					class="{iconActionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]"
+				</Button>
+				<Button
+					variant="destructive-ghost"
+					size="icon"
 					aria-label="Delete"
 					title="Delete"
 					onclick={askDelete}
 				>
 					<DeleteIcon class="size-4" aria-hidden="true" />
-				</button>
+				</Button>
 			</div>
 		</div>
 

@@ -8,6 +8,7 @@
 	// leaves the usage records alone.
 	import Modal from '$lib/components/Modal.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { purgeConfirmed, PURGE_CONFIRMATION } from '$lib/schemas/log-view';
 
@@ -53,19 +54,18 @@
 	</div>
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+		<Button
+			variant="outline"
 			onclick={() => {
 				typed = '';
 				onclose();
-			}}>Keep the logs</button
+			}}>Keep the logs</Button
 		>
-		<button
-			type="button"
+		<Button
+			variant="destructive"
 			disabled={!purgeConfirmed(typed) || busy}
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-3 text-sm font-medium text-white disabled:opacity-50"
-			onclick={onconfirm}>Purge logs</button
+			aria-busy={busy}
+			onclick={onconfirm}>Purge logs</Button
 		>
 	{/snippet}
 </Modal>

@@ -14,7 +14,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import QuotaPage from '../../src/routes/quota/+page.svelte';
-import { CAP_WRITTEN_AT, quotaWindowRow, stubQuota, type QuotaStub } from '../support/quota-stub';
+import { CAP_WRITTEN_AT, quotaWindowRow, type QuotaStub } from '../support/quota-fixtures';
+import { stubQuota } from '../support/quota-stub';
 import { visit } from '../support/page.svelte';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
@@ -56,6 +57,33 @@ describe('Quota caps', () => {
 
 		await choose('ep_1');
 		expect(screen.getByRole('button', { name: 'Save the cap' })).toBeTruthy();
+	});
+
+	it('offers a retry when the stored cap cannot be read', async () => {
+		stub = stubQuota({ windows: [quotaWindowRow()], capReadStatus: 500 });
+		render(QuotaPage);
+
+		await fireEvent.change(await screen.findByLabelText('Endpoint'), {
+			target: { value: 'ep_1' }
+		});
+
+		expect(await screen.findByRole('alert')).toBeTruthy();
+		stub.capReadStatus = 200;
+		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+		await waitFor(() => expect(screen.getByRole('status', { name: 'Stored cap' })).toBeTruthy());
+		expect(input('Monthly cost (USD)').disabled).toBe(false);
+	});
+
+	it('sizes the cap form for a phone and fixes its width from sm', async () => {
+		stub = stubQuota({ windows: [] });
+		render(QuotaPage);
+
+		const endpoint = (await screen.findByLabelText('Endpoint')) as HTMLSelectElement;
+
+		expect(endpoint.classList.contains('w-full')).toBe(true);
+		expect(endpoint.classList.contains('sm:w-72')).toBe(true);
+		expect(endpoint.closest('label')?.classList.contains('w-full')).toBe(true);
 	});
 
 	it('reads the stored cap when an endpoint is chosen', async () => {

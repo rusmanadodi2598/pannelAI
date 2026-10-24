@@ -22,15 +22,18 @@
 	import { fetchSettings, patchProviderProxies } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
 	import type { Proxy } from '$lib/schemas/proxy';
+	import { describeProxyBinding } from '$lib/utils/proxy-binding';
+	import { type PanelSettings } from '$lib/schemas/settings';
 	import {
 		PROXY_POOL_NONE,
+		type ProviderProxy,
+		type ProviderProxyPatch
+	} from '$lib/schemas/settings-provider-overrides';
+	import {
 		PROXY_STRATEGIES,
 		PROXY_STRATEGY_LABELS,
-		type PanelSettings,
-		type ProviderProxy,
-		type ProviderProxyPatch,
 		type ProviderProxyStrategy
-	} from '$lib/schemas/settings';
+	} from '$lib/schemas/settings-strategies';
 
 	let { providerId }: { providerId: string } = $props();
 
@@ -71,10 +74,17 @@
 		return options;
 	});
 
-	// What the engine will actually do with this provider, stated rather than left to be worked out. The
-	// name avoids `state`: in a Svelte component `$state` is the rune, and a plain `state` binding makes
-	// every rune in the file resolve as a subscription of it.
-	const summary = $derived(describeSummary());
+	// What the engine will actually do with this provider, in one sentence. The local is named `summary`
+	// rather than `state`: a plain `state` binding makes every rune in the file read as a subscription of it.
+	const summary = $derived(
+		describeProxyBinding({
+			poolChoice,
+			strategyChoice,
+			effectiveStrategy,
+			pinnedLabel,
+			globalEnabled
+		})
+	);
 
 	$effect(() => {
 		// The id is read here so a route swap re-reads the binding, and handed on so a slower earlier
@@ -113,25 +123,6 @@
 		const entry = entries[providerId] ?? null;
 		poolChoice = entry?.pool_id ?? '';
 		strategyChoice = entry?.strategy ?? '';
-	}
-
-	function describeSummary(): string {
-		if (poolChoice === PROXY_POOL_NONE) {
-			return 'Dials direct. The global proxy setting is not used.';
-		}
-		if (poolChoice !== '') {
-			const strategy = PROXY_STRATEGY_LABELS[effectiveStrategy];
-			if (pinnedLabel === null) {
-				return `Pinned to ${poolChoice} (missing). Other pools carry this with ${strategy}.`;
-			}
-			return `Pinned to ${pinnedLabel}, which leads; other pools follow (${strategy}).`;
-		}
-		if (strategyChoice !== '') {
-			return `Global pool, own strategy (${PROXY_STRATEGY_LABELS[effectiveStrategy]}); proxying ${
-				globalEnabled ? 'on' : 'off'
-			}.`;
-		}
-		return `Follows the global proxy setting (${globalEnabled ? `on, ${PROXY_STRATEGY_LABELS[effectiveStrategy]}` : 'off'}).`;
 	}
 
 	/** Builds the entry from the two controls, or null when nothing is left to store. */

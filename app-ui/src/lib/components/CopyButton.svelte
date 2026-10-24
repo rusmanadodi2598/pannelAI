@@ -1,52 +1,38 @@
 <script lang="ts">
-	// Copy control (docs/SPEC-UI/001-SPEC-UI.md §6.12, §6.10).
-	//
-	// The value is the caller's, so the placeholder rule lives with the text that carries it and this
-	// control never composes a credential. The label is a prop because what is copied differs by screen:
-	// a URL on the API Docs screen, an install line on the Skills screen.
-	//
-	// The three sentences below belong to the control rather than to a screen, which is why they live
-	// here: they describe a clipboard write failing or succeeding, and every caller reads the same either
-	// way. They moved out of `strings/api-docs.ts` when Skills became the second caller.
-	//
-	// Two write paths, because the first one is missing exactly where this panel is usually opened. The
-	// async clipboard API exists only in a secure context, and the panel is normally reached at an
-	// `http://<host>:3000` address, which is not one; a browser can refuse a write even where it exists.
-	// The selection-based path is tried second, and only when both fail does the control report a
-	// failure. Where that path puts its scratch field is not a detail: a modal dialog inerts the rest of
-	// the document, so a field outside one copies nothing while reporting success.
-	//
-	// A caller that has to act on the outcome can pass `oncopied`, which fires only after a write
-	// succeeded. The one-time key modal uses it to unlock dismissal, so the modal opens up when the key
-	// actually reached the clipboard rather than when the button was pressed.
-	//
-	// The control has two shapes and one contract. `iconOnly` drops the visible word and keeps it as the
-	// accessible name and the title, which is the shape the two modals use so the value and the outcome
-	// sentence are the only things read beside it. Callers can request a 44px target for touch layouts.
-	// The sentence is not part of the shape: a copy that
-	// reported nothing would be the dead control R-26 rejects, pressed in either shape.
+	// Copy control (SPEC-UI §6.12, §6.10): the value and label belong to the caller, and the outcome
+	// is always reported. The async clipboard needs a secure context, so the selection fallback covers
+	// the panel's usual http origin. A modal dialog inerts the page, so its scratch field must live in
+	// the open dialog and sit off screen; display:none cannot be selected. `oncopied` fires after a
+	// real write, which is how the one-time key modal unlocks dismissal. A caller that asks for
+	// `glyphOutcome` moves the sentence into the live region and draws the answer on the glyph, so an
+	// anchored icon never shifts when a word appears beside it.
 	import { CONTROL_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 
 	const DEFAULT_LABEL = 'Copy';
 	const COPIED = 'Copied.';
 	const FAILED = 'Copy failed. Select the text and copy it.';
 
 	const CopyIcon = CONTROL_ICONS.copy.icon;
-
-	// One base for both shapes, so the border and the hover state cannot drift apart between them.
-	const BUTTON_BASE =
-		'rounded-[var(--radius-sm)] border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]';
+	const CopiedIcon = CONTROL_ICONS.copyDone.icon;
+	const FailedIcon = CONTROL_ICONS.copyFailed.icon;
 
 	let {
 		value,
 		label = DEFAULT_LABEL,
+		ariaLabel,
 		iconOnly = false,
+		glyphOutcome = false,
 		oncopied,
 		touchTarget = false
 	}: {
 		value: string;
 		label?: string;
+		/** A more specific name for a control repeated on a page, while its visible label stays short. */
+		ariaLabel?: string;
 		iconOnly?: boolean;
+		/** Draws the outcome on the glyph and leaves the sentence to the live region. */
+		glyphOutcome?: boolean;
 		oncopied?: () => void;
 		touchTarget?: boolean;
 	} = $props();
@@ -65,15 +51,8 @@
 	}
 
 	/**
-	 * The selection-based copy, for an origin without the async API.
-	 *
-	 * The scratch field goes into the open dialog when there is one (the last one in the document, which is
-	 * the one on top in every flow this panel has), because a modal dialog makes every other node inert and
-	 * an inert node cannot be selected: a field appended to the body there copies nothing while
-	 * `execCommand` still answers true, so the control would report a copy that never happened. The field
-	 * is off screen rather than hidden, because a node with `display: none` cannot be selected either, and
-	 * it is removed again whether the copy worked or not. `execCommand` is deprecated and is still the only
-	 * path that works on an insecure origin, which is why it is here rather than dropped.
+	 * Selection-based copy for an origin without the async API. `execCommand` is deprecated and remains
+	 * the only path on an insecure origin.
 	 */
 	function writeLegacy(text: string): boolean {
 		const previous = document.activeElement;
@@ -92,18 +71,14 @@
 			area.select();
 			area.setSelectionRange(0, text.length);
 
-			// The selection is what the command copies, and a field that could not take focus has none.
-			// `execCommand` answers true in exactly that case, so its answer is trusted only once the
-			// selection landed. Reporting the failure keeps the one-time key modal closed (§6.2), because
-			// a dismissal on a copy that did not land would lose the only copy of the key.
+			// `execCommand` answers true even when focus failed, so trust it only after the selection landed.
 			if (document.activeElement !== area) return false;
 			return document.execCommand('copy');
 		} catch {
 			return false;
 		} finally {
 			area.remove();
-			// Removing the field drops focus to the body, which is outside the dialog the operator was
-			// working in, so focus goes back to the control that was pressed.
+			// Removing the scratch field drops focus to the body, so restore the pressed control.
 			if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
 		}
 	}
@@ -121,31 +96,39 @@
 
 <span class="inline-flex items-center gap-2">
 	{#if iconOnly}
-		<button
-			type="button"
-			class="inline-flex {touchTarget
-				? 'size-11'
-				: 'size-9'} items-center justify-center {BUTTON_BASE}"
-			aria-label={label}
-			title={label}
+		<Button
+			variant="outline"
+			size={touchTarget ? 'icon' : 'icon-sm'}
+			aria-label={ariaLabel ?? label}
+			title={ariaLabel ?? label}
 			onclick={() => void write()}
 		>
-			<CopyIcon class="size-4" aria-hidden="true" />
-		</button>
+			{#if glyphOutcome && state === 'copied'}
+				<CopiedIcon class="size-4 text-[var(--color-ok)]" aria-hidden="true" />
+			{:else if glyphOutcome && state === 'failed'}
+				<FailedIcon class="size-4 text-[var(--color-danger)]" aria-hidden="true" />
+			{:else}
+				<CopyIcon class="size-4" aria-hidden="true" />
+			{/if}
+		</Button>
 	{:else}
-		<button
-			type="button"
-			class="inline-flex {touchTarget
-				? 'min-h-11'
-				: 'min-h-9'} items-center gap-1.5 {BUTTON_BASE} px-2.5 text-xs"
+		<Button
+			variant="outline"
+			size="sm"
+			class={touchTarget ? 'min-h-11' : undefined}
+			aria-label={ariaLabel}
 			onclick={() => void write()}
 		>
 			<CopyIcon class="size-3.5" aria-hidden="true" />
 			{label}
-		</button>
+		</Button>
 	{/if}
 
-	<span class="text-xs text-[var(--color-text-muted)]" role="status" aria-live="polite">
+	<span
+		class={iconOnly && glyphOutcome ? 'sr-only' : 'text-xs text-[var(--color-text-muted)]'}
+		role="status"
+		aria-live="polite"
+	>
 		{#if state === 'copied'}
 			{COPIED}
 		{:else if state === 'failed'}

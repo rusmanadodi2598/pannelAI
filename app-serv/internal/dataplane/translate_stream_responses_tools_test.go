@@ -182,9 +182,12 @@ func TestResponsesStreamState_Completed(t *testing.T) {
 			wantPrompt: 12,
 		},
 		{
-			name:       "an answer cut by the ceiling still finishes as a stop",
+			// The response object is the authority on how the answer ended, the
+			// same one the fold reads: an event named completed whose payload says
+			// the ceiling cut the answer is a ceiling cut.
+			name:       "an answer whose own status says the ceiling cut it finishes as a length",
 			events:     []string{`{"type":"response.completed","response":{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"}}}`},
-			wantFinish: FinishStop,
+			wantFinish: FinishLength,
 		},
 	}
 	for _, tc := range cases {

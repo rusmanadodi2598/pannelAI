@@ -44,6 +44,7 @@ type ResponsesStreamState struct {
 	// mapping in one shape.
 	claude    StreamState
 	responses responsesStreamState
+	gemini    geminiStream
 
 	// seq is the last sequence_number handed out, which the API requires to
 	// increase by one across the stream.
@@ -73,6 +74,9 @@ type ResponsesStreamState struct {
 	// usage is the accounting the upstream reported, or nil when it reported
 	// none, which is what distinguishes "said zero" from "said nothing".
 	usage *schema.Usage
+	// finishReason is the reason the upstream closed the answer, or "" when it
+	// closed without one. The terminal event is written from it.
+	finishReason string
 }
 
 // NewResponsesStreamState builds the state for one client stream.
@@ -102,6 +106,12 @@ func (s *ResponsesStreamState) Frames(upstreamTarget string, payload []byte) [][
 		return s.chunksFrames(chunks)
 	case TargetResponses:
 		chunk := s.responses.chunk(payload)
+		if chunk == nil {
+			return nil
+		}
+		return s.chunkFrames(chunk)
+	case TargetGemini:
+		chunk := s.gemini.chunk(payload, s.Created)
 		if chunk == nil {
 			return nil
 		}
@@ -153,6 +163,7 @@ func (s *ResponsesStreamState) chunkFrames(payload []byte) [][]byte {
 		frames = append(frames, s.deltaEvents(delta)...)
 	}
 	if reason := stringField(choice, "finish_reason"); reason != "" {
+		s.finishReason = reason
 		frames = append(frames, s.closeItems()...)
 	}
 	return frames
@@ -167,6 +178,11 @@ func (s *ResponsesStreamState) Finish() [][]byte {
 	frames = append(frames, s.completedFrame()...)
 	return append(frames, []byte(SSEDone))
 }
+
+// terminalSeen reports whether the upstream sent a finish reason, which every
+// supported upstream format emits at its closing event. Finish writes the
+// client's closing event from the same field, so a caller reads this before it.
+func (s *ResponsesStreamState) terminalSeen() bool { return s.finishReason != "" }
 
 // Usage reports the accounting the stream observed, or nil when the upstream
 // reported none, so a streamed call records the same number a non-streamed one

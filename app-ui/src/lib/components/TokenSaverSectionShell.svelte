@@ -3,8 +3,12 @@
 	//
 	// Three sections share one frame because they share one save rule: §6.7 makes the save per section, so
 	// each needs its own button, its own unsaved marker, and its own outcome line. The frame keeps that
-	// rule in one place instead of three copies that could drift apart.
+	// rule in one place instead of three copies that could drift apart, and the band itself is the one the
+	// settings tabs already end with, so the two screens cannot disagree about what a write looks like.
 	import type { Snippet } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import SaveBar from '$lib/components/SaveBar.svelte';
+	import type { ApiError } from '$lib/api/errors';
 
 	type Props = {
 		title: string;
@@ -12,14 +16,28 @@
 		dirty: boolean;
 		saving: boolean;
 		saved: boolean;
+		disabled?: boolean;
+		/** The failure of this section's last write, shown beside the control that retries it. */
+		error: string | ApiError | null;
 		saveLabel: string;
 		onsave: () => void;
 		ondiscard: () => void;
 		children: Snippet;
 	};
 
-	let { title, description, dirty, saving, saved, saveLabel, onsave, ondiscard, children }: Props =
-		$props();
+	let {
+		title,
+		description,
+		dirty,
+		saving,
+		saved,
+		disabled = false,
+		error,
+		saveLabel,
+		onsave,
+		ondiscard,
+		children
+	}: Props = $props();
 </script>
 
 <section
@@ -32,18 +50,22 @@
 
 	{@render children()}
 
-	<div class="flex flex-wrap items-center gap-3">
-		<button
-			type="button"
-			disabled={saving}
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-			onclick={onsave}>{saving ? 'Saving' : saveLabel}</button
+	{#if error}
+		<p
+			role="alert"
+			class="rounded-[var(--radius-sm)] border border-[var(--color-danger)] px-3 py-2 text-sm"
 		>
-		{#if dirty}
-			<button type="button" class="min-h-11 underline" onclick={ondiscard}>Discard changes</button>
-			<span class="text-sm font-medium text-[var(--color-text-muted)]">Unsaved changes</span>
-		{:else if saved}
-			<span class="text-sm text-[var(--color-text-muted)]" role="status">Saved.</span>
-		{/if}
-	</div>
+			<ApiErrorText {error} />
+		</p>
+	{/if}
+
+	<SaveBar
+		{saveLabel}
+		{saving}
+		{dirty}
+		{disabled}
+		message={dirty || !saved ? null : 'Saved.'}
+		{onsave}
+		{ondiscard}
+	/>
 </section>

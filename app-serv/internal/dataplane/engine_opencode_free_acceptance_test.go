@@ -122,7 +122,7 @@ func TestOpenCodeFree_NoCredentialMaterialLeavesTheGateway(t *testing.T) {
 // TestOpenCodeFree_DeclaredResponsesModelTakesTheResponsesWire pins the per-model
 // rule the port restored: muse-spark-1.3-contributor-free is declared
 // with target_format openai-responses, so a chat client's request must be
-// translated and POSTed to /zen/v1/responses rather than forwarded to the chat
+// translated and POSTed to /inference/v1/responses rather than forwarded to the chat
 // path. The stand-in refuses the wrong path, so this fails loudly on a regression.
 func TestOpenCodeFree_DeclaredResponsesModelTakesTheResponsesWire(t *testing.T) {
 	seen := []openCodeFreeCall{}
@@ -138,7 +138,7 @@ func TestOpenCodeFree_DeclaredResponsesModelTakesTheResponsesWire(t *testing.T) 
 	if len(seen) != 1 {
 		t.Fatalf("upstream calls = %d, want 1", len(seen))
 	}
-	if seen[0].Path != "/zen/v1/responses" {
+	if seen[0].Path != "/inference/v1/responses" {
 		t.Fatalf("path = %q, want the Responses leaf the model declares", seen[0].Path)
 	}
 	var body map[string]any
@@ -181,18 +181,18 @@ func freeSinkText(sink *recordingSink) string {
 	return out.String()
 }
 
-// TestOpenCodeFree_UnknownFreeIdStillPassesThrough pins the provider's declared
-// passthrough: space-bunny-free and mimo-v2.6-flash-free are not in the static
-// model list (the reference lists them only through its live model fetcher), so
-// they must resolve as-is rather than being refused as unknown. This is the
-// property that makes the owner's list servable without editing the registry.
+// TestOpenCodeFree_UnknownFreeIdStillPassesThrough pins passthrough for the ids
+// the catalog deliberately does not advertise: `union-alpha` answers 400 upstream,
+// and `ling-3.1-flash-free` is absent from the live free feed. Leaving the catalog
+// must not make an id unresolvable: a client already holding one of them gets the
+// upstream's own answer rather than MODEL_NOT_FOUND from this gateway.
 func TestOpenCodeFree_UnknownFreeIdStillPassesThrough(t *testing.T) {
 	index, err := registry.Load()
 	if err != nil {
 		t.Fatalf("loading the embedded registry: %v", err)
 	}
 	entry, _ := index.Provider("opencode")
-	for _, model := range []string{"space-bunny-free", "mimo-v2.6-flash-free"} {
+	for _, model := range []string{"union-alpha", "ling-3.1-flash-free"} {
 		if _, declared := index.Model("opencode", model); declared {
 			t.Fatalf("%s is declared; this test pins the passthrough path it must use", model)
 		}

@@ -70,20 +70,18 @@ function sectionHeadings(): string[] {
 }
 
 describe("a custom node's detail screen", () => {
-	it('leads with the node, then its connections, then its models', async () => {
+	it('keeps the same Overview and tab order as a registry provider', async () => {
 		await renderNode();
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 		await waitFor(() =>
 			expect(screen.getByRole('heading', { name: 'OpenAI Compatible Details' })).toBeTruthy()
 		);
 
-		// The screen groups its sections into three tabs, and the tab carries the reading order: the node's own
-		// details first, then what routes through it (connections and the proxy card beside them, docs/PORT/
-		// 009-PORT-PROVIDER-PROXY.md D9), then the models it can answer with.
+		// Both shapes use the same tab order, so a node never moves the operator's reading path.
 		expect(screen.getAllByRole('tab', { name: /.+/ }).map((t) => t.textContent?.trim())).toEqual([
 			'Overview',
-			'Connections',
-			'Models'
+			'Models',
+			'Connections'
 		]);
 
 		// Inside the Connections tab the proxy card follows the connections it belongs beside.
@@ -94,20 +92,24 @@ describe("a custom node's detail screen", () => {
 		expect(sectionHeadings()).toEqual(['Available Models']);
 	});
 
-	it('does not render the registry blocks a node is not in', async () => {
+	it('keeps the common provider facts but not the registry-only model sections', async () => {
 		await renderNode();
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 		await waitFor(() =>
 			expect(screen.getByRole('heading', { name: 'OpenAI Compatible Details' })).toBeTruthy()
 		);
 
-		// The catalog, the disabled set, and the fact table describe the embedded registry. A node is not in
-		// it, so the registry's own screens for those live on a registry provider's page.
+		// The Overview leads with the same status and fact cards as a registry provider.
+		expect(screen.getByRole('heading', { name: 'Transport' })).toBeTruthy();
+		expect(screen.getByRole('heading', { name: 'Access' })).toBeTruthy();
+		expect(screen.getByRole('heading', { name: 'Models and endpoints' })).toBeTruthy();
+		expect(screen.getAllByText('Category').length).toBeGreaterThan(0);
+
+		// The catalog, the disabled set, and the custom-model table still describe the embedded registry,
+		// not a node's own model rows.
 		expect(screen.queryByText('Model catalog')).toBeNull();
 		expect(screen.queryByText('Models this provider cannot route')).toBeNull();
 		expect(screen.queryByText('Custom models')).toBeNull();
-		expect(screen.queryByText('Category')).toBeNull();
-		expect(screen.queryByText('Routability')).toBeNull();
 
 		// The import is the operator's action: rendering the node's screen does not read the upstream's
 		// model list on its own.

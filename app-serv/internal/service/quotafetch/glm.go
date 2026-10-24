@@ -80,7 +80,7 @@ func fetchGlm(ctx context.Context, creds Credentials) Result {
 	endpoint := endpointFor(declaredOr(creds.Endpoints.URL, glmQuotaURL), creds.Endpoint)
 	response, err := requestUsage(ctx, http.MethodGet, endpoint, bearer(apiKey, creds.UsageHeaders), "")
 	if err != nil {
-		return Result{Plan: glmDisplayName, Message: fmt.Sprintf("%s error: %s", glmDisplayName, err)}
+		return Result{Plan: glmDisplayName, Message: fmt.Sprintf("%s error: %s", glmDisplayName, err), transient: true}
 	}
 	if failure, soft := response.softFailure(glmDisplayName); soft {
 		failure.Plan = glmDisplayName

@@ -1,7 +1,7 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_route.go
-// @for       The proxy route engine's one decision: which proxy candidates a request dials through, in which order (docs/PORT/ 008-PORT-PROXY-ENGINE.md D1-D6).
+// @for       The proxy route engine's one decision: which proxy candidates a request dials through, in which order (docs/PORT/008-PORT-PROXY-ENGINE.md D1-D6).
 // @uses      internal/domain, internal/repository, context, net/url, strings, time.
 // @reason    §7.11 makes the pool a set of tested candidates and the owner's directive makes it carry traffic: one service owns the plan so the two dataplane call sites walk one order rather than re-implementing the strategy. Every rule the plan applies (usability, exemption, stable order, rotation, parking, the static last resort) is pinned by proxy_route_test.go, and each degradation is deliberate: a pool the process cannot read must not take the data plane down.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
@@ -38,7 +38,9 @@ type proxyLister interface {
 	List(ctx context.Context) ([]domain.Proxy, error)
 }
 
-// ProxyRouteDeps holds the collaborators the route service needs.
+// ProxyRouteDeps holds the collaborators the route service needs: the settings and
+// pool reads a plan makes, the opener that unseals a candidate's password, the
+// rotation and cooldown store, and an optional clock.
 type ProxyRouteDeps struct {
 	Proxies  proxyLister
 	Routes   repository.ProxyRouteStore
@@ -162,12 +164,12 @@ func (s *ProxyRouteService) Plan(ctx context.Context, providerID, destHost strin
 	return attempts, nil
 }
 
-// ReportFailure parks one candidate for the cooldown (D6). It is best effort:
-// a store that cannot park leaves the candidate in rotation, which is the same
-// degradation the plan applies to its own store reads.
-func (s *ProxyRouteService) ReportFailure(ctx context.Context, proxyID string) {
+// ReportFailure takes one candidate out of rotation for the wait the failure
+// stated (D6). It is best effort: a store that cannot park leaves the candidate in
+// rotation, which is the same degradation the plan applies to its own store reads.
+func (s *ProxyRouteService) ReportFailure(ctx context.Context, proxyID string, ttl time.Duration) {
 	if proxyID == "" {
 		return
 	}
-	_ = s.routes.Park(ctx, proxyID, domain.ProxyFailureCooldown)
+	_ = s.routes.Park(ctx, proxyID, ttl)
 }

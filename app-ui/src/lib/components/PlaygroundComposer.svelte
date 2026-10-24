@@ -10,6 +10,7 @@
 	// schema, so the body that leaves this screen is the body the panel's route accepts; the disabled
 	// attribute is the same rule one step earlier, for the two cases it can see.
 	import FormIssues from '$lib/components/FormIssues.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		schemaPlaygroundRequest,
 		type PlaygroundModel,
@@ -92,17 +93,11 @@
 
 	<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
 		{#if sending}
-			<button
-				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4"
-				onclick={onstop}>{copy.composer.stop}</button
-			>
+			<!-- One slot, one accent: the control that starts the send is the control that stops it, so
+			     both wear the primary treatment and only one of them is ever on screen (DESIGN.md §3.4). -->
+			<Button type="button" onclick={onstop}>{copy.composer.stop}</Button>
 		{:else}
-			<button
-				type="submit"
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
-				disabled={!canSend}>{copy.composer.send}</button
-			>
+			<Button type="submit" disabled={!canSend}>{copy.composer.send}</Button>
 		{/if}
 
 		<p class="text-sm text-[var(--color-text-muted)]">{copy.composer.cost}</p>

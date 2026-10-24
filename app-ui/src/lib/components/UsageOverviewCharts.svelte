@@ -8,8 +8,10 @@
 	// The cost series parses the API's decimal string, which is the only place on this screen that does.
 	// The tiles print that string as it arrives, and a chart needs a number to size a bar.
 	import UsageChart from '$lib/components/UsageChart.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { UsageBucket } from '$lib/schemas/usage';
-	import { formatCost, type SeriesPoint } from '$lib/schemas/usage-view';
+	import { formatCost } from '$lib/schemas/usage-view';
+	import { type SeriesPoint } from '$lib/schemas/usage-series';
 
 	let { buckets }: { buckets: UsageBucket[] } = $props();
 
@@ -43,13 +45,10 @@
 			: {
 					title: 'Tokens',
 					unit: 'tokens',
-					caption: 'Tokens in plus out per bucket. Cache is in the tiles.',
+					caption: 'Tokens in plus tokens out per bucket. Cache is in the tiles.',
 					points: tokens
 				}
 	);
-
-	const toggleClass =
-		'min-h-11 rounded-[var(--radius-sm)] px-3 text-sm aria-pressed:bg-[var(--color-surface-2)]';
 </script>
 
 <div class="grid gap-4 lg:grid-cols-2">
@@ -64,17 +63,17 @@
 			<div
 				class="flex items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] p-1"
 			>
-				<button
-					type="button"
+				<Button
 					aria-pressed={chartMode === 'tokens'}
-					class={toggleClass}
-					onclick={() => (chartMode = 'tokens')}>Tokens</button
+					variant="toggle"
+					class="border-transparent"
+					onclick={() => (chartMode = 'tokens')}>Tokens</Button
 				>
-				<button
-					type="button"
+				<Button
 					aria-pressed={chartMode === 'costs'}
-					class={toggleClass}
-					onclick={() => (chartMode = 'costs')}>Cost</button
+					variant="toggle"
+					class="border-transparent"
+					onclick={() => (chartMode = 'costs')}>Cost</Button
 				>
 			</div>
 		{/snippet}

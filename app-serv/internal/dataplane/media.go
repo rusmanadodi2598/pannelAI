@@ -15,7 +15,6 @@ package dataplane
 import (
 	"bytes"
 	"context"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -105,11 +104,9 @@ func (t *MediaTransport) Do(ctx context.Context, request MediaRequest) (MediaRes
 		_ = response.Body.Close()
 	}()
 
-	body, err := io.ReadAll(io.LimitReader(response.Body, mediaBodyBytes))
+	body, err := readBounded(response.Body, mediaBodyBytes)
 	if err != nil {
-		// reason: a partial error body names the failure as well as an empty one
-		// does, so the read error must not mask the status the client acts on.
-		body = nil
+		return MediaResponse{}, wrapDataPlaneError(CodeUpstreamError, "the media response could not be read", err)
 	}
 	return MediaResponse{Status: response.StatusCode, Body: body}, nil
 }

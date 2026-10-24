@@ -66,7 +66,7 @@ func fetchDeepSeek(ctx context.Context, creds Credentials) Result {
 	endpoint := endpointFor(declaredOr(creds.Endpoints.URL, deepSeekBalanceURL), creds.Endpoint)
 	response, err := requestUsage(ctx, http.MethodGet, endpoint, bearer(apiKey, creds.UsageHeaders), "")
 	if err != nil {
-		return Result{Plan: deepSeekDisplayName, Message: fmt.Sprintf("DeepSeek error: %s", err)}
+		return Result{Plan: deepSeekDisplayName, Message: fmt.Sprintf("DeepSeek error: %s", err), transient: true}
 	}
 	if failure, soft := response.softFailure(deepSeekDisplayName); soft {
 		failure.Plan = deepSeekDisplayName

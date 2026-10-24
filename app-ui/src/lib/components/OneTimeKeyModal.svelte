@@ -1,17 +1,12 @@
 <script lang="ts">
 	// One-time display of a newly created gateway key.
 	//
-	// The API returns the plaintext once and keeps only a hash, so this modal is not dismissible by
-	// accident: the close control appears only after the operator ticks the acknowledgement, and the
-	// value is never written to storage.
-	//
-	// The copy control is the shared one, icon-only here, which is what makes a refused clipboard write
-	// visible: it reports "Copied." or the failure sentence, and the key stays on screen to select. A copy
-	// that succeeded also unlocks dismissal, because at that point the key is in the operator's clipboard
-	// rather than only on this screen (SPEC-UI §6.2). A refused copy does not: closing on it would lose
-	// the one value the gateway will never show again.
+	// The API returns the plaintext once and keeps only a hash; the value is never stored. Dismissal
+	// stays locked until the operator acknowledges storage or copies successfully (SPEC-UI §6.2);
+	// a refused copy must not close away the one value the gateway will never show again.
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import Modal from '$lib/components/Modal.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { CreatedGatewayKey } from '$lib/schemas/gateway-key';
 
 	type Props = {
@@ -49,21 +44,21 @@
 				class="min-w-0 flex-1 truncate rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2 py-2 font-mono text-xs"
 				>{created.plaintext_key}</code
 			>
-			<CopyButton value={created.plaintext_key} iconOnly oncopied={() => (copied = true)} />
+			<CopyButton
+				value={created.plaintext_key}
+				iconOnly
+				touchTarget
+				oncopied={() => (copied = true)}
+			/>
 		</div>
 
-		<label class="mt-4 flex items-center gap-2 text-sm">
+		<label class="mt-4 flex min-h-11 items-center gap-2 text-sm">
 			<input type="checkbox" bind:checked={acknowledged} />
 			<span>I've stored this key</span>
 		</label>
 	{/if}
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-			disabled={!acknowledged}
-			onclick={onclose}>Done</button
-		>
+		<Button disabled={!acknowledged} onclick={onclose}>Done</Button>
 	{/snippet}
 </Modal>

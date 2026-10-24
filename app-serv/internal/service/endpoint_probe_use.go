@@ -17,6 +17,7 @@ import (
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 )
 
 // Test probes one endpoint's credential and records the outcome on the aggregate.
@@ -64,8 +65,9 @@ func (s *EndpointService) Test(ctx context.Context, id, keyID string) (domain.Up
 // circuit breaker owns that state: a second health field would let the panel and
 // the router disagree about whether a key may be spent (§7.5). A refused probe
 // is classified from the upstream's own status, so a 401 parks the key exactly
-// as the same answer would during routing, and a 400 parks nothing for the same
-// reason.
+// as the same answer would during routing and a 400 parks nothing for the same
+// reason. A probe that never carried a status parks nothing either: the row
+// records the test's answer, not a health strike for a call that did not happen.
 func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.UpstreamEndpoint, key domain.UpstreamKey, outcome ProbeOutcome, now time.Time) (domain.UpstreamEndpoint, ProbeOutcome, error) {
 	endpoint.RecordTest(outcome.State, outcome.LatencyMS, outcome.Message, now)
 	// A request-shaped refusal is the probe's own body at fault, not the
@@ -80,6 +82,10 @@ func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.Upstr
 			if _, err := endpoint.RecordKeySuccess(key.ID(), now); err != nil {
 				return domain.UpstreamEndpoint{}, ProbeOutcome{}, err
 			}
+		case outcome.Status == 0:
+			// No status means nothing was sent or nothing answered, which routing
+			// classes as the target's own failure: it cannot park a credential.
+			recordKeyHealth = false
 		case class == domain.KeyFailureRequest:
 			recordKeyHealth = false
 		default:
@@ -87,7 +93,7 @@ func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.Upstr
 			if reason == "" {
 				reason = "connectivity test failed"
 			}
-			if _, err := endpoint.RecordKeyFailure(key.ID(), reason, class, now); err != nil {
+			if _, err := endpoint.RecordKeyFailure(key.ID(), reason, class, s.healthPolicy(ctx, endpoint.ProviderID()), now); err != nil {
 				return domain.UpstreamEndpoint{}, ProbeOutcome{}, err
 			}
 		}
@@ -104,13 +110,29 @@ func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.Upstr
 	return endpoint, outcome, nil
 }
 
+// healthPolicy resolves the provider's parking windows for a failed probe. A nil
+// seam and a failed read both answer the documented windows: the strike is still
+// recorded, at the length nobody configured.
+func (s *EndpointService) healthPolicy(ctx context.Context, providerID string) domain.KeyHealthPolicy {
+	if s.health == nil {
+		return domain.DefaultKeyHealthPolicy()
+	}
+	policy, err := s.health.KeyHealthPolicy(ctx, providerID)
+	if err != nil {
+		logx.Degraded(nil, "key health policy unavailable, the probe parked at the documented windows", err,
+			"provider_id", providerID)
+		return domain.DefaultKeyHealthPolicy()
+	}
+	return policy
+}
+
 // selectProbeKey resolves which key a probe targets: the named one, or the first
-// key in the active status ordered by priority.
-//
+// key in the active status ordered by priority.//
 // It does not use NextKey, because that answers a different question ("which key
 // would routing spend now"): a key parked inside its circuit-breaker backoff is
 // deliberately skipped there, and testing such a key is exactly what an operator
-// does after fixing a credential.
+// does after fixing a credential. Only `disabled` is refused here, because that
+// state is the operator's own decision (draft 050 T6).
 func selectProbeKey(endpoint domain.UpstreamEndpoint, keyID string) (domain.UpstreamKey, error) {
 	if strings.TrimSpace(keyID) != "" {
 		key := endpoint.Key(keyID)
@@ -122,7 +144,7 @@ func selectProbeKey(endpoint domain.UpstreamEndpoint, keyID string) (domain.Upst
 	keys := endpoint.Keys()
 	best := domain.UpstreamKey{}
 	for _, key := range keys {
-		if key.Status() != domain.UpstreamKeyActive {
+		if key.Status() == domain.UpstreamKeyDisabled {
 			continue
 		}
 		if best.ID() == "" || key.Priority() < best.Priority() {
@@ -130,7 +152,7 @@ func selectProbeKey(endpoint domain.UpstreamEndpoint, keyID string) (domain.Upst
 		}
 	}
 	if best.ID() == "" {
-		return domain.UpstreamKey{}, domain.NewValidationError("this endpoint has no active key to test")
+		return domain.UpstreamKey{}, domain.NewValidationError("this endpoint has no enabled key to test")
 	}
 	return best, nil
 }

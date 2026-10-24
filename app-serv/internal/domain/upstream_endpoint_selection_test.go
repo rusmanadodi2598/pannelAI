@@ -34,7 +34,7 @@ func TestUpstreamEndpoint_ValidKeysAreOrderedByPriority(t *testing.T) {
 
 	// A parked key leaves the list. The failure runs through the aggregate root,
 	// because Key returns a copy: mutating a detached value cannot affect it.
-	if _, err := endpoint.RecordKeyFailure(first.ID(), "upstream said no", KeyFailureAuth, keyNow); err != nil {
+	if _, err := endpoint.RecordKeyFailure(first.ID(), "upstream said no", KeyFailureAuth, DefaultKeyHealthPolicy(), keyNow); err != nil {
 		t.Fatalf("RecordKeyFailure() error = %v", err)
 	}
 	if got := endpoint.ValidKeys(keyNow); len(got) != 2 {
@@ -67,7 +67,7 @@ func TestUpstreamEndpoint_NextKeySkipsUnavailableKeys(t *testing.T) {
 			}
 			for _, priority := range tc.park {
 				key := keyAtPriority(t, endpoint, priority)
-				if _, err := endpoint.RecordKeyFailure(key.ID(), "nope", KeyFailureAuth, keyNow); err != nil {
+				if _, err := endpoint.RecordKeyFailure(key.ID(), "nope", KeyFailureAuth, DefaultKeyHealthPolicy(), keyNow); err != nil {
 					t.Fatalf("RecordKeyFailure() error = %v", err)
 				}
 			}
@@ -122,5 +122,5 @@ func endpointInBackoff(t *testing.T) UpstreamEndpoint {
 	until := keyNow.Add(5 * time.Minute)
 	return RehydrateUpstreamEndpoint("ep_1", "deepseek", "primary", UpstreamAuthAPIKey, 1,
 		UpstreamEndpointActive, nil, EndpointAccount{}, EndpointTestStatus{}, &until, nil,
-		keyNow, keyNow, []UpstreamKey{newTestKey(t, 1)}, ServiceAccountRef{}, EndpointParity{})
+		keyNow, keyNow, []UpstreamKey{newTestKey(t, 1)}, ServiceAccountRef{}, EndpointParity{}, OperatorState{})
 }

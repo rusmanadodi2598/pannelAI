@@ -11,6 +11,7 @@
 	import { LoaderCircle } from '@lucide/svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { MODEL_TEST_SWEEP_LIMIT } from '$lib/schemas/model-test';
 	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
 
@@ -20,10 +21,10 @@
 </script>
 
 <div class="flex flex-col items-start gap-2">
-	<button
-		type="button"
-		class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50"
+	<Button
+		variant="outline"
 		disabled={tests.running}
+		aria-busy={tests.running}
 		onclick={() => void tests.testSweep(providerId)}
 	>
 		{#if tests.sweeping}
@@ -33,7 +34,7 @@
 			<TestIcon class="size-4" aria-hidden="true" />
 			Test the first {MODEL_TEST_SWEEP_LIMIT} models
 		{/if}
-	</button>
+	</Button>
 
 	{#if tests.summary}
 		<p class="text-sm text-[var(--color-text-muted)]" role="status">{tests.summary}</p>

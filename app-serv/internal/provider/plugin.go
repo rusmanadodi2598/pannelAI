@@ -62,11 +62,6 @@ type Plugin interface {
 	// against the same target, and how long to wait. The core handles moving to
 	// the next endpoint; this decides whether the same one deserves a retry.
 	ShouldRetry(status int, header http.Header) RetryDecision
-
-	// IsQuotaError reports whether an upstream rejection means this account has
-	// exhausted its quota, as opposed to a transient failure. A quota rejection
-	// parks the account; a transient one only backs off the key.
-	IsQuotaError(status int, body []byte) bool
 }
 
 // Transformer is the optional seam a connector implements when a provider needs
@@ -100,6 +95,26 @@ type StreamForcer interface {
 	// ForcesStream reports whether this provider refuses a non-streaming
 	// request.
 	ForcesStream() bool
+}
+
+// SessionSerializer is the optional seam a connector implements when its
+// upstream counts a session's concurrent usage: the connector knows which
+// session a call presents, and the transport runs one call at a time for that
+// session rather than letting parallel requests stack upstream and be released
+// together. The refusal an overloaded lane answers with is a separate question:
+// for OpenCode's free tier it is keyed on the egress address, not the session
+// (SPEC-API-001 §7.11). A connector that declares none is unchanged, exactly as
+// with the other optional seams.
+//
+// An implementation must be safe for concurrent use and must not keep
+// per-request state, as Plugin requires: the session is a pure function of the
+// request's endpoint and the client identity its entry declares.
+type SessionSerializer interface {
+	// SessionKey answers the session one call belongs to. An empty string
+	// means the call carries no session identity and needs no serialization,
+	// which is the safe answer for a request the connector cannot name a
+	// session for.
+	SessionKey(req Request) string
 }
 
 // StreamEnvelope is the optional seam a connector implements when its provider

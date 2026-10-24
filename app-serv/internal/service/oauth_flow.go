@@ -47,6 +47,12 @@ type OAuthFlowService struct {
 	tokens oauthhttp.OAuthTokenClient
 	sealer CredentialSealer
 	clock  func() time.Time
+	// providerClients holds the client material the deployment supplied,
+	// keyed by provider id, for the rounds whose client is the operator's own.
+	providerClients map[string]OAuthClient
+	// projects resolves the Cloud project a login's token holds, for the
+	// providers that declare where to ask. Optional, see ProjectResolver.
+	projects ProjectResolver
 }
 
 // OAuthFlowDeps holds the collaborators the flow is assembled from. Every one
@@ -58,6 +64,12 @@ type OAuthFlowDeps struct {
 	States repository.OAuthStateStore
 	Tokens oauthhttp.OAuthTokenClient
 	Sealer CredentialSealer
+	// ProviderClients is optional: a provider absent from it is performed with
+	// the client its registry entry declares.
+	ProviderClients map[string]OAuthClient
+	// Projects is optional, for the same reason: a provider whose entry declares
+	// no bootstrap endpoint is never asked one, with or without a resolver.
+	Projects ProjectResolver
 }
 
 // NewOAuthFlowService validates deps and returns a ready service.
@@ -80,6 +92,8 @@ func NewOAuthFlowService(deps OAuthFlowDeps) (*OAuthFlowService, error) {
 	return &OAuthFlowService{
 		index: deps.Index, store: deps.Store, states: deps.States,
 		tokens: deps.Tokens, sealer: deps.Sealer, clock: time.Now,
+		providerClients: deps.ProviderClients,
+		projects:        deps.Projects,
 	}, nil
 }
 
@@ -102,6 +116,13 @@ type OAuthStart struct {
 func (s *OAuthFlowService) Start(ctx context.Context, in OAuthStartInput) (OAuthStart, error) {
 	provider, oauth, err := s.requireCodeFlow(in.ProviderID)
 	if err != nil {
+		return OAuthStart{}, err
+	}
+
+	clientID, _, err := s.clientFor(provider.ID, oauth)
+	if err != nil {
+		// Refused before anything is staged: a round this deployment cannot
+		// perform leaves no state behind for the provider's redirect to find.
 		return OAuthStart{}, err
 	}
 
@@ -141,7 +162,7 @@ func (s *OAuthFlowService) Start(ctx context.Context, in OAuthStartInput) (OAuth
 		return OAuthStart{}, err
 	}
 
-	authorize, err := buildAuthorizeURL(oauth, redirect, state, verifier)
+	authorize, err := buildAuthorizeURL(oauth, clientID, redirect, state, verifier)
 	if err != nil {
 		return OAuthStart{}, err
 	}

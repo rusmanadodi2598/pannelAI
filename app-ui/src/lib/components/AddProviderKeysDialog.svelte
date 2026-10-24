@@ -26,6 +26,7 @@
 	import { addConnection, addPastedConnections, readStoredLabels } from '$lib/api/provider-keys';
 	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { planConnectionLines } from '$lib/schemas/connection-plan';
 	import { MAX_BULK_CONNECTIONS } from '$lib/schemas/endpoint-write';
 	import { SERVICE_ACCOUNT_AUTH_TYPE } from '$lib/schemas/endpoint-credential';
@@ -208,22 +209,18 @@
 	</div>
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 underline"
-			onclick={onclose}
-		>
+		<Button variant="ghost" class="underline" onclick={onclose}>
 			<CancelIcon class="size-4" aria-hidden="true" />
 			Cancel
-		</button>
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
+		</Button>
+		<Button
+			variant="outline"
 			disabled={saving || empty}
+			aria-busy={saving}
 			onclick={() => void submit()}
 		>
 			<SaveIcon class="size-4" aria-hidden="true" />
 			{submitLabel}
-		</button>
+		</Button>
 	{/snippet}
 </Modal>

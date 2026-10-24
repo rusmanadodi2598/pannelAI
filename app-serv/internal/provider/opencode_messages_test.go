@@ -35,12 +35,12 @@ func TestOpenCode_ApplyAuthSetsAnthropicVersionOnTheMessagesLeaf(t *testing.T) {
 	}{
 		{
 			name:     "the messages leaf",
-			url:      "https://opencode.ai/zen/v1/messages",
+			url:      "https://opencode.ai/inference/v1/messages",
 			wantHead: "2023-06-01",
 		},
 		{
 			name:     "the messages leaf with a query string",
-			url:      "https://opencode.ai/zen/v1/messages?beta=true",
+			url:      "https://opencode.ai/inference/v1/messages?beta=true",
 			wantHead: "2023-06-01",
 		},
 		{
@@ -50,17 +50,17 @@ func TestOpenCode_ApplyAuthSetsAnthropicVersionOnTheMessagesLeaf(t *testing.T) {
 		},
 		{
 			name:     "the chat leaf carries none",
-			url:      "https://opencode.ai/zen/v1/chat/completions",
+			url:      "https://opencode.ai/inference/v1/chat/completions",
 			wantHead: "",
 		},
 		{
 			name:     "the responses leaf carries none",
-			url:      "https://opencode.ai/zen/v1/responses",
+			url:      "https://opencode.ai/inference/v1/responses",
 			wantHead: "",
 		},
 		{
 			name:     "a path that merely ends in messages is not the leaf",
-			url:      "https://opencode.ai/zen/v1/notmessages",
+			url:      "https://opencode.ai/inference/v1/notmessages",
 			wantHead: "",
 		},
 	}

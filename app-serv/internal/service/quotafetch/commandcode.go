@@ -137,14 +137,15 @@ func commandCodeAsk(ctx context.Context, endpoint string, headers map[string]str
 	response, err := requestUsage(ctx, http.MethodGet, endpoint, headers, "")
 	if err != nil {
 		return response, Result{Plan: commandCodeDisplay,
-			Message: fmt.Sprintf("%s error: %s", commandCodeDisplay, err)}, false
+			Message: fmt.Sprintf("%s error: %s", commandCodeDisplay, err), transient: true}, false
 	}
 	if response.status == http.StatusUnauthorized || response.status == http.StatusForbidden {
 		return response, Result{Plan: commandCodeDisplay, Message: commandCodeAuthMessage}, false
 	}
 	if response.status < 200 || response.status >= 300 {
 		return response, Result{Plan: commandCodeDisplay,
-			Message: fmt.Sprintf("%s %s API error (%d)", commandCodeDisplay, surface, response.status)}, false
+			Message:   fmt.Sprintf("%s %s API error (%d)", commandCodeDisplay, surface, response.status),
+			transient: transientStatus(response.status)}, false
 	}
 	return response, Result{}, true
 }

@@ -35,6 +35,6 @@ func (r mediaRouter) RecordSuccess(ctx context.Context, selection dataplane.Sele
 	return r.engine.RecordSuccess(ctx, selection)
 }
 
-func (r mediaRouter) RecordFailure(ctx context.Context, selection dataplane.Selection, reason string, class domain.KeyFailureClass) error {
-	return r.engine.RecordFailure(ctx, selection, reason, class)
+func (r mediaRouter) RecordFailure(ctx context.Context, selection dataplane.Selection, reason string, class domain.KeyFailureClass, rest domain.RestDirective) error {
+	return r.engine.RecordFailure(ctx, selection, reason, class, rest)
 }

@@ -108,25 +108,7 @@ func (r *ProxyRepository) GetByID(ctx context.Context, id string) (domain.Proxy,
 // Update writes every mutable field as one statement, so a test result and a
 // repoint can never be stored half-applied.
 func (r *ProxyRepository) Update(ctx context.Context, proxy domain.Proxy) error {
-	status, err := encodeProxyStatus(proxy.Status())
-	if err != nil {
-		return err
-	}
-	const q = `
-UPDATE proxies
-SET label = $2, protocol = $3, host = $4, port = $5, username = $6,
-	password_encrypted = $7, enabled = $8, status = $9, updated_at = $10
-WHERE id = $1`
-	tag, err := r.pool.Exec(ctx, q,
-		proxy.ID(), proxy.Label(), string(proxy.Protocol()), proxy.Host(), proxy.Port(),
-		proxy.Username(), proxy.PasswordEncrypted(), proxy.Enabled(), status, proxy.UpdatedAt())
-	if err != nil {
-		return fmt.Errorf("proxies: %w", err)
-	}
-	if tag.RowsAffected() == 0 {
-		return domain.ErrProxyNotFound
-	}
-	return nil
+	return updateProxy(ctx, r.pool, proxy)
 }
 
 // Delete removes one candidate, or reports domain.ErrProxyNotFound.

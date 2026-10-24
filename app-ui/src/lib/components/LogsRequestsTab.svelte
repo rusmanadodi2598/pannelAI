@@ -13,6 +13,7 @@
 	import LogsFilters from '$lib/components/LogsFilters.svelte';
 	import PurgeLogsDialog from '$lib/components/PurgeLogsDialog.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import RequestLogDrawer from '$lib/components/RequestLogDrawer.svelte';
 	import RequestLogTable from '$lib/components/RequestLogTable.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
@@ -150,10 +151,8 @@
 	{:else if error}
 		<StateMessage kind="error" title="Requests could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => load(search)}>Try again</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load(search)}
+					>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>
@@ -164,11 +163,7 @@
 			description="These filters may hide requests. Clear them to see all."
 		>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={clearFilters}>Clear filters</button
-				>
+				<Button variant="ghost" class="px-2 underline" onclick={clearFilters}>Clear filters</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if records.length === 0}
@@ -179,10 +174,8 @@
 		>
 			{#snippet action()}
 				{#if search.period !== '60d'}
-					<button
-						type="button"
-						class="inline-flex min-h-11 items-center px-2 underline"
-						onclick={() => change('period', '60d')}>Look back 60 days</button
+					<Button variant="ghost" class="px-2 underline" onclick={() => change('period', '60d')}
+						>Look back 60 days</Button
 					>
 				{/if}
 			{/snippet}
@@ -190,22 +183,24 @@
 	{:else}
 		<RequestLogTable {records} onopen={(record) => (opened = record.request_id)} />
 
+		<!-- Written out rather than the shared band, for the reason the records tab gives: this counter
+		     carries the request total beside the page number. -->
 		<div class="flex items-center gap-3 text-sm">
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
+			<Button
+				variant="ghost"
+				class="px-2 underline"
 				disabled={search.page <= 1}
-				onclick={() => change('page', String(search.page - 1))}>Previous</button
+				onclick={() => change('page', String(search.page - 1))}>Previous</Button
 			>
 			<span class="text-[var(--color-text-muted)]">
 				Page {search.page} of {lastPage}, {total}
 				{total === 1 ? 'request' : 'requests'}
 			</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
+			<Button
+				variant="ghost"
+				class="px-2 underline"
 				disabled={search.page >= lastPage}
-				onclick={() => change('page', String(search.page + 1))}>Next</button
+				onclick={() => change('page', String(search.page + 1))}>Next</Button
 			>
 		</div>
 	{/if}

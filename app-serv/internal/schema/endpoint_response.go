@@ -13,19 +13,35 @@ package schema
 // EndpointKeyResponse is the key shape for list, detail, and create. It carries
 // key_hint and health only: the stored value is never present (§7.5).
 type EndpointKeyResponse struct {
-	ID                string  `json:"id"`
-	EndpointID        string  `json:"endpoint_id"`
-	Label             string  `json:"label"`
-	KeyHint           string  `json:"key_hint"`
-	Priority          int     `json:"priority"`
-	Status            string  `json:"status"`
-	Available         bool    `json:"available"`
-	LastUsedAt        *string `json:"last_used_at,omitempty"`
+	ID         string  `json:"id"`
+	EndpointID string  `json:"endpoint_id"`
+	Label      string  `json:"label"`
+	KeyHint    string  `json:"key_hint"`
+	Priority   int     `json:"priority"`
+	Status     string  `json:"status"`
+	Available  bool    `json:"available"`
+	LastUsedAt *string `json:"last_used_at,omitempty"`
+	// LastSelectedAt names when rotation last chose this account. For an endpoint
+	// holding keys its turn is recorded on the key; for an OAuth or no-auth account,
+	// which owns no key row, this is the only rotation state it carries.
+	LastSelectedAt    *string `json:"last_selected_at,omitempty"`
 	LastError         string  `json:"last_error,omitempty"`
 	ConsecutiveErrors int     `json:"consecutive_errors"`
 	RateLimitedUntil  *string `json:"rate_limited_until,omitempty"`
-	CreatedAt         string  `json:"created_at"`
-	UpdatedAt         string  `json:"updated_at"`
+	// Tags and DisabledUntil are the operator's own marks. The window is rendered because a
+	// credential parked by hand returns on its own, and the panel has to say when.
+	Tags          []string `json:"tags,omitempty"`
+	DisabledUntil *string  `json:"disabled_until,omitempty"`
+	// LastErrorClass names what the last failure was, not the sentence the vendor
+	// wrote: the panel sorts a parked key by this and shows it beside the window.
+	LastErrorClass string `json:"last_error_class,omitempty"`
+	// ResetSource and SignatureID say how the park's rest was arrived at, so an
+	// operator can tell a wait the vendor warranted from one the gateway guessed.
+	// Both are absent for a key parked before the classifier existed.
+	ResetSource string `json:"reset_source,omitempty"`
+	SignatureID string `json:"signature_id,omitempty"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 }
 
 // EndpointOAuthResponse is the redacted OAuth state (§6: oauth is redacted on
@@ -65,12 +81,20 @@ type EndpointResponse struct {
 	TestStatus       *EndpointTestStatusResponse `json:"test_status,omitempty"`
 	RateLimitedUntil *string                     `json:"rate_limited_until,omitempty"`
 	LastUsedAt       *string                     `json:"last_used_at,omitempty"`
-	KeyCount         int                         `json:"key_count"`
-	ActiveKeyCount   int                         `json:"active_key_count"`
-	Available        bool                        `json:"available"`
-	Keys             []EndpointKeyResponse       `json:"keys,omitempty"`
-	CreatedAt        string                      `json:"created_at"`
-	UpdatedAt        string                      `json:"updated_at"`
+	// Tags and DisabledUntil are the operator's marks: the labels a bulk action addresses
+	// this account by, and the deadline its own park releases at.
+	Tags          []string `json:"tags,omitempty"`
+	DisabledUntil *string  `json:"disabled_until,omitempty"`
+	// LastSelectedAt is when rotation last chose this credential, a different fact from
+	// last_used_at, which names the last time it served, and the one rotation orders by: a
+	// key chosen then refused at the network advanced here and not there (SPEC-API-001 §7.5).
+	LastSelectedAt *string               `json:"last_selected_at,omitempty"`
+	KeyCount       int                   `json:"key_count"`
+	ActiveKeyCount int                   `json:"active_key_count"`
+	Available      bool                  `json:"available"`
+	Keys           []EndpointKeyResponse `json:"keys,omitempty"`
+	CreatedAt      string                `json:"created_at"`
+	UpdatedAt      string                `json:"updated_at"`
 
 	// The connection-parity fields. GlobalPriority is 0 when
 	// unset; DefaultModel and ProxyPoolID are empty when unset. LastError is
@@ -116,6 +140,22 @@ type BulkResultRow struct {
 	Index int    `json:"index"`
 	ID    string `json:"id,omitempty"`
 	Error string `json:"error,omitempty"`
+	// Code names a refusal this row carries when the rest of the set did not share it,
+	// which is how a client maps one conflicted credential without reading prose.
+	Code string `json:"code,omitempty"`
+}
+
+// BulkMutationResponse is the answer to a bulk mutation route: what the server matched,
+// what it changed, and each row's outcome.
+//
+// Matched is the server's own count of the resolved set rather than the number of rows a
+// page happened to show, so the panel can report what an action actually covered instead
+// of what the browser had loaded.
+type BulkMutationResponse struct {
+	Matched int             `json:"matched"`
+	Changed int             `json:"changed"`
+	Results []BulkResultRow `json:"results"`
+	Error   *BulkError      `json:"error,omitempty"`
 }
 
 // BulkError repeats the §8 code/message pair inside a bulk body. A refused batch

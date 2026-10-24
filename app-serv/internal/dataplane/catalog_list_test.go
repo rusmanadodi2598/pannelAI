@@ -52,8 +52,11 @@ func catalogIndex(t *testing.T) *registry.Index {
 			Transport: registry.Transport{Format: registry.DefaultFormat, BaseURL: "https://node.test/v1"},
 		},
 		{
-			ID: "gemini-ish", Category: "apikey", PassthroughModels: true,
-			Transport: registry.Transport{Format: "gemini", BaseURL: "https://g.test/v1"},
+			// An envelope-wrapped protocol: the format has no translator here, which
+			// is what keeps its models out of the list. `gemini` itself is translated
+			// natively since draft 061, so it can no longer stand in for that rule.
+			ID: "envelope-ish", Category: "apikey", PassthroughModels: true,
+			Transport: registry.Transport{Format: "vertex", BaseURL: "https://g.test/v1"},
 			Models:    []registry.Model{{ID: "no-translator"}},
 		},
 	}})
@@ -159,7 +162,7 @@ func TestModelList_ActiveProvidersAndCustomModels(t *testing.T) {
 		},
 		{
 			name:   "a provider without a translator lists nothing even when active",
-			active: map[string]bool{"gemini-ish": true, "lit": true},
+			active: map[string]bool{"envelope-ish": true, "lit": true},
 			want:   []string{"free/free-chat", "lit/lit-chat"},
 		},
 	}

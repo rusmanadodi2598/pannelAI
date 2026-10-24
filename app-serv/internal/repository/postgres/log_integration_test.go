@@ -71,6 +71,32 @@ func seedLog(t *testing.T, repo *LogRepository, requestID string, ts time.Time, 
 	}
 }
 
+// TestLogRepository_AppendsAReusedRequestID pins the audit rule: a second row
+// with the caller's id is stored, and the detail read answers with the newest.
+func TestLogRepository_AppendsAReusedRequestID(t *testing.T) {
+	repo := newLogRepo(t)
+	ctx := context.Background()
+	base := time.Now().UTC().Truncate(time.Second)
+	seedLog(t, repo, "req_reused", base, domain.RequestLogSuccess, "first-request", "first-response", "")
+	seedLog(t, repo, "req_reused", base.Add(time.Minute), domain.RequestLogSuccess, "second-request", "second-response", "")
+
+	filter := domain.LogFilter{From: base.Add(-time.Minute), To: base.Add(2 * time.Minute)}
+	entries, total, err := repo.List(ctx, filter, repository.PageQuery{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("List error = %v", err)
+	}
+	if total != 2 || len(entries) != 2 {
+		t.Fatalf("entries = %d, total = %d, want both rows", len(entries), total)
+	}
+	detail, err := repo.GetByRequestID(ctx, "req_reused")
+	if err != nil {
+		t.Fatalf("GetByRequestID error = %v", err)
+	}
+	if detail.ResponseBody() != "second-response" {
+		t.Fatalf("detail body = %q, want the newest row", detail.ResponseBody())
+	}
+}
+
 // TestLogRepository_ListOmitsBodiesAndFilters covers the list projection, the
 // filters, and the paging boundary.
 func TestLogRepository_ListOmitsBodiesAndFilters(t *testing.T) {
@@ -165,9 +191,9 @@ func TestLogRepository_ListOmitsBodiesAndFilters(t *testing.T) {
 	})
 }
 
-// TestLogRepository_DetailAndInsertIdempotency covers the body-bearing detail
-// read and the re-insert of the same row.
-func TestLogRepository_DetailAndInsertIdempotency(t *testing.T) {
+// TestLogRepository_DetailAndReinsert covers the body-bearing detail read and
+// the re-insert of the same row.
+func TestLogRepository_DetailAndReinsert(t *testing.T) {
 	repo := newLogRepo(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -189,7 +215,7 @@ func TestLogRepository_DetailAndInsertIdempotency(t *testing.T) {
 		}
 	})
 
-	t.Run("re-inserting the same row does not duplicate it", func(t *testing.T) {
+	t.Run("re-inserting the same row appends a second audit row", func(t *testing.T) {
 		seedLog(t, repo, "req_1", now, domain.RequestLogSuccess, "the request", "the response", "")
 		entries, total, err := repo.List(ctx, domain.NewLogFilter(domain.LogFilterInput{
 			From: ptrTime(now.Add(-time.Hour)), To: ptrTime(now.Add(time.Hour)),
@@ -197,8 +223,8 @@ func TestLogRepository_DetailAndInsertIdempotency(t *testing.T) {
 		if err != nil {
 			t.Fatalf("List error = %v", err)
 		}
-		if total != 1 || len(entries) != 1 {
-			t.Fatalf("entries = %d, total = %d, want 1 and 1: the request id is the identity", len(entries), total)
+		if total != 2 || len(entries) != 2 {
+			t.Fatalf("entries = %d, total = %d, want 2 and 2: each write owns its audit id", len(entries), total)
 		}
 	})
 }

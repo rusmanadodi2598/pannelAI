@@ -49,7 +49,7 @@ func seedCandidateEndpoint(t *testing.T, repo *EndpointRepository, providerID, i
 		until := now.Add(time.Minute)
 		endpoint = domain.RehydrateUpstreamEndpoint(id, providerID, id, domain.UpstreamAuthNone, 1,
 			status, nil, domain.EndpointAccount{}, domain.EndpointTestStatus{}, &until, nil,
-			now, now, nil, domain.ServiceAccountRef{}, domain.EndpointParity{})
+			now, now, nil, domain.ServiceAccountRef{}, domain.EndpointParity{}, domain.OperatorState{})
 	}
 	if err := repo.Create(context.Background(), endpoint); err != nil {
 		t.Fatalf("storing %s: %v", id, err)

@@ -13,6 +13,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
+	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -33,6 +36,9 @@ func buildProxies(cfg config.Config, pool *pgxpool.Pool, sealer service.Credenti
 		Repo:   postgres.NewProxyRepository(pool),
 		Sealer: sealer,
 		Prober: newProxyProber(guard, cfg.ProxyTestURL),
+		// The endpoint repository answers which connections pin a candidate, which is the
+		// only way a bulk erase can report what it takes down instead of stranding it.
+		Pins: postgres.NewEndpointRepository(pool),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("proxy wiring: %w", err)
@@ -77,14 +83,18 @@ func (p guardedProxyPlanner) Plan(ctx context.Context, providerID, host string) 
 	if len(plan) == 0 {
 		return plan, nil
 	}
-	if err := p.guard.CheckHost(ctx, host); err != nil {
+	destination := strings.Trim(host, "[]")
+	if withoutPort, _, err := net.SplitHostPort(host); err == nil {
+		destination = withoutPort
+	}
+	if err := p.guard.CheckHost(ctx, destination); err != nil {
 		return nil, err
 	}
 	return plan, nil
 }
 
-// ReportFailure parks one candidate for the cooldown, through to the service
-// that owns the rule.
-func (p guardedProxyPlanner) ReportFailure(ctx context.Context, proxyID string) {
-	p.routes.ReportFailure(ctx, proxyID)
+// ReportFailure takes one candidate out of rotation for the stated wait, through
+// to the service that owns the rule.
+func (p guardedProxyPlanner) ReportFailure(ctx context.Context, proxyID string, ttl time.Duration) {
+	p.routes.ReportFailure(ctx, proxyID, ttl)
 }

@@ -53,9 +53,14 @@ func (e *Engine) RecordSuccess(ctx context.Context, selection Selection) error {
 	return e.selector.RecordSuccess(ctx, selection)
 }
 
-// RecordFailure applies a failed call to a key's health.
-func (e *Engine) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass) error {
-	return e.selector.RecordFailure(ctx, selection, reason, class)
+// RecordFailure applies a failed call to a key's health. rest is what the
+// classification of that failure says about how long the key stays out of
+// rotation; the zero value parks it on the class ladder alone, which is what a
+// caller with nothing classified to hand still gets. The walk honors the action
+// that classification resolved through its own recordFailure, which owns the chain.
+func (e *Engine) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass, rest domain.RestDirective) error {
+	_, err := e.selector.RecordFailure(ctx, selection, reason, class, rest)
+	return err
 }
 
 // ErrUnauthorized is the data plane's answer to a missing or invalid credential,

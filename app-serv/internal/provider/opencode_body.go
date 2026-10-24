@@ -4,7 +4,7 @@
 // @file      internal/provider/opencode_body.go
 // @for       The request shape the OpenCode Free tier accepts.
 // @uses      encoding/json.
-// @reason    The free tier answers 403 unless the outbound body both streams and carries the bash and read decoy tools, and the Responses wire answers 400 to `max_tokens`, to a `tool_choice` other than `auto`, and to an output ceiling below 16. Those rules are the provider's, so they are applied here rather than by a branch on the provider id in the translation layer. Everything is a set union or a rename over the client's own body: the client's tools, ceiling, and items all survive, because a gateway that dropped them would answer a different question than the one it was asked. A ceiling that survives is still raised to the minimum the model declares, because a reasoning model spends a smaller one on thinking and returns an empty body the upstream counts as success.
+// @reason    The free tier answers 403 unless the outbound body both streams and carries the read/shell fingerprint tools, and the Responses wire answers 400 to `max_tokens`, to a `tool_choice` other than `auto`, and to an output ceiling below 16. Those rules are the provider's, so they are applied here rather than by a branch on the provider id in the translation layer. Everything is a set union or a rename over the client's own body: the client's tools, ceiling, and items all survive, because a gateway that dropped them would answer a different question than the one it was asked. A ceiling that survives is still raised to the minimum the model declares, because a reasoning model spends a smaller one on thinking and returns an empty body the upstream counts as success.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -14,24 +14,9 @@ package provider
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
-
-// The decoy tools the free tier requires. It answers 403 unless the payload
-// declares both `bash` and `read`, so the connector injects whichever is
-// missing. The description is the reference's own text: it tells the model the
-// tool is unavailable, which keeps a decoy from being called.
-const (
-	openCodeDecoyToolDescription = "This tool is currently unavailable and must not be used."
-	openCodeDecoyBash            = "bash"
-	openCodeDecoyRead            = "read"
-)
-
-// openCodeDecoyNames are the tools the gate checks for, in the order they are
-// injected so the outbound body is byte-stable across calls.
-var openCodeDecoyNames = []string{openCodeDecoyBash, openCodeDecoyRead}
 
 // The Responses item type that carries a prior turn's reasoning. It is dropped
 // because the free tier pools anonymous credentials and a reasoning item is
@@ -50,24 +35,25 @@ func (c *OpenCode) TransformRequest(req *Request) error {
 
 	entry := c.entryFor(*req)
 	wire := opencodeWire(*req, entry)
-	// The client's own tool declarations are read before the decoys are added,
-	// because afterwards the two are indistinguishable.
-	clientDeclaredTools := openCodeDeclaresClientTools(body)
 	// The free tier refuses a non-streaming request on either wire, so the body
 	// always streams and the core is told to read one.
 	body["stream"] = json.RawMessage("true")
 	req.Stream = true
 
+	// The fingerprint pass runs last on either wire: the Responses rules
+	// flatten and correct the client's own declarations first, and only then is
+	// a caller tool that reuses a fingerprint name concealed and the canonical
+	// read/shell declarations appended beside the survivors.
+	//
+	// The alias map the pass reports travels on the request: the core restores
+	// those names in the answer, so a caller that declared its own `read` reads
+	// back calls to `read` rather than to the alias it was concealed under.
 	if wire == registry.FormatOpenAIResponses {
 		transformOpenCodeResponses(body, req.Model, entry)
-	}
-	ensureOpenCodeDecoys(body, wire)
-	// A chat request that declared no tools gets `none`, so the decoys the gate
-	// requires can never be selected: the model is told not to call a function
-	// at all, rather than being left free to call one whose own description
-	// says it is unavailable (opencodeFingerprint.js:146-147).
-	if wire != registry.FormatOpenAIResponses {
-		forbidOpenCodeDecoysWithoutClientTools(body, clientDeclaredTools)
+		req.ToolAliases = applyOpenCodeFingerprintTools(body, true)
+	} else {
+		clampOpenCodeChatCeiling(body, req.Model)
+		req.ToolAliases = applyOpenCodeFingerprintTools(body, false)
 	}
 
 	encoded, err := json.Marshal(body)
@@ -90,69 +76,6 @@ func decodeOpenCodeBody(raw []byte) (map[string]json.RawMessage, bool) {
 		return nil, false
 	}
 	return body, true
-}
-
-// renameOpenCodeCeiling moves a chat-shaped output ceiling onto the Responses
-// field name. The Responses wire answers 400 to `max_tokens`, and an already
-// present `max_output_tokens` wins because it is the client's own explicit
-// choice for this wire. The renamed value is then raised to the floor this
-// request's model declares, because a ceiling below it is refused by the
-// upstream rather than rounded by it, or answered with nothing at all.
-func renameOpenCodeCeiling(body map[string]json.RawMessage, model registry.Model) {
-	floor := openCodeOutputFloor(model)
-	if _, present := body["max_output_tokens"]; present {
-		delete(body, "max_tokens")
-		delete(body, "max_completion_tokens")
-		clampOpenCodeCeiling(body, floor)
-		return
-	}
-	for _, key := range []string{"max_completion_tokens", "max_tokens"} {
-		if value, present := body[key]; present {
-			body["max_output_tokens"] = value
-			break
-		}
-	}
-	delete(body, "max_tokens")
-	delete(body, "max_completion_tokens")
-	clampOpenCodeCeiling(body, floor)
-}
-
-// openCodeMinOutputTokens is the floor the OpenCode Console API accepts for a
-// Responses-wire output ceiling. A lower value is refused with
-// "max_output_tokens The number must be >= 16" (measured live, 2026-09-26),
-// which is what the combo test's one-token ping used to send.
-const openCodeMinOutputTokens = 16
-
-// openCodeOutputFloor is the ceiling the smallest accepted request must carry:
-// the wire's own floor, raised to whatever the model declares it needs to answer
-// at all. muse-spark-1.3-contributor-free spends a small ceiling entirely on
-// reasoning and returns an empty body with finish_reason "length" (measured live,
-// 2026-09-28), which the upstream counts as a successful answer.
-func openCodeOutputFloor(model registry.Model) int {
-	if model.MinOutputTokens > openCodeMinOutputTokens {
-		return model.MinOutputTokens
-	}
-	return openCodeMinOutputTokens
-}
-
-// clampOpenCodeCeiling raises an integer ceiling below the floor this request's
-// model needs. A ceiling the client never sent stays absent, raising a value
-// that exists is the narrow licence, inventing one the client did not ask for is
-// not. A member that is not a JSON integer is left exactly as the client wrote
-// it: the upstream's own validation answers for it, and rewriting a malformed
-// value would hide the client's bug instead of reporting it.
-func clampOpenCodeCeiling(body map[string]json.RawMessage, floor int) {
-	raw, present := body["max_output_tokens"]
-	if !present {
-		return
-	}
-	var value int
-	if err := json.Unmarshal(raw, &value); err != nil {
-		return
-	}
-	if value < floor {
-		body["max_output_tokens"] = json.RawMessage(strconv.Itoa(floor))
-	}
 }
 
 // dropOpenCodeReasoning removes the prior-turn reasoning items and every

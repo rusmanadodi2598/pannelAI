@@ -40,6 +40,9 @@ type StreamState struct {
 	// responses maps Responses API events onto the OpenAI chunks this state
 	// frames, when the upstream speaks that format.
 	responses responsesStreamState
+	// gemini counts the calls one Gemini stream has already reported, so the
+	// next frame continues the indices rather than restarting them.
+	gemini geminiStream
 
 	// usage is the last accounting block seen, so the finish frame and the usage
 	// chunk can both carry it. It is nil until an upstream reports one, which is
@@ -101,6 +104,12 @@ func (s *StreamState) Frames(upstreamTarget string, payload []byte) [][]byte {
 		return s.claudeFrames(payload)
 	case TargetResponses:
 		return s.responsesFrames(payload)
+	case TargetGemini:
+		chunk := s.gemini.chunk(payload, s.Created)
+		if chunk == nil {
+			return nil
+		}
+		return s.openAIFrames(chunk)
 	default:
 		return s.openAIFrames(payload)
 	}
@@ -150,6 +159,11 @@ func (s *StreamState) Finish() [][]byte {
 	frames = append(frames, []byte(SSEDone))
 	return frames
 }
+
+// terminalSeen reports whether the upstream already closed the answer with a
+// finish frame. Finish sets the same bit when it synthesizes one, so a caller
+// reads this before calling Finish.
+func (s *StreamState) terminalSeen() bool { return s.finishSent }
 
 // Usage reports the accounting the stream observed, or nil when the upstream
 // reported none, so a streamed call records the same number a non-streamed one

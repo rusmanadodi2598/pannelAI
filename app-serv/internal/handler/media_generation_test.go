@@ -96,11 +96,44 @@ func TestMediaHandler_VideoJob_RequiresTheProvider(t *testing.T) {
 		t.Fatalf("status = %d, want 400 (body: %s)", rr.Code, rr.Body.String())
 	}
 	if !strings.Contains(rr.Body.String(), `"VALIDATION_ERROR"`) ||
-		!strings.Contains(rr.Body.String(), "provider") {
+		!strings.Contains(rr.Body.String(), "Provider") {
 		t.Fatalf("body = %s, want the provider refusal", rr.Body.String())
 	}
 	if len(caller.requests) != 0 {
 		t.Fatalf("upstream requests = %+v, want none", caller.requests)
+	}
+}
+
+// TestMediaHandler_VideoJob_RejectsAnOversizedPoll pins the bounds on the poll's
+// query and path: an id too long to be a provider, task, or endpoint is refused
+// before an upstream URL is built from it.
+func TestMediaHandler_VideoJob_RejectsAnOversizedPoll(t *testing.T) {
+	long := strings.Repeat("x", 257)
+	cases := []struct {
+		name   string
+		target string
+		taskID string
+		field  string
+	}{
+		{name: "an over-long provider", target: "/api/v1/videos/req-1?provider=" + strings.Repeat("p", 65), taskID: "req-1", field: "Provider"},
+		{name: "an over-long endpoint", target: "/api/v1/videos/req-1?provider=xai&endpoint=" + strings.Repeat("e", 65), taskID: "req-1", field: "Endpoint"},
+		{name: "an over-long task id", target: "/api/v1/videos/" + long + "?provider=xai", taskID: long, field: "TaskID"},
+		{name: "a missing task id", target: "/api/v1/videos/?provider=xai", taskID: "", field: "TaskID"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, caller := newMediaHandlerFixture(t)
+			rr := do(t, http.MethodGet, tc.target, "", withPathValue(f.VideoJob, "task_id", tc.taskID))
+			if rr.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400 (body: %s)", rr.Code, rr.Body.String())
+			}
+			if !strings.Contains(rr.Body.String(), tc.field) {
+				t.Fatalf("body = %s, want a refusal naming %s", rr.Body.String(), tc.field)
+			}
+			if len(caller.requests) != 0 {
+				t.Fatalf("upstream requests = %+v, want none", caller.requests)
+			}
+		})
 	}
 }
 

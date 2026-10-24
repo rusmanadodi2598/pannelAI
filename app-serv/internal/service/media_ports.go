@@ -46,7 +46,7 @@ type MediaRouter interface {
 	// one the provider's rotation would pick next.
 	SelectEndpoint(ctx context.Context, providerID, endpointID string) (dataplane.Selection, error)
 	RecordSuccess(ctx context.Context, selection dataplane.Selection) error
-	RecordFailure(ctx context.Context, selection dataplane.Selection, reason string, class domain.KeyFailureClass) error
+	RecordFailure(ctx context.Context, selection dataplane.Selection, reason string, class domain.KeyFailureClass, rest domain.RestDirective) error
 }
 
 // ModelResolver turns a client model string into a routable provider. It is the

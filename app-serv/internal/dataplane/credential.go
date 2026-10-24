@@ -38,8 +38,13 @@ func (s *Selector) credential(endpoint domain.UpstreamEndpoint, key domain.Upstr
 	// The machine id a device login minted is not a secret and describes no
 	// workspace, so it rides in the slot Credential declares for provider-specific
 	// identity rather than in a field every provider would ignore.
+	//
+	// So does a Google account's Cloud project, which the same reasoning covers:
+	// the provider puts it in the request body, and ProjectID belongs to the
+	// workspace a signed provider reads as its user id.
+	identity := map[string]string{}
 	if machine := account.MachineID(); machine != "" {
-		input.Metadata = map[string]string{provider.MetadataMachineID: machine}
+		identity[provider.MetadataMachineID] = machine
 	}
 	switch endpoint.AuthType() {
 	case domain.UpstreamAuthNone:
@@ -57,7 +62,7 @@ func (s *Selector) credential(endpoint domain.UpstreamEndpoint, key domain.Upstr
 		input.AccessToken = token
 		input.Family = provider.FamilyOAuth
 		if project := oauth.ProjectID(); project != "" {
-			input.ProjectID = project
+			identity[provider.MetadataProjectID] = project
 		}
 	default:
 		value, err := s.open(key.EncryptedValue())
@@ -66,6 +71,9 @@ func (s *Selector) credential(endpoint domain.UpstreamEndpoint, key domain.Upstr
 		}
 		input.APIKey = value
 		input.Family = provider.FamilyStaticKey
+	}
+	if len(identity) > 0 {
+		input.Metadata = identity
 	}
 	return provider.NewCredential(input)
 }

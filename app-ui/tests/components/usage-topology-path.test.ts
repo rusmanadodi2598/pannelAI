@@ -94,11 +94,13 @@ describe('the path the drawing draws', () => {
 		expect(Number.parseFloat(nodeFor(container, 'OpenAI').style.top)).toBeGreaterThan(50);
 	});
 
-	it('pulses the combo the frame names and no other combo', () => {
+	it('marks the combo the frame names and no other combo', () => {
 		const container = draw({ combos: COMBOS, active: [entry('openai', 'pro-tier')] });
+		const active = nodeFor(container, 'pro-tier').firstElementChild as HTMLElement;
+		const idle = nodeFor(container, 'fast').firstElementChild as HTMLElement;
 
-		expect(nodeFor(container, 'pro-tier').querySelector('.animate-ping')).toBeTruthy();
-		expect(nodeFor(container, 'fast').querySelector('.animate-ping')).toBeNull();
+		expect(active.classList.contains('bg-[var(--color-ok)]')).toBe(true);
+		expect(idle.classList.contains('bg-[var(--color-ok)]')).toBe(false);
 	});
 
 	it('drops the combo band when no combo is configured', () => {

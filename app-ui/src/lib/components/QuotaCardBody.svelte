@@ -46,7 +46,9 @@
 {#each group.endpoints as endpoint (endpoint.id)}
 	{@const answer = published.get(endpoint.id)}
 	<div class="flex flex-col gap-2">
-		<h4 class="truncate text-sm font-semibold">{endpointLabel(endpoint.id)}</h4>
+		<h4 class="break-words text-sm font-semibold" title={endpointLabel(endpoint.id)}>
+			{endpointLabel(endpoint.id)}
+		</h4>
 
 		<!-- A connection with no answer on the page is behind a provider that publishes no quota: the
 		     gateway sends an entry for every account it can ask, including one marked never-polled, so

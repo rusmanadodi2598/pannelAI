@@ -1,10 +1,8 @@
 <script lang="ts">
-	// Create-gateway-key form.
-	//
-	// The screen owns the list and the one-time key modal; this component owns one field and one call,
-	// so the screen file stays within the project's line limit and each piece has one job.
+	// Create-gateway-key form: one field and one call; the screen owns the list and the one-time modal.
 	import { createGatewayKey } from '$lib/api/gateway-keys';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { schemaCreateGatewayKeyForm, type CreatedGatewayKey } from '$lib/schemas/gateway-key';
 
@@ -42,9 +40,7 @@
 	}
 </script>
 
-<!-- Mobile: the field and the action stack at full width, so the three controls on this screen (the name
-     field, Create, Refresh) are one column of equal-width rows. On a phone the 256px field kept its width
-     and the Create button sat on its own line at a different width (antislop-layoutmobile, Form Row). -->
+<!-- On a phone the field and action stack at full width; from sm up the form returns to one line. -->
 <form
 	class="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end"
 	onsubmit={submit}
@@ -61,13 +57,9 @@
 		/>
 	</label>
 
-	<button
-		type="submit"
-		disabled={working}
-		class="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-60 sm:w-auto"
-	>
+	<Button type="submit" disabled={working} aria-busy={working} class="w-full sm:w-auto">
 		{working ? 'Creating' : 'Create gateway key'}
-	</button>
+	</Button>
 
 	{#if error}
 		<p class="text-sm text-[var(--color-danger)]" role="alert"><ApiErrorText {error} /></p>

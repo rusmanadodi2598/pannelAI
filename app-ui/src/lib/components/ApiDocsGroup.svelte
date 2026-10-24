@@ -33,9 +33,7 @@
 		class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
 	>
 		<table class="mobile-key-value-table w-full border-collapse text-sm">
-			<caption class="sr-only"
-				>Operations in {group.name}, with the credential each one requires</caption
-			>
+			<caption class="sr-only">{copy.catalog.caption(group.name)}</caption>
 			<thead class="bg-[var(--color-surface-2)] text-left">
 				<tr>
 					<th scope="col" class="px-3 py-2 font-medium">{copy.catalog.columns.method}</th>
@@ -72,11 +70,17 @@
 
 	{#if curl}
 		<div class="flex flex-col gap-2">
-			<div class="flex flex-wrap items-center gap-3">
+			<div class="flex items-center justify-between gap-3">
 				<span class="text-xs font-medium text-[var(--color-text-muted)]"
 					>{copy.catalog.example}</span
 				>
-				<CopyButton value={curl} />
+				<CopyButton
+					value={curl}
+					ariaLabel={copy.catalog.copyExample(group.name)}
+					iconOnly
+					glyphOutcome
+					touchTarget
+				/>
 			</div>
 			<!-- The example stays on screen beside the control, so a refused clipboard write still leaves
 			     the operator something to select. -->

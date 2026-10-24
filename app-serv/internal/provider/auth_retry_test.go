@@ -204,24 +204,3 @@ func TestBase_ShouldRetryHonoursRetryAfter(t *testing.T) {
 		})
 	}
 }
-
-func TestBase_IsQuotaError(t *testing.T) {
-	base := Base{ID: "p"}
-	cases := []struct {
-		status int
-		want   bool
-	}{
-		{status: http.StatusPaymentRequired, want: true},
-		{status: http.StatusForbidden, want: true},
-		{status: http.StatusTooManyRequests},
-		{status: http.StatusUnauthorized},
-		{status: http.StatusBadRequest},
-	}
-	for _, tc := range cases {
-		t.Run(http.StatusText(tc.status), func(t *testing.T) {
-			if got := base.IsQuotaError(tc.status, nil); got != tc.want {
-				t.Fatalf("IsQuotaError(%d) = %v, want %v", tc.status, got, tc.want)
-			}
-		})
-	}
-}

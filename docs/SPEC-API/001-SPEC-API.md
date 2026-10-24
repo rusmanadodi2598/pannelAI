@@ -124,17 +124,17 @@ CLI tools (Claude Code, Codex, Cursor, ...)          Browser (app-ui)
 
 | Table                | Key columns                                                                                                                                                                          | Notes                                                                                                                        |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `upstream_endpoints` | `id, provider_id, label, auth_type, priority, status, oauth(jsonb, redacted on read), test_status(jsonb), rate_limited_until, created_at, updated_at`                                | replaces `providerConnections`; unique `(provider_id, label)`                                                                |
+| `upstream_endpoints` | `id, provider_id, label, auth_type, priority, status, oauth(jsonb, redacted on read), test_status(jsonb), rate_limited_until, consecutive_errors, last_selected_at, quota_cooldown_until, created_at, updated_at`                                | replaces `providerConnections`; unique `(provider_id, label)`. `rate_limited_until` is this account's OWN breaker and is written only for an endpoint that holds no key row (§7.5)                                                                |
 | `provider_nodes`     | `id, type, name, prefix, api_type, base_url, created_at, updated_at`                                                                                                                 | custom OpenAI/Anthropic-compatible providers (§7.4); `prefix` is **UNIQUE** and must not collide with a registry id or alias |
-| `upstream_keys`      | `id, endpoint_id→upstream_endpoints, label, value_encrypted, key_hint, priority, status, last_used_at, last_error, consecutive_errors, rate_limited_until, created_at, updated_at`   | **N per endpoint**; value encrypted at rest (AES-GCM, key from env)                                                          |
+| `upstream_keys`      | `id, endpoint_id→upstream_endpoints, label, value_encrypted, key_hint, priority, status, last_used_at, last_selected_at, last_error, last_error_class, consecutive_errors, consecutive_auth, consecutive_ratelimit, consecutive_billing, rate_limited_until, created_at, updated_at`   | **N per endpoint**; value encrypted at rest (AES-GCM, key from env). `last_selected_at` is when rotation CHOSE the credential and `last_used_at` when it last SERVED; rotation orders by the former                                                       |
 | `gateway_keys`       | `id, name, value_hash, key_hint, status, last_used_at, request_count, created_at, revoked_at`                                                                                        | SHA-256 hash lookup, plaintext shown once; `name` is **UNIQUE** (duplicate ⇒ `CONFLICT`)                                     |
 | `combos`             | `id, name, strategy, sticky_limit, judge_model, models(jsonb), created_at, updated_at`                                                                                               | `models`: `[{ref, priority}]`                                                                                                |
 | `model_aliases`      | `alias, target, created_at`                                                                                                                                                          | alias → `provider/model` or combo name                                                                                       |
 | `models_custom`      | `id, provider_id, model_id, display_name, capabilities(jsonb), created_at`                                                                                                           | user-added models                                                                                                            |
 | `models_disabled`    | `provider_id, model_id, disabled_at`                                                                                                                                                 | hidden from catalog/routing                                                                                                  |
-| `usage_records`      | `id, request_id, ts, endpoint_id, provider_id, gateway_key_id, model, combo, tokens_in, tokens_out, tokens_cache_read, tokens_cache_write, cost_usd, latency_ms, status, error_code` | partitioned by month; index `(ts)`, `(provider_id, ts)`, `(endpoint_id, ts)`                                                 |
+| `usage_records`      | `id, request_id, ts, endpoint_id, provider_id, gateway_key_id, model, combo, tokens_in, tokens_out, tokens_cache_read, tokens_cache_write, cost_usd, latency_ms, status, error_code` | monthly partitioning is the target, not the current shape; a worker deletes rows older than `USAGE_RETENTION_DAYS`; index `(ts)`, `(provider_id, ts)`, `(endpoint_id, ts)` |
 | `quota_windows`      | `endpoint_id, window, used_units, limit_units, resets_at, source`                                                                                                                    | window ∈ `5h                                                                                                                 | daily | weekly  | monthly`; counters cached in Redis, flushed to PG |
-| `request_logs`       | `request_id, ts, gateway_key_id, endpoint_id, model, status, latency_ms, request_body, response_body, error`                                                                         | bodies stored only when capture enabled; retention job deletes > `retention_days`                                            |
+| `request_logs`       | `id, request_id, ts, gateway_key_id, endpoint_id, model, status, latency_ms, request_body, response_body, error`                                                                     | `id` is the server primary key; `request_id` is a caller trace value and is not unique; bodies stored only when capture enabled; retention job deletes > `retention_days` |
 | `proxies`            | `id, label, protocol, host, port, username, password_encrypted, enabled, status(jsonb), created_at, updated_at`                                                                      | protocol ∈ `http                                                                                                             | https | socks5` |
 | `quota_caps`         | `endpoint_id, monthly_cost_usd, monthly_tokens, updated_at`                                                                                                                          | optional budget caps; a router stops picking an exhausted endpoint (§7.12)                                                   |
 | `settings`           | `key (pk), value(jsonb), updated_at`                                                                                                                                                 | typed accessors, defaults merged at read (mirrors `mergeWithDefaults`)                                                       |
@@ -214,7 +214,7 @@ recorded here so their absence reads as a decision rather than a gap
 | POST   | `/api/v1/providers/{provider_id}/test-models`    | S    | `{limit?}` sweeps the provider's chat models in catalog order; answers `{provider_id, source, warning?, tested, total, stopped?, results[]}`                                              | P1                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/start`    | S    | `{redirect_uri?}` → `{authorize_url, state}` (OAuth providers only)                                                                                                                 | P2                                                                   |
 | GET    | `/api/v1/providers/{provider_id}/oauth/callback` | P    | Completes flow (validates `state` replay-guard), creates upstream endpoint + tokens; `302` redirect for browsers, `200` JSON body for headless callers (`Accept: application/json`) | P2                                                                   |
-| GET    | `/api/v1/providers/{provider_id}/oauth/status`   | S    | Token expiry / refresh state per endpoint                                                                                                                                           | P2                                                                   |
+| GET    | `/api/v1/providers/{provider_id}/oauth/status`   | S    | Token expiry / refresh state per endpoint, plus the dead-letter's next visit                                                                                                                                           | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/refresh`  | S    | Force token refresh (worker also auto-refreshes at `refresh_lead`)                                                                                                                  | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/device/start` | S | `{}` → `{device_code, verification_url, user_code?, interval_seconds, expires_in}` (device-flow providers: the registry entry declares no authorize URL; `user_code` rides only with a round whose flow mints a short code)                            | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/device/poll`  | S | `{device_code}` → `{status: "pending"}` while the operator is still authorizing, then `{status: "connected", endpoint_id, token_hint, created}`                                        | P2                                                                   |
@@ -290,6 +290,17 @@ unreadable identity must not void a login the vendor already granted), and falls
 `qoder-user-<user_id>` email the match still recognizes. The machine id the round minted is persisted on
 the account, because every later signed request replays it.
 
+The refresh worker's dead letter is not a grave with no exit. Five consecutive failures on one account move it to
+`error` and open a **retry ladder**: the worker visits it again an hour later, then on a window that doubles per
+failed visit up to once a day (`refresh_retry_at`, `refresh_retry_rounds` on migration 000018, both shown by
+`GET .../oauth/status` and absent on a live account). The ladder exists because a dead-lettered token is expired,
+so the account reads `due` on every tick: without a window, sweeping these accounts would re-spend the whole
+five-attempt budget, with its sleeps, on a vendor that had already answered `invalid_grant`. A grant the vendor
+accepts ends the dead letter, clears the ladder, and returns the account to `active` on the token's own clock; the
+operator's `POST .../oauth/refresh` reaches these accounts too, which is the second exit and the one that needs no
+window. Nothing here changes serving: an `error` account is not selected, and a revisit that fails leaves it
+buried with the reason replaced by what this attempt hit (draft `050` T2 decision ii).
+
 A device token's expiry arrives in any of four shapes (a millisecond epoch as number or numeric string, an
 RFC3339 string, or `expires_in` seconds) and is parsed in that order, falling back to thirty days and
 floored at one day so a skewed upstream cannot store an already-dead token. Those tokens are **not
@@ -332,13 +343,24 @@ An **upstream endpoint** holds **1..N API keys**. Routing walks the provider's e
 that provider's **credential rotation policy** fixes (§7.14): `fill-first` (the default) walks
 priority order and starts every request from the first usable endpoint, `round-robin` advances the
 shared cursor and keeps one endpoint for `sticky_limit` consecutive requests. Inside the chosen
-endpoint it picks a healthy key, least-recently-used first under `round-robin` and in priority order
-under `fill-first`, skipping parked keys and breaking ties by priority then id. The policy is a
+endpoint `round-robin` asks a second counter, one per account, for the position to start at and walks
+forward over the keys it may spend; `fill-first` takes the first healthy key by priority and reads no
+counter at all. Both skip parked keys. The position is a bare integer in Redis and the modulo is taken
+by the router, because the divisor is how many keys are spendable RIGHT NOW, a fact the domain owns and
+the store has no business knowing; a key that gets parked leaves the rotation and the counter stays
+valid. Each selection also stamps the credential's `last_selected_at`, and that stamp is the fallback
+order when Redis cannot answer: it advances on every choice, including a choice whose call then failed
+at the network, so a degraded deployment still spreads a burst within one round instead of
+re-choosing the key that has never succeeded. Ordering by `last_used_at` alone was the defect this
+replaced: a success-only stamp is identical across concurrent requests, so a burst of N requests picked
+one credential, and a key refused before it could answer stayed the oldest key forever. The policy is a
 per-provider override over a global default (`routing.fallback_strategy` plus
 `routing.provider_strategies`), and a policy that cannot be read degrades to `fill-first`, because
 rotation is an optimisation and not a correctness input. Within one request a
 failed credential is followed by the provider's next healthy credential before the next model is
-tried (credential-first failover, §7.7). This generalizes the reference 1-connection-1-key model.
+tried (credential-first failover, §7.7). A leg reads the provider's accounts, its policy and its
+budget ONCE and walks that snapshot, so neither a reload nor a cursor step happens per attempt. This
+generalizes the reference 1-connection-1-key model.
 
 | Method | Path                                   | Auth | Description                                                                                            | Phase |
 | ------ | -------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------ | ----- |
@@ -347,11 +369,46 @@ tried (credential-first failover, §7.7). This generalizes the reference 1-conne
 | GET    | `/api/v1/endpoints/{id}`               | S    | Detail incl. keys summary + test status                                                                | P1    |
 | PATCH  | `/api/v1/endpoints/{id}`               | S    | `{label?, priority?, status?}`: priority change reorders siblings transactionally                      | P1    |
 | DELETE | `/api/v1/endpoints/{id}`               | S    | Delete endpoint + its keys                                                                             | P1    |
-| POST   | `/api/v1/endpoints/{id}/test`          | S    | Connectivity test; `{key_id?}` targets one key else first active; updates `test_status`                | P1    |
+| POST   | `/api/v1/endpoints/{id}/test`          | S    | Connectivity test; `{key_id?}` targets one key else the first key the operator has not disabled (a key inside its backoff is testable on purpose); updates `test_status` and the key's circuit | P1    |
 | POST   | `/api/v1/endpoints/{id}/keys`          | S    | Add key `{label?, value}`                                                                              | P1    |
-| GET    | `/api/v1/endpoints/{id}/keys`          | S    | List keys (hints only) with health fields                                                              | P1    |
+| GET    | `/api/v1/endpoints/{id}/keys`          | S    | List keys (hints only) with health fields: `last_selected_at` (when rotation chose it) beside `last_used_at` (when it last served), `consecutive_errors` with the per-class runs it sums, `rate_limited_until`, and the parking provenance triple `last_error_class` / `reset_source` / `signature_id` (failure classes, below) | P1    |
 | PATCH  | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | `{label?, value?, priority?, status?}`: value is write-only                                            | P1    |
-| DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | Remove key (endpoint must keep ≥1 active key if the auth type stores keys: `api_key` or `service_account`) | P1    |
+| DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | Remove key (endpoint must keep ≥1 key the operator has not disabled if the auth type stores keys: `api_key` or `service_account`; a parked key counts, because its window ends by itself) | P1    |
+
+**Failure classes and what each one pays.** A status alone does not say who is at fault, and that answer is
+what decides the park: one vendor's 429 lifts in minutes, another's is a spent period that does not lift
+until the date its own body prints. Nine classes (`domain.FailureClass`) sit above the parking ladders
+rather than replacing them: `KeyFailureClass` still owns the window, the class owns the meaning, and the
+mapping is one way.
+
+| Class                | What it is                                                  | Action | Park                                                                      |
+| -------------------- | ----------------------------------------------------------- | ------ | ------------------------------------------------------------------------- |
+| `RATE_LIMIT_TEMPORARY` | a throttle the vendor expects to lift on its own          | park   | 2s ladder to a 5m ceiling, honouring the vendor's `Retry-After`            |
+| `QUOTA_EXHAUSTED`      | an allowance spent for the period                         | park   | 15m → 1h → 6h → 24h; a stated reset overrides the ladder, ceiling 30d      |
+| `AUTH_INVALID`         | a credential the upstream refused, 401/403 with no quota or billing signal | park | 2m ladder to a 1h ceiling                                            |
+| `BILLING_EXHAUSTED`    | an account with no credit left                            | park   | 15m ladder to a 6h ceiling                                                 |
+| `SERVER_TRANSIENT`     | an upstream 5xx that says nothing about the credential    | park   | flat 30s                                                                   |
+| `UNKNOWN`              | no signature and no status rule recognised it             | park   | flat 30s, the transient ladder                                             |
+| `TARGET_UNREACHABLE`   | the call never reached the upstream, or a 404             | rotate | parks nothing                                                              |
+| `GATE_BLOCKED`         | the upstream refuses this gateway, not this credential    | rotate | parks nothing                                                              |
+| `REQUEST_INVALID`      | refused on the request's own shape, where every credential fails alike | stop | ends the chain                                                     |
+
+A refusal is recognised by a signature registry the connector layer owns (`internal/provider`), not by the
+core: patterns are seeded for the refusals measured in production, more can be added at boot, and the last
+registered wins. Where nothing matches, the class falls back to what the status alone can carry.
+
+The window a key is parked for resolves in one order: the reset the vendor stated in its own body, else
+`now + clamp(Retry-After, class ceiling)`, else `now + class cooldown`. `reset_source` names which of
+the three answered (`body` / `header` / `default`), so a wait the gateway guessed never reads as one the
+vendor warranted. `signature_id` names the pattern that claimed it. Both are absent on a key parked before
+the classifier existed.
+
+Two answers are deliberately coarser than the class behind them. A `QUOTA_EXHAUSTED` refusal reaches the
+client as the §8 code `BILLING_EXHAUSTED`, because both are the account's own condition and neither clears
+on a backoff the client controls. And three classes are refused as configuration in
+`routing.failure_classes`: `TARGET_UNREACHABLE`, `GATE_BLOCKED` and `REQUEST_INVALID` park nothing, so a
+window written for them is dead configuration. How an action then moves the failover walk is
+`SYSTEM_MAP.md` §3.5c.
 
 **Multi-account and bulk onboarding (owner requirement).** Every provider is multi-account: an
 account is one endpoint, so N accounts are N endpoints under one `provider_id`, distinguished by
@@ -379,11 +436,63 @@ gateway exchanges the JSON for a short-lived bearer before a call (the media pla
 never presents the JSON itself; a deployment wired without a minter refuses such a call instead.
 
 Key health model (parking per key, class-aware): the first upstream failure parks the key with a
-window sized by its class: 401/402/403/404 ⇒ `rate_limited_until = now + 2m`; 429 ⇒ exponential `2s × 2^(n-1)` capped at 5m
-(`n` = consecutive failures, reset by a successful call); 5xx/network/timeout ⇒ 30s; any other 4xx
-records nothing because the request, not the credential, is the cause. `consecutive_errors` counts
-every parked failure and a successful call resets all of it. The health lives on the key row; only
-the rotation cursor is Redis-backed.
+window sized by its class: 401/403 ⇒ exponential `2m × 2^(n-1)` capped at 1h (`n` = consecutive failures, reset by a successful call); 402 ⇒ exponential `15m × 2^(n-1)` capped at 6h, its own
+basket because an account out of credit is a condition measured in hours and the operator fixes it by buying
+credit, not by the key being retried; 429 ⇒ exponential `2s × 2^(n-1)` capped at 5m
+(`n` = consecutive failures, reset by a successful call); an answered 5xx ⇒ 30s. Those four numbers are the
+defaults of `routing.key_park` (§7.14), which retunes each class per provider; no ceiling is
+configurable, because a park an operator can extend without limit is a state nothing then heals. A failure the
+credential did not cause parks nothing (402 does cause it: the credential is valid but the account behind it cannot serve,
+so its key leaves rotation while the chain walks on to the next account): an upstream 404 (this account does not serve that model) and a call that never
+reached the upstream (DNS, TLS, dial, deadline) are **target-shaped**, recorded on the endpoint's connection
+state while the chain keeps walking to the next credential, because another account may serve the model the
+first refused and a credential that was never sent cannot have failed. Any other 4xx records nothing because
+the request, not the credential, is the cause. `consecutive_errors` counts every parked failure for
+display, and it is NOT the ladder's step: each class keeps its own run
+(`consecutive_auth`, `consecutive_ratelimit`, `consecutive_billing`) and only that run advances, so a
+run of 429s lengthens the rate-limit ladder and leaves the credential ladder counting the strikes it
+actually took. One shared counter for all classes was the defect this replaced. A successful call resets
+every run. Where the vendor names its own wait in `Retry-After`, a rate limit parks for that wait rather
+than for the ladder step, clamped into the class's own floor and ceiling: a 429 that says "come back in
+two minutes" and is answered with a two-second park is a credential put straight back into a limiter, and
+a vendor that asks for a day is heard for five minutes because the ceiling is what keeps one header from
+burying an account. The same bounded number is handed back to the client as its `Retry-After`, so the
+wait a caller plans around and the wait the gateway really parks for cannot disagree. The write runs after
+the client's answer is on the wire and under its own bounded context, so a client that closes the
+connection the moment the answer lands cannot erase the health row its call produced; the same rule the
+usage rows already follow. The opposite case is just as bounded: a stream the caller abandoned MID-answer
+records neither a success nor a failure, because a leg that stopped arriving proved nothing about the
+credential, and treating it as served would clear a park another request had just earned. A 429 also
+stamps the endpoint's quota cooldown,
+which is read by the published-quota poller alone and never by selection (§7.12). The health lives on the key row; only
+the rotation cursors are Redis-backed. A keyed endpoint parks its key and never its account, because a
+throttle on one credential must not withhold the healthy ones beside it. An endpoint that owns NO key row
+is its own credential: an OAuth or no-auth account parks on its own `rate_limited_until` with its own
+failure run, which is the breaker such an account never had, and whose absence kept a dead token in
+rotation being chosen over and over. `test_status`, the endpoint's own connectivity column, is
+display-only: routing
+never reads it, because a probe answers when an operator last pressed the button and the parking above already carries
+every real upstream outcome.
+
+**Status is not the failure.** One status carries two failures only the vendor's own words can separate, and the
+park must know which it got: a 429 that says the service is "under heavy load" lifts in minutes, while a 429 that
+says "you've used this period's free allowance" does not lift until the date printed in the same sentence. The
+gateway therefore classifies each refusal into a `FailureClass` (§7.14) before it decides anything, recognising
+the vendor's wording where a connector knows it and falling back to the status alone where nobody has taught it
+yet. The class is stamped once, in the transport, where the status, the headers and the body are still in hand, so
+the park and the walk and the client's error cannot disagree about one failure. A recognised `QUOTA_EXHAUSTED`
+parks to the reset the vendor stated rather than to the five-minute rate-limit ceiling, and is reported to the
+client as the account's own condition (`BILLING_EXHAUSTED`), because a caller that backs off for five minutes is
+spending a request the vendor has already refused for the rest of the period. A refusal that closes *this gateway*
+rather than the credential (`GATE_BLOCKED`, the free tier reachable only from the vendor's own client) retries
+nothing and parks nothing, since no key on the account changes it.
+
+Rest precedence is therefore `COALESCE(reset the vendor stated, now + clamp(Retry-After, class ceiling), now +
+class ladder)`, and the class's own action decides what the chain does next: park and move on, rotate without
+withholding, or stop the request. Every key row records how its current rest was arrived at (`reset_source` is
+`header`, `body`, or `default`, and `signature_id` names the recogniser), both nullable and read by no router:
+they exist so an operator opening a parked key can tell a wait the vendor promised from one the gateway guessed.
+(draft `052`)
 
 ### 7.6 Models (catalog, custom, alias, disabled)
 
@@ -599,6 +708,14 @@ itself or whose operation shape and segments are not a plain resource path, beca
 spliced into a URL. Its credential is exchanged for a bearer before each phase. A completed generation
 whose asset came back inline (no storage URI) carries it in `b64_json` instead of `url`.
 
+Agnes AI is the fifth dialect: the creation posts to the block's `/v1/videos`, and the poll reads
+`GET /agnesapi?video_id=…&model_name=…` on the same host, because keyframe and reference tasks are refused
+without the model name while a poll carries no model. The creation therefore answers a task id that encodes
+the retrieval id and the model (base64url), and the poll decodes both; a client polling with the provider's
+own video id is accepted and the model parameter is omitted, which the provider reads for text-mode jobs.
+`completed` and `failed` map onto the envelope's terminal states, the asset arrives in `url`, and progress
+is read when the answer carries it.
+
 A provider format without an adapter remains an explicit `PROVIDER_NOT_ROUTABLE` refusal naming the
 format; this is the incremental G5 boundary, not a claim that all reference adapters are present. Five
 formats stay on that boundary, registered as G21 in the P2 gap register: AssemblyAI STT (upload →
@@ -629,11 +746,18 @@ reference assigns pools only globally was wrong on the connection half.
 outbound call walks the pool's rows in the order `outbound_proxy_strategy` picks: `fallback` (the
 default; the stored order, which is the operator's own) or `round_robin` (each request starts at the
 next row in line, with the cursor in Redis so replicas share it), and `outbound_proxy_url` is the
-**last-resort attempt after the pool**, never before a row. Only a candidate whose connection fails
-hands the call to the next one: an upstream that answered, or a caller that cancelled, ends the walk,
-because re-sending a request the wire may already have delivered is not a failover. The walk is
-bounded at three attempts per request; a candidate whose connect stage failed is parked for two
-minutes and skipped while any unparked candidate remains (a fully parked pool still serves, because a
+**last-resort attempt after the pool**, never before a row. Two things hand the call to the next
+candidate: a connect stage that failed, and an upstream that answered **429**. A 429 names the
+address rather than the request and was refused before anything was generated, so another address is
+worth the round trip: measured on OpenCode's free lane (2026-10-15), one address answered 429 while a
+second, carrying the same session and the same model, served three requests in a row and was still
+usable eleven seconds later while the first kept refusing. Every other answer, and a caller that
+cancelled, ends the walk, because re-sending a request the wire may already have delivered is not a
+failover; a request whose body cannot be rebuilt is never re-sent either, and its refusal goes back to
+the client exactly as the upstream stated it. The walk is bounded at three attempts per request; a
+candidate is parked for what its failure stated: the vendor's own `Retry-After` trimmed to the
+two-minute cooldown for a refusal, the full cooldown for a dead connect stage. A parked candidate is
+skipped while any unparked candidate remains (a fully parked pool still serves, because a
 cooldown is a hint about the past); a row whose stored test is a failure is not a candidate until it
 is re-tested; and an empty pool with no URL dials direct exactly as before. The strategy is a closed
 set (`fallback`, `round_robin`), and an empty stored value reads as `fallback`, so a document that
@@ -674,6 +798,8 @@ prevent.
 | PUT    | `/api/v1/quotas/{endpoint_id}`       | S    | Set budget caps `{monthly_cost_usd?, monthly_tokens?}`: router stops picking exhausted endpoints                                         | P2                                                                  |
 | GET    | `/api/v1/quotas/{endpoint_id}/usage` | S    | The provider's own answer for one connection, served from the worker's cache; `?force=1` asks the provider at this instant: `{endpoint_id, provider_id, plan?, fetched_at, message?, cached?, failures?, last_attempt_at?, data[]}`: amounts as decimal strings, `total` absent for an unbounded bucket | P2 |
 
+A summary's `groups[]` carries at most the 100 busiest groups, ordered by request count and then by key; `totals` still covers every row in the filtered window (`AGENTS.md` §1.7). A window with more dimension values than that is answered rather than refused, and the cap is a display bound, not a filter.
+
 Quota worker re-checks windows per provider cadence (5h/daily/weekly/monthly), refresh countdowns,
 and records `resets_at`. Cost figures are estimates for display only (reference parity).
 
@@ -686,6 +812,18 @@ of keys per provider: asking each provider during a page read is one outbound ca
 §1.7 of AGENTS.md blocks outright. `?force=1` is the operator's explicit press on one card and costs
 one call for that one account; any other value stays a cache read, so a stale bookmark cannot turn a
 page load into provider traffic.
+
+**A throttled account is skipped by the poller, not by the router (2026-10-13).** When the vendor
+answers 429 to real traffic, the endpoint records a quota cooldown: `quota_cooldown_until` (migration
+000017) is stamped fifteen minutes out and `DueForRefresh` excludes it in the `WHERE`, before the sweep's
+`LIMIT`, so a throttled account cannot occupy an oldest-due slot and spend budget the accounts behind it
+need. Three rules belong to it. It is a **separate column** from `rate_limited_until`, which is an input to
+`Available()`: a 429 arrives on one credential of an endpoint that holds 1..N keys (§7.5) and the key that
+took it is already parked by the health model, so withholding the whole account from serving would punish
+the keys that never failed. It only ever **extends**: a second 429 pushes the deadline out, an earlier one
+cannot pull it back, and the database takes `GREATEST`, the same shape draft 050 T7 fixed for a key's park.
+And nothing **clears** it early, not even a served call: a request the model endpoint accepted says nothing
+about whether the vendor will answer a usage read, so the window expires on its own and no sweeper exists.
 
 **A page is grouped by accounts, not by counters.** `published[]` carries one entry per account
 belonging to the provider groups on the page (the endpoints in `upstream_endpoints`) and the same
@@ -877,13 +1015,27 @@ v1 settings surface (subset of reference `DEFAULT_SETTINGS`):
 ```json
 {
   "security": { "require_login": true, "require_api_key": true },
-  "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {} },
+  "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {}, "key_park": { "auth_seconds": 120, "rate_limit_seconds": 2, "transient_seconds": 30 }, "failover": { "total_ms": 30000, "max_attempts": 8 } },
   "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "", "outbound_proxy_strategy": "fallback", "provider_proxies": {} },
   "token_saver": { "see §7.9" },
   "reasoning": { "provider_thinking": {} },
-  "logging":  { "request_capture_enabled": false, "retention_days": 7, "capture_body_max_bytes": 65536, "observability_max_records": 1000 }
+  "logging":  { "request_capture_enabled": false, "retention_days": 2, "capture_body_max_bytes": 65536, "observability_max_records": 1000 }
 }
 ```
+
+`routing.failover` bounds one client request's whole credential walk: `total_ms` is the wall clock the
+PRE-COMMIT walk may spend (default 30000, stored bounds 1000..120000) and `max_attempts` how many
+credentials it may spend (default 8, bounds 1..200). Both exist because the chain is a product, not a
+sum: a combo of 64 members, 100 accounts each, 100 keys each, each with a transport retry above it, and
+every one of those steps carried its own per-call deadline with nothing above it. The attempt count is
+the bound a deadline cannot give, for an upstream that answers instantly with an error on every key it
+holds. Neither bound ever turns an answer the caller received into a failure: once a frame has reached
+the client the stream is committed and the idle guard owns it. A walk cut short after it had reached an
+upstream is `UPSTREAM_TIMEOUT`; one stopped before it reached any is `NO_PROVIDER_AVAILABLE`, and no new
+§8 code is added for either. A budget that cannot be read applies the documented one, the same rule
+rotation follows, because a settings outage must not hand a caller an unbounded walk and must not refuse
+a request it could serve. Env knobs are not offered for either bound, the rule `DATA_PLANE_STICKY_LIMIT`
+already established: this settings document is the only source.
 
 `routing.fallback_strategy` (`fill-first` | `round-robin`, default `fill-first`) is the credential
 rotation default for every provider, and `routing.provider_strategies` overrides it per provider id,
@@ -893,6 +1045,31 @@ the reference's own `providerStrategies` shape: `{"<provider_id>": {"fallback_st
 that provider (§7.5), not only combo members; the combo's own rotation stays `combo_strategy` /
 `combo_sticky_limit`. `provider_strategies` is written whole, like the reference's PATCH, so a
 read-modify-write is what changes one provider.
+
+`routing.key_park` holds the key-parking budget the health model applies (§7.5): `auth_seconds` (1..900,
+default 120) is the first credential-shaped failure's window, `rate_limit_seconds` (1..300, default 2) the
+first 429's, `billing_seconds` (1..3600, default 900) the first 402's, and `transient_seconds` (1..300,
+default 30) the flat window an answered 5xx takes. Each window
+is PATCHed on its own, because retuning one failure class must not reset the other two, and a provider entry
+may name the same three keys to retune one account family alone: `{"<provider_id>": {"key_park":
+{"transient_seconds": 45}}}`. An entry that names no window inherits every one from the group, and an entry
+that sets nothing at all is refused like the rotation rule refuses an empty entry. The windows are read per
+failure, so a retune takes effect on the next parked key without a restart. The ceilings (1h, 5m) and the
+doubling rule are not configurable: they are what bounds how long a dead credential can stay out of rotation
+after the last successful call.
+
+`routing.failure_classes` retunes what the router *does* with a failure it recognised (§7.5), keyed by class
+name: `action` is one of `park` (withhold the credential for its rest, then move on), `rotate` (move on and
+withhold nothing), or `stop` (end the request on this failure, because no other credential answers it
+differently); `ceiling_seconds` (1..2592000) bounds a wait the gateway computed itself, and
+`default_cooldown_seconds` (1..2592000) replaces the class ladder with a flat park. Each field is optional on
+its own, a provider entry merges over the group over the documented default, and only the six classes that
+implicate a credential may be named: `TARGET_UNREACHABLE`, `GATE_BLOCKED`, and `REQUEST_INVALID` park nothing,
+so an entry for one of them would be configuration read by nobody and the write refuses it. The classes the
+gateway recognises are `RATE_LIMIT_TEMPORARY`, `QUOTA_EXHAUSTED`, `AUTH_INVALID`, `BILLING_EXHAUSTED`,
+`SERVER_TRANSIENT`, `TARGET_UNREACHABLE`, `GATE_BLOCKED`, `REQUEST_INVALID`, `UNKNOWN`. A reset the vendor
+stated in its own body outranks every window here: the class ceiling is what bounds a misread date, not what
+shortens a promise.
 
 An emptied URL clears the stored value: `network.outbound_proxy_url: ""` and
 `token_saver.headroom.url: ""` both store the clear, because the panel sends `""` when the operator
@@ -926,8 +1103,10 @@ two fixed states `on` (ask for thinking, the reference's 10000-token budget) and
 thinking), and the level names `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, and
 `thinking` (z.ai's own word for the same request). The mode is normalized onto the resolved model's
 wire format when a request reaches that model (§7.15), so one stored word means the same intent
-across OpenAI, Claude, Gemini, and the vendor dialects. An absent entry follows the reasoning setting
-each request already carries; the panel's picker offers `auto` for that state and deletes the entry,
+across OpenAI, Claude, Gemini, and the vendor dialects. A level the resolved model does not accept is
+answered there with the nearest level it does, so one stored word never names a control a model was
+never offered. An absent entry follows the reasoning setting each request already carries; the panel's
+picker offers `auto` for that state and deletes the entry,
 which is the reference's own rule (`saveThinkingConfig`). The levels a picker offers are the ones the
 provider's models accept, read from the model rows rather than stored here: the provider detail
 carries their union as `thinking_levels` (§7.4) and each catalog and custom-model row carries its own
@@ -1015,9 +1194,26 @@ the client sent to that floor (and never below the wire's own minimum) instead o
 spends entirely on thinking. This is the one case the gateway writes a number the upstream would have
 accepted, so it is bounded three ways: it applies only to a ceiling the client already sent, never to an
 absent one; the floor is declared per model, so a model that does not declare one is untouched; and it
-raises rather than replaces, so a ceiling above the floor is forwarded byte for byte. Muse Spark 1.3
-Contributor Free declares 512 after answering `content: ""` with `finish_reason: length` under a 60-token
-ceiling (measured live, 2026-09-28).
+raises rather than replaces, so a ceiling above the floor is forwarded byte for byte. The raise applies on
+either wire: the Responses path renames the ceiling to `max_output_tokens` and bounds it, and the chat path
+bounds `max_completion_tokens` or `max_tokens` in place, following the same precedence between the two keys
+the upstream reads. Because a raise is the one number the gateway writes larger than the client sent, it
+stops at half the model's declared `context_length`, at its declared `max_output_tokens`, and at 4096 when
+the model declares no window at all: asking above the window is answered 400, so a floor that cannot be
+raised to is skipped and the client's own ceiling travels. Declared floors, each the smallest ceiling that
+finished a `write_file` tool call against the live upstream (measured 2026-09-28 and 2026-10-16): Muse Spark
+1.3 Contributor Free 2048, DeepSeek V4.1 Flash Free 2048, Space Bunny Free 1024. A floor is a mitigation and
+not a cure: one of those models spent 2499 of a 2500 token ceiling on thinking and answered with nothing, so
+a larger ceiling can still be consumed whole.
+
+**A tool call the ceiling cut is a length stop.** A Responses answer whose status is incomplete for
+`max_output_tokens` while a call is still open reports `finish_reason: length` (and a Responses client is
+closed with `response.incomplete` carrying that reason), not `tool_calls`: the arguments never closed, so the
+client cannot dispatch it and must be told the answer was cut. A call the answer closed before the stop is
+still reported as `tool_calls`, because dropping a complete call would discard a request the client can make.
+The stream reads the cut off the item lifecycle (`output_item.added` without its `output_item.done`) and the
+fold reads it off the arguments themselves (absent, blank, or not a JSON object), through one function, so the
+two directions cannot disagree about one answer.
 
 Authentication runs first, before the body is read or validated: an unauthenticated caller is refused
 with `401 UNAUTHORIZED` whatever its body looks like, so a malformed payload cannot be used to probe the
@@ -1034,6 +1230,12 @@ reasoning setting is never overridden by the stored mode, and a suffix always wi
 is written into the translated upstream body in the model's own format (a `thinking` object with a
 budget, a `reasoning_effort` level, Gemini's `thinkingConfig`, or a vendor dialect such as z.ai's
 `thinking` object), and the levels map onto budgets and efforts through the reference's own tables.
+One stored mode is applied to every model on that provider, so before either OpenAI shape writes a
+level the model's own accepted list (§7.6, the same list the picker reads) is asked: a level it carries
+travels unchanged, one it does not becomes the nearest accepted level below, or the nearest above when
+nothing below is accepted. `none` is never that fallback, because disabling thinking is a different
+decision from spending less of it, and a model with no declared list keeps the level as named: guessing
+vocabulary for a model the tables do not know would rewrite a control its own provider documented.
 A model the registry does not report as reasoning is left exactly as the client sent it, because a
 field its upstream does not read is a request the upstream may refuse, and so is a body the gateway
 cannot parse.
@@ -1103,6 +1305,7 @@ no database table, because the changelog describes the binary and the binary car
 | `CONFLICT`              | 409  | Uniqueness / referential conflict (e.g. deleting last key)                                                            |
 | `RATE_LIMITED`          | 429  | Gateway or login rate limit hit                                                                                       |
 | `NO_PROVIDER_AVAILABLE` | 503  | Data plane: all endpoints/keys for the model are unhealthy or quota-exhausted                                         |
+| `BILLING_EXHAUSTED`     | 503  | Data plane: every account that could serve the request answered 402, so the vendor credit behind the gateway is out  |
 | `UPSTREAM_ERROR`        | 502  | Upstream returned unrecoverable error                                                                                 |
 | `UPSTREAM_REJECTED`     | 400  | Data plane: the upstream rejected the request itself (a 4xx other than 401/402/403/404/429); the failover chain stops |
 | `UPSTREAM_TIMEOUT`      | 504  | Upstream timeout after retries                                                                                        |
@@ -1339,3 +1542,219 @@ itself or whose operation shape and segments are not a plain resource path, beca
 spliced into a URL. The envelope gains `b64_json?` for the inline-bytes answer a Veo call without a
 storage URI gets, the same member the reference's own adapter emits. Recorded in
 `../PORT/012-PORT-VERTEX-VEO.md`._
+
+_Changelog 2026-10-12: §7.5's health model splits 404 out of the credential-shaped class and moves the
+network and timeout failures with it (draft `050` T3, T4). The class was derived from the status alone, so
+an upstream 404 for a model one account does not serve parked that credential for two minutes, and the
+failover chain walked on to the next credential and parked it too: one request naming a model the provider
+does not have emptied every key it touched. A call that never reached the upstream was punished the same
+way, on a 30s window, for DNS, TLS, dial and deadline faults inside the gateway's own host, the client's
+deadline included. Those two now form a class of their own: the endpoint keeps the connection state the
+panel needs, no key earns a window, and the chain keeps walking, which is the reasoning PORT 011 already
+applied to the video poll ("a stale task id answering 404 would otherwise park a healthy key"). An answered
+5xx still parks the key for 30s, because the credential did carry that request, and the endpoint-level
+window that would turn this into a target park is draft `050` T1._
+
+_Changelog 2026-10-13: §7.5's credential window becomes a ladder (draft `050` T5, owner decision D3a). A flat 2m
+was re-tried forever: a dead credential parked for 2m, the window expired, `Available()` released it, the router
+spent it again, and the cycle repeated without a strike threshold or an escalation, which for a single-key account
+meant the provider was empty for two minutes on every round. Each consecutive credential failure now doubles the
+window from 2m, capped at 1h, and a successful call returns it to the first step. The ceiling is deliberately
+finite and the state deliberately stays `error`, because §7.5 gives `disabled` to the operator and the client-facing
+status parser refuses a state the panel cannot set: an escalation that parked an account forever would be the
+one-directional grave the OAuth dead-letter already is (draft `050` T2). The transient 5xx window stays a flat 30s:
+a target that was briefly unhealthy is not a credential that is dead._
+
+_Changelog 2026-10-13: §7.5's >=1-key invariant is stated as "a key the operator has not disabled" rather than "an
+active key" (draft `050` T6). The guard counted `status = active`, and that status is written by the health system
+and only ever cleared by a successful call, so an endpoint whose keys were all parked could not have a key removed
+or deactivated at all, and one whose keys had recovered but never served again stayed frozen the same way. The floor
+the rule defends is that a key-backed endpoint keeps a credential that routing can use again; a park is temporary, so
+a parked key satisfies it, and a key the operator disabled does not. The client-facing refusal text is unchanged
+(§1.3), so a reader of the message sees "active" where the rule now says "not disabled"._
+
+_Changelog 2026-10-13: §7.5's test route targets "the first key the operator has not disabled" instead of "the first
+active key", and states plainly that a probe still writes the key's circuit (draft `050` T6, T9, owner decision b).
+The rule was already the file's intent: a key parked inside its backoff is exactly what a manual test is for, because
+testing one is how an operator proves a credential they just fixed, and the refusal on the stored `error` status left
+no way to prove it since only a served call clears that status. The probe keeps writing health for the same reason,
+which means a failed Test now also climbs the credential ladder (2m, 4m, 8m, up to the 1h ceiling): a diagnostic that
+repeatedly fails is the same evidence real traffic would give._
+
+_Changelog 2026-10-13: §7.14 adds `routing.key_park` and a provider entry's own `key_park`, and §7.5 names them as
+the source of the three parking windows (draft `050` T8). They were compile-time constants, so an operator facing a
+vendor whose rate limit or credential refusal needed a different cooldown had no lever: they could not widen a
+backoff, shorten a park, or retune one provider without a rebuild. The bases are now per-class seconds with stored
+bounds (1..900, 1..300, 1..300) resolved provider-over-group on the rotation rule, patched one window at a time, and
+read per failure so a retune takes effect on the next parked key. The ceilings (1h, 5m) stay fixed: a park that can
+be configured never to expire is the one-directional grave §7.5 just dug an account out of. Both writers of a parked
+key read the same resolved budget, so the Test button and a live request cannot park one credential for different
+lengths._
+
+_Changelog 2026-10-13: §7.5 states that `test_status` is display-only and does not filter rotation (draft `050` T10).
+The finding was that nothing read the column when choosing an account; the answer is that routing must not. A probe
+answers "did this credential work when an operator pressed the button", an event that can be weeks old, while the
+health model already consumes every real upstream outcome (§7.5 parking). Making rotation depend on the probe would
+let one stale manual test withhold a working account, and would give the panel's own diagnostic a second, stronger
+say over routing than the traffic that actually serves customers. The column stays what it is: the panel's last
+result, and the signal an operator acts on._
+
+_Changelog 2026-10-13: §5 and §7.12 add `upstream_endpoints.quota_cooldown_until` (migration 000017) and state the
+rules it carries (draft `050` T1, owner decision b). The poller's sweep already filtered on `rate_limited_until` and
+the filter was inert, because nothing wrote a deadline into that column; the column it reads is also an input to
+`Available()`, so filling it with a vendor 429 would have withheld a whole account from serving on the strength of the
+one key that took the throttle. Two questions, two columns: the key's park decides who serves, the endpoint's cooldown
+decides who gets polled. The cooldown extends only, is taken as `GREATEST` in the database so a concurrent write
+cannot shorten it, expires on its own with no sweeper, and is not cleared even by a served call, because a model
+endpoint that answered says nothing about whether the usage endpoint will._
+
+_Changelog 2026-10-13: §7.4 gives the OAuth dead letter a retry ladder and `GET .../oauth/status` the two fields that
+show it (draft `050` T2 decision ii, migration 000018). Group C had already measured why the obvious fix was wrong:
+including `error` accounts in the worker's sweep re-ran the full five-attempt budget on every tick, because a
+dead-lettered token is expired and therefore always `due` (the pinned test caught it at `grant calls = 6`). The window
+is what makes the account reachable without making it hammered: one hour after the burial, doubling per failed visit
+to once a day, stored rather than inferred because a past deadline looks the same whether it is the first visit or the
+tenth. A grant that works clears the ladder and the dead letter together, so an account buried by a vendor outage now
+recovers with nobody watching it, which is the harm this decision was asked for._
+
+_Changelog 2026-10-13: §7.5 gives an upstream 402 its own failure class and §8 gives it `BILLING_EXHAUSTED` (503)
+(draft `050` D2, owner decision c). It had been parked with 401/403 since the health model was written, which said two
+false things at once: that the credential is what failed (a 402 arrives with a valid key on an account that simply has
+no credit), and that the right remedy is retrying that key on a minutes-scale window while an operator buys credit
+elsewhere. The class now parks on its own ladder (15m doubling to 6h, retunable through `routing.key_park.billing_seconds`),
+still implicates the credential so the account leaves rotation, and still fails over, because the next account may well
+have credit. The client code is 503 rather than 402: the debt is the gateway's account with its vendor, and a client
+told to pay would be told to fix something it cannot see._
+
+_Changelog 2026-10-13: §7.5 states that a key's health write outlives the caller's context. Live traffic showed the pair
+`key health could not be recorded after a served call` / `releasing an active request failed` on requests that answered 200:
+both writes ran under the request context, which the server cancels when the client hangs up after the final chunk, so a
+recovered credential stayed parked and a failing one stayed selectable. The usage rows had already been given this rule and
+the in-flight marker's release now has it too, each under a five-second bound like the accounting writes beside them. This
+also records what the fix exposed in the test doubles: the data plane's fake endpoint repository had been ignoring the
+context its writes were handed, so three new tests passed against an unfixed build until the double was made to refuse a
+cancelled write the way the driver does._
+
+_Changelog 2026-10-15: §7.5 adds the failure classification layer and the rest precedence, §7.14 adds
+`routing.failure_classes` and a provider entry's own table (draft `052`). The trigger was measured, not theorised: TH
+Harbor answers a spent free allowance and a busy minute with the same 429, and both parked the key for five minutes
+against a reset the vendor's own body printed four days away, so the key returned to rotation to be refused again on
+every cycle of four days. Status alone cannot see that difference, so the class is now recognised where the body and
+headers are still in hand and stamped once: a spent allowance parks to the vendor's stated reset and reaches the
+client as the account's condition, a gate that refuses this gateway parks nothing, and the class's action (`park`,
+`rotate`, `stop`) decides whether the credential walk continues at all. `upstream_keys` gains `reset_source` and
+`signature_id` (migration 000021), nullable and read by no router, so a parked key can say whether its wait was
+promised or guessed. The contract gains the class table on both settings levels and the three provenance fields on
+the key response._
+
+_Changelog 2026-10-15: §7.11 lets the proxy walk fail over on an upstream **429**, not only on a connect-stage
+failure. Measured on the live OpenCode free lane: bursting one egress address produced 429 while a second address,
+carrying the same session id and the same model, served three requests in a row, and the first was still refusing
+eleven seconds later. The quota bucket is therefore the address, so a refusal of that status is the walk's business
+while capacity sits unused elsewhere; every other status still ends the walk, and a body that cannot be rebuilt is
+never re-sent. The candidate that refused now sits out the wait it stated (the vendor's `Retry-After`, trimmed to the
+two-minute cooldown) rather than the fixed cooldown alone, so `ReportFailure` carries a duration. The walk also
+records the candidate that served and how many it stepped over, because spread is the pool's whole purpose and nothing
+else in the process said which address carried a call. Measured at the same sitting: the session id is NOT the unit of
+the free tier's quota, which corrects the sentence in `internal/dataplane/transport_sessions.go` that said it was._
+
+_Changelog 2026-10-16: §7.15 extends the declared output floor to the chat wire and states the bound a raise may
+not pass, and adds the rule that a tool call the ceiling cut reports `length` rather than `tool_calls`. Measured on
+the owner's round-robin combo `pi-agent` over three OpenCode free models: a client ceiling of 2500 spent 2499 tokens
+on thinking and answered no content at all, and at 512 and 1024 Muse Spark 1.3 answered `finish_reason: tool_calls`
+with an empty `arguments`, so the coding client received a call it could not run and no signal that the answer was
+cut. The floor was applied only on the Responses path, so a chat-shaped ceiling reached the upstream unraised, and
+three floors are now declared from measurement rather than copied: 2048 for Muse Spark 1.3 (raised from the 512
+measured in September, which proved enough for a text answer and not for a tool call), 2048 for DeepSeek V4.1 Flash
+Free, 1024 for Space Bunny Free. The cause of the starvation was not in the engine: `settings.reasoning` carried a
+stored provider mode of `high` for `opencode`, and §7.15's own precedence puts that mode above an absent client
+request, so the gateway was asking the free lane to think at its highest level on every model of the provider. The
+setting is cleared and the lane now answers as the provider decides. The same reading left §7.14's stored word
+applied blind to the models behind it: only `max`/`ultra` and `none` were asked against a model's own level list, so
+`minimal` reached `nemotron-3.5-lightning-free`, which lists none of `minimal`, and `xhigh` reached the models whose
+list stops at `high`. Both OpenAI shapes now ask the list before writing (§7.15). The combo walk, the stream
+commitment rule and the failover order are unchanged by this entry. Verified live on two instances of this gateway
+against the same upstream and the same pool: at client ceilings of 512 and 256 the older binary answered with exactly
+that many completion tokens and no tool arguments at all, the current one answered 1382, 1176 and 1024 with the call
+closed, and twenty straight `pi-agent` calls at 2500, ten on each binary, every one of them answered with a tool call
+whose arguments parse or with visible text._
+
+_Changelog 2026-10-17: §7.15 gains a fourth upstream target. `targetFormat` maps the `gemini` format onto
+`TargetGemini`, `registry.nativeFormats` accepts it, and the connector `provider.Gemini` addresses one call,
+so a `gemini/…` model string resolves, is translated, and is answered instead of being refused by name. The
+wire rules the target owns are the ones the OpenAI-shaped fallback cannot express: the model is a **path
+segment** (`{base}/{model}:generateContent`), a stream is a different **action** carrying `?alt=sse` rather
+than a body member named `stream`, the system prompt is hoisted out of `contents` into `systemInstruction`,
+and the answer arrives under keys no existing reader looks at (`candidates`, `parts`, `finishReason`,
+`usageMetadata`). Two of those are silent failures rather than loud ones, which is why they are the pinned
+ones: reading `usage` from a body that says `usageMetadata` bills every call at zero, and every per-target
+switch in the engine ends in a default that assumes an OpenAI upstream, so a target added to one list and not
+the others answers 200 with an empty completion. A model id that is not one path segment is refused at the
+connector rather than joined, because a value carrying a separator, a query or a colon would address an
+endpoint the entry never declared. `promptFeedback.blockReason` on a body with no candidate answers
+`content_filter`, because "no content" is a different claim than "refused". The credential headers are not
+restated by the connector: the entry already declares them per family (`x-goog-api-key` raw for a key,
+`Authorization: Bearer` for a token) and the fallback applies that declaration. `gemini-cli` and
+`antigravity` **stay** refused by name, and this is the entry's correction to draft 061's own plan: both wrap
+the same payload in a Cloud Code Assist envelope keyed to a project and drop the model from the path, so a
+translator alone would send a body the vendor rejects, and a project id is credential material that no
+connector may write into a body (§6, `provider.Request`). `vertex` stays out for its own reason (project and
+region in the path). Draft 061 §5 records the measurement; `SYSTEM_MAP.md` §94's example list is unchanged
+because those three formats are still reported by `Connectors.Unsupported()`._
+
+_Changelog 2026-10-18 (later same day, supersedes the refusal in the 2026-10-17 entry): the two Cloud
+Code Assist families are served. `gemini-cli` and `antigravity` now map onto `TargetGemini` and are
+accepted by `nativeFormats`, because the payload they send is the generateContent body this gateway already
+translates and the difference between them is a wrapper rather than a second wire format. `provider.CloudCode`
+owns that wrapper through the connector seams that already existed: `TransformRequest` builds
+`{project, model, request}` (plus `userAgent` and a `requestId` for the IDE product, which are the only
+members that differ), `Endpoint` addresses `{base}:generateContent` or `:streamGenerateContent?alt=sse` with
+**no model segment**, and `ApplyAuth` sends the client identification the entry declares in `api_client` and
+`cli_version`, two members that had been carried in the registry document with no reader at all. The answer
+direction unwraps `response` when the vendor nests one, through one helper shared by the candidate reader and
+the usage reader, so the two cannot drift apart; a wrapped answer read flat would have billed every call at
+zero. `vertex` is the remaining Google format refused by name: its project and region sit in the path, so it
+needs its own connector.
+
+Two rules this stage settled rather than worked around. The Cloud project travels in the Credential's
+declared **metadata slot** (`MetadataProjectID`), not in `ProjectID`: that field carries the account
+workspace a signed provider reads as its user id, and a Google login with both values stored had been
+overwriting it, so one field had two meanings. The seam rule that forbids credential material in a body is
+unchanged and needs no exception, because the project was never the credential. And the reference's practice
+of inventing a project identifier when the account has none is **not** adopted: an unknown project is omitted
+from the envelope, and the vendor's own refusal is the signal, following the decision draft 011 §10.11 reached
+for a fabricated dedup key. The honest path to a missing project is the `onboardUser` call draft 061 §8
+records as still unwritten, not a made-up value._
+
+_Changelog 2026-10-18 (later same day, tool calls): a Gemini answer's tool call now survives being used.
+The client-visible half is that a streamed call reported under `index: 0` in one frame no longer reappears as
+`index: 0` in the next, a stream that carried a call finishes as `tool_calls` rather than `stop`, and the id a
+client answers by is the vendor's when the answer sent one and `call_<name>_<created>_<index>` when it did not,
+so the same tool called on two turns arrives as two ids. The upstream half is the agreement Gemini checks: it
+validates `functionCall` ids across the whole history and rejects a request where one repeats, so each replayed
+call takes the next free id and its `functionResponse` is written under that same id with the name that call
+declared, rather than the name the last turn gave the id. Adjacent same-role turns merge into one (parallel tool
+results arrive as one message per call), a history opened by the model gets a user turn, and a call the caller
+left unanswered is closed with a function response carrying `"Continue."`. Parts marked thinking are still read
+into `reasoning_content` and never replayed: Gemini 3 requires a `thoughtSignature` beside a replayed
+`functionCall`, no client wire carries one back, and this gateway holds no state between requests, so the first
+call of each model turn is signed with the product's known-good filler and its siblings stay unsigned. Draft 061
+§5.6 records why the reference's two storage mechanisms were not adopted, and §8 what a live round still has to
+confirm._
+
+_Changelog 2026-10-21: §7.4 adds Agnes AI and §7.10 its video dialect. The provider is an OpenAI-compatible
+hub (`https://apihub.agnes-ai.com/v1`) whose public catalog carries two chat models, three image models, and
+one video model; the documented 2.5-pro, 2.5-pro-beta, and 3.0-pro ids are absent from `GET /v1/models`, so
+the entry carries only what the endpoint serves. The reference has no agnes entry, so the whole provider is
+an app-serv declaration carried by the generator's `APP_SERV_PROVIDER_ENTRIES` table. The committed document
+already diverges from a fresh generation in other providers, so the entry was applied to it directly rather
+than by regenerating the file; the generator holds the same declaration so a later regeneration reproduces
+it. Its image block declares the bearer placement the reference's image blocks omit, because a block that
+names no credential sends none. The video dialect creates at `/v1/videos` and polls
+`GET /agnesapi?video_id=…&model_name=…`: a poll carries no model, keyframe and reference tasks require it,
+so the creation answers `base64url(video_id + "|" + model)` as the task id and the poll rebuilds both
+parameters, accepting a raw video id for the text mode that does not need the model. The two chat models
+declare their 512K context and 65,536-token output ceilings; no token price is declared, because the
+reference's pricing tables do not know the provider, so usage records zero for these pairs rather than a
+guessed rate (the vendor's own page lists all six at $0 under a current promotion), and the regenerated
+pricing corpus pins that answer as unpriced._

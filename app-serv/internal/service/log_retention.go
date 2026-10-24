@@ -40,8 +40,10 @@ type LogRetentionPolicy struct {
 }
 
 // DefaultLogRetentionPolicy is the process policy used by the composition root.
+// The two-day tick matches the storage budget the owner set; the longer timeout
+// covers the batched delete plus the row cap.
 func DefaultLogRetentionPolicy() LogRetentionPolicy {
-	return LogRetentionPolicy{Interval: time.Hour, MaxAttempts: 3, Timeout: 10 * time.Second}
+	return LogRetentionPolicy{Interval: 48 * time.Hour, MaxAttempts: 3, Timeout: 30 * time.Second}
 }
 
 // LogRetentionWorker periodically invokes the canonical log purge operation.

@@ -45,9 +45,13 @@ func (l *StringList) UnmarshalYAML(node *yaml.Node) error {
 }
 
 // OAuth is the provider's authorization flow configuration.
+//
+// There is no client_secret member, and that is the point: the document is
+// decoded with unknown fields rejected, so a registry that ever states a client
+// secret fails to load instead of carrying one. A secret belongs to the
+// deployment and arrives through typed config (internal/config/oauth_clients.go).
 type OAuth struct {
 	ClientID          string            `yaml:"client_id"`
-	ClientSecret      string            `yaml:"client_secret"`
 	AuthorizeURL      string            `yaml:"authorize_url"`
 	AuthorizeURLPath  string            `yaml:"authorize_url_path"`
 	TokenURL          string            `yaml:"token_url"`

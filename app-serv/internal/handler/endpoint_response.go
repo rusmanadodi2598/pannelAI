@@ -31,16 +31,40 @@ func toKeyResponse(key domain.UpstreamKey, now time.Time) schema.EndpointKeyResp
 		Available:         key.Available(now),
 		LastError:         key.LastError(),
 		ConsecutiveErrors: key.ConsecutiveErrors(),
+		LastErrorClass:    key.LastErrorClass(),
+		ResetSource:       key.ResetSource(),
+		SignatureID:       key.SignatureID(),
 		CreatedAt:         schema.Timestamp(key.CreatedAt()),
 		UpdatedAt:         schema.Timestamp(key.UpdatedAt()),
 	}
 	if used := key.LastUsedAt(); used != nil {
 		resp.LastUsedAt = ptr(schema.Timestamp(*used))
 	}
+	if chosen := key.LastSelectedAt(); chosen != nil {
+		resp.LastSelectedAt = ptr(schema.Timestamp(*chosen))
+	}
 	if until := key.RateLimitedUntil(); until != nil {
 		resp.RateLimitedUntil = ptr(schema.Timestamp(*until))
 	}
+	resp.Tags = tagValues(key.Tags())
+	if until := key.DisabledUntil(); until != nil {
+		resp.DisabledUntil = ptr(schema.Timestamp(*until))
+	}
 	return resp
+}
+
+// tagValues renders the operator's labels as the plain strings the wire carries. A row
+// with no tags answers with no field rather than an empty array, so a list of a hundred
+// accounts does not carry a hundred empties.
+func tagValues(tags []domain.Tag) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		out = append(out, tag.String())
+	}
+	return out
 }
 
 // toKeyResponses renders a key slice, always non-nil so the JSON is an empty array
@@ -79,6 +103,10 @@ func toEndpointResponse(endpoint domain.UpstreamEndpoint, now time.Time, withKey
 		DefaultModel:        endpoint.DefaultModel(),
 		ConsecutiveUseCount: endpoint.ConsecutiveUseCount(),
 		ProxyPoolID:         endpoint.ProxyPoolID(),
+		Tags:                tagValues(endpoint.Tags()),
+	}
+	if until := endpoint.DisabledUntil(); until != nil {
+		resp.DisabledUntil = ptr(schema.Timestamp(*until))
 	}
 	if sa := endpoint.ServiceAccount(); sa.ProjectID != "" {
 		resp.SAProjectID = sa.ProjectID
@@ -98,6 +126,9 @@ func toEndpointResponse(endpoint domain.UpstreamEndpoint, now time.Time, withKey
 	}
 	if used := endpoint.LastUsedAt(); used != nil {
 		resp.LastUsedAt = ptr(schema.Timestamp(*used))
+	}
+	if chosen := endpoint.LastSelectedAt(); chosen != nil {
+		resp.LastSelectedAt = ptr(schema.Timestamp(*chosen))
 	}
 	if withKeys {
 		resp.Keys = toKeyResponses(endpoint.Keys(), now)

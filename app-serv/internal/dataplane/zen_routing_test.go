@@ -80,7 +80,7 @@ func TestRegistry_ClaudeOnlyModelsReachTheMessagesEndpoint(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Endpoint(%s) error = %v", model.ID, err)
 		}
-		if !strings.HasSuffix(url, "/zen/v1/messages") {
+		if !strings.HasSuffix(url, "/inference/v1/messages") {
 			t.Fatalf("Endpoint(%s) = %q, want the messages endpoint", model.ID, url)
 		}
 	}

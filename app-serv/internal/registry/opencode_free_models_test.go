@@ -13,13 +13,15 @@ package registry
 import "testing"
 
 // TestEmbeddedOpenCode_FreeModels pins the opencode entry's declared models to
-// the reference registry (open-sse/providers/registry/opencode.js): id, display
-// name, upstream wire format, chat eligibility. Four models are declared and
-// only three are chat: the fourth is a System One decision model
-// (`kind: "systemone"`) whose payload is the provider's own vocabulary.
-// Carrying it keeps the catalog truthful about the id and the kind keeps the
-// chat plane off it; both are asserted together so a future edit cannot quietly
-// promote the decision model back to chat.
+// the live free-tier feed (GET /inference/v1/models, measured 2026-10-15): id,
+// display name, upstream wire format, chat eligibility. Eleven are declared and
+// only ten are chat: `jev-1.13-free` is a System One decision model whose payload
+// is the provider's own vocabulary, so the id stays truthful and the kind keeps
+// it off the chat plane. Both are asserted together so an edit cannot quietly
+// promote it back.
+//
+// `union-alpha` left on that measurement, answering 400 upstream; the Claude wire
+// it pinned is held by `provider/opencode_test.go` instead.
 func TestEmbeddedOpenCode_FreeModels(t *testing.T) {
 	index, err := Load()
 	if err != nil {
@@ -36,13 +38,21 @@ func TestEmbeddedOpenCode_FreeModels(t *testing.T) {
 		targetFormat string
 		chat         bool
 		// minOutput is the smallest output ceiling the model still answers
-		// within: muse-spark 1.3 spends a small one entirely on thinking and
-		// answers an empty body.
+		// within. Measured 2026-10-16 against the live upstream: under these
+		// numbers the model spends the ceiling on thinking and answers an empty
+		// body, or a tool call carrying no arguments.
 		minOutput int
 	}{
 		{id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses", chat: true},
-		{id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses", chat: true, minOutput: 512},
-		{id: "union-alpha", name: "Union Alpha Free", targetFormat: "claude", chat: true},
+		{id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses", chat: true, minOutput: 2048},
+		{id: "big-pickle", name: "Big Pickle Free", chat: true},
+		{id: "cat-jam-free", name: "Cat Jam Free", chat: true},
+		{id: "deepseek-v4.1-flash-free", name: "DeepSeek V4.1 Flash Free", chat: true, minOutput: 2048},
+		{id: "longcat-2.5-preview-free", name: "LongCat 2.5 Preview Free", chat: true},
+		{id: "mimo-v2.6-flash-free", name: "MiMo V2.6 Flash Free", chat: true},
+		{id: "nemotron-3.5-lightning-free", name: "Nemotron 3.5 Lightning Free", chat: true},
+		{id: "space-bunny-free", name: "Space Bunny Free", chat: true, minOutput: 1024},
+		{id: "step-5-preview-free", name: "Step 5 Preview Free", chat: true},
 		{id: "jev-1.13-free", name: "Jev 1.13 Free", targetFormat: "", chat: false},
 	}
 	if len(provider.Models) != len(cases) {
@@ -92,8 +102,8 @@ func TestEmbeddedMuseSparkFloorPinsEveryEntry(t *testing.T) {
 			continue
 		}
 		declared++
-		if model.MinOutputTokens != 512 {
-			t.Fatalf("%s/%s min_output_tokens = %d, want 512", providerID, modelID, model.MinOutputTokens)
+		if model.MinOutputTokens != 2048 {
+			t.Fatalf("%s/%s min_output_tokens = %d, want 2048", providerID, modelID, model.MinOutputTokens)
 		}
 	}
 	if declared == 0 {
@@ -118,11 +128,12 @@ func TestEmbeddedOpenCode_SystemOneEndpoint(t *testing.T) {
 	if provider.SystemOne == nil {
 		t.Fatal("opencode declares no systemone endpoint")
 	}
-	if got, want := provider.SystemOne.BaseURL, "https://opencode.ai/zen/v1/systemone"; got != want {
+	if got, want := provider.SystemOne.BaseURL, "https://opencode.ai/inference/v1/systemone"; got != want {
 		t.Fatalf("systemone base_url = %q, want %q", got, want)
 	}
 	// The client identity travels with the block in the reference, because the
-	// decision endpoint reads the same headers the chat lane does.
+	// decision endpoint reads the same headers the chat lane does. The reference
+	// keeps `desktop` here even after the v2 move (PR #4840's registry hunk).
 	if got := provider.SystemOne.Headers["x-opencode-client"]; got != "desktop" {
 		t.Fatalf("systemone x-opencode-client = %q, want desktop", got)
 	}

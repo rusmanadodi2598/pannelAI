@@ -14,13 +14,13 @@
 	//   After a write the page re-reads the whole document (§8.6.3), so a tab the operator returns to
 	//   shows what the gateway stored rather than what the panel last saw.
 	//
-	// Two tabs are pointers rather than editors. Token Saver and Network each have one editor, on
-	// their own screen, and a second editor here is how two views of one configuration drift apart. So
-	// each tab states what its screen holds and links to it, which R-24 allows precisely because those
-	// routes exist.
+	// Network and Token Saver are pointers rather than editors; the rule each one states lives in
+	// `SettingsPointerPanel`.
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import SettingsPointerPanel from '$lib/components/SettingsPointerPanel.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import PanelTabs from '$lib/components/PanelTabs.svelte';
 	import SettingsSecurityTab from '$lib/components/SettingsSecurityTab.svelte';
@@ -44,7 +44,11 @@
 	onMount(load);
 
 	async function load(): Promise<void> {
-		loading = true;
+		// Only the first read blanks the screen. A re-read after a write replaces the document under the
+		// open tab; taking the tabs down with it threw the operator back to the first tab and destroyed
+		// the "Saved." line the tab had just earned (SPEC-UI §8.6.3).
+		loading = settings === null;
+
 		const result = await fetchSettings();
 		loading = false;
 
@@ -71,10 +75,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="Settings could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={load}>Try again</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>
@@ -87,29 +88,21 @@
 				{:else if id === 'routing'}
 					<SettingsRoutingTab loaded={panelSettings.routing} onrefresh={load} />
 				{:else if id === 'network'}
-					<div
-						class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4"
-					>
-						<h2 class="text-sm font-semibold">Network</h2>
-						<p class="text-sm text-[var(--color-text-muted)]">
-							Outbound proxy settings are global. Edit them on Proxy Pools.
-						</p>
-						<a href={resolve('/proxy-pools')} class="min-h-11 self-start underline">
-							Open Proxy Pools
-						</a>
-					</div>
+					<SettingsPointerPanel
+						title="Network"
+						description="Outbound proxy settings are global. Edit them on Proxy Pools."
+						href={resolve('/proxy-pools')}
+						linkLabel="Open Proxy Pools"
+					/>
 				{:else if id === 'logging'}
 					<SettingsLoggingTab loaded={panelSettings.logging} onrefresh={load} />
 				{:else if id === 'token-saver'}
-					<div
-						class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4"
-					>
-						<h2 class="text-sm font-semibold">Token Saver</h2>
-						<p class="text-sm text-[var(--color-text-muted)]">Trim a request before it is sent.</p>
-						<a href={resolve('/token-saver')} class="min-h-11 self-start underline">
-							Open Token Saver
-						</a>
-					</div>
+					<SettingsPointerPanel
+						title="Token Saver"
+						description="Trim a request before it is sent."
+						href={resolve('/token-saver')}
+						linkLabel="Open Token Saver"
+					/>
 				{/if}
 			{/snippet}
 		</PanelTabs>

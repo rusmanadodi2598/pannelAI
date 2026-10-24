@@ -1,21 +1,18 @@
 <script lang="ts">
 	// Gateway keys table of Endpoint & Key (docs/SPEC-UI/001-SPEC-UI.md §6.2).
 	//
-	// This owns the list, its paging, and the confirmation dialog for the destructive action. Creating,
-	// rendering a row, and showing the one-time key each live in their own component, which keeps every
-	// file under the project line limit.
-	//
-	// Revoked rows never reach the table: DELETE is terminal (SPEC-API §7.3), so a key carrying that
-	// status has no control left that would work, and the reference's own list drops a deleted key. The
-	// route still counts revoked rows in `meta.total`, which is what the paging math reads; the
-	// route-side filter is requested in docs/PORT/001-PORT-ENDPOINT-KEYS.md F1.
+	// This owns the list, paging, and the delete confirmation. Revoked rows do not render because
+	// DELETE is terminal (SPEC-API §7.3), but the route still counts them in meta.total, which the
+	// paging math reads; the route-side filter is requested in docs/PORT/001-PORT-ENDPOINT-KEYS.md F1.
 	import CreateGatewayKeyForm from '$lib/components/CreateGatewayKeyForm.svelte';
 	import GatewayKeyRow from '$lib/components/GatewayKeyRow.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import OneTimeKeyModal from '$lib/components/OneTimeKeyModal.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
+	import PagingControls from '$lib/components/PagingControls.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { listGatewayKeys, revokeGatewayKey } from '$lib/api/gateway-keys';
 	import {
@@ -36,8 +33,7 @@
 	let created = $state<CreatedGatewayKey | null>(null);
 	let pendingDelete = $state<GatewayKey | null>(null);
 	let deleting = $state(false);
-	// A failed delete is not a failed list read, so it gets its own line rather than replacing the table
-	// with an error state.
+	// A failed delete gets its own line; it is not a failed list read.
 	let notice = $state<ApiError | null>(null);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
@@ -55,10 +51,13 @@
 		}
 
 		error = null;
-		// The terminal rows stay in the server's count, which the paging math reads, but they do not
-		// render: a revoked key has no working action left, so it leaves the screen.
 		keys = result.data.data.filter((entry) => entry.status !== KEY_STATUS_REVOKED);
 		total = result.data.meta.total;
+	}
+
+	function goPage(next: number): void {
+		page = next;
+		void load();
 	}
 
 	async function confirmDelete(): Promise<void> {
@@ -87,8 +86,7 @@
 		}}
 	/>
 
-	<!-- The same mobile width as the create form above: full width on a phone, so Refresh lines up with
-	     Create gateway key instead of sitting at its own size. RefreshControl is shared, so the rule lives here. -->
+	<!-- On a phone, Refresh matches Create's width so the two controls line up. -->
 	<div
 		class="flex flex-col sm:flex-row [&>div]:w-full sm:[&>div]:w-auto [&_button]:w-full sm:[&_button]:w-auto [&_button]:justify-center"
 	>
@@ -106,11 +104,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="Gateway keys could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={load}>Try again</button
-				>
+				<Button variant="ghost" class="underline" onclick={load}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if total === 0}
@@ -156,27 +150,7 @@
 			</div>
 		{/if}
 
-		<div class="flex items-center gap-3 text-sm">
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
-				disabled={page <= 1}
-				onclick={() => {
-					page -= 1;
-					void load();
-				}}>Previous</button
-			>
-			<span class="text-[var(--color-text-muted)]">Page {page} of {lastPage}</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
-				disabled={page >= lastPage}
-				onclick={() => {
-					page += 1;
-					void load();
-				}}>Next</button
-			>
-		</div>
+		<PagingControls {page} {lastPage} onpage={goPage} />
 	{/if}
 </div>
 
@@ -195,15 +169,7 @@
 	{/if}
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			onclick={() => (pendingDelete = null)}>Keep the key</button
-		>
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-3 text-sm font-medium text-white"
-			onclick={confirmDelete}>Delete key</button
-		>
+		<Button variant="outline" onclick={() => (pendingDelete = null)}>Keep the key</Button>
+		<Button variant="destructive" aria-busy={deleting} onclick={confirmDelete}>Delete key</Button>
 	{/snippet}
 </Modal>

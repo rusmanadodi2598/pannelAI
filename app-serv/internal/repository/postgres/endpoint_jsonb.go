@@ -159,21 +159,27 @@ func unmarshalTestStatus(raw *string) (domain.EndpointTestStatus, error) {
 //
 // `global_priority` is written as a pointer so an unset order stores NULL rather
 // than 0: the two mean different things, and a 0 would sort as "tried first".
-func parityColumns(endpoint domain.UpstreamEndpoint) []any {
+// An UPDATE omits consecutive_use_count because that counter belongs to the
+// data-plane outcome write, not to a management or probe write built from a
+// possibly older aggregate.
+func parityColumns(endpoint domain.UpstreamEndpoint, includeUseCount bool) []any {
 	code, message, at := endpoint.LastError()
 	var priority *int
 	if value := endpoint.GlobalPriority(); value != 0 {
 		priority = &value
 	}
-	return []any{
-		priority,
-		endpoint.DefaultModel(),
-		endpoint.ConsecutiveUseCount(),
+	columns := []any{priority, endpoint.DefaultModel()}
+	if includeUseCount {
+		columns = append(columns, endpoint.ConsecutiveUseCount())
+	}
+	return append(columns,
 		nullIfEmpty(message),
 		at,
 		nullIfEmpty(code),
 		nullIfEmpty(endpoint.ProxyPoolID()),
-	}
+		endpoint.RefreshRetryAt(),
+		endpoint.RefreshRetryRounds(),
+	)
 }
 
 // nullIfEmpty stores an empty string as NULL, so "no value" has one
@@ -183,4 +189,44 @@ func nullIfEmpty(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+// marshalTags encodes a tag set as the jsonb array its column holds. An empty set is
+// the empty array rather than NULL, because the column is NOT NULL and the containment
+// index reads it on every row it visits.
+func marshalTags(tags []domain.Tag) (string, error) {
+	if len(tags) == 0 {
+		return "[]", nil
+	}
+	values := make([]string, len(tags))
+	for i, tag := range tags {
+		values[i] = tag.String()
+	}
+	encoded, err := json.Marshal(values)
+	if err != nil {
+		return "", fmt.Errorf("encoding stored tags: %w", err)
+	}
+	return string(encoded), nil
+}
+
+// unmarshalTags decodes the column back into value objects. A stored tag the domain
+// refuses is an error rather than a skip: a row that cannot read its own labels would
+// answer a bulk action with a set shorter than the one it holds.
+func unmarshalTags(raw *string) ([]domain.Tag, error) {
+	if raw == nil || *raw == "" || *raw == "[]" {
+		return nil, nil
+	}
+	var values []string
+	if err := json.Unmarshal([]byte(*raw), &values); err != nil {
+		return nil, fmt.Errorf("decoding stored tags: %w", err)
+	}
+	out := make([]domain.Tag, 0, len(values))
+	for _, value := range values {
+		tag, err := domain.NewTag(value)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, tag)
+	}
+	return out, nil
 }

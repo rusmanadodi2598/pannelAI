@@ -33,7 +33,7 @@ func (p oneCandidatePlanner) Plan(context.Context, string, string) ([]domain.Pro
 	return []domain.ProxyRouteAttempt{p.attempt}, nil
 }
 
-func (oneCandidatePlanner) ReportFailure(context.Context, string) {}
+func (oneCandidatePlanner) ReportFailure(context.Context, string, time.Duration) {}
 
 // TestProxiedAttemptHonoursTheProviderTimeout pins that a proxied call is
 // bounded by the provider's timeout_ms rather than by the shared transport's

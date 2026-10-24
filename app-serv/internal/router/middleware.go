@@ -35,7 +35,23 @@ func RequestIDFrom(ctx context.Context) string { return requestctx.From(ctx) }
 // (so recovery and logging can report it) and the access log (so a recovered
 // 500 is still recorded).
 func chain(h http.Handler) http.Handler {
-	return requestID(logging(recoverer(envelope(h))))
+	return securityHeaders(requestID(logging(recoverer(envelope(h)))))
+}
+
+// securityHeaders applies the response headers that do not depend on a route.
+// no-store covers every management response, including the one-time plaintext
+// gateway key; nosniff stops a browser from reinterpreting a JSON body.
+//
+// HSTS is deliberately absent: app-serv listens on plain HTTP and TLS terminates
+// in front of it, so the header belongs to the terminator that owns the host and
+// scheme. Sending it here would either never be seen or require trusting an
+// X-Forwarded-Proto this service does not verify.
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
 }
 
 // requestID gives every request an id, echoes it in the response, and puts it in

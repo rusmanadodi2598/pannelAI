@@ -23,11 +23,10 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// endpointExecer is the statement surface the endpoint UPDATE needs. Both
-// *pgxpool.Pool and pgx.Tx satisfy it, which is what lets one implementation of
-// the statement serve the single write path and the batch transaction instead of
-// two copies that drift.
-type endpointExecer interface {
+// dbExecer is the statement surface a write helper needs. Both *pgxpool.Pool and
+// pgx.Tx satisfy it, which is what lets one implementation of a statement serve
+// the single-write path and a batch transaction instead of two copies that drift.
+type dbExecer interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 }
 
@@ -50,6 +49,9 @@ func (r *EndpointRepository) ImportOAuthBatch(ctx context.Context, endpoints []d
 			var err error
 			if existing[i] {
 				err = updateEndpoint(ctx, tx, endpoint)
+				if err == nil {
+					err = updateEndpointCredential(ctx, tx, endpoint)
+				}
 			} else {
 				err = insertEndpoint(ctx, tx, endpoint)
 			}
@@ -61,19 +63,14 @@ func (r *EndpointRepository) ImportOAuthBatch(ctx context.Context, endpoints []d
 	})
 }
 
-// updateEndpoint persists an endpoint's own fields through any execer, including
-// its OAuth state (stored as ciphertext) and its account identity. Keys are
-// untouched: they have their own methods, a key change being a different concern.
-func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint) error {
-	oauthJSON, err := marshalOAuth(endpoint.OAuth())
-	if err != nil {
-		return err
-	}
-	accountJSON, err := marshalAccount(endpoint.Account())
-	if err != nil {
-		return err
-	}
+// updateEndpoint persists management fields only. It never touches oauth,
+// account, or consecutive_use_count, which credential and outcome writes own.
+func updateEndpoint(ctx context.Context, exec dbExecer, endpoint domain.UpstreamEndpoint) error {
 	testJSON, err := marshalTestStatus(endpoint.TestStatus())
+	if err != nil {
+		return err
+	}
+	tagsJSON, err := marshalTags(endpoint.Tags())
 	if err != nil {
 		return err
 	}
@@ -82,29 +79,56 @@ UPDATE upstream_endpoints
    SET label = $1,
        priority = $2,
        status = $3,
-       oauth = $4,
-       account = $5,
-       test_status = $6,
-       rate_limited_until = $7,
-       last_used_at = $8,
-       updated_at = $9,
-       global_priority = $10,
-       default_model = $11,
-       consecutive_use_count = $12,
-       last_error = $13,
-       last_error_at = $14,
-       error_code = $15,
-       proxy_pool_id = $16
- WHERE id = $17`
+       test_status = $4,
+       rate_limited_until = $5,
+       last_used_at = $6,
+       updated_at = $7,
+       global_priority = $8,
+       default_model = $9,
+       last_error = $10,
+       last_error_at = $11,
+       error_code = $12,
+       proxy_pool_id = $13,
+       oauth_retry_at = $14,
+       oauth_retry_rounds = $15,
+       tags = $16,
+       disabled_until = $17
+ WHERE id = $18`
 
 	args := []any{
 		endpoint.Label(), endpoint.Priority(), string(endpoint.Status()),
-		oauthJSON, accountJSON, testJSON, endpoint.RateLimitedUntil(),
-		endpoint.LastUsedAt(), endpoint.UpdatedAt(),
+		testJSON, endpoint.RateLimitedUntil(), endpoint.LastUsedAt(),
+		endpoint.UpdatedAt(),
 	}
-	args = append(args, parityColumns(endpoint)...)
-	args = append(args, endpoint.ID())
+	args = append(args, parityColumns(endpoint, false)...)
+	args = append(args, tagsJSON, endpoint.DisabledUntil(), endpoint.ID())
 	tag, err := exec.Exec(ctx, q, args...)
+	if err != nil {
+		return translateEndpointError(err)
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrEndpointNotFound
+	}
+	return nil
+}
+
+// updateEndpointCredential writes the credential and account identity an explicit
+// import owns. It is separate from updateEndpoint so a management, probe, or key
+// write cannot restore a token the vendor has already rotated.
+func updateEndpointCredential(ctx context.Context, exec dbExecer, endpoint domain.UpstreamEndpoint) error {
+	oauthJSON, err := marshalOAuth(endpoint.OAuth())
+	if err != nil {
+		return err
+	}
+	accountJSON, err := marshalAccount(endpoint.Account())
+	if err != nil {
+		return err
+	}
+	const q = `
+UPDATE upstream_endpoints
+   SET oauth = $1, account = $2, updated_at = $3
+ WHERE id = $4`
+	tag, err := exec.Exec(ctx, q, oauthJSON, accountJSON, endpoint.UpdatedAt(), endpoint.ID())
 	if err != nil {
 		return translateEndpointError(err)
 	}
@@ -118,9 +142,13 @@ UPDATE upstream_endpoints
 // The rotation loaded the aggregate before it went to the vendor, so re-sending the
 // other columns would restore whatever the operator changed in the meantime.
 func updateEndpointTokens(
-	ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential,
+	ctx context.Context, exec dbExecer, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential,
 ) error {
 	oauthJSON, err := marshalOAuth(endpoint.OAuth())
+	if err != nil {
+		return err
+	}
+	accountJSON, err := marshalAccount(endpoint.Account())
 	if err != nil {
 		return err
 	}
@@ -130,17 +158,18 @@ func updateEndpointTokens(
 	q := `
 UPDATE upstream_endpoints
    SET oauth = $1,
-       updated_at = $2
- WHERE id = $3
-   AND COALESCE(oauth->>'access_token_encrypted', '')  = $4
-   AND COALESCE(oauth->>'refresh_token_encrypted', '') = $5`
-	tag, err := exec.Exec(ctx, q, oauthJSON, endpoint.UpdatedAt(), endpoint.ID(),
+       account = $2,
+       updated_at = $3
+ WHERE id = $4
+   AND COALESCE(oauth->>'access_token_encrypted', '')  = $5
+   AND COALESCE(oauth->>'refresh_token_encrypted', '') = $6`
+	tag, err := exec.Exec(ctx, q, oauthJSON, accountJSON, endpoint.UpdatedAt(), endpoint.ID(),
 		loaded.AccessTokenEncrypted(), loaded.RefreshTokenEncrypted())
 	if err != nil {
 		return translateEndpointError(err)
 	}
 	if tag.RowsAffected() == 0 {
-		return domain.NewConflictError("the endpoint changed during this refresh")
+		return domain.NewConflictError("the endpoint credential changed during this write")
 	}
 	return nil
 }

@@ -70,4 +70,26 @@ describe('sidebar navigation landmark', () => {
 			expect(nav.textContent, `${label} is outside the navigation landmark`).toContain(label);
 		}
 	});
+
+	it('marks only the current row active, so the accent wash stays on one row', () => {
+		render(SidebarHarness);
+
+		const active = screen.getByRole('link', { name: 'Endpoint & Key' });
+		const inactive = screen.getByRole('link', { name: 'Provider' });
+
+		expect(active.getAttribute('data-active')).toBe('true');
+		expect(inactive.hasAttribute('data-active')).toBe(false);
+	});
+
+	it('keeps the collapsed rail row at a 44px target', () => {
+		render(SidebarHarness);
+
+		const row = screen.getByRole('link', { name: 'Endpoint & Key' });
+
+		expect(row.className).toContain('group-data-[collapsible=icon]:size-11!');
+		expect(row.textContent?.trim()).toBe('Endpoint & Key');
+		expect(screen.getByText('Endpoint & Key').className).toContain(
+			'group-data-[collapsible=icon]:sr-only'
+		);
+	});
 });

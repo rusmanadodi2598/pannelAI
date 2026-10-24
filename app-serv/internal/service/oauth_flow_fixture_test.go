@@ -226,3 +226,16 @@ func seedOAuthEndpoint(t *testing.T, fixture oauthFlowFixture, id, providerID, l
 	}
 	return endpoint
 }
+
+// disableEndpoint moves a seeded endpoint to the operator's `disabled` state and
+// writes it back: a PATCH off the wire cannot put an account there as a test premise,
+// because ParseUpstreamEndpointStatus and the sweep gate are what this file proves.
+func disableEndpoint(t *testing.T, fixture oauthFlowFixture, endpoint domain.UpstreamEndpoint) {
+	t.Helper()
+	if err := endpoint.Update(endpoint.Label(), endpoint.Priority(), string(domain.UpstreamEndpointDisabled), testNow); err != nil {
+		t.Fatalf("disabling %s: %v", endpoint.ID(), err)
+	}
+	if err := fixture.store.Update(context.Background(), endpoint); err != nil {
+		t.Fatalf("storing the disabled %s: %v", endpoint.ID(), err)
+	}
+}

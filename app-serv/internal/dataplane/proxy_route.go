@@ -4,8 +4,8 @@
 //
 // @file      internal/dataplane/proxy_route.go
 // @for       The pool-driven dial: one planned walk across the proxy pool with connect-stage failover and per-candidate transports.
-// @uses      internal/domain, context, errors, fmt, net, net/http, net/url, sync.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1/D7-D9: the pool rows are the route when proxying is on, so the walk is what makes them serve traffic instead of decorating it. The walk is bounded (D7), only connect-stage errors fail over (a mid-response death must not re-send a request the upstream may have answered), each candidate dials through a clone of the shared client so the egress guard still sees every address (D8), and the shared client itself keeps its static proxy behaviour for the callers that do not walk (D9).
+// @uses      internal/domain, context, errors, log/slog, net/http, net/url, sync, time.
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1/D7-D9: the pool rows are the route when proxying is on, so the walk is what makes them serve traffic instead of decorating it. The walk is bounded (D7); a connect stage that died moves on, and so does an upstream that refused that one address, while a mid-response death must not re-send a request the upstream may have answered. Each candidate dials through a clone of the shared client so the egress guard still sees every address (D8), and the shared client itself keeps its static proxy behaviour for the callers that do not walk (D9).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -15,11 +15,11 @@ package dataplane
 import (
 	"context"
 	"errors"
-	"fmt"
-	"net"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -27,12 +27,19 @@ import (
 // ProxyRoutePlanner plans the proxy attempts one request may walk. Plan is
 // consulted once per request with the provider that will answer and the
 // destination host, because the provider's binding decides the candidate set
-// (docs/PORT/009-PORT-PROVIDER-PROXY.md D2-D5); ReportFailure parks a candidate
-// whose connect stage died so the next request skips it.
+// (docs/PORT/009-PORT-PROVIDER-PROXY.md D2-D5); ReportFailure takes a candidate
+// out of rotation for the wait the failure stated, whether the connect stage died
+// or the upstream refused that address.
 type ProxyRoutePlanner interface {
 	Plan(ctx context.Context, providerID, host string) ([]domain.ProxyRouteAttempt, error)
-	ReportFailure(ctx context.Context, proxyID string)
+	ReportFailure(ctx context.Context, proxyID string, ttl time.Duration)
 }
+
+// maxProxyTransports bounds the per-candidate client cache. A pool row that is
+// edited or removed must not leave its transport (and its idle connections)
+// behind forever; the cap keeps the cache to the candidates a rotated pool can
+// plausibly serve in one cycle.
+const maxProxyTransports = 32
 
 // ProxyDialer serves one request through the plan the planner returns: an empty
 // plan (proxying off, the host exempt, nothing usable) reaches the shared
@@ -43,7 +50,14 @@ type ProxyDialer struct {
 	routes ProxyRoutePlanner
 	// transports caches the per-candidate clients by proxy URL, so a rotating
 	// pool reuses its connections instead of building a fresh pool per request.
-	transports sync.Map // map[string]*http.Client
+	// Insertion order is kept alongside because a map alone cannot say which
+	// entry is oldest when the cache is full.
+	transportMu    sync.Mutex
+	transports     map[string]*http.Client
+	transportOrder []string
+	// logger records which candidate carried the request. Nil falls back to the
+	// process logger, so a wiring that forgets it still leaves the trace.
+	logger *slog.Logger
 }
 
 // Do performs the request through the plan. providerID is the registry entry
@@ -66,7 +80,8 @@ func (d *ProxyDialer) Do(ctx context.Context, request *http.Request, providerID 
 		plan = plan[:domain.MaxProxyRouteAttempts]
 	}
 	var lastErr error
-	for _, candidate := range plan {
+	var skipped []string
+	for index, candidate := range plan {
 		attemptClient, clientErr := d.clientFor(candidate.URL)
 		if clientErr != nil {
 			// A candidate whose URL cannot shape a transport is skipped, not
@@ -77,7 +92,25 @@ func (d *ProxyDialer) Do(ctx context.Context, request *http.Request, providerID 
 		}
 		response, attemptErr := d.attempt(ctx, attemptClient, request)
 		if attemptErr == nil {
-			return response, nil
+			refusal := classifyAddressRefusal(response)
+			if !refusal.failover {
+				d.noteServed(ctx, providerID, candidate.ID, request.URL.Host, response.StatusCode, skipped)
+				return response, nil
+			}
+			// The vendor refused this address rather than the request, so the next
+			// one is worth its round trip. With no candidate left, or no way to
+			// rebuild the payload, the refusal is the answer: it goes back intact
+			// rather than being dressed up as a gateway failure.
+			d.routes.ReportFailure(ctx, candidate.ID, refusal.parkFor)
+			if index == len(plan)-1 || request.GetBody == nil {
+				d.noteServed(ctx, providerID, candidate.ID, request.URL.Host, response.StatusCode, skipped)
+				return response, nil
+			}
+			// reason: this answer is being discarded in favour of the next
+			// candidate's, so a close error names a body no caller will read.
+			_ = response.Body.Close()
+			skipped = append(skipped, candidate.ID)
+			continue
 		}
 		lastErr = attemptErr
 		if !isProxyConnectFailure(attemptErr) {
@@ -86,7 +119,7 @@ func (d *ProxyDialer) Do(ctx context.Context, request *http.Request, providerID 
 			// request the wire may already have delivered.
 			return nil, attemptErr
 		}
-		d.routes.ReportFailure(ctx, candidate.ID)
+		d.routes.ReportFailure(ctx, candidate.ID, domain.ProxyFailureCooldown)
 	}
 	return nil, lastErr
 }
@@ -119,10 +152,11 @@ func (d *ProxyDialer) clientFor(candidate *url.URL) (*http.Client, error) {
 		return nil, errors.New("the shared client carries no transport to clone the guard from")
 	}
 	key := candidate.String()
-	if cached, ok := d.transports.Load(key); ok {
-		if client, ok := cached.(*http.Client); ok {
-			return client, nil
-		}
+	d.transportMu.Lock()
+	cached, ok := d.transports[key]
+	d.transportMu.Unlock()
+	if ok {
+		return cached, nil
 	}
 	clone := base.Clone()
 	clone.Proxy = http.ProxyURL(candidate)
@@ -135,54 +169,28 @@ func (d *ProxyDialer) clientFor(candidate *url.URL) (*http.Client, error) {
 		checkRedirect = noRedirect
 	}
 	client := &http.Client{Transport: clone, CheckRedirect: checkRedirect}
-	if actual, loaded := d.transports.LoadOrStore(key, client); loaded {
-		if existing, ok := actual.(*http.Client); ok {
-			return existing, nil
+
+	d.transportMu.Lock()
+	defer d.transportMu.Unlock()
+	if d.transports == nil {
+		d.transports = make(map[string]*http.Client, maxProxyTransports)
+	}
+	if existing, ok := d.transports[key]; ok {
+		// Another request cached the same candidate while this one cloned.
+		clone.CloseIdleConnections()
+		return existing, nil
+	}
+	d.transports[key] = client
+	d.transportOrder = append(d.transportOrder, key)
+	for len(d.transportOrder) > maxProxyTransports {
+		oldest := d.transportOrder[0]
+		d.transportOrder = d.transportOrder[1:]
+		evicted, present := d.transports[oldest]
+		if !present {
+			continue
 		}
+		delete(d.transports, oldest)
+		evicted.CloseIdleConnections()
 	}
 	return client, nil
-}
-
-// proxyConnectRejected marks a candidate whose CONNECT the proxy answered with
-// a non-200 status (docs/PORT/008-PORT-PROXY-ENGINE.md D7): the tunnel never
-// opened, so the request was not delivered and the walk may spend the next
-// candidate. Go reports that answer as a plain error, which the classifier
-// below would otherwise read as the upstream's failure.
-type proxyConnectRejected struct {
-	status int
-}
-
-func (e *proxyConnectRejected) Error() string {
-	return fmt.Sprintf("the proxy refused the CONNECT with status %d", e.status)
-}
-
-// rejectConnectResponse is the transport hook every candidate's clone carries:
-// a proxy that does not answer 200 to the CONNECT is recorded as the typed
-// rejection the walk fails over on.
-func rejectConnectResponse(_ context.Context, _ *url.URL, _ *http.Request, response *http.Response) error {
-	if response.StatusCode != http.StatusOK {
-		return &proxyConnectRejected{status: response.StatusCode}
-	}
-	return nil
-}
-
-// isProxyConnectFailure classifies the failures the walk may fail over on: a
-// proxy that refused the CONNECT (the typed rejection the hook records), a
-// dial error through the proxy (the OpError the transport wraps in url.Error)
-// or a timeout waiting for it. A TLS failure the destination answered for and
-// every mid-response error are the upstream's, not the pool's.
-func isProxyConnectFailure(err error) bool {
-	if err == nil {
-		return false
-	}
-	var rejected *proxyConnectRejected
-	if errors.As(err, &rejected) {
-		return true
-	}
-	var opErr *net.OpError
-	if errors.As(err, &opErr) {
-		return true
-	}
-	var netErr net.Error
-	return errors.As(err, &netErr) && netErr.Timeout()
 }

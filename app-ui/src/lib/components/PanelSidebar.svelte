@@ -55,7 +55,7 @@
 			onclick={handleNavigate}
 		>
 			<img
-				src="/logo-mark@128.png"
+				src="/logo-mark@128.svg"
 				alt=""
 				width="28"
 				height="28"

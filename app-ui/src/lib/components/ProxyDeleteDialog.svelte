@@ -6,6 +6,7 @@
 	// nothing. Saying that traffic would stop would be false, and an operator who believed it would
 	// avoid a delete they are entitled to make. What does go is the stored test result.
 	import Modal from '$lib/components/Modal.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import type { Proxy } from '$lib/schemas/proxy';
@@ -32,7 +33,9 @@
 			test result goes with it.
 		</p>
 		<p class="mt-3 text-[var(--color-text-muted)]">
-			Deleting here does not change the outbound path.
+			An endpoint that pins this candidate stops routing through it, and a provider whose only pin
+			was here loses its egress path. The global outbound proxy is a separate setting and this
+			delete does not change it.
 		</p>
 	{/if}
 
@@ -43,14 +46,15 @@
 	{/if}
 
 	{#snippet footer()}
-		<button type="button" class="min-h-11 underline" onclick={oncancel}>Keep it</button>
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
+		<Button variant="ghost" class="underline" onclick={oncancel}>Keep it</Button>
+		<Button
+			variant="destructive"
+			class="px-4"
 			disabled={deleting}
+			aria-busy={deleting}
 			onclick={onconfirm}
 		>
 			{deleting ? 'Deleting' : 'Delete the proxy'}
-		</button>
+		</Button>
 	{/snippet}
 </Modal>

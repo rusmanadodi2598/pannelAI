@@ -14,6 +14,7 @@ package domain
 
 import (
 	"testing"
+	"time"
 )
 
 // setKeyStatus changes one key's status through UpdateKey, the only path the
@@ -137,5 +138,50 @@ func TestUpstreamEndpoint_AttachKeyRejectsDuplicates(t *testing.T) {
 	}
 	if added.Status() != UpstreamKeyActive {
 		t.Fatalf("new key status = %q, want active", added.Status())
+	}
+}
+
+// parkEveryKey drives each key of the fixture through one credential failure, so
+// the stored status says error while the park may or may not have passed.
+func parkEveryKey(t *testing.T, endpoint *UpstreamEndpoint) {
+	t.Helper()
+	for _, key := range endpoint.Keys() {
+		if _, err := endpoint.RecordKeyFailure(key.ID(), "the credential was refused", KeyFailureAuth, DefaultKeyHealthPolicy(), keyNow); err != nil {
+			t.Fatalf("RecordKeyFailure(%s) error = %v", key.ID(), err)
+		}
+	}
+}
+
+// TestUpstreamEndpoint_RemovingOneOfTwoRecoveredKeysIsAllowed pins draft 050 T6:
+// a key whose park expired is routable again while its stored status still reads
+// error, and counting only status==active made it invisible to the >=1-key
+// guard, so the operator could not manage keys on an endpoint that still served.
+func TestUpstreamEndpoint_RemovingOneOfTwoRecoveredKeysIsAllowed(t *testing.T) {
+	endpoint := newTestEndpoint(t, "api_key", newTestKey(t, 1), newTestKey(t, 2))
+	parkEveryKey(t, &endpoint)
+
+	recovered := keyNow.Add(3 * time.Minute)
+	first := endpoint.Keys()[0]
+	if err := endpoint.RemoveKey(first.ID(), recovered); err != nil {
+		t.Fatalf("RemoveKey() error = %v, want it allowed: the endpoint has another routable key", err)
+	}
+	if got := len(endpoint.Keys()); got != 1 {
+		t.Fatalf("keys = %d, want 1 left", got)
+	}
+}
+
+// TestUpstreamEndpoint_RemovingTheLastEnabledKeyIsRefused keeps the guard's real
+// floor: a parked key is still a credential the health system may bring back, so
+// one may be removed while another stands, but the endpoint must not be emptied.
+func TestUpstreamEndpoint_RemovingTheLastEnabledKeyIsRefused(t *testing.T) {
+	endpoint := newTestEndpoint(t, "api_key", newTestKey(t, 1), newTestKey(t, 2))
+	parkEveryKey(t, &endpoint)
+
+	inside := keyNow.Add(time.Minute)
+	if err := endpoint.RemoveKey(endpoint.Keys()[0].ID(), inside); err != nil {
+		t.Fatalf("RemoveKey() error = %v, want the first of two parked keys removable", err)
+	}
+	if err := endpoint.RemoveKey(endpoint.Keys()[0].ID(), inside); err == nil {
+		t.Fatal("RemoveKey() = nil error, want it refused: no routable key would be left")
 	}
 }

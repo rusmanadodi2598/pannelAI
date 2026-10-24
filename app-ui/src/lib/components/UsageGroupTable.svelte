@@ -23,15 +23,15 @@
 		type UsageOrder,
 		type UsageSort
 	} from '$lib/schemas/usage';
+	import { resolve } from '$app/paths';
+	import PagingControls from '$lib/components/PagingControls.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { errorRatePercent, formatCount } from '$lib/schemas/usage-view';
 	import { pageOf } from '$lib/schemas/local-page';
-	import { CONTROL_ICONS } from '$lib/icons';
 
 	// A breakdown can run to dozens of groups, and five per page keeps the tab compact on a phone. The
 	// sort is applied to the whole response first, so paging never reorders the page you are on.
 	const GROUPS_PER_PAGE = 5;
-	const PreviousIcon = CONTROL_ICONS.previous.icon;
-	const NextIcon = CONTROL_ICONS.next.icon;
 
 	type Props = {
 		groups: UsageGroup[];
@@ -40,11 +40,13 @@
 		order: UsageOrder;
 		/** The registry's id-to-name map, or null when it could not be read and the ids are shown instead. */
 		providerNames: Map<string, string> | null;
+		/** The Records path behind a row, or null when the dimension has no matching record filter. */
+		recordPath: ((key: string) => `/usage?${string}`) | null;
 		/** The column a header click asks for, or an empty string when the sort is being cleared. */
 		onsort: (field: UsageSort | '') => void;
 	};
 
-	let { groups, groupBy, sort, order, providerNames, onsort }: Props = $props();
+	let { groups, groupBy, sort, order, providerNames, recordPath, onsort }: Props = $props();
 
 	let requestedPage = $state(1);
 	const view = $derived(pageOf(groups, requestedPage, GROUPS_PER_PAGE));
@@ -69,15 +71,19 @@
 
 {#snippet head(field: UsageSort, label: string)}
 	<th scope="col" class="px-3 py-2 text-right font-medium" aria-sort={ariaSort(field)}>
-		<button type="button" class="underline decoration-dotted" onclick={() => onsort(field)}>
+		<Button
+			variant="ghost"
+			class="underline decoration-dotted text-[var(--color-text)]"
+			onclick={() => onsort(field)}
+		>
 			{label}{mark(field)}
-		</button>
+		</Button>
 	</th>
 {/snippet}
 
 {#if sort !== ''}
 	<div class="flex justify-end">
-		<button type="button" class="min-h-11 underline" onclick={() => onsort('')}>Clear sort</button>
+		<Button variant="ghost" class="underline" onclick={() => onsort('')}>Clear sort</Button>
 	</div>
 {/if}
 
@@ -89,8 +95,10 @@
 		<thead class="bg-[var(--color-surface-2)] text-left">
 			<tr>
 				<th scope="col" class="px-3 py-2 font-medium" aria-sort={ariaSort('key')}>
-					<button type="button" class="underline decoration-dotted" onclick={() => onsort('key')}
-						>{dimension}{mark('key')}</button
+					<Button
+						variant="ghost"
+						class="underline decoration-dotted text-[var(--color-text)]"
+						onclick={() => onsort('key')}>{dimension}{mark('key')}</Button
 					>
 				</th>
 				{@render head('requests', 'Requests')}
@@ -104,7 +112,17 @@
 		<tbody>
 			{#each view.rows as group (group.key)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td data-label={dimension} class="px-3 py-2">{keyOf(group)}</td>
+					<td data-label={dimension} class="px-3 py-2">
+						{#if recordPath}
+							<a
+								href={resolve(recordPath(group.key))}
+								class="inline-flex min-h-11 items-center underline decoration-dotted"
+								aria-label={`Open requests for ${keyOf(group)} in Records`}>{keyOf(group)}</a
+							>
+						{:else}
+							{keyOf(group)}
+						{/if}
+					</td>
 					<td data-label="Requests" class="px-3 py-2 text-right tabular-nums"
 						>{formatCount(group.totals.requests)}</td
 					>
@@ -130,25 +148,9 @@
 </div>
 
 {#if view.pages > 1}
-	<div class="flex flex-wrap items-center gap-3 pt-2 text-sm">
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
-			disabled={view.page <= 1}
-			onclick={() => (requestedPage = view.page - 1)}
-		>
-			<PreviousIcon class="size-4" aria-hidden="true" />
-			Previous
-		</button>
-		<span class="text-[var(--color-text-muted)]">Page {view.page} of {view.pages}</span>
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
-			disabled={view.page >= view.pages}
-			onclick={() => (requestedPage = view.page + 1)}
-		>
-			Next
-			<NextIcon class="size-4" aria-hidden="true" />
-		</button>
-	</div>
+	<PagingControls
+		page={view.page}
+		lastPage={view.pages}
+		onpage={(next) => (requestedPage = next)}
+	/>
 {/if}

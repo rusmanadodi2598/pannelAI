@@ -43,7 +43,7 @@ func fetchGroq(ctx context.Context, creds Credentials) Result {
 
 	response, err := requestUsage(ctx, http.MethodGet, endpoint, bearer(token, creds.UsageHeaders), "")
 	if err != nil {
-		return Result{Message: fmt.Sprintf("Groq error: %s", err)}
+		return transientMessage(fmt.Sprintf("Groq error: %s", err))
 	}
 	if failure, refused := response.softFailure(groqDisplay); refused {
 		return failure

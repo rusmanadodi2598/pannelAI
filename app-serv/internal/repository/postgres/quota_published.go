@@ -102,15 +102,16 @@ func (r *PublishedQuotaRepository) DueForRefresh(ctx context.Context, now time.T
 	}
 	// The cooldown filter sits in the WHERE, before the LIMIT, not after the rows come back:
 	// a throttled endpoint that still occupies an oldest-due slot would eat budget every tick
-	// and starve the accounts behind it. `rate_limited_until` is the deadline the data plane
-	// already sets when that endpoint answers 429 to real traffic, so the poller respects the
-	// cooldown an operator's requests have already proven necessary (AGENTS.md §1.6).
+	// and starve the accounts behind it. It reads the endpoint's quota cooldown, which real
+	// traffic writes when the vendor answers 429 (§7.12, draft 050 T1), and not
+	// `rate_limited_until`, because that column is an input to serving: a throttle on one key
+	// of an account must not withhold the account's other keys from the router.
 	const q = `SELECT ` + publishedStateColumns + `
 	  FROM quota_published_state s
 	 WHERE s.next_attempt_at <= $1
 	   AND NOT EXISTS (
 	        SELECT 1 FROM upstream_endpoints e
-	         WHERE e.id = s.endpoint_id AND e.rate_limited_until > $1)
+	         WHERE e.id = s.endpoint_id AND e.quota_cooldown_until > $1)
 	 ORDER BY s.next_attempt_at ASC, s.endpoint_id ASC
 	 LIMIT $2`
 

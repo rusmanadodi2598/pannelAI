@@ -45,6 +45,10 @@ type Transport struct {
 	APIClient       string            `yaml:"api_client"`
 	AuthURL         string            `yaml:"auth_url"`
 	Copilot         *CopilotConfig    `yaml:"copilot"`
+	// FirstByteTimeoutMS bounds how long a streamed attempt may stay silent
+	// before its first byte. An entry that declares none uses the transport's
+	// documented default.
+	FirstByteTimeoutMS int `yaml:"first_byte_timeout_ms"`
 }
 
 // AuthConfig describes how a credential is placed on an outbound request.

@@ -38,11 +38,28 @@ type Outcome struct {
 	// bytes would stream a second answer behind the first, and bill a second
 	// upstream for one request.
 	FramesWritten bool
+	// ChainStopped reports that the credential walk ended on the failure class's
+	// own instruction to stop rather than on an exhausted chain. The combo walk
+	// reads it as the end of the request: a class stopped is one the operator (or
+	// the signature) says no other credential answers differently, and walking the
+	// next member would spend an account to be refused again.
+	ChainStopped bool
 	// Truncated reports a non-streamed answer that stopped at its own output
 	// ceiling with nothing in it for the client to show. It is not a failure:
 	// the upstream answered 200 and the credential served the call. The combo
 	// walk reads it to try the next member before serving an empty body.
-	Truncated bool
+	//
+	// StreamAborted reports that the caller's context was cancelled while a streamed answer
+	// was being read. pump stops quietly there, which is right for the client and wrong for
+	// the health model: a call nobody received proved nothing, and recording it as served
+	// would clear a park a real failure had just earned.
+	StreamAborted bool
+	// StreamTruncated reports that a streamed answer ended on a clean EOF before the
+	// upstream sent its protocol's finish event. The synthesized finish still releases
+	// the client, and the frames already written are the answer; the flag keeps the
+	// health row from recording a leg that was never finished as served.
+	StreamTruncated bool
+	Truncated       bool
 	// VisionAdapted reports that the model which answered came from the §7.8
 	// vision adapter rather than from anything the request addressed. Whether the
 	// picture was actually read is the upstream's business, but which model it was

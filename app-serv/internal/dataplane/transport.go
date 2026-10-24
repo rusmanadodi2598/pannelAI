@@ -13,6 +13,7 @@
 package dataplane
 
 import (
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -22,8 +23,9 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 )
 
-// Deadlines fixed by SPEC-API-001 §4. A registry entry may override the total
-// and the idle read through timeout_ms and stall_timeout_ms; the connect deadline
+// Deadlines fixed by SPEC-API-001 §4. A registry entry may override the total,
+// the idle read, and the wait for a streamed answer's first byte through
+// timeout_ms, stall_timeout_ms, and first_byte_timeout_ms; the connect deadline
 // has no override because a TCP handshake has no provider-specific shape.
 const (
 	// ConnectTimeout bounds the TCP and TLS handshake.
@@ -34,6 +36,12 @@ const (
 	// has no total cap because a long answer is not a failure, so the gap is
 	// what detects a dead upstream.
 	IdleTimeout = 300 * time.Second
+	// FirstByteTimeout bounds how long a streamed attempt may stay silent before
+	// its first byte. A stream has no total deadline, so without this bound a
+	// provider that accepts the call and never starts answering holds the
+	// request until the client gives up. It is generous next to the observed
+	// 1-7.4s first byte: the cap exists to cut a silent upstream, not a slow one.
+	FirstByteTimeout = 20 * time.Second
 	// maxUpstreamBodyBytes bounds a non-streamed response body, which is
 	// buffered so the context can be released before the caller reads it.
 	maxUpstreamBodyBytes = 32 << 20
@@ -55,9 +63,15 @@ type Transport struct {
 	connectors *provider.Connectors
 	client     *http.Client
 	dialer     *ProxyDialer
+	// sessions serializes the calls that share one upstream session, for a
+	// connector that declares one (the OpenCode free tier throttles per
+	// session). It is built with the transport, so every wired transport has
+	// one.
+	sessions *sessionQueue
 }
 
-// TransportDeps holds the collaborators the transport needs.
+// TransportDeps holds the collaborators the transport needs, of which
+// Connectors and Client are the only ones NewTransport refuses to run without.
 type TransportDeps struct {
 	// Connectors resolves a provider id to the plugin that handles it.
 	Connectors *provider.Connectors
@@ -72,9 +86,12 @@ type TransportDeps struct {
 	// value keeps the shared client's own routing, which is what the hermetic
 	// tests and any wiring that has not adopted the pool rely on.
 	Routes ProxyRoutePlanner
+	// Logger records what a call waited for locally: the session queue's stalls,
+	// which no upstream ever saw. A nil value falls back to the process logger.
+	Logger *slog.Logger
 }
 
-// NewTransport validates deps and returns a transport. The upstream client is the
+// NewTransport refuses a nil connector set or client. The upstream client is the
 // caller's: it carries the egress guard on its dialer, so a nil value is refused
 // rather than defaulted. Building one here would put every proxied model call
 // behind a plain dialer and make the guard look installed when it is not
@@ -89,7 +106,8 @@ func NewTransport(deps TransportDeps) (*Transport, error) {
 	return &Transport{
 		connectors: deps.Connectors,
 		client:     deps.Client,
-		dialer:     &ProxyDialer{client: deps.Client, routes: deps.Routes},
+		dialer:     &ProxyDialer{client: deps.Client, routes: deps.Routes, logger: deps.Logger},
+		sessions:   newSessionQueue(deps.Logger),
 	}, nil
 }
 

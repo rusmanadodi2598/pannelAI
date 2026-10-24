@@ -72,6 +72,10 @@ func DefaultCavemanSetting() CavemanSetting {
 	return CavemanSetting{Enabled: false, Level: DefaultCavemanLevel}
 }
 
+// ProxyPasswordMask replaces a stored proxy password in a settings response.
+// A PATCH carrying it keeps the password already stored.
+const ProxyPasswordMask = "****"
+
 // SecuritySettings is the §7.14 security group.
 type SecuritySettings struct {
 	RequireLogin  bool `json:"require_login"`
@@ -136,7 +140,7 @@ func DefaultSettings() Settings {
 		},
 		Logging: LoggingSettings{
 			RequestCaptureEnabled:   false,
-			RetentionDays:           7,
+			RetentionDays:           2,
 			CaptureBodyMaxBytes:     65536,
 			ObservabilityMaxRecords: 1000,
 		},

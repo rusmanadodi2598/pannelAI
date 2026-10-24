@@ -52,6 +52,7 @@ func buildObservability(
 	index service.ProviderIndex,
 	sealer service.CredentialSealer,
 	egressClient *http.Client,
+	maxRequestLogRows int,
 ) (observability, error) {
 	// The bus is built once and shared by both halves, so a publisher and a
 	// subscriber cannot end up on different channels.
@@ -95,6 +96,7 @@ func buildObservability(
 
 	logSvc, err := service.NewLogService(service.LogServiceDeps{
 		Logs: logRepo, Settings: settings, Console: redisrepo.NewConsoleBuffer(client),
+		MaxRows: maxRequestLogRows,
 	})
 	if err != nil {
 		return observability{}, fmt.Errorf("management wiring: logs: %w", err)

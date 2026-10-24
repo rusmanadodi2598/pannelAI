@@ -90,3 +90,69 @@ describe('EndpointKeysTable rate limit', () => {
 		expect(squashed(statusCell())).toContain('(in 1h 30m)');
 	});
 });
+
+describe('EndpointKeysTable park provenance', () => {
+	// A vendor's 429 is two different failures, and the countdown alone cannot tell them apart: a throttle
+	// the vendor expects to lift, and an allowance spent until a date the vendor printed in its own body,
+	// both used to read as the same five minutes. The class and the source are what separate them, so the
+	// row has to say which wait it is showing.
+
+	afterEach(cleanup);
+
+	const PARKED = new Date(NOW + 2 * 3_600_000).toISOString();
+
+	forEachCase(
+		[
+			{
+				name: 'a reset the vendor stated in its body',
+				overrides: {
+					last_error_class: 'QUOTA_EXHAUSTED',
+					reset_source: 'body',
+					signature_id: 'tokenharbor.free-allowance'
+				},
+				expected:
+					"parked as Quota exhausted, wait named in the vendor's body (tokenharbor.free-allowance)"
+			},
+			{
+				name: 'a wait the vendor sent as a header',
+				overrides: { last_error_class: 'RATE_LIMIT_TEMPORARY', reset_source: 'header' },
+				expected: "parked as Temporary rate limit, wait from the vendor's Retry-After header"
+			},
+			{
+				name: 'a wait the gateway chose itself',
+				overrides: { last_error_class: 'SERVER_TRANSIENT', reset_source: 'default' },
+				expected: 'parked as Upstream outage, wait chosen by the gateway'
+			},
+			{
+				name: 'a legacy parking token, which the panel has no label for',
+				overrides: { last_error_class: 'ratelimit', reset_source: 'default' },
+				expected: 'parked as ratelimit, wait chosen by the gateway'
+			},
+			{
+				name: 'a class with no source recorded',
+				overrides: { last_error_class: 'UNKNOWN' },
+				expected: 'parked as Unrecognised failure'
+			}
+		],
+		(testCase) => {
+			renderTable(keys({ rate_limited_until: PARKED, ...testCase.overrides }));
+
+			expect(squashed(statusCell())).toContain(testCase.expected);
+		}
+	);
+
+	it('says nothing about a cause on a key that was parked before the classifier existed', () => {
+		renderTable(keys({ rate_limited_until: PARKED }));
+
+		const cell = squashed(statusCell());
+
+		expect(cell).toContain('rate limited until');
+		expect(cell).not.toContain('parked as');
+	});
+
+	it('keeps a key that is not parked free of provenance text', () => {
+		renderTable(keys({ last_error_class: 'QUOTA_EXHAUSTED', reset_source: 'body' }));
+
+		expect(squashed(statusCell())).not.toContain('parked as');
+	});
+});

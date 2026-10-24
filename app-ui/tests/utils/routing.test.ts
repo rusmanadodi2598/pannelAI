@@ -1,13 +1,16 @@
 // Routing derivation tests.
 //
-// SPEC-UI §6.2 asks the endpoint drawer to name the key the router would spend, derived from the fields
-// the API returns rather than re-simulated. That makes this function the panel's answer to "why did my
-// request fail over", so the cases below are the ones an operator would actually ask about: a healthy
-// primary, a disabled primary, an unhealthy primary, a tie, and nothing usable at all.
+// SPEC-UI §6.2 asks the endpoint drawer to name the key the router would spend, derived from the fields the
+// API returns rather than re-simulated, and to say why a key is out of rotation. Both are derivation, so
+// both live here: `routingKey` and `isLastActiveApiKey` answer which key the walk spends and which one the
+// API would refuse to delete, and `parkProvenance` answers what a parked key failed as. The cases are the
+// ones an operator would actually ask about: a healthy primary, a disabled primary, an unhealthy primary, a
+// tie, nothing usable at all, and a wait the vendor warranted rather than one the gateway guessed.
 
 import { describe, expect, it } from 'vitest';
 import type { EndpointKey } from '$lib/schemas/endpoint';
-import { isLastActiveApiKey, routingKey } from '$lib/utils/routing';
+import { isLastActiveApiKey, parkProvenance, routingKey } from '$lib/utils/routing';
+import { forEachCase } from '../support/tables';
 
 // Builds a key from the API's own vocabulary, so a case only states what it is about.
 function key(overrides: Partial<EndpointKey> & { id: string }): EndpointKey {
@@ -152,4 +155,69 @@ describe('isLastActiveApiKey', () => {
 			);
 		});
 	}
+});
+
+// The parked key's one line: what it failed as, and whose wait the countdown is showing.
+//
+// `rate_limited_until` alone cannot tell a throttle the vendor expects to lift from an allowance spent
+// until a date the vendor printed in its own body, which is the confusion the classifier exists to end.
+// The cases below are the answers an operator reads in the drawer, including the two that read as nothing:
+// a key that never failed, and a key parked before the classifier existed, both of which the API leaves
+// unset rather than filled with a guess.
+describe('parkProvenance', () => {
+	const CASES: { key: EndpointKey; expected: string; why: string }[] = [
+		{
+			key: key({ id: 'uky_a' }),
+			expected: '',
+			why: 'a key that names no class has no cause to read'
+		},
+		{
+			key: key({ id: 'uky_a', last_error_class: 'QUOTA_EXHAUSTED' }),
+			expected: 'parked as Quota exhausted',
+			why: 'a class with no source recorded names the class only'
+		},
+		{
+			key: key({ id: 'uky_a', last_error_class: 'QUOTA_EXHAUSTED', reset_source: 'body' }),
+			expected: "parked as Quota exhausted, wait named in the vendor's body",
+			why: "a reset the vendor stated in its body is the vendor's"
+		},
+		{
+			key: key({ id: 'uky_a', last_error_class: 'RATE_LIMIT_TEMPORARY', reset_source: 'header' }),
+			expected: "parked as Temporary rate limit, wait from the vendor's Retry-After header",
+			why: 'a Retry-After header is the vendor stating the wait another way'
+		},
+		{
+			key: key({ id: 'uky_a', last_error_class: 'AUTH_INVALID', reset_source: 'default' }),
+			expected: 'parked as Rejected credential, wait chosen by the gateway',
+			why: 'a default source is the gateway admitting it guessed'
+		},
+		{
+			key: key({
+				id: 'uky_a',
+				last_error_class: 'UNKNOWN',
+				reset_source: 'default',
+				signature_id: 'tokenharbor.free-allowance'
+			}),
+			expected:
+				'parked as Unrecognised failure, wait chosen by the gateway (tokenharbor.free-allowance)',
+			why: 'the signature rides at the end, because it is what an operator quotes'
+		},
+		{
+			key: key({ id: 'uky_a', last_error_class: 'ratelimit', reset_source: 'body' }),
+			expected: "parked as ratelimit, wait named in the vendor's body",
+			why: 'a legacy parking token has no label, so it reads as itself'
+		},
+		{
+			key: key({ id: 'uky_a', last_error_class: 'BILLING_EXHAUSTED', reset_source: 'sideways' }),
+			expected: 'parked as Billing exhausted, sideways',
+			why: 'a source the panel has never seen renders rather than blanking the row'
+		}
+	];
+
+	forEachCase(
+		CASES.map((testCase) => ({ ...testCase, name: testCase.why })),
+		(testCase) => {
+			expect(parkProvenance(testCase.key)).toBe(testCase.expected);
+		}
+	);
 });

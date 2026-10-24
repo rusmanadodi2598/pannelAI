@@ -98,3 +98,8 @@ export function pollSecondsRemaining(
 	if (state.lastLoadedAt === 0) return null;
 	return Math.max(0, Math.ceil((state.lastLoadedAt + intervalMs - now) / 1000));
 }
+
+/** The instant a read landed, in the form the screen stamps it with. */
+export function readStamp(landedAt: number): string {
+	return new Date(landedAt).toISOString();
+}

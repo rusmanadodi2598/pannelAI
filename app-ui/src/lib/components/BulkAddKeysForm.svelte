@@ -11,6 +11,7 @@
 	import { addEndpointKeys } from '$lib/api/endpoints';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		MAX_KEYS_PER_ENDPOINT,
 		schemaAddEndpointKeyForm,
@@ -164,11 +165,11 @@
 						class={fieldClass}
 					/>
 				</div>
-				<button
-					type="button"
-					class="min-h-11 underline disabled:opacity-50"
+				<Button
+					variant="ghost"
+					class="underline"
 					disabled={rows.length === 1}
-					onclick={() => removeRow(index)}>Remove row {index + 1}</button
+					onclick={() => removeRow(index)}>Remove row {index + 1}</Button
 				>
 			</div>
 
@@ -181,21 +182,11 @@
 	{/each}
 
 	<div class="flex flex-wrap items-center gap-3">
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 disabled:opacity-50"
-			disabled={atLimit}
-			onclick={addRow}>Add another row</button
-		>
+		<Button variant="outline" disabled={atLimit} onclick={addRow}>Add another row</Button>
 
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50"
-			disabled={submitting}
-			onclick={submit}
-		>
+		<Button variant="default" disabled={submitting} aria-busy={submitting} onclick={submit}>
 			{submitting ? 'Adding keys' : rows.length === 1 ? 'Add 1 key' : `Add ${rows.length} keys`}
-		</button>
+		</Button>
 
 		<span class="text-sm text-[var(--color-text-muted)]">{limitNote}</span>
 	</div>

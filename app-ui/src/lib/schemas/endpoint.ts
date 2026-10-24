@@ -59,10 +59,25 @@ export const schemaEndpointKey = z.object({
 	priority,
 	status: z.string().min(1),
 	available: z.boolean(),
+	// `last_selected_at` is when rotation chose this credential; `last_used_at` is when it last served a
+	// request. They differ for a key picked but then overtaken by a failover, so the two stay separate.
+	last_selected_at: optionalTimestamp,
 	last_used_at: optionalTimestamp,
 	last_error: z.string().optional(),
 	consecutive_errors: z.number().int().min(0),
 	rate_limited_until: optionalTimestamp,
+	// The park's provenance (SPEC-API §7.5). All three are absent for a key that never failed and for one
+	// parked before the classifier existed, which is a different fact from a key parked for no reason, so
+	// nothing here resolves an unset value to a stand-in. `last_error_class` is a plain string because the
+	// column also holds a legacy parking token such as `ratelimit`, and `reset_source` stays a string on
+	// the same reading as `status`: a value this build has never seen renders rather than failing the row.
+	last_error_class: z.string().optional(),
+	reset_source: z.string().optional(),
+	signature_id: z.string().optional(),
+	// The operator's marks on this credential, the same pair the account carries: a key is
+	// parked and labelled on its own as often as its account is.
+	tags: z.array(z.string().max(48)).max(16).optional(),
+	disabled_until: optionalTimestamp,
 	created_at: rfc3339Timestamp,
 	updated_at: rfc3339Timestamp
 });
@@ -82,6 +97,10 @@ export const schemaEndpoint = z.object({
 	test_status: schemaEndpointTestStatus.optional(),
 	rate_limited_until: optionalTimestamp,
 	last_used_at: optionalTimestamp,
+	// The operator's own marks: the labels a bulk action addresses this account by, and the
+	// deadline its park releases at. Absent window means the switch is permanent.
+	tags: z.array(z.string().max(48)).max(16).optional(),
+	disabled_until: optionalTimestamp,
 	key_count: z.number().int().min(0),
 	active_key_count: z.number().int().min(0),
 	available: z.boolean(),
@@ -148,3 +167,20 @@ export const AUTH_TYPE_LABELS: Record<string, string> = {
 
 export const ENDPOINT_STATUS_ACTIVE = 'active';
 export const ENDPOINT_STATUS_DISABLED = 'disabled';
+
+// How a parked credential's wait was arrived at (SPEC-API §7.5 `reset_source`). `header` and `body` are
+// statements the vendor made itself, `default` is a wait the gateway chose from the class ladder, and the
+// difference between the two is the whole reason the field exists: a spent allowance held to the day the
+// vendor named is not the same fact as a five minute guess.
+export const RESET_SOURCES = ['header', 'body', 'default'] as const;
+
+export type ResetSource = (typeof RESET_SOURCES)[number];
+
+// The phrase the keys table reads beside the countdown. Keyed by `string` for the same reason
+// `AUTH_TYPE_LABELS` is: a source this build has never seen still has to yield words, and a row must not
+// lose its text over a value the panel cannot name.
+export const RESET_SOURCE_PHRASES: Record<string, string> = {
+	header: "wait from the vendor's Retry-After header",
+	body: "wait named in the vendor's body",
+	default: 'wait chosen by the gateway'
+};

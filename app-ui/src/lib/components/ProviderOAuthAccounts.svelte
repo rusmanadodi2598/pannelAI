@@ -20,6 +20,7 @@
 	import { deleteEndpoint } from '$lib/api/endpoints';
 	import { refreshProviderOAuth } from '$lib/api/providers';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { oauthTokenState, type OAuthEndpointStatus } from '$lib/schemas/oauth';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -134,28 +135,30 @@
 						</td>
 						<td data-label="Actions" class="px-3 py-2 text-end">
 							<div class="flex flex-wrap items-center justify-end gap-1">
-								<button
-									type="button"
-									class="inline-flex min-h-11 items-center gap-1.5 underline disabled:opacity-50"
+								<Button
+									variant="ghost"
+									class="underline"
 									disabled={refreshing !== null}
+									aria-busy={refreshing !== null}
 									onclick={() => void refresh(endpoint.endpoint_id)}
 								>
 									<RefreshIcon class="size-4" aria-hidden="true" />
 									{refreshing === endpoint.endpoint_id ? 'Refreshing' : 'Refresh'}
-								</button>
-								<button
-									type="button"
-									class="inline-flex min-h-11 items-center gap-1 text-[var(--color-danger)] underline"
+								</Button>
+								<Button
+									variant="destructive-ghost"
+									size="icon"
 									aria-label="Delete"
 									title="Delete"
 									disabled={deleting}
+									aria-busy={deleting}
 									onclick={() => {
 										deleteError = null;
 										pendingDelete = endpoint;
 									}}
 								>
 									<DeleteIcon class="size-4" aria-hidden="true" />
-								</button>
+								</Button>
 							</div>
 						</td>
 					</tr>

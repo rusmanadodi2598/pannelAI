@@ -131,12 +131,31 @@ describe('ApiDocsPage catalog', () => {
 		).toBeTruthy();
 		expect(section.getByText(/pannel_session=<session cookie>/)).toBeTruthy();
 
-		await fireEvent.click(section.getByRole('button', { name: 'Copy' }));
+		await fireEvent.click(
+			section.getByRole('button', { name: 'Copy example call for Gateway Keys' })
+		);
 
 		expect(copied[0]).toContain("curl -X GET 'http://localhost:8080/api/v1/gateway-keys'");
 		await vi.waitFor(() => {
 			expect(section.getByText('Copied.')).toBeTruthy();
 		});
+	});
+
+	it('copies a base URL by the address it names, not as one more unnamed Copy', async () => {
+		const copied: string[] = [];
+		stubClipboard(async (value) => {
+			copied.push(value);
+		});
+		stubDocument(openapiDocument());
+		render(ApiDocsPage);
+
+		const copy = await screen.findByRole('button', {
+			name: 'Copy base URL http://localhost:8080'
+		});
+
+		await fireEvent.click(copy);
+
+		expect(copied).toEqual(['http://localhost:8080']);
 	});
 
 	it('says the copy failed instead of claiming it worked', async () => {
@@ -149,7 +168,9 @@ describe('ApiDocsPage catalog', () => {
 		const heading = await screen.findByRole('heading', { name: /Gateway Keys/ });
 		const section = within(heading.closest('section') as HTMLElement);
 
-		await fireEvent.click(section.getByRole('button', { name: 'Copy' }));
+		await fireEvent.click(
+			section.getByRole('button', { name: 'Copy example call for Gateway Keys' })
+		);
 
 		await vi.waitFor(() => {
 			expect(section.getByText('Copy failed. Select the text and copy it.')).toBeTruthy();

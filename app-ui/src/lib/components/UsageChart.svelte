@@ -9,12 +9,8 @@
 	// Bars are laid out in CSS rather than SVG. There is no axis to scale and no series to overlay, so a
 	// viewBox would add coordinate arithmetic without adding information, and a flex row inherits the
 	// theme's colours and the panel's own responsive behaviour for free.
-	import {
-		barHeights,
-		formatCount,
-		seriesSummary,
-		type SeriesPoint
-	} from '$lib/schemas/usage-view';
+	import { formatCount } from '$lib/schemas/usage-view';
+	import { barHeights, seriesSummary, type SeriesPoint } from '$lib/schemas/usage-series';
 	import { formatTimestamp } from '$lib/utils/time';
 	import type { Snippet } from 'svelte';
 

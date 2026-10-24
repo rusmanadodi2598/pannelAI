@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -30,11 +31,18 @@ import (
 // fakePlanner answers each Plan call with the next plan in the slice and
 // records what the dialer reports.
 type fakePlanner struct {
-	plans    [][]domain.ProxyRouteAttempt
-	planErr  error
-	seen     []string
-	seenIDs  []string
-	reported []string
+	plans   [][]domain.ProxyRouteAttempt
+	planErr error
+	seen    []string
+	seenIDs []string
+	parks   []parkCall
+}
+
+// parkCall is one ReportFailure the walk made: which address sits out, and for
+// how long it said so.
+type parkCall struct {
+	id  string
+	ttl time.Duration
 }
 
 func (f *fakePlanner) Plan(_ context.Context, providerID, host string) ([]domain.ProxyRouteAttempt, error) {
@@ -51,8 +59,8 @@ func (f *fakePlanner) Plan(_ context.Context, providerID, host string) ([]domain
 	return plan, nil
 }
 
-func (f *fakePlanner) ReportFailure(_ context.Context, proxyID string) {
-	f.reported = append(f.reported, proxyID)
+func (f *fakePlanner) ReportFailure(_ context.Context, proxyID string, ttl time.Duration) {
+	f.parks = append(f.parks, parkCall{id: proxyID, ttl: ttl})
 }
 
 func attemptFor(id, raw string) domain.ProxyRouteAttempt {
@@ -143,8 +151,8 @@ func TestProxyDialer_FailsOverOnAConnectFailure(t *testing.T) {
 	if len(bodies) != 1 || bodies[0] != "the-body" {
 		t.Fatalf("the live attempt read body %v, want the payload once", bodies)
 	}
-	if len(planner.reported) != 1 || planner.reported[0] != "prx_dead" {
-		t.Fatalf("reported failures = %v, want [prx_dead]", planner.reported)
+	if len(planner.parks) != 1 || planner.parks[0].id != "prx_dead" {
+		t.Fatalf("parked candidates = %v, want [prx_dead]", planner.parks)
 	}
 }
 
@@ -169,8 +177,8 @@ func TestProxyDialer_WalkIsBounded(t *testing.T) {
 	if hits != 0 {
 		t.Fatalf("the live candidate was dialed %d times, want it left unreached by the bound", hits)
 	}
-	if len(planner.reported) != domain.MaxProxyRouteAttempts {
-		t.Fatalf("reported failures = %d, want one per walked attempt", len(planner.reported))
+	if len(planner.parks) != domain.MaxProxyRouteAttempts {
+		t.Fatalf("parked candidates = %d, want one per walked attempt", len(planner.parks))
 	}
 }
 

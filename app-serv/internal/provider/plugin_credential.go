@@ -125,6 +125,12 @@ func NewCredential(input CredentialInput) (Credential, error) {
 // because it is neither a secret nor a workspace.
 const MetadataMachineID = "machine_id"
 
+// MetadataProjectID names the Cloud project an account is scoped to. Google's
+// inference and quota endpoints both address a project the token response never
+// names, and it is not a secret, not a workspace, and not the credential: a
+// provider carries it in the request body, which no part of the Credential is for.
+const MetadataProjectID = "project_id"
+
 // StaticKey builds a credential presenting a long-lived key.
 func StaticKey(endpointID, keyID, value string) Credential {
 	return Credential{endpointID: endpointID, keyID: keyID, apiKey: value, family: FamilyStaticKey}

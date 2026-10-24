@@ -12,9 +12,14 @@
 	//
 	// The filter narrows the cards on this page and sends nothing: the read stays server-paged and
 	// unfiltered, because a filter that re-paged the wire would make the pager answer to the filter.
+	//
+	// The refresh control is this screen's own rather than the shared `RefreshControl`, because the two
+	// screens have different rules about a second press: the shared one drops it, and this one queues it so a
+	// press during a poll still reads once the poll lands.
 	import { CONTROL_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { pollIntervalLabel, QUOTA_POLL_MS } from '$lib/polling';
-	import { formatTimestamp } from '$lib/utils/time';
+	import { formatTimestampWithTime } from '$lib/utils/time';
 
 	type Props = {
 		paused: boolean;
@@ -26,6 +31,8 @@
 		providers: string[];
 		/** The provider the cards are narrowed to, empty for all of them. */
 		provider: string;
+		/** Whether a read is in flight, which the button reports in its own label. */
+		refreshing?: boolean;
 		onproviderchange: (next: string) => void;
 		onrefresh: () => void;
 		ontogglepause: () => void;
@@ -37,6 +44,7 @@
 		secondsToNext,
 		providers,
 		provider,
+		refreshing = false,
 		onproviderchange,
 		onrefresh,
 		ontogglepause
@@ -62,7 +70,7 @@
 
 	{#if readAt}
 		<p class="flex items-center text-sm text-[var(--color-text-muted)]">
-			Last read {formatTimestamp(readAt)}.
+			Last read {formatTimestampWithTime(readAt)}.
 		</p>
 	{/if}
 
@@ -71,6 +79,7 @@
 			<span class="text-[var(--color-text-muted)]">Provider</span>
 			<select
 				aria-label="Filter cards by provider"
+				title={provider || 'All providers'}
 				class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
 				value={provider}
 				onchange={(event) => onproviderchange(event.currentTarget.value)}
@@ -94,27 +103,18 @@
 		<!-- Not disabled while a read is in flight: the screen allows one read at a time, so the control
 		     always asks and the guard decides. A disabled gate here would swallow the click when a poll is
 		     mid-flight, which reads as a broken button. -->
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			onclick={onrefresh}
-		>
+		<Button variant="outline" aria-busy={refreshing} onclick={onrefresh}>
 			<RefreshIcon class="size-4" aria-hidden="true" />
-			Refresh now
-		</button>
+			{refreshing ? 'Refreshing' : 'Refresh now'}
+		</Button>
 
-		<button
-			type="button"
-			aria-pressed={paused}
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm aria-pressed:bg-[var(--color-surface-2)]"
-			onclick={ontogglepause}
-		>
+		<Button variant="toggle" aria-pressed={paused} onclick={ontogglepause}>
 			{#if paused}
 				<ResumeIcon class="size-4" aria-hidden="true" />
 			{:else}
 				<PauseIcon class="size-4" aria-hidden="true" />
 			{/if}
 			{paused ? 'Resume refresh' : 'Pause refresh'}
-		</button>
+		</Button>
 	</div>
 </div>

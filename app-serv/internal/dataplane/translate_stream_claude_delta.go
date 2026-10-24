@@ -100,13 +100,18 @@ func (s *ClaudeStreamState) toolCallFrames(delta object) [][]byte {
 		}
 		openAIIndex := intField(call, "index")
 		function, hasFunction := objectField(call, "function")
+		blockIndex, opened := s.toolIndex[openAIIndex]
 
-		if id := stringField(call, "id"); id != "" {
+		// An id opens a block once. An upstream that repeats the id on every
+		// fragment would otherwise reopen it, and the re-opened block would
+		// silently move the argument buffer onto an index no stop ever closes.
+		if id := stringField(call, "id"); id != "" && !opened {
 			frames = append(frames, s.closeText()...)
 			frames = append(frames, s.closeThinking()...)
-			blockIndex := s.nextIndex
+			blockIndex = s.nextIndex
 			s.nextIndex++
 			s.toolIndex[openAIIndex] = blockIndex
+			opened = true
 			name := ""
 			if hasFunction {
 				name = stringField(function, "name")
@@ -118,21 +123,17 @@ func (s *ClaudeStreamState) toolCallFrames(delta object) [][]byte {
 					"type": schema.BlockToolUse, "id": id, "name": name, "input": map[string]any{},
 				},
 			})))
+			s.tools.open(blockIndex, name)
 		}
 
-		if !hasFunction {
+		if !hasFunction || !opened {
 			continue
 		}
 		fragment := stringField(function, "arguments")
-		blockIndex, known := s.toolIndex[openAIIndex]
-		if fragment == "" || !known {
+		if fragment == "" {
 			continue
 		}
-		frames = append(frames, eventFrame(schema.EventContentBlockDelta, mustFrame(map[string]any{
-			"type":  schema.EventContentBlockDelta,
-			"index": blockIndex,
-			"delta": map[string]any{"type": schema.DeltaInputJSON, "partial_json": fragment},
-		})))
+		s.tools.append(blockIndex, fragment)
 	}
 	return frames
 }

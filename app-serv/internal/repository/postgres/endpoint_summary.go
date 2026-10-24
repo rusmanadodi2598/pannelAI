@@ -2,7 +2,7 @@
 //
 // @file      internal/repository/postgres/endpoint_summary.go
 // @for       The per-provider endpoint roll-up the provider list renders.
-// @uses      context, time, internal/domain.
+// @uses      context, internal/domain, internal/repository.
 // @reason    SPEC-API-001 §7.4 publishes status_summary for every provider in one list response. Reading it per provider would be an N+1 over a page of 25 rows (AGENTS.md §1.7 forbids exactly that), so one GROUP BY answers the whole page and the service attaches the counts by provider id.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
@@ -14,6 +14,7 @@ import (
 	"context"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
 
 // EndpointStatusCountsByProvider returns the state roll-up of every endpoint,
@@ -97,6 +98,45 @@ SELECT DISTINCT provider_id
 			return nil, translateEndpointError(err)
 		}
 		out[providerID] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, translateEndpointError(err)
+	}
+	return out, nil
+}
+
+// ProxyPins answers which providers route endpoints through each pool id, and how many
+// endpoints each stake holds, in one grouped statement rather than a query per pool
+// (AGENTS.md §1.7).
+//
+// The id list comes from a bulk selection bounded by MaxBulkTargets, so the ANY list
+// cannot grow without limit. Pools nothing pins are absent from the answer: a proxy
+// nobody references is the ordinary case, not a row to report.
+func (r *EndpointRepository) ProxyPins(ctx context.Context, poolIDs []string) (map[string][]repository.ProxyPin, error) {
+	out := make(map[string][]repository.ProxyPin, len(poolIDs))
+	if len(poolIDs) == 0 {
+		return out, nil
+	}
+	const q = `
+SELECT proxy_pool_id, provider_id, count(*)
+  FROM upstream_endpoints
+ WHERE proxy_pool_id = ANY($1)
+ GROUP BY proxy_pool_id, provider_id
+ ORDER BY proxy_pool_id, provider_id`
+
+	rows, err := r.pool.Query(ctx, q, poolIDs)
+	if err != nil {
+		return nil, translateEndpointError(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var poolID, providerID string
+		var count int
+		if err := rows.Scan(&poolID, &providerID, &count); err != nil {
+			return nil, translateEndpointError(err)
+		}
+		out[poolID] = append(out[poolID], repository.ProxyPin{ProviderID: providerID, Endpoints: count})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, translateEndpointError(err)

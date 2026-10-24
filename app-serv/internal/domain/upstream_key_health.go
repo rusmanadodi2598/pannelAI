@@ -13,53 +13,78 @@ package domain
 
 import "time"
 
-// KeyFailureClass is the class an upstream failure belongs to. The class decides
-// how long the key is parked (SPEC-API-001 §7.5), following the reference's
-// classification: a credential-shaped failure parks long, a rate limit backs
-// off exponentially, a transient outage parks briefly, and a request-shaped
-// refusal parks nothing because the same body would fail identically on any key.
-type KeyFailureClass int
-
-const (
-	// KeyFailureAuth covers 401/402/403/404: the credential or its account.
-	KeyFailureAuth KeyFailureClass = iota
-	// KeyFailureRateLimit covers 429.
-	KeyFailureRateLimit
-	// KeyFailureTransient covers 5xx, network, and timeout failures.
-	KeyFailureTransient
-	// KeyFailureRequest covers every other 4xx: the request is the cause.
-	KeyFailureRequest
-)
-
-// keyAuthCooldown is how long a credential-shaped failure parks a key.
-const keyAuthCooldown = 2 * time.Minute
-
-// keyTransientCooldown is how long an outage-shaped failure parks a key: long
+// keyTransientCooldown is the §7.5 flat window for an outage-shaped failure: long
 // enough to skip the overloaded instance, short enough that a recovered one is
-// picked up by the next request.
+// picked up by the next request. It stays flat because a target that answered 5xx
+// a moment ago is not a credential that is dead, and only the latter earns an
+// escalating window (draft 050 D3a).
 const keyTransientCooldown = 30 * time.Second
 
-// The rate-limit backoff ladder: the first 429 parks 2s and each consecutive
-// one doubles the window, capped at 5 minutes (the reference's BACKOFF_CONFIG).
+// The documented default of each ladder and its ceiling. The bases are what the
+// routing group may retune (KeyParkWindows); the ceilings are not, because a park
+// that can be configured never to expire buries an account nothing then heals.
 const (
+	keyAuthBase      = 2 * time.Minute
+	keyAuthMax       = time.Hour
 	keyRateLimitBase = 2 * time.Second
 	keyRateLimitMax  = 5 * time.Minute
-	keyRateLimitMaxN = 15
+	keyBillingBase   = 15 * time.Minute
+	keyBillingMax    = 6 * time.Hour
+	keyLadderMaxN    = 15
+	// keyQuotaCeiling is the last rung of the quota ladder and the window a provider
+	// with no stated reset period is assumed to have: the free-tier and event cadence
+	// most accounts here actually run on.
+	keyQuotaCeiling = 24 * time.Hour
 )
 
-// rateLimitBackoff reports the window the n-th consecutive rate limit parks a
-// key for. The shift is guarded: a level past the cap, or a shift that
-// overflows the duration, answers the cap rather than a negative window.
-func rateLimitBackoff(n int) time.Duration {
+// quotaLadder is the park a spent allowance earns, walked in steps rather than
+// by doubling. Doubling from fifteen minutes needs eight strikes to reach a day,
+// and every strike is a walk leg the gateway already knows cannot be served;
+// a vendor's period is a known length, so the park grows to it in four.
+var quotaLadder = []time.Duration{
+	15 * time.Minute,
+	time.Hour,
+	6 * time.Hour,
+	keyQuotaCeiling,
+}
+
+// quotaStep answers the n-th step of that ladder, holding to the last one past
+// the end rather than escalating beyond a day. A provider whose allowance comes
+// back sooner caps the walk: parking a five-hour reset for a day would keep a
+// usable credential out of rotation for nineteen hours it never earned.
+func quotaStep(n int, ceiling time.Duration) time.Duration {
 	if n < 1 {
 		n = 1
 	}
-	if n > keyRateLimitMaxN {
-		n = keyRateLimitMaxN
+	if n > len(quotaLadder) {
+		n = len(quotaLadder)
 	}
-	window := keyRateLimitBase << uint(n-1)
-	if window <= 0 || window > keyRateLimitMax {
-		return keyRateLimitMax
+	window := quotaLadder[n-1]
+	if ceiling > 0 && ceiling < window {
+		return ceiling
+	}
+	return window
+}
+
+// RateLimitCeiling is the §7.5 ceiling the rate-limit ladder stops at. The wait a client is
+// told to wait is bounded by the same number the credential is parked for: a gateway saying
+// "come back in a day" that returns the key to rotation in five minutes is lying about its
+// own health model.
+const RateLimitCeiling = keyRateLimitMax
+
+// backoff reports the window the n-th consecutive failure of a ladder parks a
+// key for. The shift is guarded: a level past the cap, or a shift that
+// overflows the duration, answers the cap rather than a negative window.
+func backoff(base time.Duration, n int, ceiling time.Duration) time.Duration {
+	if n < 1 {
+		n = 1
+	}
+	if n > keyLadderMaxN {
+		n = keyLadderMaxN
+	}
+	window := base << uint(n-1)
+	if window <= 0 || window > ceiling {
+		return ceiling
 	}
 	return window
 }
@@ -71,11 +96,12 @@ func rateLimitBackoff(n int) time.Duration {
 // parks, and a key that recovers on its own is picked up by the next request
 // rather than sitting idle until a worker notices.
 //
-// A disabled key stays unavailable regardless of the window, because that state
-// comes from an operator rather than from health tracking.
+// An operator's disable works the same way and for the same reason, with one
+// difference: a park with no deadline is permanent, because a switched-off key
+// has no vendor reset for a window to point at.
 func (k UpstreamKey) Available(now time.Time) bool {
 	if k.status == UpstreamKeyDisabled {
-		return false
+		return k.disabledUntil != nil && !now.Before(*k.disabledUntil)
 	}
 	if k.rateLimitedUntil == nil {
 		return k.status == UpstreamKeyActive
@@ -85,33 +111,87 @@ func (k UpstreamKey) Available(now time.Time) bool {
 
 // RecordFailure applies one upstream failure. The first failure parks the key
 // for its class's window, so a dead credential stops serving immediately
-// instead of after three strikes. A request-shaped failure records the reason
-// but parks nothing, because the request is the cause and no key can serve it.
-func (k *UpstreamKey) RecordFailure(reason string, class KeyFailureClass, now time.Time) {
+// instead of after three strikes. A failure the credential did not cause records
+// the reason but parks nothing, because the key is not what failed. The
+// credential and rate-limit windows grow with the streak and stop at their
+// ceilings; the transient one stays flat.
+//
+// The streak is the class's own run, not the total: one shared counter let a run of 429s
+// raise the credential ladder, so a throttled account was parked for strikes it never earned.
+func (k *UpstreamKey) RecordFailure(reason string, class KeyFailureClass, policy KeyHealthPolicy, now time.Time) {
 	k.lastError = reason
+	k.lastErrorClass = policy.Rest.Label(class)
+	k.resetSource = policy.Rest.SourceLabel()
+	k.signatureID = policy.Rest.SignatureID
 	k.updatedAt = now
-	if class == KeyFailureRequest {
+	if !class.ImplicatesCredential() {
 		return
 	}
 	k.consecutiveErrors++
-	window := keyTransientCooldown
-	switch class {
-	case KeyFailureAuth:
-		window = keyAuthCooldown
-	case KeyFailureRateLimit:
-		window = rateLimitBackoff(k.consecutiveErrors)
+	k.bumpRun(class)
+	// The rest is absolute where the vendor stated one, so a spent allowance
+	// stays out of rotation until its own reset instead of re-entering it every
+	// cycle to be refused again. A class an operator retuned to rotate rather
+	// than park answers the zero time and parks nothing at all.
+	until := policy.RestUntil(class, k.runFor(class), now)
+	if until.IsZero() {
+		return
 	}
 	k.status = UpstreamKeyError
-	until := now.Add(window)
 	k.rateLimitedUntil = &until
 }
+
+// bumpRun advances the streak of the class that just failed. Transient stays outside the
+// set because its window is flat: counting a target's 5xx run would escalate a window the
+// ladder exists to keep fixed (draft 050 D3a).
+func (k *UpstreamKey) bumpRun(class KeyFailureClass) {
+	switch class {
+	case KeyFailureAuth:
+		k.consecutiveAuth++
+	case KeyFailureRateLimit:
+		k.consecutiveRateLimit++
+	case KeyFailureBilling, KeyFailureQuota:
+		// A spent allowance advances the account's own run: it is the same
+		// account-level condition a 402 names, measured on the same column, and
+		// giving it a counter of its own would need a column this table does not
+		// have for a condition that is no different to act on.
+		k.consecutiveBilling++
+	}
+}
+
+// runFor reports the streak a failure of this class parks against. Auth, rate limit and
+// billing keep their own; every other class answers the total, whose window is flat anyway.
+func (k UpstreamKey) runFor(class KeyFailureClass) int {
+	switch class {
+	case KeyFailureAuth:
+		return k.consecutiveAuth
+	case KeyFailureRateLimit:
+		return k.consecutiveRateLimit
+	case KeyFailureBilling, KeyFailureQuota:
+		return k.consecutiveBilling
+	default:
+		return k.consecutiveErrors
+	}
+}
+
+// RunFor reports the streak of one class, for the persistence layer and the panel.
+func (k UpstreamKey) RunFor(class KeyFailureClass) int { return k.runFor(class) }
 
 // RecordSuccess clears the health state after a request the upstream accepted:
 // the counter, the recorded error, and the park all reset, and a key that was
 // parked returns to active.
+//
+// Every class run resets, not only the served one: a credential that just answered is
+// demonstrably whole, and a stale run would park its next failure at the old length.
 func (k *UpstreamKey) RecordSuccess(now time.Time) {
 	k.consecutiveErrors = 0
+	k.consecutiveAuth = 0
+	k.consecutiveRateLimit = 0
+	k.consecutiveBilling = 0
 	k.lastError = ""
+	k.lastErrorClass = ""
+	k.resetSource = ""
+	k.signatureID = ""
 	k.rateLimitedUntil = nil
 	if k.status == UpstreamKeyError {
 		k.status = UpstreamKeyActive

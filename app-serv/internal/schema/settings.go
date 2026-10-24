@@ -37,14 +37,54 @@ type RoutingSettingsResponse struct {
 	StickyLimit        int                                 `json:"sticky_limit"`
 	FallbackStrategy   string                              `json:"fallback_strategy"`
 	ProviderStrategies map[string]ProviderStrategyResponse `json:"provider_strategies"`
+	// KeyPark answers the windows the group resolves to, so a read of a document
+	// that predates the knobs still names the lengths the router parks with.
+	KeyPark KeyParkResponse `json:"key_park"`
+	// Failover answers the budget one request's credential walk gets, effective
+	// rather than stored: a document that predates the keys still names the budget
+	// the router actually applies.
+	Failover FailoverBudgetResponse `json:"failover"`
+	// FailureClasses answers the per-class overrides the group stores, and only
+	// those. A class with no entry is absent rather than a copy of its documented
+	// default, because the panel shows what an operator decided, not what the
+	// build already does.
+	FailureClasses map[string]FailureClassPolicyResponse `json:"failure_classes,omitempty"`
+}
+
+// FailoverBudgetResponse is the walk budget in the units the walk measures: the
+// clock in milliseconds and the count of credentials one request may spend.
+type FailoverBudgetResponse struct {
+	TotalMS     int `json:"total_ms"`
+	MaxAttempts int `json:"max_attempts"`
+}
+
+// KeyParkResponse is one level of the parking budget, in seconds. A provider
+// entry renders only the windows it stores, so an unset one is absent rather than
+// a zero the panel would read as "park for nothing".
+type KeyParkResponse struct {
+	AuthSeconds      int `json:"auth_seconds,omitempty"`
+	RateLimitSeconds int `json:"rate_limit_seconds,omitempty"`
+	TransientSeconds int `json:"transient_seconds,omitempty"`
+	BillingSeconds   int `json:"billing_seconds,omitempty"`
+	QuotaSeconds     int `json:"quota_seconds,omitempty"`
 }
 
 // ProviderStrategyResponse is one provider's rotation override. An absent field
-// inherits the global default, so the two fields carry `omitempty` and the
-// panel renders what is stored rather than a filled-in copy.
+// inherits the global default, so the fields carry `omitempty` and the panel
+// renders what is stored rather than a filled-in copy.
 type ProviderStrategyResponse struct {
-	FallbackStrategy string `json:"fallback_strategy,omitempty"`
-	StickyLimit      *int   `json:"sticky_limit,omitempty"`
+	FallbackStrategy string                                `json:"fallback_strategy,omitempty"`
+	StickyLimit      *int                                  `json:"sticky_limit,omitempty"`
+	KeyPark          *KeyParkResponse                      `json:"key_park,omitempty"`
+	FailureClasses   map[string]FailureClassPolicyResponse `json:"failure_classes,omitempty"`
+}
+
+// FailureClassPolicyResponse is one class's action and windows in the units the
+// wire carries: seconds, and the action's own name.
+type FailureClassPolicyResponse struct {
+	Action          string `json:"action,omitempty"`
+	CeilingSeconds  int    `json:"ceiling_seconds,omitempty"`
+	CooldownSeconds int    `json:"default_cooldown_seconds,omitempty"`
 }
 
 // NetworkSettingsResponse is the §7.14 network group. The strategy answers the

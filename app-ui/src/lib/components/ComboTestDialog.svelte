@@ -13,6 +13,7 @@
 	// The panel cannot cancel a sequential server-side loop, so Close stays available while the probes run
 	// and the dialog does not pretend to stop them. That is the other reason the spend is stated first.
 	import Modal from '$lib/components/Modal.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { testCombo } from '$lib/api/combos';
 	import type { ApiError } from '$lib/api/errors';
@@ -132,18 +133,13 @@
 	{/if}
 
 	{#snippet footer()}
-		<button type="button" class="inline-flex min-h-11 items-center gap-2 underline" onclick={close}>
+		<Button variant="ghost" class="underline" onclick={close}>
 			<CancelIcon class="size-4" aria-hidden="true" />
 			Close
-		</button>
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
-			disabled={running}
-			onclick={() => void run()}
-		>
+		</Button>
+		<Button class="px-4" disabled={running} aria-busy={running} onclick={() => void run()}>
 			<TestIcon class="size-4" aria-hidden="true" />
 			{running ? 'Testing' : answer ? 'Test again' : 'Test the chain'}
-		</button>
+		</Button>
 	{/snippet}
 </Modal>

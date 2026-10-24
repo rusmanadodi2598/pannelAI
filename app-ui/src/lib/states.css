@@ -1,0 +1,49 @@
+/* The panel's interaction-state scale (DESIGN.md §3.5, measured by tests/tokens/state-scale.test.ts).
+ *
+ * A press has to paint, not only move: Tailwind applies `hover:` only under `(hover: hover)`, so on a
+ * touch layout a control whose sole state is a hover wash answers nothing.
+ *
+ * A colourless control washes the theme's own ink, which takes the same perceptual step on the page, on a
+ * raised panel, and on a table header from one token; an absolute hex calibrates for only one of them. A
+ * control that carries a colour steps that colour instead, because an ink wash under a coloured label
+ * drops the label below AA. Direction follows the theme's own surface ramp: further in is darker in
+ * light, lighter in dark, and both directions spend the step rather than the label's contrast.
+ *
+ * Selection is a state too, so a chosen control keeps answering a pointer: `surface-3` is its ground and
+ * `state-deep` is the step its hover has to reach from there, one notch past the press of an unchosen
+ * one. Re-pressing a control that is already chosen changes nothing, so it asks for no fourth step.
+ */
+@theme {
+	/* Light. The ink washed by `state-*` is #1a1614; the fills are coral #b8412a and #b3261e. */
+	--color-state-hover: rgb(26 22 20 / 0.09);
+	--color-state-press: rgb(26 22 20 / 0.16);
+	--color-state-deep: rgb(26 22 20 / 0.2);
+
+	/* White on the pressed coral measures 7.85:1, against 5.49:1 at rest. */
+	--color-accent-hover: #ab311c;
+	--color-accent-press: #9c2412;
+
+	/* The danger ramp serves both destructive shapes: a quiet glyph steps its own colour through these,
+	   a committing button paints them as its fill and carries #ffffff, 7.90:1 and 9.45:1. */
+	--color-danger-hover: #a11815;
+	--color-danger-press: #90070c;
+	--color-danger-ink: #ffffff;
+}
+
+.dark {
+	/* Dark. The ink washed by `state-*` is #edeae6; the fills are coral #e56a4a and #f08a84. */
+	--color-state-hover: rgb(237 234 230 / 0.09);
+	--color-state-press: rgb(237 234 230 / 0.16);
+	--color-state-deep: rgb(237 234 230 / 0.2);
+
+	/* The label is near-black, so stepping the coral up toward it raises the label's contrast instead
+	   of costing any: near-black on the pressed coral measures 8.03:1, against 5.85:1 at rest. */
+	--color-accent-hover: #f07a5a;
+	--color-accent-press: #fa8a6c;
+
+	/* The same ramp read the other way: #14100e on the pressed step measures 10.39:1, against 7.81:1
+	   on the rest fill, and the quiet glyph holds 5.58:1 on a pressed raised panel. */
+	--color-danger-hover: #fd9992;
+	--color-danger-press: #ffaaa3;
+	--color-danger-ink: #14100e;
+}

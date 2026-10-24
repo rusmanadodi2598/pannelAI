@@ -18,25 +18,37 @@ useDefault = true
 [[allowlists]]
 description = "Test fixtures and the key-generation alphabet, none of which are credentials"
 
-# Two entries, both literal values: no path is exempt, so a real key committed
-# next to them is still caught.
+# The literal entries below stay narrow. One path is added for the masking test:
+# its fixture is the value the hint test exists to hide, the file is a test
+# package, and the generic rule reads the assignment rather than the fixture.
+# A real key committed anywhere else is still caught.
+paths = [
+  '''app-serv/internal/service/gateway_key_masking_test.go''',
+]
+
 regexTarget = "match"
 regexes = [
   # The masking tests need an input whose interior is long enough to be hidden.
   # It is a fixture, never sent anywhere, and its prefix ("sk-") is deliberate
-  # so the masking transform is exercised on a realistic shape.
-  '''abcdEfghIJKLmnopQRSTuvwx1234567890ABCDEFGH''',
+  # so the masking transform is exercised on a realistic shape. The generic rule
+  # matches the assignment rather than the bare value, so the pattern names it.
+  '''secret = "abcdEfghIJKLmnopQRSTUVwx1234567890ABCDEFGH"''',
+
+  # The app-bot webhook tests' fixture secret. It is a test-only constant in a
+  # test package, authenticates nothing, and the app-bot tree is not served by
+  # this repository's current build. The pattern names the assignment and the
+  # fixture shape, so a real key committed to the same file is still caught.
+  '''webhookSecret = "test-secret-[0-9]+"''',
+
+  # The same webhook fixture reaches the config and router tests as an env value
+  # and a constructor argument, where no assignment name is in the match. Only
+  # this exact literal is exempt: a real secret in the same file is still caught.
+  '''test-secret-1234567890''',
 
   # The character set keys are generated from. It is published in the binary and
   # is the alphabet, not a secret: the entropy comes from crypto/rand, and the
   # alphabet's only design constraint is that it omits ambiguous characters.
   '''abcdefghijkmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWXYZ''',
-
-  # The webhook tests need a shared secret of a realistic length so the
-  # constant-time compare and the 403 path run against the same shape a
-  # deployment uses. This literal is a fixture, never a credential, and only the
-  # exact value is exempt: a real secret in the same file is still caught.
-  '''test-secret-1234567890''',
 ]
 
 # The two Gemini thought-signature fillers are vendor-captured opaque blobs, not

@@ -9,45 +9,13 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ChangelogPage from '../../src/routes/changelog/+page.svelte';
-
-const VERSION = {
-	version: 'v0.4.0',
-	commit: 'abc1234',
-	build_date: '2026-09-20T00:00:00Z',
-	go_version: '1.26',
-	registry_revision: '9router@db4499d'
-};
-
-const RELEASES = [
-	{ version: 'v0.4.0', date: '2026-09-20', title: 'Skills catalog', notes: 'Served.' },
-	{ version: 'v0.3.0', date: '2026-09-19', title: 'Responses API', notes: 'Responses.' },
-	{ version: 'v0.2.0', date: '2026-09-19', title: 'OAuth', notes: 'OAuth.' },
-	{ version: 'v0.1.0', date: '2026-09-18', title: 'Registry', notes: 'Registry.' }
-];
+import { VERSION, stubChangelog } from '../support/changelog-stub';
 
 let reads: string[] = [];
 
-function stubFetch(
-	options: {
-		releases?: unknown;
-		releasesStatus?: number;
-		version?: unknown;
-		versionStatus?: number;
-	} = {}
-): void {
-	const releases = options.releases ?? { data: RELEASES };
-	const version = options.version ?? VERSION;
-
-	vi.stubGlobal('fetch', async (input: unknown) => {
-		const url = String(input);
-		reads.push(url);
-
-		const changelog = url.startsWith('/api/v1/changelog');
-		return new Response(JSON.stringify(changelog ? releases : version), {
-			status: changelog ? (options.releasesStatus ?? 200) : (options.versionStatus ?? 200),
-			headers: { 'content-type': 'application/json' }
-		});
-	});
+/** Both reads the screen makes, answered and recorded by the shared stub. */
+function stubFetch(options: Parameters<typeof stubChangelog>[0] = {}): void {
+	({ reads } = stubChangelog(options));
 }
 
 /** The list row for one release, found by the version it carries. */

@@ -22,10 +22,12 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/streamio"
 )
 
-// maxFoldEvents bounds how many SSE events one folded answer may contain. A
-// single event is bounded by maxEventBytes, and every event of an endless stream
-// is accumulated into one slice, so the count needs its own ceiling.
-const maxFoldEvents = 1 << 16
+// maxFoldEvents bounds the event count; maxFoldBytes bounds the payload total,
+// because 65,536 events at the 1 MiB ceiling would hold about 64 GiB.
+const (
+	maxFoldEvents = 1 << 16
+	maxFoldBytes  = 32 << 20
+)
 
 // foldStream reads a forced stream to its end and returns the single upstream
 // answer it carried, in the upstream's own wire format, so the caller's existing
@@ -52,6 +54,18 @@ func readFoldEvents(body io.Reader) ([][]byte, error) {
 	reader := bufio.NewReaderSize(body, 16<<10)
 	var event bytes.Buffer
 	events := make([][]byte, 0, 16)
+	total := 0
+	appendEvent := func(payload []byte) error {
+		total += len(payload)
+		if total > maxFoldBytes {
+			return dataPlaneError(CodeUpstreamError, "the upstream stream carried more than the fold may hold")
+		}
+		events = append(events, payload)
+		if len(events) > maxFoldEvents {
+			return dataPlaneError(CodeUpstreamError, "the upstream stream contained too many events")
+		}
+		return nil
+	}
 
 	for {
 		// Bounded inside the read: an upstream that never sends a newline must not
@@ -70,22 +84,23 @@ func readFoldEvents(body io.Reader) ([][]byte, error) {
 			// A stream that ends mid-event is normal, so the trailing partial
 			// event is processed rather than discarded.
 			if payload := sseData(event.Bytes()); len(payload) > 0 {
-				events = append(events, payload)
+				if appendErr := appendEvent(payload); appendErr != nil {
+					return nil, appendErr
+				}
 			}
 			if err == io.EOF {
 				return events, nil
 			}
 			return nil, wrapDataPlaneError(CodeUpstreamTimeout, "the upstream stream ended early", err)
 		}
-		if len(events) > maxFoldEvents {
-			return nil, dataPlaneError(CodeUpstreamError, "the upstream stream contained too many events")
-		}
 
 		// An SSE event ends at a blank line, which is what the framing relies
 		// on: a frame is only complete when the blank line arrives.
 		if len(bytes.TrimRight(line, "\r\n")) == 0 {
 			if payload := sseData(event.Bytes()); len(payload) > 0 {
-				events = append(events, payload)
+				if appendErr := appendEvent(payload); appendErr != nil {
+					return nil, appendErr
+				}
 			}
 			event.Reset()
 		}

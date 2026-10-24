@@ -22,6 +22,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -164,4 +165,33 @@ func TestUsageRepository_GroupByDimensions(t *testing.T) {
 			t.Fatal("Summary with an unknown group_by = nil error, want a rejection")
 		}
 	})
+}
+
+// TestUsageRepository_SummaryGroupLimitKeepsTheBusiestGroups pins the ceiling:
+// more dimension values than MaxUsageGroupRows answers exactly the cap, ordered
+// by request count and then by key, so the busiest group survives.
+func TestUsageRepository_SummaryGroupLimitKeepsTheBusiestGroups(t *testing.T) {
+	repo := newUsageRepo(t)
+	ctx := context.Background()
+
+	seedUsage(t, repo, "req_busy_1", "provider-000", "m", "0.00000001", 1, domain.UsageStatusSuccess)
+	seedUsage(t, repo, "req_busy_2", "provider-000", "m", "0.00000001", 1, domain.UsageStatusSuccess)
+	for i := 1; i <= domain.MaxUsageGroupRows+4; i++ {
+		seedUsage(t, repo, fmt.Sprintf("req-%03d", i), fmt.Sprintf("provider-%03d", i),
+			"m", "0.00000001", 1, domain.UsageStatusSuccess)
+	}
+
+	_, groups, err := repo.Summary(ctx, usageRange(), domain.UsageGroupProvider)
+	if err != nil {
+		t.Fatalf("Summary error = %v", err)
+	}
+	if len(groups) != domain.MaxUsageGroupRows {
+		t.Fatalf("groups = %d, want the %d-row ceiling", len(groups), domain.MaxUsageGroupRows)
+	}
+	if groups[0].Key != "provider-000" || groups[0].Totals.Requests != 2 {
+		t.Fatalf("first group = %+v, want the busiest provider first", groups[0])
+	}
+	if last := groups[len(groups)-1].Key; last != "provider-099" {
+		t.Fatalf("last group = %q, want provider-099 at the ceiling", last)
+	}
 }

@@ -10,7 +10,8 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import QuotaPage from '../../src/routes/quota/+page.svelte';
-import { quotaEndpointRow, quotaWindowRow, stubQuota } from '../support/quota-stub';
+import { quotaEndpointRow, quotaWindowRow } from '../support/quota-fixtures';
+import { stubQuota } from '../support/quota-stub';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 
@@ -113,6 +114,30 @@ describe('the toolbar the provider reshape added', () => {
 		expect(screen.getByRole('heading', { name: 'anthropic' })).toBeTruthy();
 	});
 
+	it('drops a selection the provider filter would hide', async () => {
+		stubQuota({
+			windows: [
+				quotaWindowRow(),
+				quotaWindowRow({ provider_id: 'zeta', endpoint_id: 'ep_z', window: 'daily' })
+			],
+			endpoints: [quotaEndpointRow(), quotaEndpointRow({ id: 'ep_z', label: 'Zeta primary' })]
+		});
+		render(QuotaPage);
+		await screen.findByRole('heading', { name: 'zeta' });
+
+		await fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select anthropic for bulk folding' })
+		);
+		expect(screen.getByText('1 selected')).toBeTruthy();
+
+		await fireEvent.change(screen.getByLabelText('Filter cards by provider'), {
+			target: { value: 'zeta' }
+		});
+
+		// The checked card is now hidden, so a bulk action must not reach it.
+		expect(screen.queryByText('1 selected')).toBeNull();
+	});
+
 	it('still pages what the gateway sent, whatever the filter says', async () => {
 		const stub = stubQuota({
 			windows: [
@@ -136,6 +161,15 @@ describe('the toolbar the provider reshape added', () => {
 });
 
 describe('the caps editor row', () => {
+	it('does not claim there are no endpoints while the first read is in flight', async () => {
+		stubQuota({ windows: [] });
+		render(QuotaPage);
+
+		expect(screen.getByText('Loading endpoints')).toBeTruthy();
+		expect(screen.queryByText('No endpoints to cap')).toBeNull();
+		await screen.findByText('No quota windows yet');
+	});
+
 	it('puts the picker, both fields, and the save action on one row', async () => {
 		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
@@ -175,6 +209,10 @@ describe('the card bodies and their pagination', () => {
 			.getByRole('heading', { name: 'Anthropic primary' })
 			.closest('.overflow-y-auto');
 		expect(region?.className).toContain('max-h-80');
+		// A scroll region that keyboard users cannot focus leaves its lower rows unreachable.
+		expect(region?.getAttribute('tabindex')).toBe('0');
+		expect(region?.getAttribute('role')).toBe('region');
+		expect(region?.getAttribute('aria-label')).toBe('anthropic connections');
 	});
 
 	it('paginates the cards and parks both controls at a single page', async () => {

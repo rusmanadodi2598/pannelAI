@@ -43,23 +43,66 @@ func (s UpstreamKeyStatus) IsValid() bool {
 	return s == UpstreamKeyActive || s == UpstreamKeyDisabled
 }
 
+// KeyRotationState is the load-path carrier for when a key was chosen and how long each
+// failure class has been hitting it, so RehydrateUpstreamKey gains one argument rather than
+// five. It is a plain value with exported fields like EndpointParity: it transports stored
+// rows, is never returned outside this package, and the rules stay on UpstreamKey's methods.
+type KeyRotationState struct {
+	// LastSelectedAt is when the router last spent this credential, which is not when it last
+	// worked: a key chosen and then lost at the network still advanced, and ordering reads this.
+	LastSelectedAt *time.Time
+	// The three runs replace one shared counter as the ladder's step, because a run of 429s
+	// was raising the credential window. A class nobody failed with reads zero.
+	ConsecutiveAuth      int
+	ConsecutiveRateLimit int
+	ConsecutiveBilling   int
+	// LastErrorClass names which run the last failure advanced, spelled as KeyFailureClass
+	// names itself. The health write needs it to choose its column and the panel needs it
+	// because last_error holds the vendor's sentence, not the fact that it was a 429.
+	LastErrorClass string
+	// ResetSource and SignatureID are the provenance of the park that is on the row:
+	// which statement of the vendor's produced the wait, and which signature
+	// recognised the failure. They read out to an operator only; nothing in the
+	// router decides anything from them, and a row parked before the classifier
+	// existed carries neither.
+	ResetSource string
+	SignatureID string
+}
+
 // UpstreamKey is one credential under an upstream endpoint. Fields are
 // unexported on purpose (AGENTS.md §2.2): every transition goes through a
 // method, and the stored secret has no accessor at all.
 type UpstreamKey struct {
-	id                string
-	endpointID        string
-	label             string
-	valueEncrypted    string
-	keyHint           string
-	priority          int
-	status            UpstreamKeyStatus
-	lastUsedAt        *time.Time
-	lastError         string
-	consecutiveErrors int
-	rateLimitedUntil  *time.Time
-	createdAt         time.Time
-	updatedAt         time.Time
+	id                   string
+	endpointID           string
+	label                string
+	valueEncrypted       string
+	keyHint              string
+	priority             int
+	status               UpstreamKeyStatus
+	lastUsedAt           *time.Time
+	lastSelectedAt       *time.Time
+	lastError            string
+	consecutiveErrors    int
+	consecutiveAuth      int
+	consecutiveRateLimit int
+	consecutiveBilling   int
+	lastErrorClass       string
+	rateLimitedUntil     *time.Time
+	// resetSource and signatureID record how a park's rest was arrived at: which
+	// of the vendor's own statements produced it, and which signature recognised
+	// the failure. They are diagnostics for an operator reading a parked key, not
+	// inputs to the health model, so nothing decides a window from them and a park
+	// written by an older binary simply carries neither.
+	resetSource string
+	signatureID string
+	// tags and disabledUntil are the operator's own marks: the sets a bulk action
+	// addresses this credential by, and the deadline its park runs out at. Their
+	// rules live in upstream_key_operator.go.
+	tags          TagSet
+	disabledUntil *time.Time
+	createdAt     time.Time
+	updatedAt     time.Time
 }
 
 // NewUpstreamKey is the only constructor for a freshly added key. The value
@@ -111,42 +154,39 @@ func RehydrateUpstreamKey(
 	lastUsedAt *time.Time,
 	lastError string,
 	consecutiveErrors int,
+	rotation KeyRotationState,
 	rateLimitedUntil *time.Time,
 	createdAt, updatedAt time.Time,
+	operator OperatorState,
 ) UpstreamKey {
 	return UpstreamKey{
-		id:                id,
-		endpointID:        endpointID,
-		label:             label,
-		valueEncrypted:    valueEncrypted,
-		keyHint:           keyHint,
-		priority:          priority,
-		status:            status,
-		lastUsedAt:        lastUsedAt,
-		lastError:         lastError,
-		consecutiveErrors: consecutiveErrors,
-		rateLimitedUntil:  rateLimitedUntil,
-		createdAt:         createdAt,
-		updatedAt:         updatedAt,
+		id:                   id,
+		endpointID:           endpointID,
+		label:                label,
+		valueEncrypted:       valueEncrypted,
+		keyHint:              keyHint,
+		priority:             priority,
+		status:               status,
+		lastUsedAt:           lastUsedAt,
+		lastSelectedAt:       rotation.LastSelectedAt,
+		lastError:            lastError,
+		consecutiveErrors:    consecutiveErrors,
+		consecutiveAuth:      rotation.ConsecutiveAuth,
+		consecutiveRateLimit: rotation.ConsecutiveRateLimit,
+		consecutiveBilling:   rotation.ConsecutiveBilling,
+		lastErrorClass:       rotation.LastErrorClass,
+		resetSource:          rotation.ResetSource,
+		signatureID:          rotation.SignatureID,
+		rateLimitedUntil:     rateLimitedUntil,
+		tags:                 operator.Tags,
+		disabledUntil:        operator.DisabledUntil,
+		createdAt:            createdAt,
+		updatedAt:            updatedAt,
 	}
 }
 
-// Accessors expose state without allowing mutation. There is deliberately no
-// accessor for the plaintext value: only EncryptedValue is readable, and only
-// the repository and the transport see it.
-func (k UpstreamKey) ID() string                   { return k.id }
-func (k UpstreamKey) EndpointID() string           { return k.endpointID }
-func (k UpstreamKey) Label() string                { return k.label }
-func (k UpstreamKey) EncryptedValue() string       { return k.valueEncrypted }
-func (k UpstreamKey) Hint() string                 { return k.keyHint }
-func (k UpstreamKey) Priority() int                { return k.priority }
-func (k UpstreamKey) Status() UpstreamKeyStatus    { return k.status }
-func (k UpstreamKey) LastUsedAt() *time.Time       { return k.lastUsedAt }
-func (k UpstreamKey) LastError() string            { return k.lastError }
-func (k UpstreamKey) ConsecutiveErrors() int       { return k.consecutiveErrors }
-func (k UpstreamKey) RateLimitedUntil() *time.Time { return k.rateLimitedUntil }
-func (k UpstreamKey) CreatedAt() time.Time         { return k.createdAt }
-func (k UpstreamKey) UpdatedAt() time.Time         { return k.updatedAt }
+// Accessors live in upstream_key_reads.go: the read list grows as rotation and
+// parking learn new facts, while the transitions here stay one per state change.
 
 // Update applies a PATCH to the mutable fields. An empty label or a non-positive
 // priority is rejected rather than silently ignored, so a client typo surfaces.
@@ -175,6 +215,9 @@ func (k *UpstreamKey) Transition(next UpstreamKeyStatus) error {
 		return NewValidationError("invalid status: " + string(next))
 	}
 	k.status = next
+	// A PATCH states no window, so it leaves none behind: a stale deadline would
+	// release a switch the operator moved by hand.
+	k.disabledUntil = nil
 	if next == UpstreamKeyDisabled {
 		// A disabled key is not in a backoff; keeping the timestamp would make
 		// the panel show a countdown for a key that is switched off.

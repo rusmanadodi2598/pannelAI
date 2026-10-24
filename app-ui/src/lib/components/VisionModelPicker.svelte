@@ -11,6 +11,7 @@
 	// reason, because dropping it silently would turn a capability change on the provider's side into a
 	// configuration the operator never chose.
 	import { Plus, Trash2 } from '@lucide/svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { pickerOptions, type PickerSection } from '$lib/schemas/model-picker';
 	import type { VisionAdapterForm } from '$lib/schemas/vision-adapter';
 
@@ -49,15 +50,15 @@
 					{#if !offered.has(ref)}
 						<span class="text-xs text-[var(--color-warn)]">Not a vision model in the catalog</span>
 					{/if}
-					<button
-						type="button"
-						class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]"
+					<Button
+						variant="destructive-ghost"
+						size="icon"
 						aria-label={`Remove ${ref}`}
 						title={`Remove ${ref}`}
 						onclick={() => ontoggle(ref)}
 					>
 						<Trash2 class="size-4" aria-hidden="true" />
-					</button>
+					</Button>
 				</li>
 			{/each}
 		</ul>
@@ -69,12 +70,8 @@
 		</p>
 	{/if}
 
-	<button
-		type="button"
-		class="inline-flex min-h-11 w-fit items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
-		onclick={onchoose}
-	>
+	<Button variant="outline" class="w-fit" onclick={onchoose}>
 		<Plus class="size-4" aria-hidden="true" />
 		Add models
-	</button>
+	</Button>
 </fieldset>

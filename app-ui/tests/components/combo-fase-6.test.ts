@@ -118,7 +118,8 @@ describe('F16 combos empty state', () => {
 		render(CombosTab);
 
 		const create = await screen.findByRole('button', { name: 'Create the first combo' });
-		for (const token of ['min-h-11', 'px-2', 'inline-flex', 'items-center']) {
+		// The padding is the shared button's px-3, not the px-2 this control used to write for itself.
+		for (const token of ['min-h-11', 'px-3', 'inline-flex', 'items-center']) {
 			expect(create.className, `empty-state action lost ${token}`).toContain(token);
 		}
 		expect(create.querySelector('svg'), 'empty-state action has no glyph').toBeTruthy();
@@ -129,7 +130,7 @@ describe('F16 combos empty state', () => {
 		render(CombosTab);
 
 		const retry = await screen.findByRole('button', { name: 'Try again' });
-		for (const token of ['min-h-11', 'px-2', 'inline-flex', 'items-center', 'underline']) {
+		for (const token of ['min-h-11', 'px-3', 'inline-flex', 'items-center', 'underline']) {
 			expect(retry.className, `error-state retry lost ${token}`).toContain(token);
 		}
 	});
@@ -158,7 +159,8 @@ describe('F17 judge row', () => {
 			{ node: choose, token: 'min-h-11', note: 'Choose lost its touch target' },
 			{ node: choose, token: 'px-3', note: 'Choose lost its desktop padding' },
 			{ node: choose, token: 'max-sm:w-full', note: 'Choose is not full width on mobile' },
-			{ node: choose, token: 'max-sm:justify-center', note: 'Choose is not centered on mobile' },
+			// Centered at every width now, which is the shared button's own rule.
+			{ node: choose, token: 'justify-center', note: 'Choose is not centered' },
 			{ node: choose, token: 'max-sm:min-h-12', note: 'Choose lost its mobile touch target' },
 			{ node: choose, token: 'max-sm:px-4', note: 'Choose lost its mobile padding' }
 		];

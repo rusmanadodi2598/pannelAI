@@ -1,34 +1,16 @@
-// The provider screen's reasoning picker and the suffix a copied model name gains
-// (docs/SPEC-API/001-SPEC-API.md §7.14, §7.15; docs/SPEC-UI/001-SPEC-UI.md §6.3).
+// The reasoning picker's own rules (docs/SPEC-API/001-SPEC-API.md §7.14; docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
-// Two rules hold this slice together, and both are asserted here. The mode is ONE settings value per
-// provider, so every write sends the whole map back: a panel that sent only its own provider's entry
-// would erase every other provider's (the reference re-reads before it writes). And the
-// suffix is per model: a copied name gains `(level)` only where that model accepts it, so a model the
-// registry knows no levels for copies without one (`resolveThinkingSuffix`).
-//
-// The picker's own cases render it with the store the page owns and the load the page's effect performs,
-// so the assertions are about the control's rules. The page-level cases at the bottom hold the wiring
-// between them: the page's read, and the address a catalog row then shows.
+// The mode is ONE settings value per provider, so every write sends the whole map back: a panel that sent
+// only its own provider's entry would erase every other provider's. The picker is rendered with the store
+// the page owns and the load the page's effect performs, so the assertions are about the control's rules;
+// the page's read and the address a catalog row then shows are `provider-thinking-wiring.test.ts`.
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProviderThinkingControl from '$lib/components/ProviderThinkingControl.svelte';
 import { createProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
-import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
-import { catalogRow, stubModels, type ModelStub } from '../support/model-stub';
-import { reasoningGroup, settingsDocument } from '../support/settings-document';
-import { openAllSections } from '../support/provider-sections';
-
-vi.mock('$app/paths', () => ({
-	resolve: (route: string, params?: Record<string, string>) =>
-		params === undefined
-			? route
-			: route.replace(/\[(\w+)\]/g, (_match, key: string) => params[key] ?? `[${key}]`)
-}));
-
-const PROVIDER = 'openai';
-const LEVELS = ['low', 'medium', 'high', 'max'];
+import { stubModels, type ModelStub } from '../support/model-stub';
+import { LEVELS, PROVIDER, storedThinking } from '../support/thinking-fixtures';
 
 let stub: ModelStub;
 
@@ -36,11 +18,6 @@ afterEach(() => {
 	cleanup();
 	vi.unstubAllGlobals();
 });
-
-/** The settings document with this provider's stored mode, or another provider's. */
-function storedThinking(entries: Record<string, unknown> = {}): Record<string, unknown> {
-	return settingsDocument({ reasoning: reasoningGroup({ provider_thinking: entries }) });
-}
 
 function openWith(
 	options: {
@@ -73,7 +50,6 @@ function modeSelect(): HTMLSelectElement {
 async function ready(): Promise<void> {
 	await waitFor(() => expect(modeSelect()).toBeTruthy());
 }
-
 describe('the reasoning picker', () => {
 	it('renders nothing for a provider whose models accept no level', () => {
 		openWith({ levels: [] });
@@ -185,74 +161,5 @@ describe('the reasoning picker', () => {
 		await thinking.load('anthropic');
 
 		expect(screen.queryByText('This provider now asks for max on every request.')).toBeNull();
-	});
-});
-
-describe('the provider screen wiring', () => {
-	async function renderPage(
-		overrides: { thinking?: Record<string, unknown>; levels?: string[] | null } = {}
-	): Promise<void> {
-		stub = stubModels({
-			catalog: [catalogRow({ thinking_levels: overrides.levels ?? LEVELS })],
-			thinkingLevels: overrides.levels === undefined ? LEVELS : overrides.levels,
-			settings: storedThinking(overrides.thinking ?? {})
-		});
-		render(ProviderDetailPage, { props: { params: { provider_id: PROVIDER }, data: {} } });
-		await openAllSections('Models');
-	}
-
-	/** The catalog table, which is where the address a row copies is rendered. */
-	async function catalogTable(): Promise<HTMLElement> {
-		return await screen.findByRole('table', { name: /model catalog for this provider/i });
-	}
-
-	it('shows the stored mode and appends its suffix to the string a catalog row copies', async () => {
-		await renderPage({ thinking: { [PROVIDER]: { mode: 'high' } } });
-
-		const select = (await screen.findByLabelText('Reasoning mode')) as HTMLSelectElement;
-		await waitFor(() => expect(select.value).toBe('high'));
-
-		const table = within(await catalogTable());
-		await waitFor(() => expect(table.getByText('openai/gpt-4o(high)')).toBeTruthy());
-	});
-
-	it('appends the suffix only to the models that accept the level', async () => {
-		stub = stubModels({
-			catalog: [
-				catalogRow({ thinking_levels: ['high'] }),
-				// A model the registry knows no levels for: it copies without a suffix rather than with
-				// one its upstream would refuse (the DTO omits the field for it).
-				catalogRow({
-					id: 'openai/gpt-image-1',
-					model_id: 'gpt-image-1',
-					thinking_levels: undefined
-				})
-			],
-			thinkingLevels: ['high'],
-			settings: storedThinking({ [PROVIDER]: { mode: 'high' } })
-		});
-		render(ProviderDetailPage, { props: { params: { provider_id: PROVIDER }, data: {} } });
-		await openAllSections('Models');
-
-		const table = within(await catalogTable());
-		await waitFor(() => expect(table.getByText('openai/gpt-4o(high)')).toBeTruthy());
-		expect(table.getByText('openai/gpt-image-1')).toBeTruthy();
-	});
-
-	it('writes the picker choice as the whole map, and the copied string follows', async () => {
-		await renderPage();
-
-		const select = (await screen.findByLabelText('Reasoning mode')) as HTMLSelectElement;
-		await waitFor(() => expect(select.value).toBe('auto'));
-
-		await fireEvent.change(select, { target: { value: 'max' } });
-
-		await waitFor(() => expect(stub.settingsPatches.length).toBe(1));
-		expect(stub.settingsPatches[0]).toEqual({
-			reasoning: { provider_thinking: { [PROVIDER]: { mode: 'max' } } }
-		});
-
-		const table = within(await catalogTable());
-		await waitFor(() => expect(table.getByText('openai/gpt-4o(max)')).toBeTruthy());
 	});
 });

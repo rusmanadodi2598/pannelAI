@@ -49,7 +49,7 @@ func (e *UpstreamEndpoint) RemoveKey(id string, now time.Time) error {
 	if index < 0 {
 		return NewNotFoundError("upstream key not found")
 	}
-	if e.authType.UsesStoredKey() && e.activeKeyCount()-activeKeys(e.keys[index]) < 1 {
+	if e.authType.UsesStoredKey() && e.enabledKeyCount()-enabledKey(e.keys[index]) < 1 {
 		return NewConflictError("this endpoint must keep at least one active key")
 	}
 
@@ -59,13 +59,14 @@ func (e *UpstreamEndpoint) RemoveKey(id string, now time.Time) error {
 }
 
 // refusesDeactivation reports whether moving e.keys[index] to next would leave
-// a key-backed endpoint without an active key. UpdateKey runs it on the status
-// it is given, and RemoveKey enforces the same invariant on the whole key.
+// a key-backed endpoint with no credential the health system may bring back.
+// UpdateKey runs it on the status it is given, and RemoveKey enforces the same
+// invariant on the whole key.
 func (e *UpstreamEndpoint) refusesDeactivation(index int, next UpstreamKeyStatus) error {
 	if next == UpstreamKeyActive || !e.authType.UsesStoredKey() {
 		return nil
 	}
-	if e.activeKeyCount()-activeKeys(e.keys[index]) < 1 {
+	if e.enabledKeyCount()-enabledKey(e.keys[index]) < 1 {
 		return NewConflictError("this endpoint must keep at least one active key")
 	}
 	return nil
@@ -116,13 +117,14 @@ func (e *UpstreamEndpoint) UpdateKey(id, label, valueEncrypted, keyHint string, 
 }
 
 // RecordKeyFailure applies a failed attempt to one key and returns its state, so
-// the caller can log which key was parked.
-func (e *UpstreamEndpoint) RecordKeyFailure(id, reason string, class KeyFailureClass, now time.Time) (UpstreamKey, error) {
+// the caller can log which key was parked. The policy is the provider's own
+// parking budget, resolved by the caller from the routing group.
+func (e *UpstreamEndpoint) RecordKeyFailure(id, reason string, class KeyFailureClass, policy KeyHealthPolicy, now time.Time) (UpstreamKey, error) {
 	index := e.keyIndex(id)
 	if index < 0 {
 		return UpstreamKey{}, NewNotFoundError("upstream key not found")
 	}
-	e.keys[index].RecordFailure(reason, class, now)
+	e.keys[index].RecordFailure(reason, class, policy, now)
 	e.updatedAt = now
 	return e.keys[index], nil
 }
@@ -159,6 +161,21 @@ func (e UpstreamEndpoint) hasLabel(label string) bool {
 	return false
 }
 
+// enabledKeyCount reports how many keys the operator has not disabled, which is
+// the floor the >=1-key guard defends. Not activeKeyCount: a key whose park
+// expired routes again while its stored status still reads error, and a key
+// inside its park is recovering, so counting either froze key removal and key
+// deactivation for the whole window (draft 050 T6).
+func (e UpstreamEndpoint) enabledKeyCount() int {
+	count := 0
+	for _, key := range e.keys {
+		if key.status != UpstreamKeyDisabled {
+			count++
+		}
+	}
+	return count
+}
+
 // activeKeyCount reports how many keys are in the active status.
 func (e UpstreamEndpoint) activeKeyCount() int {
 	count := 0
@@ -170,10 +187,11 @@ func (e UpstreamEndpoint) activeKeyCount() int {
 	return count
 }
 
-// activeKeys reports 1 when the key is active, so a removal can ask what the
-// count would become without mutating anything first.
-func activeKeys(key UpstreamKey) int {
-	if key.status == UpstreamKeyActive {
+// enabledKey reports 1 when the operator has not disabled the key, so a removal
+// or a deactivation can ask what the count would become without mutating
+// anything first.
+func enabledKey(key UpstreamKey) int {
+	if key.status != UpstreamKeyDisabled {
 		return 1
 	}
 	return 0

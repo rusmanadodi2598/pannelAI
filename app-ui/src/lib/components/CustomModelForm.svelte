@@ -12,6 +12,7 @@
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { createCustomModel } from '$lib/api/models';
 	import type { ApiError } from '$lib/api/errors';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		CAPABILITY_MAX_ENTRIES,
 		customModelBody,
@@ -91,14 +92,10 @@
 				placeholder="vision, tools"
 			/>
 		</label>
-		<button
-			type="submit"
-			class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50 sm:w-auto"
-			disabled={adding}
-		>
+		<Button type="submit" variant="outline" class="w-full sm:w-auto" disabled={adding}>
 			<AddIcon class="size-4" aria-hidden="true" />
 			{adding ? 'Adding' : 'Add the model'}
-		</button>
+		</Button>
 	</div>
 
 	<p class="text-sm text-[var(--color-text-muted)]">Model id is required. No spaces.</p>

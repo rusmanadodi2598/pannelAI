@@ -16,6 +16,7 @@
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import ModelPickerDialog from '$lib/components/ModelPickerDialog.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import VisionModelPicker from '$lib/components/VisionModelPicker.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
@@ -23,6 +24,7 @@
 	import { pickerSections } from '$lib/schemas/model-picker';
 	import type { CatalogModel } from '$lib/schemas/model';
 	import type { Provider } from '$lib/schemas/provider';
+	import { formatTimestamp } from '$lib/utils/time';
 	import { getVisionAdapter, replaceVisionAdapter } from '$lib/api/vision-adapter';
 	import {
 		buildVisionAdapterBody,
@@ -139,10 +141,10 @@
 	{:else if loadError}
 		<StateMessage kind="error" title="Could not load the vision adapter" apiError={loadError}>
 			{#snippet action()}
-				<button type="button" class="inline-flex items-center gap-2 underline" onclick={load}>
+				<Button variant="ghost" class="underline" onclick={load}>
 					<RetryIcon class="size-4" aria-hidden="true" />
 					Try again
-				</button>
+				</Button>
 			{/snippet}
 		</StateMessage>
 	{:else}
@@ -150,7 +152,9 @@
 			<span class="text-[var(--color-text-muted)]">Current state:</span>
 			{status}
 			{#if adapter?.updated_at}
-				<span class="text-[var(--color-text-muted)]">, last saved {adapter.updated_at}</span>
+				<span class="text-[var(--color-text-muted)]"
+					>, last saved {formatTimestamp(adapter.updated_at)}</span
+				>
 			{/if}
 		</p>
 
@@ -212,14 +216,10 @@
 			{/if}
 
 			<div class="flex flex-wrap items-center gap-3">
-				<button
-					type="submit"
-					disabled={saving}
-					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
-				>
+				<Button type="submit" class="px-4" disabled={saving} aria-busy={saving}>
 					<SaveIcon class="size-4" aria-hidden="true" />
 					{saving ? 'Saving' : 'Save the adapter'}
-				</button>
+				</Button>
 				{#if saved}
 					<span class="text-sm text-[var(--color-ok)]" role="status">Saved.</span>
 				{/if}

@@ -137,9 +137,16 @@ panel_dir() {
 # pass but a gate that inspected nothing. GATES_BASE_REF names the revision the
 # change is against (the pull request base, or the commit the push started from)
 # and adds that diff, which is what the hooks get from staged files for free.
+# GATES_CHANGE_FILES, when set, is the caller's exact file list: a pre-push hook
+# knows the paths it is pushing even when they are already committed and the
+# worktree is clean.
 changed_files() {
 	local root base
 	root="$(repo_root)"
+	if [ -n "${GATES_CHANGE_FILES:-}" ]; then
+		printf '%s\n' "$GATES_CHANGE_FILES" | sed '/^$/d' | sort -u
+		return 0
+	fi
 	base="${GATES_BASE_REF:-}"
 	# The all-zero SHA is what a branch-creation push reports as its "before". It is
 	# a well-formed object name without naming an object, and a diff against it lists

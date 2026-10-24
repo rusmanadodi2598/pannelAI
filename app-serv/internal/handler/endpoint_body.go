@@ -15,6 +15,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
@@ -88,7 +89,23 @@ func decodeOptionalNodeTest(w http.ResponseWriter, r *http.Request) (schema.Test
 // permits: the value is immediately decoded into a typed struct and validated by the
 // caller, so it never propagates past this boundary.
 func decodeInto(r *http.Request, dst any) error {
-	return json.NewDecoder(io.LimitReader(r.Body, schema.MaxBodyBytes)).Decode(dst)
+	if contentType := r.Header.Get("Content-Type"); contentType != "" &&
+		!strings.HasPrefix(strings.ToLower(contentType), "application/json") {
+		return errors.New("content type must be application/json")
+	}
+	limited := &io.LimitedReader{R: r.Body, N: schema.MaxBodyBytes + 1}
+	dec := json.NewDecoder(limited)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(dst); err != nil {
+		return err
+	}
+	if err := dec.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return errors.New("trailing data after the JSON value")
+	}
+	if limited.N == 0 {
+		return errors.New("request body is too large")
+	}
+	return nil
 }
 
 // cleanTail keeps a bounded, English tail of a codec error so the envelope never

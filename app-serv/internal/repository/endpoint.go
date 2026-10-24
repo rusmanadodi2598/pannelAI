@@ -12,6 +12,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -21,6 +22,15 @@ import (
 type EndpointFilter struct {
 	ProviderID string
 	Status     string
+	// IDs narrows the list to an explicit set. An empty slice narrows nothing: a
+	// bulk action that named no ids never reaches here, the selector refuses first.
+	IDs []string
+	// Tag narrows to the rows whose tag set contains this label, which is the
+	// containment the GIN index in migration 000022 exists to answer. The value is
+	// already in the domain's canonical spelling.
+	Tag string
+	// AuthType narrows to rows authenticating one way, in the wire vocabulary.
+	AuthType string
 }
 
 // EndpointRepository is the storage boundary for upstream endpoints and their
@@ -70,8 +80,18 @@ type EndpointRepository interface {
 	// RecordKeyHealth persists a key's circuit-breaker transition after an
 	// upstream call, without touching its label, priority, or credential. The
 	// error count moves inside the store (one more failure, or a clear), because
-	// two failures that loaded the same starting value must not land as one.
+	// two failures that loaded the same starting value must not land as one. The
+	// per-class runs count the same way, so a burst of one class cannot count as
+	// one strike.
 	RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error
+
+	// MarkSelected stamps the moment rotation chose a credential, a different fact from the
+	// moment it last worked and the one rotation orders by (SPEC-API-001 §7.5). A keyed stamp
+	// advances the account's column in the same statement, because choosing a credential also
+	// chose the account. An empty keyID stamps the endpoint row alone: an OAuth or no-auth
+	// account carries its credential on the row and has no key. No health column is written,
+	// because the call this announces has not been made yet.
+	MarkSelected(ctx context.Context, endpointID, keyID string, at time.Time) error
 
 	// RecordUpstreamOutcome persists the endpoint's connection-parity transition
 	// (the use run and the last non-test upstream error) after a data-plane
@@ -82,6 +102,22 @@ type EndpointRepository interface {
 	// Reorder assigns new priorities to every endpoint of one provider, so a
 	// priority change cannot leave two endpoints claiming the same slot.
 	Reorder(ctx context.Context, providerID string, orderedIDs []string) error
+
+	// ProxyPins answers, for each pool id given, which providers route endpoints through
+	// it and how many endpoints each of those pins holds.
+	//
+	// The reference is an id string rather than a foreign key, so deleting a proxy cannot
+	// be refused by the schema and cannot be reported by it either: an operator erasing a
+	// batch of candidates has to be told which connections lose their egress path before
+	// the erasure happens.
+	ProxyPins(ctx context.Context, poolIDs []string) (map[string][]ProxyPin, error)
+}
+
+// ProxyPin is one provider's stake in one proxy pool: how many of its endpoints send
+// their egress through it.
+type ProxyPin struct {
+	ProviderID string
+	Endpoints  int
 }
 
 // NodeRepository is the storage boundary for custom provider nodes
@@ -103,4 +139,10 @@ type NodeRepository interface {
 	// Delete removes a node, leaving the endpoints that reference it to the caller:
 	// the reference is an id string, so no database constraint can carry it.
 	Delete(ctx context.Context, id string) error
+
+	// DeleteCascade removes a node together with the endpoints that reference it and
+	// the model rows stored under its id, in one transaction. Those references are id
+	// strings rather than foreign keys, so the erasure is either complete or absent:
+	// a node deleted alone would leave connections nothing can answer with.
+	DeleteCascade(ctx context.Context, id string) error
 }

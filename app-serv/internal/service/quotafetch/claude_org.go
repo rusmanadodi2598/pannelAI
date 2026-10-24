@@ -73,10 +73,10 @@ func claudeLegacy(ctx context.Context, creds Credentials, token string) Result {
 	settingsResponse, err := requestUsage(ctx, http.MethodGet, settingsURL,
 		claudeVersionedHeaders(token, creds.UsageHeaders), "")
 	if err != nil {
-		return Result{Message: fmt.Sprintf("Claude connected. Unable to fetch usage: %s", err)}
+		return Result{Message: fmt.Sprintf("Claude connected. Unable to fetch usage: %s", err), transient: true}
 	}
 	if settingsResponse.status < 200 || settingsResponse.status >= 300 {
-		return Result{Message: claudePermissionMsg}
+		return Result{Message: claudePermissionMsg, transient: transientStatus(settingsResponse.status)}
 	}
 
 	var settings claudeSettings
@@ -93,10 +93,10 @@ func claudeLegacy(ctx context.Context, creds Credentials, token string) Result {
 	usageResponse, err := requestUsage(ctx, http.MethodGet, usageURL,
 		claudeVersionedHeaders(token, creds.UsageHeaders), "")
 	if err != nil {
-		return Result{Plan: plan, Message: fmt.Sprintf("Claude connected. Unable to fetch usage: %s", err)}
+		return Result{Plan: plan, Message: fmt.Sprintf("Claude connected. Unable to fetch usage: %s", err), transient: true}
 	}
 	if usageResponse.status < 200 || usageResponse.status >= 300 {
-		return Result{Plan: plan, Message: claudeAdminNote}
+		return Result{Plan: plan, Message: claudeAdminNote, transient: transientStatus(usageResponse.status)}
 	}
 	if result, usable := claudeDocumentResult(usageResponse); usable {
 		result.Plan = plan

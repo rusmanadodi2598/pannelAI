@@ -65,7 +65,29 @@ func Fetch(ctx context.Context, family string, creds Credentials) Result {
 	bounded, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
-	return fetch(bounded, creds)
+	return countTransientFailure(family, fetch(bounded, creds))
+}
+
+// countTransientFailure turns a transport/5xx/429 read into Failed for the families
+// that follow the worker's backoff. The reference-patched families keep their soft
+// answer: their quota reads already work under the reference behaviour, and a 5xx
+// there must not start a backoff the panel never had.
+func countTransientFailure(family string, result Result) Result {
+	if result.transient && len(result.Quotas) == 0 && !softFailureFamily(family) {
+		result.Failed = true
+	}
+	return result
+}
+
+// softFailureFamily names the families whose quota reads carry a working reference
+// patch. Their 5xx and transport answers stay sentences on the card.
+func softFailureFamily(family string) bool {
+	switch family {
+	case "opencode-zen", "opencode-go", "qoder", "qoder-cn", "codebuddy-cn", "codebuddy-intl":
+		return true
+	default:
+		return false
+	}
 }
 
 // familyFetchers is the port of USAGE_HANDLERS, keyed by the registry provider id the

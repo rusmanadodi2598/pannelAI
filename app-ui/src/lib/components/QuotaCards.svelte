@@ -18,6 +18,7 @@
 	// The fold and selection sets are plain string arrays: the reactive-set lint rule this file once tripped
 	// (pass 004) is avoided by never holding a Set or Map in component state at all.
 	import { CONTROL_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		QUOTA_SOURCE_EXPLANATIONS,
 		quotaCardGroups,
@@ -74,10 +75,11 @@
 
 	// A bulk action must never reach across pages unseen (005 D4): the checkboxes the operator cannot
 	// see right now are not theirs to act on, so the selection starts clean whenever the pager lands
-	// on another server page. A poll over the SAME page must not wipe it, which is why the effect
-	// tracks the page and nothing else.
+	// on another server page or the filter narrows the list. A poll over the SAME page must not wipe
+	// it, which is why the effect tracks the page and the filter and nothing else.
 	$effect(() => {
 		void page;
+		void provider;
 		selected = [];
 	});
 
@@ -136,6 +138,18 @@
 		<p role="status" class="text-sm text-[var(--color-text-muted)]">{publishedNote}</p>
 	{/if}
 
+	{#if selected.length > 0}
+		<div
+			class="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2"
+		>
+			<span role="status" class="text-sm">{selected.length} selected</span>
+			<div class="flex gap-2">
+				<Button variant="outline" onclick={foldSelected}>Fold selected</Button>
+				<Button variant="outline" onclick={unfoldSelected}>Unfold selected</Button>
+			</div>
+		</div>
+	{/if}
+
 	{#each visibleGroups as group (cardKey(group))}
 		{@const key = cardKey(group)}
 		{@const name = cardName(group)}
@@ -157,27 +171,32 @@
 					/>
 				</label>
 				<div class="flex min-w-0 flex-1 flex-col justify-center">
-					<h3 class="truncate text-sm font-medium">{name}</h3>
+					<h3 class="break-all text-sm font-medium" title={name}>{name}</h3>
 					<span class="text-xs tabular-nums text-[var(--color-text-muted)]"
 						>{countsText(group)}</span
 					>
 				</div>
-				<button
-					type="button"
-					class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
-					aria-label={`Fold ${name}`}
+				<Button
+					variant="ghost"
+					size="icon"
+					aria-label={`${isFolded(key) ? 'Unfold' : 'Fold'} ${name}`}
 					aria-expanded={!isFolded(key)}
 					aria-controls={bodyId}
-					title={`Fold ${name}`}
+					title={`${isFolded(key) ? 'Unfold' : 'Fold'} ${name}`}
 					onclick={() => toggleFold(key)}
 				>
 					<FoldIcon class="size-4 {isFolded(key) ? '' : 'rotate-180'}" aria-hidden="true" />
-				</button>
+				</Button>
 			</div>
 
 			{#if !isFolded(key)}
+				<!-- The body scrolls its own overflow, so keyboard focus is how its lower rows are reached. -->
+				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 				<div
 					id={bodyId}
+					role="region"
+					aria-label={`${name} connections`}
+					tabindex="0"
 					class="flex max-h-80 flex-col gap-3 overflow-y-auto border-t border-[var(--color-border)] p-3"
 				>
 					<QuotaCardBody {group} {labels} published={publishedByEndpoint} {now} />
@@ -192,52 +211,27 @@
 		</p>
 	{/if}
 
-	{#if selected.length > 0}
-		<div
-			role="status"
-			class="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] p-2"
-		>
-			<span class="text-sm">{selected.length} selected</span>
-			<div class="flex gap-2">
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
-					onclick={foldSelected}
-				>
-					Fold selected
-				</button>
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
-					onclick={unfoldSelected}
-				>
-					Unfold selected
-				</button>
-			</div>
-		</div>
-	{/if}
-
 	{#if groups.length > 0}
 		<nav class="flex items-center justify-between gap-2" aria-label="Quota card pages">
-			<button
-				type="button"
-				class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] text-[var(--color-text-muted)] disabled:opacity-50"
+			<Button
+				variant="outline"
+				size="icon"
 				aria-label="Previous page"
 				disabled={page <= 1}
 				onclick={() => onpagechange(page - 1)}
 			>
 				<PreviousIcon class="size-4" aria-hidden="true" />
-			</button>
+			</Button>
 			<span class="text-sm tabular-nums">Page {page} of {pageCount}</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] text-[var(--color-text-muted)] disabled:opacity-50"
+			<Button
+				variant="outline"
+				size="icon"
 				aria-label="Next page"
 				disabled={page >= pageCount}
 				onclick={() => onpagechange(page + 1)}
 			>
 				<NextIcon class="size-4" aria-hidden="true" />
-			</button>
+			</Button>
 		</nav>
 	{/if}
 	<div class="flex flex-col gap-1 text-sm text-[var(--color-text-muted)]">

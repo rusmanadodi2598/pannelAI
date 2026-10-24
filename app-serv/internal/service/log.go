@@ -32,10 +32,15 @@ type ConsoleBuffer interface {
 }
 
 // LogService implements SPEC-API-001 §7.13.
+// DefaultRequestLogMaxRows bounds the table between retention runs; the purge
+// runs every two days, so a burst in between needs a ceiling of its own.
+const DefaultRequestLogMaxRows = 20000
+
 type LogService struct {
 	logs     repository.RequestLogRepository
 	settings *SettingsService
 	console  ConsoleBuffer
+	maxRows  int
 	clock    func() time.Time
 }
 
@@ -44,6 +49,9 @@ type LogServiceDeps struct {
 	Logs     repository.RequestLogRepository
 	Settings *SettingsService
 	Console  ConsoleBuffer
+	// MaxRows bounds request_logs after the time-based purge. Zero uses
+	// DefaultRequestLogMaxRows.
+	MaxRows int
 }
 
 // NewLogService validates deps and returns a ready service. The console buffer
@@ -56,7 +64,14 @@ func NewLogService(deps LogServiceDeps) (*LogService, error) {
 	if deps.Settings == nil {
 		return nil, domain.NewValidationError("settings service is required")
 	}
-	return &LogService{logs: deps.Logs, settings: deps.Settings, console: deps.Console, clock: time.Now}, nil
+	maxRows := deps.MaxRows
+	if maxRows <= 0 {
+		maxRows = DefaultRequestLogMaxRows
+	}
+	return &LogService{
+		logs: deps.Logs, settings: deps.Settings, console: deps.Console,
+		maxRows: maxRows, clock: time.Now,
+	}, nil
 }
 
 // Record stores one request log, applying the capture setting before the write.
@@ -124,9 +139,13 @@ func (s *LogService) Purge(ctx context.Context) (int64, error) {
 	cutoff := domain.RetentionCutoff(s.clock(), settings.Logging.RetentionDays)
 	deleted, err := s.logs.DeleteOlderThan(ctx, cutoff)
 	if err != nil {
-		return 0, fmt.Errorf("purging request logs: %w", err)
+		return deleted, fmt.Errorf("purging request logs: %w", err)
 	}
-	return deleted, nil
+	trimmed, err := s.logs.TrimTo(ctx, s.maxRows)
+	if err != nil {
+		return deleted + trimmed, fmt.Errorf("trimming request logs: %w", err)
+	}
+	return deleted + trimmed, nil
 }
 
 // Console returns the buffered console lines and the bound in force. A missing

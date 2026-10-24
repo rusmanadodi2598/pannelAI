@@ -15,6 +15,7 @@
 	import MediaProviderCard from '$lib/components/MediaProviderCard.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { listMediaProviders } from '$lib/api/media-providers';
 	import {
@@ -79,7 +80,9 @@
 			{kind === null ? 'Media providers' : mediaKindLabel(kind)}
 		</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			Providers for this kind, and the address each uses.
+			{kind === null
+				? 'Pick one of the six media kinds.'
+				: 'Providers for this kind, and the address each uses.'}
 		</p>
 	</div>
 
@@ -99,12 +102,13 @@
 				<ul class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
 					{#each MEDIA_KINDS as candidate (candidate)}
 						<li>
-							<a
+							<Button
 								href={resolve('/media-providers/[kind]', { kind: candidate })}
-								class="inline-flex min-h-11 items-center px-2 underline"
+								variant="ghost"
+								class="px-2 underline"
 							>
 								{mediaKindLabel(candidate)}
-							</a>
+							</Button>
 						</li>
 					{/each}
 				</ul>
@@ -115,15 +119,14 @@
 	{:else if error}
 		<StateMessage kind="error" title="These providers could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => void load(kind)}>Try again</button
-				>
-				<a
-					href={resolve('/providers')}
-					class="ms-2 inline-flex min-h-11 items-center px-2 underline">Back to the registry</a
-				>
+				<div class="flex flex-wrap items-center gap-2">
+					<Button variant="ghost" class="px-2 underline" onclick={() => void load(kind)}
+						>Try again</Button
+					>
+					<Button href={resolve('/providers')} variant="ghost" class="px-2 underline"
+						>Back to the registry</Button
+					>
+				</div>
 			{/snippet}
 		</StateMessage>
 	{:else if providers.length === 0}
@@ -133,8 +136,8 @@
 			description="No provider offers this kind. Open Providers to add one."
 		>
 			{#snippet action()}
-				<a href={resolve('/providers')} class="inline-flex min-h-11 items-center px-2 underline"
-					>Open Providers</a
+				<Button href={resolve('/providers')} variant="ghost" class="px-2 underline"
+					>Open Providers</Button
 				>
 			{/snippet}
 		</StateMessage>

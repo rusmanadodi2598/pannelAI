@@ -47,6 +47,10 @@ Thumbs.db
 tmp/
 .cache/
 
+# Local gate and probe dumps: scratch output redirected to .txt, never source
+/*.txt
+/app-ui/*.txt
+
 # Local tooling manifests (root only; sub-apps carry their own go.mod / package.json)
 /go.mod
 /lsp.json

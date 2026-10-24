@@ -4,8 +4,8 @@
 //
 // @file      internal/dataplane/engine_relay.go
 // @for       One resolved provider's leg of the §7.15 pipeline: walk the provider's credentials, translate the request once, call, and translate the answer back.
-// @uses      internal/domain, internal/reasoning, internal/schema, context, time.
-// @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first, so this leg walks the provider's healthy credentials before it gives up to the next combo member, and each attempt's outcome reports the identity it was attempted with so the chat plane records a failed call (register G17). It is also where the §7.15 reasoning injection runs, on the body the upstream receives. Keeping the leg here is what holds engine.go inside the AGENTS.md §1.1 line budget.
+// @uses      internal/domain, internal/reasoning, context, time.
+// @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first, so this leg walks the provider's healthy credentials before it gives up to the next combo member, and each attempt's outcome reports the identity it was attempted with so the chat plane records a failed call (register G17). It is also where the §7.15 reasoning injection runs, on the body the upstream receives. The health decision a finished leg makes lives in engine_outcome.go, so this file stays inside the AGENTS.md §1.1 line budget and the abort rule has one home.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -16,31 +16,26 @@ import (
 	"context"
 	"time"
 
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/reasoning"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
 // relayOnce handles one resolved provider: walk its credentials, translate, call,
-// and translate the answer back. The request is translated once, before any
-// credential is spent, because a translation failure would repeat identically for
-// every credential: it fails the leg with a zero outcome, since no upstream call
-// happened and there is no identity to record. Each credential that fails in a
-// failover-worthy way is excluded and the next healthy one tried; a request-shaped
-// refusal is handed back immediately, because the same body would be refused
-// identically everywhere. When no credential remains the leg reports the last
-// in-leg failure with the last attempted identity, and when the very first selection
-// is refused it reports the refusal with no identity at all.
-func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolution, sink FrameSink) (Outcome, error) {
+// and translate the answer back. Translation runs before any credential is spent,
+// because a translation failure would repeat identically for every one: the leg
+// fails with a zero outcome, since no call happened and there is no identity to
+// record. A failover-worthy failure excludes the credential and tries the next. A
+// request-shaped refusal comes straight back, because the same body would be
+// refused identically everywhere. An exhausted leg reports the last in-leg failure
+// with the last attempted identity; a refused first selection reports none.
+func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolution, sink FrameSink, budget *RequestBudget) (Outcome, error) {
 	body, err := upstreamBody(in, resolution)
 	if err != nil {
 		return Outcome{}, err
 	}
-	// Reasoning is normalized first and the token saver second, which is the
-	// reference's own order (chatCore.js applies thinking inside translation,
-	// then runs the savers on the final body): a saver that rewrites messages
-	// must see the body the upstream will actually receive, thinking fields
-	// included.
+	// Reasoning is normalized first and the token saver second: a saver that
+	// rewrites messages must see the body the upstream will actually receive,
+	// thinking fields included.
 	if e.thinking != nil {
 		body = e.thinking.Apply(ctx, body, reasoning.Call{
 			Wire:       resolution.Target,
@@ -64,10 +59,8 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		Streamed: in.Stream,
 	}
 	// finish serves one successful call and owns its resources: the body closes
-	// and the activity marker releases when it returns, whichever way it
-	// returns. The guards live here rather than in the loop body so exactly one
-	// attempt registers them, and so the loop stays free of a defer it would
-	// otherwise carry per iteration.
+	// and the activity marker releases when it returns, whichever way it returns.
+	// The guards sit here so one attempt registers them, not a defer per loop turn.
 	finish := func(upstream *Upstream, release func(), selection Selection, started time.Time) (Outcome, error) {
 		defer func() {
 			// reason: the body is read to completion by the caller of this
@@ -81,40 +74,53 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 			return outcome, err
 		}
 		outcome.LatencyMS = e.elapsedMS(started)
-		// A served request clears the key's parked state, which is what makes a
-		// recovered credential usable again on the next call. A bookkeeping
-		// failure must not replace the answer the upstream already produced:
-		// the failure path swallows the same class of error (recordFailure),
-		// and a 200 the client can use outranks a health row that did not
-		// land. reason: the served answer is the request's outcome.
-		if err := e.selector.RecordSuccess(ctx, selection); err != nil {
-			logx.Degraded(e.logger, "key health could not be recorded after a served call", err,
-				"endpoint_id", outcome.EndpointID, "key_id", selection.Key.ID())
-		}
+		e.recordServedOutcome(ctx, &outcome, selection)
 		return outcome, nil
 	}
 	spent := make(map[string]struct{})
+	// One snapshot per leg: the cursor advances per leg, not per attempt, so a
+	// failover cannot return to an account this request already spent
+	// (SPEC-API-001 §7.5).
+	plan, err := e.selector.BeginPlan(ctx, resolution.Provider.ID)
+	if err != nil {
+		return Outcome{}, err
+	}
+	if len(plan.endpoints) == 0 {
+		return Outcome{}, domain.NewNoProviderAvailableError(
+			"no upstream endpoint is configured for provider " + resolution.Provider.ID)
+	}
 	var memberErr error
 	for {
-		selection, err := e.selector.SelectNext(ctx, resolution.Provider.ID, spent)
-		if err != nil {
+		// Both bounds are checked before another credential is picked: an expired clock must
+		// not also cost the caller a selection, and the attempt count is what catches an
+		// upstream answering instantly with an error a thousand times.
+		if budget.expired(e.clock()) {
+			return outcome, budget.error(resolution.Provider.ID, memberErr)
+		}
+		selection, ok, nextErr := plan.Next(ctx, spent)
+		if nextErr != nil || !ok {
 			if memberErr != nil {
 				return outcome, memberErr
 			}
-			return Outcome{}, err
+			if nextErr != nil {
+				return Outcome{}, nextErr
+			}
+			return Outcome{}, domain.NewNoProviderAvailableError(
+				"every upstream endpoint for provider " + resolution.Provider.ID +
+					" is unavailable, has no usable key, or has spent its budget")
+		}
+		if !budget.spend() {
+			return outcome, budget.error(resolution.Provider.ID, memberErr)
 		}
 		spent[CandidateID(selection)] = struct{}{}
 		outcome.ProviderID = resolution.Provider.ID
 		outcome.EndpointID = selection.Endpoint.ID()
 		outcome.Model = resolution.ModelID
 
-		// The marker opens once the credential is known and closes when this
-		// attempt ends, whichever way it ends, so the drawing lights a node for
-		// exactly as long as the provider is being called.
-		// The combo the client addressed travels with it: the member resolved here
-		// is what answered, and the combo is the stage the request entered through,
-		// so the drawing can light both. A nil seam returns a release that does
-		// nothing.
+		// The marker spans exactly the call: it opens now and releases when this
+		// attempt ends, whichever way it ends. It carries the combo the client
+		// addressed beside the member that answered, so the live drawing lights
+		// both. A nil seam returns a release that does nothing.
 		release := e.markActive(ctx, ActiveMarker{
 			ProviderID: resolution.Provider.ID,
 			EndpointID: outcome.EndpointID,
@@ -122,6 +128,7 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 			Combo:      resolution.Combo.Name(),
 		})
 		started := e.clock()
+		budget.markCalled()
 		upstream, callErr := e.transport.Do(ctx, Call{
 			Provider: resolution.Provider,
 			Model:    resolution.Model,
@@ -134,16 +141,21 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 			// A chat completion is never idempotent: the upstream may have begun
 			// generating, so the transport caps its retries.
 			Idempotent: false,
+			// The walk's clock travels with the call: the transport clamps its
+			// in-attempt waits and its first-byte cap to what is left of it, so one
+			// credential cannot spend the whole walk before the next is tried.
+			Budget: budget,
 		})
 		if callErr != nil {
 			release()
-			e.recordFailure(ctx, selection, callErr)
+			action := e.recordFailure(ctx, resolution, selection, callErr)
 			outcome.LatencyMS = e.elapsedMS(started)
 			failure := e.translateCallError(callErr)
-			if failoverWorthy(AsError(failure).Code) {
+			if keepsWalking(action, AsError(failure).Code) {
 				memberErr = failure
 				continue
 			}
+			outcome.ChainStopped = action == domain.FailureActionStop
 			return outcome, failure
 		}
 		return finish(upstream, release, selection, started)
@@ -159,79 +171,4 @@ func (e *Engine) elapsedMS(started time.Time) int64 {
 		return 0
 	}
 	return ms
-}
-
-// answer reads one upstream answer into the outcome, in whichever of the three
-// shapes the call produced: a stream the client asked for, a stream folded back
-// for a client that asked for one body, or a plain non-streamed body.
-//
-// The dispatch lives here rather than inline so the relay leg reads as the
-// pipeline it is, and so the failure bookkeeping for every shape happens once.
-func (e *Engine) answer(
-	ctx context.Context,
-	upstream *Upstream,
-	resolution Resolution,
-	in Request,
-	sink FrameSink,
-	selection Selection,
-	started time.Time,
-	outcome *Outcome,
-) error {
-	body, usage, err := e.readAnswer(ctx, upstream, resolution, in, sink, outcome)
-	if err != nil {
-		e.recordFailure(ctx, selection, err)
-		outcome.LatencyMS = e.elapsedMS(started)
-		return err
-	}
-	outcome.Body = body
-	// A streamed answer reports its usage through the outcome inside relayStream,
-	// and hands back no separate body: overwriting here would discard the numbers
-	// the upstream sent and record the call as 0/0.
-	if usage != nil {
-		outcome.Usage = usage
-	}
-	return nil
-}
-
-// readAnswer performs the translation the call's shape calls for.
-func (e *Engine) readAnswer(
-	ctx context.Context,
-	upstream *Upstream,
-	resolution Resolution,
-	in Request,
-	sink FrameSink,
-	outcome *Outcome,
-) ([]byte, *schema.Usage, error) {
-	if in.Stream {
-		return nil, nil, e.relayStream(ctx, upstream, resolution, in, sink, outcome)
-	}
-	body, usage, err := e.readOneBody(upstream, resolution, in, outcome)
-	if err != nil {
-		return nil, nil, err
-	}
-	// A stream is cut frame by frame at the translator; a single body is cut here,
-	// after translation, because the Anthropic answer reports a cut as
-	// `stop_reason: "stop_sequence"` and only the served shape knows the text the
-	// client will actually read.
-	if in.ClientFormat == schema.FormatAnthropic {
-		return cutClaudeAnswer(body, in.stopSequences()), usage, nil
-	}
-	return body, usage, nil
-}
-
-// readOneBody folds or translates the upstream answer into the single body a
-// non-streamed client receives, whichever of the two shapes it came in.
-func (e *Engine) readOneBody(
-	upstream *Upstream,
-	resolution Resolution,
-	in Request,
-	outcome *Outcome,
-) ([]byte, *schema.Usage, error) {
-	if e.transport.ForcesStream(resolution.Provider) {
-		// The provider only answers a stream, so the single body the client
-		// asked for is folded back out of it. The fold returns the upstream's
-		// own non-streamed wire, so the same answer translator serves it.
-		return e.translateFolded(upstream, resolution, in, outcome)
-	}
-	return e.translateAnswer(upstream, resolution, in, outcome)
 }

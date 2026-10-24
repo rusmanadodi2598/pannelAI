@@ -13,8 +13,10 @@
 	// screen that does: neither read builds the request, and the bar is what needs the names.
 	// A registry that cannot be read leaves the select offering the value the URL carries and a line saying
 	// why, rather than silently showing "Any provider" over a filtered table.
+	import { Button } from '$lib/primitives/button/index.js';
 	import { onMount } from 'svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { listGatewayKeys } from '$lib/api/gateway-keys';
 	import { listProviders } from '$lib/api/providers';
@@ -29,11 +31,13 @@
 		/** Commits the three text filters together, so one submit is one navigation. */
 		onapply: (values: { endpointId: string; model: string; query: string }) => void;
 		onclear: () => void;
+		/** Repeats the request the URL describes, from the same toolbar surface. */
+		onrefresh: () => void;
 	};
 
 	type Option = { id: string; name: string };
 
-	let { search, onchange, onapply, onclear }: Props = $props();
+	let { search, onchange, onapply, onclear, onrefresh }: Props = $props();
 
 	let drafts = $state({ endpoint: '', model: '', query: '' });
 	let synced = $state('');
@@ -97,17 +101,17 @@
 	});
 
 	const fieldClass =
-		'min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm';
+		'min-h-11 w-full min-w-0 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm';
 </script>
 
 <form
-	class="flex flex-wrap items-end gap-3"
+	class="flex flex-wrap items-end gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3"
 	onsubmit={(event) => {
 		event.preventDefault();
 		onapply({ endpointId: drafts.endpoint, model: drafts.model, query: drafts.query });
 	}}
 >
-	<label class="flex flex-col gap-1 text-sm">
+	<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-40">
 		<span class="text-[var(--color-text-muted)]">Period</span>
 		<select
 			value={search.period}
@@ -120,7 +124,7 @@
 		</select>
 	</label>
 
-	<label class="flex flex-col gap-1 text-sm">
+	<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-36">
 		<span class="text-[var(--color-text-muted)]">Status</span>
 		<select
 			value={search.status}
@@ -134,7 +138,7 @@
 		</select>
 	</label>
 
-	<label class="flex flex-col gap-1 text-sm">
+	<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-56">
 		<span class="text-[var(--color-text-muted)]">Provider</span>
 		<select
 			value={search.providerId}
@@ -148,7 +152,7 @@
 		</select>
 	</label>
 
-	<label class="flex flex-col gap-1 text-sm">
+	<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-48">
 		<span class="text-[var(--color-text-muted)]">Gateway key</span>
 		<select
 			value={search.gatewayKeyId}
@@ -162,35 +166,40 @@
 		</select>
 	</label>
 
-	<label class="flex flex-col gap-1 text-sm">
+	<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-48">
 		<span class="text-[var(--color-text-muted)]">Endpoint id</span>
-		<input bind:value={drafts.endpoint} placeholder="ep_..." class={`w-48 ${fieldClass}`} />
+		<input bind:value={drafts.endpoint} placeholder="ep_..." class={fieldClass} />
 	</label>
 
-	<label class="flex flex-col gap-1 text-sm">
+	<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-36">
 		<span class="text-[var(--color-text-muted)]">Model</span>
-		<input bind:value={drafts.model} placeholder="gpt-4o" class={`w-40 ${fieldClass}`} />
+		<input bind:value={drafts.model} placeholder="gpt-4o" class={fieldClass} />
 	</label>
 
-	<label class="flex flex-col gap-1 text-sm">
+	<label class="flex w-full min-w-0 flex-col gap-1 text-sm sm:w-56">
 		<span class="text-[var(--color-text-muted)]">Search</span>
 		<input
 			type="search"
 			bind:value={drafts.query}
 			placeholder="Request id, error code"
-			class={`w-48 ${fieldClass}`}
+			class={fieldClass}
 		/>
 	</label>
 
-	<button
-		type="submit"
-		class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-		>Apply filters</button
-	>
+	<Button type="submit" variant="outline" class="w-full sm:w-auto">Apply filters</Button>
 
 	{#if filtered}
-		<button type="button" class="min-h-11 underline" onclick={onclear}>Clear filters</button>
+		<Button variant="ghost" class="underline" onclick={onclear}>Clear filters</Button>
 	{/if}
+
+	<div class="flex w-full min-w-0 flex-col gap-1 text-sm sm:ms-auto sm:w-auto">
+		<span class="text-[var(--color-text-muted)]" aria-hidden="true">Refresh</span>
+		<div
+			class="flex [&>div]:w-full [&_button]:w-full [&_button]:justify-center [&_button]:whitespace-nowrap sm:[&_button]:justify-start"
+		>
+			<RefreshControl {onrefresh} />
+		</div>
+	</div>
 </form>
 
 {#if providersNotice !== null || keysNotice !== null}

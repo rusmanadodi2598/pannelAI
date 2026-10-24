@@ -59,7 +59,7 @@ func fetchAntigravity(ctx context.Context, creds Credentials) Result {
 	response, err := requestUsage(ctx, http.MethodPost, endpoint,
 		antigravityHeaders(token, creds.UsageHeaders), googleProjectBody(project))
 	if err != nil {
-		return Result{Plan: plan, Message: fmt.Sprintf("%s error: %s", antigravityDisplay, err)}
+		return Result{Plan: plan, Message: fmt.Sprintf("%s error: %s", antigravityDisplay, err), transient: true}
 	}
 	// Both refusals say something the shared sentence cannot: chat with this token still
 	// works, so the operator must not be told the account is dead.

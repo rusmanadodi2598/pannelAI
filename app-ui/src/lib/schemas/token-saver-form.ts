@@ -70,6 +70,82 @@ export function tokenSaverSaveDraft(
 }
 
 /**
+ * The draft after a re-read, keeping every group the operator has edited but not saved.
+ *
+ * The page re-reads after each save, and that read also arrives after a retry. Resetting the whole draft
+ * there would throw away work in another section, which no save button was pressed to discard.
+ */
+export function tokenSaverMergeReload(
+	draft: TokenSaver,
+	server: TokenSaver,
+	reloaded: TokenSaver
+): TokenSaver {
+	const current = tokenSaverCopy(draft);
+	const clean = tokenSaverCopy(reloaded);
+
+	return {
+		rtk: tokenSaverSectionDirty('rtk', server, current) ? current.rtk : clean.rtk,
+		headroom: tokenSaverSectionDirty('headroom', server, current)
+			? current.headroom
+			: clean.headroom,
+		ponytail: tokenSaverSectionDirty('ponytail', server, current)
+			? current.ponytail
+			: clean.ponytail
+	};
+}
+
+/**
+ * The draft after a save, and whether the saved group still matches what was sent.
+ *
+ * A group edited while its PUT was in flight is kept as the draft and stays dirty; the response becomes
+ * the new server state. The other groups are preserved only when they carry unsaved edits.
+ */
+export function tokenSaverSaveResult(
+	section: TokenSaverSection,
+	draft: TokenSaver,
+	server: TokenSaver,
+	response: TokenSaver,
+	submitted: TokenSaver
+): { draft: TokenSaver; saved: boolean } {
+	const current = tokenSaverCopy(draft);
+	const clean = tokenSaverCopy(response);
+	const activeChanged = tokenSaverSectionDirty(section, submitted, current);
+
+	const keep = {
+		rtk: section === 'rtk' ? activeChanged : tokenSaverSectionDirty('rtk', server, current),
+		headroom:
+			section === 'headroom' ? activeChanged : tokenSaverSectionDirty('headroom', server, current),
+		ponytail:
+			section === 'ponytail' ? activeChanged : tokenSaverSectionDirty('ponytail', server, current)
+	};
+
+	return {
+		draft: {
+			rtk: keep.rtk ? current.rtk : clean.rtk,
+			headroom: keep.headroom ? current.headroom : clean.headroom,
+			ponytail: keep.ponytail ? current.ponytail : clean.ponytail
+		},
+		saved: !activeChanged
+	};
+}
+
+/** The draft with one group restored from the last read, leaving the other two untouched. */
+export function tokenSaverDiscardSection(
+	section: TokenSaverSection,
+	draft: TokenSaver,
+	server: TokenSaver
+): TokenSaver {
+	const current = tokenSaverCopy(draft);
+	const clean = tokenSaverCopy(server);
+
+	return {
+		rtk: section === 'rtk' ? clean.rtk : current.rtk,
+		headroom: section === 'headroom' ? clean.headroom : current.headroom,
+		ponytail: section === 'ponytail' ? clean.ponytail : current.ponytail
+	};
+}
+
+/**
  * The allowlist in canonical order, with unknown names kept at the end in the order they arrived.
  *
  * A stable order keeps a round-trip from reordering a stored list for no reason, and it makes the saved

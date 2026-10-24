@@ -13,11 +13,11 @@
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { fetchSettings, patchProviderStrategy } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
+	import { type ProviderStrategy } from '$lib/schemas/settings-provider-overrides';
 	import {
 		CREDENTIAL_ROTATION_LABELS,
-		type CredentialRotation,
-		type ProviderStrategy
-	} from '$lib/schemas/settings';
+		type CredentialRotation
+	} from '$lib/schemas/settings-strategies';
 
 	let { providerId }: { providerId: string } = $props();
 
@@ -121,8 +121,9 @@
 	// The switch reads as a control the same height and border as the section's action buttons, so it no
 	// longer sits as a bare checkbox beside a full-height one. A `role="switch"` button is the accessible
 	// equivalent of the checkbox it replaces: the on/off state is announced, and one click toggles it.
+	// The flip carries the state; the wash is what answers the pointer that has not flipped it yet.
 	const trackClass =
-		'relative inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 text-sm disabled:opacity-50';
+		'relative inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 text-sm transition-colors hover:bg-[var(--color-state-hover)] active:bg-[var(--color-state-press)] disabled:opacity-50';
 </script>
 
 <div class="flex flex-col gap-1">

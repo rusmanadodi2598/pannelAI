@@ -1,4 +1,4 @@
-/* The live drawing's motion tokens (DESIGN.md §2.1, §11; draft 015 F1).
+/* The live drawing's motion tokens (DESIGN.md §2.1, §11).
  *
  * A separate file for the same reason `quota-cap.ts` left `quota.ts`: app.css is the palette and alias
  * layer that the contrast test reads, and these keyframes belong to one screen's drawing. app.css imports
@@ -6,23 +6,27 @@
  * (SPEC-UI §10.6).
  *
  * The reference fork draws a routing edge as three strokes at different speeds and widths with particles
- * travelling along it, and a gateway that pulses while it is routing. The panel reproduces that motion in
- * its own tokens rather than the reference's neon. One cycle moves the dash offset exactly -100 in the
- * path's own units (`pathLength="100"`), so every pattern below divides 100 a whole number of times and
- * the loop has no seam. Each of these runs only while a provider is routing and only while frames are
- * arriving, and `motion-reduce:animate-none` stops every one of them.
+ * travelling along it, and a gateway that pulses while it is routing. The panel reproduces the shape in
+ * its own cadence: no stepped timing, no rotation, no text glow, and no cycle shorter than half a second.
+ * One cycle moves the dash offset exactly -100 in the path's own units (`pathLength="100"`), so every
+ * pattern below divides 100 a whole number of times and the loop has no seam. Each of these runs only
+ * while a provider is routing and only while frames are arriving, and `motion-reduce:animate-none` stops
+ * every one of them.
+ *
+ * The hub is the single focal mover. Its ring is the one loop the screen keeps, and it is the one glow
+ * the dose cap allows; everything else carries state by colour and settles once on entry.
  */
 
 @theme {
-	--animate-beam-halo: beam-flicker 0.18s steps(2) infinite;
-	--animate-beam-plasma: beam-dash 0.18s linear infinite, beam-flicker 0.22s steps(3) infinite;
-	--animate-beam-core: beam-dash 0.22s linear infinite;
-	--animate-beam-travel: beam-dash 0.4s linear infinite;
-	--animate-beam-spark: beam-dash 0.4s linear infinite, beam-blink 0.35s linear infinite;
-	--animate-router-pulse: router-pulse 0.75s ease-in-out infinite;
-	--animate-router-shake: router-shake 0.45s ease-in-out infinite;
-	--animate-router-flicker: router-flicker 0.7s ease-in-out infinite;
-	--animate-node-enter: node-enter 0.3s ease-out 1;
+	--animate-beam-halo: beam-breathe 1.6s ease-in-out infinite;
+	--animate-beam-plasma: beam-dash 0.9s linear infinite;
+	--animate-beam-core: beam-dash 0.6s linear infinite;
+	--animate-beam-travel: beam-dash 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+	--animate-beam-spark: beam-dash 1.1s linear infinite, beam-pulse 1.1s ease-in-out infinite;
+	--animate-router-pulse: router-pulse 1.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+	--animate-router-shake: router-breathe 1.5s ease-in-out infinite;
+	--animate-router-flicker: router-label 1.5s ease-in-out infinite;
+	--animate-node-enter: node-enter 0.26s cubic-bezier(0.22, 1, 0.36, 1) 1;
 
 	/* A card joining the drawing arrives rather than appearing. The drawing is one picture an operator
 	 * learns, and a node that pops into place makes them find the change; the box's own height transitions
@@ -32,7 +36,7 @@
 	@keyframes node-enter {
 		from {
 			opacity: 0;
-			scale: 0.96;
+			transform: translateY(3px) scale(0.98);
 		}
 	}
 
@@ -42,74 +46,60 @@
 		}
 	}
 
-	@keyframes beam-flicker {
+	/* The halo's slow envelope, in place of the stepped flicker that read as a fault. */
+	@keyframes beam-breathe {
 		0%,
 		100% {
-			opacity: 0.85;
+			opacity: 0.28;
 		}
-		40% {
-			opacity: 1;
-		}
-		55% {
+		50% {
 			opacity: 0.55;
 		}
-		70% {
-			opacity: 1;
-		}
 	}
 
-	/* The sparks' own blink, which is the reference's `0;1;0;0;1;0` value list as keyframes. */
-	@keyframes beam-blink {
-		0% {
-			opacity: 0;
-		}
-		17% {
-			opacity: 1;
-		}
-		33%,
-		50% {
-			opacity: 0;
-		}
-		67% {
-			opacity: 1;
-		}
+	/* The sparks' soft phase, in place of the hard blink. */
+	@keyframes beam-pulse {
+		0%,
 		100% {
-			opacity: 0;
+			opacity: 0.45;
+		}
+		50% {
+			opacity: 0.9;
 		}
 	}
 
+	/* The hub's one loop: a composed heartbeat at a low ring alpha, not a heavy glow. */
 	@keyframes router-pulse {
 		0%,
 		100% {
 			transform: scale(1);
-			box-shadow: 0 0 8px color-mix(in srgb, var(--color-ok) 45%, transparent);
+			box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ok) 20%, transparent);
 		}
 		50% {
-			transform: scale(1.06);
-			box-shadow: 0 0 14px color-mix(in srgb, var(--color-ok) 70%, transparent);
+			transform: scale(1.03);
+			box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-ok) 20%, transparent);
 		}
 	}
 
-	@keyframes router-shake {
+	/* Activity at the hub reads as breathing. Rotation read as a device shaking and as a fault. */
+	@keyframes router-breathe {
 		0%,
 		100% {
-			transform: rotate(0deg) scale(1);
+			transform: scale(1);
 		}
-		25% {
-			transform: rotate(-5deg) scale(1.08);
-		}
-		75% {
-			transform: rotate(5deg) scale(1.08);
+		50% {
+			transform: scale(1.04);
 		}
 	}
 
-	@keyframes router-flicker {
+	/* The 12px label stays sharp; only its opacity moves. */
+	@keyframes router-label {
 		0%,
 		100% {
-			text-shadow: 0 0 6px color-mix(in srgb, var(--color-ok) 55%, transparent);
+			opacity: 0.9;
 		}
 		50% {
-			text-shadow: 0 0 10px color-mix(in srgb, var(--color-ok) 80%, transparent);
+			opacity: 1;
 		}
 	}
 }

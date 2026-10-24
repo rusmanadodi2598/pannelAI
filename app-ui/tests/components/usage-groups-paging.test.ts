@@ -46,6 +46,7 @@ function renderTable(count: number): void {
 			sort: '' as const,
 			order: 'desc' as const,
 			providerNames: null,
+			recordPath: null,
 			onsort: () => {}
 		}
 	});
@@ -112,6 +113,7 @@ describe('UsageGroupTable paging', () => {
 				sort: 'requests' as const,
 				order: 'asc' as const,
 				providerNames: null,
+				recordPath: null,
 				onsort: () => {}
 			}
 		});

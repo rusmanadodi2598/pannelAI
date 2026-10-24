@@ -21,8 +21,8 @@ func TestLoad_EmbeddedRegistryDecodes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if idx.Count() != 36 {
-		t.Fatalf("Count() = %d, want the owner's KEEP set of 36 providers", idx.Count())
+	if idx.Count() != 37 {
+		t.Fatalf("Count() = %d, want the owner's KEEP set of 37 providers", idx.Count())
 	}
 	if idx.Revision() == "" {
 		t.Fatal("Revision() must name the reference revision the document came from")
@@ -80,11 +80,49 @@ func TestLoad_EmbeddedRegistryDecodes(t *testing.T) {
 		t.Fatalf("xai auth_modes = %v, want both oauth and apikey", xai.AuthModes)
 	}
 
-	// The client secret must never have been ported: the reference checkout holds
-	// live third-party credentials and this document is committed.
+	// A client secret never enters this committed document, for any provider. The
+	// reference ships live client material for the Google installed-app families,
+	// and either half of it copied here would be a credential in git history. The
+	// type has no such member and the document is decoded with unknown fields
+	// rejected, so the guarantee below is the load failure; these two assertions
+	// hold the other halves: the id is stripped from the families whose client the
+	// deployment supplies (internal/config/oauth_clients.go), and no provider keeps
+	// a secret the loader could have carried.
+	runtimeClients := map[string]bool{"antigravity": true, "gemini-cli": true, "gemini": true}
 	for _, p := range idx.All() {
-		if p.OAuth != nil && strings.Contains(strings.ToLower(p.OAuth.ClientSecret), "gocspx") {
-			t.Fatalf("provider %s carries a live client secret", p.ID)
+		if p.OAuth == nil {
+			continue
 		}
+		if runtimeClients[p.ID] && p.OAuth.ClientID != "" {
+			t.Fatalf("provider %s carries a client id, want none: the client belongs to the deployment", p.ID)
+		}
+	}
+
+	// The gemini entry declared nothing but that published id, so with the id
+	// stripped its oauth block declares nothing and must be absent rather than
+	// empty: an empty block would read as a flow the panel could offer.
+	if gemini, ok := idx.Provider("gemini"); ok && gemini.OAuth != nil {
+		t.Fatal("gemini carries an oauth block, want none now that its client id is runtime-only")
+	}
+}
+
+// TestLoadRefusesARegistryThatStatesAClientSecret pins the guarantee that a client
+// secret cannot come back through the document: the field does not exist, and the
+// decoder rejects a member it does not know, so a registry that ever states one
+// fails to load rather than carrying it.
+func TestLoadRefusesARegistryThatStatesAClientSecret(t *testing.T) {
+	_, err := loadFixture(t, `
+providers:
+  - id: prow
+    category: oauth
+    oauth:
+      client_id: cid
+      client_secret: a-stated-secret
+`)
+	if err == nil {
+		t.Fatal("load error = nil, want a document stating a client secret refused")
+	}
+	if !strings.Contains(err.Error(), "client_secret") {
+		t.Fatalf("load error = %v, want it to name the member it would not carry", err)
 	}
 }

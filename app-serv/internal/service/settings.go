@@ -96,6 +96,10 @@ func (s *SettingsService) Update(ctx context.Context, patch domain.SettingsPatch
 	if err != nil {
 		return domain.Settings{}, err
 	}
+	if patch.Network != nil && patch.Network.OutboundProxyURL != nil {
+		merged := mergeProxyPassword(*patch.Network.OutboundProxyURL, current.Network.OutboundProxyURL)
+		patch.Network.OutboundProxyURL = &merged
+	}
 	next := current
 	if err := next.Update(patch); err != nil {
 		return domain.Settings{}, err

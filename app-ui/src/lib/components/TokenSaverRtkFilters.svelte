@@ -35,7 +35,7 @@
 	<ul class="flex flex-col gap-1">
 		{#each RTK_FILTERS as filter (filter.name)}
 			<li>
-				<label class="flex items-start gap-3 text-sm">
+				<label class="flex min-h-11 items-start gap-3 text-sm">
 					<input
 						type="checkbox"
 						class="mt-1 size-4"

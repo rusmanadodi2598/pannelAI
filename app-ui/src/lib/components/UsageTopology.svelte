@@ -6,8 +6,8 @@
 	// can lose their place in is worse than a fixed drawing they can learn. The box itself lives in
 	// `UsageTopologyDrawing.svelte`.
 	//
-	// The drawing is hidden from assistive technology, and the live row above states in words the facts it
-	// encodes; this frame carries the drawing alone. Only what is happening gets stated, and that rule is
+	// The drawing is hidden from assistive technology, and the live panel's header states in words the facts
+	// it encodes; this frame carries the drawing alone. Only what is happening gets stated, and that rule is
 	// the reason: the provider list is what the node labels already say, and an idle screen's "no request is
 	// in flight" repeats the absence of the colour, so neither is a sentence worth screen space.
 	//
@@ -51,14 +51,12 @@
 	);
 </script>
 
-<figure
-	class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-2 sm:p-4"
->
+<figure class="flex flex-col gap-3">
 	{#if providers.length === 0}
 		<StateMessage
 			kind="empty"
-			title="No provider is configured"
-			description="Nothing to route yet. Open Providers to add one."
+			title="No provider to draw"
+			description="The provider list is empty or unavailable. Open Providers to check it."
 		>
 			{#snippet action()}
 				<a href={resolve('/providers')} class="inline-flex min-h-11 items-center px-2 underline"
@@ -69,11 +67,21 @@
 	{:else}
 		<!-- Mobile keeps the desktop drawing at its own width inside a scroller, so the page never
 		     scrolls sideways while a phone never draws a shrunken one. The inner width is the
-		     narrowest box the node caps still fill; past it the drawing stops shrinking. -->
-		<div class="mx-2 overflow-x-auto sm:mx-16">
+		     narrowest box the node caps still fill; past it the drawing stops shrinking. The region is
+		     focusable and labelled so a keyboard reader can scroll the part the geometry cannot compress. -->
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+		<div
+			class="mx-0 overflow-x-auto sm:mx-4"
+			role="region"
+			aria-label="Live routing drawing"
+			tabindex="0"
+		>
 			<div class="min-w-[520px]">
 				<UsageTopologyDrawing {layout} inFlight={active.length} {live} />
 			</div>
 		</div>
+		<p class="hidden px-1 text-xs text-[var(--color-text-muted)] max-[519px]:block">
+			Scroll sideways to see every node.
+		</p>
 	{/if}
 </figure>

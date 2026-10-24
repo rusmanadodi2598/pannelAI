@@ -80,27 +80,29 @@ func TestRelay_ExhaustedChainReportsFirstStatusAndLastMessage(t *testing.T) {
 
 // TestRelay_FailureClassDecidesWhetherTheChainContinues pins F2's rule per
 // status: a request-shaped 4xx stops the chain and reaches the client as
-// UPSTREAM_REJECTED without touching any key, while the credential-shaped ones
-// (401/402/403/404/429) fail over to the next account, whose first failure
-// parks the refused key.
+// UPSTREAM_REJECTED without touching any key, the credential-shaped ones
+// (401/402/403/429) fail over to the next account and park the refused key, and
+// a 404 fails over for the same reason but parks nothing, because another
+// account may well serve the model the first one does not have.
 func TestRelay_FailureClassDecidesWhetherTheChainContinues(t *testing.T) {
 	cases := []struct {
-		name      string
-		status    int
-		wantStop  bool
-		wantCalls int
+		name        string
+		status      int
+		wantStop    bool
+		wantCalls   int
+		wantKeyPark bool
 	}{
 		{name: "400 stops the chain", status: http.StatusBadRequest, wantStop: true, wantCalls: 1},
 		{name: "406 stops the chain", status: http.StatusNotAcceptable, wantStop: true, wantCalls: 1},
 		{name: "409 stops the chain", status: http.StatusConflict, wantStop: true, wantCalls: 1},
 		{name: "422 stops the chain", status: http.StatusUnprocessableEntity, wantStop: true, wantCalls: 1},
-		{name: "401 fails over", status: http.StatusUnauthorized, wantCalls: 2},
-		{name: "402 fails over", status: http.StatusPaymentRequired, wantCalls: 2},
-		{name: "403 fails over", status: http.StatusForbidden, wantCalls: 2},
-		{name: "404 fails over", status: http.StatusNotFound, wantCalls: 2},
+		{name: "401 fails over and parks", status: http.StatusUnauthorized, wantCalls: 2, wantKeyPark: true},
+		{name: "402 fails over and parks", status: http.StatusPaymentRequired, wantCalls: 2, wantKeyPark: true},
+		{name: "403 fails over and parks", status: http.StatusForbidden, wantCalls: 2, wantKeyPark: true},
+		{name: "404 fails over and parks nothing", status: http.StatusNotFound, wantCalls: 2},
 		// One extra call: the transport retries a 429 once on the same target
 		// before the credential is excluded (retry.go MaxPOSTRetries).
-		{name: "429 fails over", status: http.StatusTooManyRequests, wantCalls: 3},
+		{name: "429 fails over and parks", status: http.StatusTooManyRequests, wantCalls: 3, wantKeyPark: true},
 	}
 
 	for _, tc := range cases {
@@ -135,6 +137,15 @@ func TestRelay_FailureClassDecidesWhetherTheChainContinues(t *testing.T) {
 			}
 			if outcome.ProviderID != "beta" {
 				t.Fatalf("Outcome.ProviderID = %q, want beta (the account that served)", outcome.ProviderID)
+			}
+			if !tc.wantKeyPark {
+				if refused, written := repo.health["uky-ep-alpha"]; written {
+					t.Fatalf("refused key earned a health write %+v, want none for a refusal the credential did not cause", refused)
+				}
+				if _, seen := repo.outcome["ep-alpha"]; !seen {
+					t.Fatal("endpoint parity for the refusing account = none, want the refusal visible to the operator")
+				}
+				return
 			}
 			parked := repo.health["uky-ep-alpha"]
 			if parked.Status() != domain.UpstreamKeyError {

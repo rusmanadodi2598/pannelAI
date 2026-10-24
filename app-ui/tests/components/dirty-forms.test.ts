@@ -20,11 +20,11 @@ import TokenSaverForm from '../../src/lib/components/TokenSaverForm.svelte';
 import { hasDirtyForm } from '../../src/lib/dirty-guard';
 import {
 	schemaLoggingSettingsForm,
-	schemaRoutingSettingsForm,
+	schemaRoutingSettings,
 	schemaSecuritySettingsForm
 } from '$lib/schemas/settings';
 import { schemaTokenSaver } from '$lib/schemas/token-saver';
-import { routingFormDocument, settingsDocument } from '../support/settings-document';
+import { settingsDocument } from '../support/settings-document';
 import { stubProxies } from '../support/proxy-stub';
 import { tokenSaverDocument } from '../support/token-saver-stub';
 import { forEachCase } from '../support/tables';
@@ -69,7 +69,7 @@ const CASES: FormCase[] = [
 		mount: async () => {
 			render(SettingsRoutingTab, {
 				props: {
-					loaded: schemaRoutingSettingsForm.parse(routingFormDocument()),
+					loaded: schemaRoutingSettings.parse(settingsDocument().routing),
 					onrefresh: noop
 				}
 			});
@@ -163,7 +163,7 @@ describe('the drafted forms', () => {
 	it('forgets a draft when its form unmounts, so a closed screen cannot block a navigation', async () => {
 		render(SettingsRoutingTab, {
 			props: {
-				loaded: schemaRoutingSettingsForm.parse(routingFormDocument()),
+				loaded: schemaRoutingSettings.parse(settingsDocument().routing),
 				onrefresh: noop
 			}
 		});

@@ -108,6 +108,7 @@ func (l *stubUsageLogs) GetByRequestID(_ context.Context, requestID string) (dom
 	return l.entry, nil
 }
 func (l *stubUsageLogs) DeleteOlderThan(context.Context, time.Time) (int64, error) { return 0, nil }
+func (l *stubUsageLogs) TrimTo(context.Context, int) (int64, error)                { return 0, nil }
 
 // missingUsageLogs is a RequestLogRepository whose every read misses, which is
 // the state the detail route must answer with capture on and no log block.
@@ -121,6 +122,7 @@ func (missingUsageLogs) GetByRequestID(context.Context, string) (domain.RequestL
 	return domain.RequestLog{}, domain.ErrRequestLogNotFound
 }
 func (missingUsageLogs) DeleteOlderThan(context.Context, time.Time) (int64, error) { return 0, nil }
+func (missingUsageLogs) TrimTo(context.Context, int) (int64, error)                { return 0, nil }
 
 // newUsageHandlerFixture wires the real handler over the in-memory repositories
 // through the real service, so the request-to-response path a route test drives

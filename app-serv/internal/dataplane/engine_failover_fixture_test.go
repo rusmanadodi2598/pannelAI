@@ -59,6 +59,22 @@ func credentialRefusingUpstream(t *testing.T, calls *int, refused string, status
 	return server
 }
 
+// alwaysRefusingUpstream answers every call with the given status, whichever
+// credential made it and whichever model was asked. A per-model refusal cannot
+// express "this answer is not about the model", and a per-credential one cannot
+// say "every account gets the same answer".
+func alwaysRefusingUpstream(t *testing.T, calls *int, status int) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		*calls++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(`{"error":{"message":"nothing here answers that"}}`))
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
 // probeRequest is the shape an upstream double decodes from a call.
 type probeRequest struct {
 	Model string `json:"model"`

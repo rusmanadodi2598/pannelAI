@@ -16,9 +16,28 @@
 // @since     2026-09-26
 package schema
 
-import "github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+import (
+	"net/url"
+	"strings"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+)
 
 // SettingsResponseFrom maps the service-owned object to the wire shape.
+// maskedProxyURL keeps the username and host a panel needs to edit, and replaces
+// the password with the shared mask so a session read cannot replay it.
+func maskedProxyURL(raw string) string {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || parsed.User == nil {
+		return raw
+	}
+	if _, hasPassword := parsed.User.Password(); !hasPassword {
+		return raw
+	}
+	parsed.User = url.UserPassword(parsed.User.Username(), domain.ProxyPasswordMask)
+	return parsed.String()
+}
+
 func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 	return SettingsResponse{
 		Security: SecuritySettingsResponse{
@@ -31,10 +50,13 @@ func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 			StickyLimit:        s.Routing.StickyLimit,
 			FallbackStrategy:   string(s.Routing.FallbackStrategy),
 			ProviderStrategies: strategiesOrEmpty(s.Routing.ProviderStrategies),
+			KeyPark:            effectiveKeyPark(s.Routing.KeyPark),
+			Failover:           effectiveFailover(s.Routing.Failover),
+			FailureClasses:     failureClassesResponse(s.Routing.FailureClasses),
 		},
 		Network: NetworkSettingsResponse{
 			OutboundProxyEnabled:  s.Network.OutboundProxyEnabled,
-			OutboundProxyURL:      s.Network.OutboundProxyURL,
+			OutboundProxyURL:      maskedProxyURL(s.Network.OutboundProxyURL),
 			OutboundNoProxy:       s.Network.OutboundNoProxy,
 			OutboundProxyStrategy: proxyStrategyOrDefault(s.Network.OutboundProxyStrategy),
 			ProviderProxies:       providerProxiesOrEmpty(s.Network.ProviderProxies),

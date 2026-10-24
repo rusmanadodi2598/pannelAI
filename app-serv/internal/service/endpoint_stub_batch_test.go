@@ -42,6 +42,138 @@ func (s *memEndpointStore) CreateBatch(_ context.Context, endpoints []domain.Ups
 	return nil
 }
 
+// UpdateBulk mirrors the real transaction: every row is checked before any is applied,
+// so a test can prove a bulk action that failed wrote nothing.
+func (s *memEndpointStore) UpdateBulk(_ context.Context, endpoints []domain.UpstreamEndpoint) error {
+	for i, endpoint := range endpoints {
+		if _, ok := s.byID[endpoint.ID()]; !ok {
+			return rowError(i, domain.ErrEndpointNotFound)
+		}
+	}
+	for _, endpoint := range endpoints {
+		s.store(endpoint)
+		s.keysByEndpoint[endpoint.ID()] = endpoint.Keys()
+	}
+	return nil
+}
+
+// UpdateKeysBulk mirrors the real transaction across keys, which live per endpoint
+// rather than in one table the fake can walk.
+func (s *memEndpointStore) UpdateKeysBulk(_ context.Context, keys []domain.UpstreamKey) error {
+	type slot struct {
+		endpointID string
+		index      int
+	}
+	found := make([]slot, len(keys))
+	for i, key := range keys {
+		stored := s.keysByEndpoint[key.EndpointID()]
+		index := -1
+		for j, candidate := range stored {
+			if candidate.ID() == key.ID() {
+				index = j
+				break
+			}
+		}
+		if index < 0 {
+			return rowError(i, domain.NewNotFoundError("upstream key not found"))
+		}
+		found[i] = slot{endpointID: key.EndpointID(), index: index}
+	}
+	for i, key := range keys {
+		stored := s.keysByEndpoint[found[i].endpointID]
+		stored[found[i].index] = key
+		s.keysByEndpoint[found[i].endpointID] = stored
+	}
+	return nil
+}
+
+// DeleteBulk mirrors the real delete: a row that is not there aborts the whole set
+// rather than removing the rest.
+func (s *memEndpointStore) DeleteBulk(_ context.Context, ids []string) error {
+	for i, id := range ids {
+		if _, ok := s.byID[id]; !ok {
+			return rowError(i, domain.ErrEndpointNotFound)
+		}
+	}
+	for _, id := range ids {
+		endpoint := s.byID[id]
+		delete(s.labelKey, accountKey(endpoint.ProviderID(), endpoint.Label()))
+		delete(s.keysByEndpoint, id)
+		delete(s.byID, id)
+	}
+	return nil
+}
+
+// ApplyKeyChanges mirrors the real single transaction: every account, credential and
+// deletion is checked before any of them is applied, so a refused bulk key action can be
+// proven to have left the store exactly as it was.
+func (s *memEndpointStore) ApplyKeyChanges(
+	_ context.Context, endpoints []domain.UpstreamEndpoint, keys []domain.UpstreamKey, deletedKeyIDs []string,
+) error {
+	for i, endpoint := range endpoints {
+		if _, ok := s.byID[endpoint.ID()]; !ok {
+			return rowError(i, domain.ErrEndpointNotFound)
+		}
+	}
+	type slot struct {
+		endpointID string
+		index      int
+	}
+	found := make([]slot, len(keys))
+	for i, key := range keys {
+		stored := s.keysByEndpoint[key.EndpointID()]
+		index := -1
+		for j, candidate := range stored {
+			if candidate.ID() == key.ID() {
+				index = j
+				break
+			}
+		}
+		if index < 0 {
+			return rowError(i, domain.NewNotFoundError("upstream key not found"))
+		}
+		found[i] = slot{endpointID: key.EndpointID(), index: index}
+	}
+	for i, id := range deletedKeyIDs {
+		if _, ok := s.keysByEndpoint[findKeyOwner(s, id)]; !ok {
+			return rowError(i, domain.NewNotFoundError("upstream key not found"))
+		}
+	}
+	for _, endpoint := range endpoints {
+		s.store(endpoint)
+		s.keysByEndpoint[endpoint.ID()] = endpoint.Keys()
+	}
+	for i, key := range keys {
+		stored := s.keysByEndpoint[found[i].endpointID]
+		stored[found[i].index] = key
+		s.keysByEndpoint[found[i].endpointID] = stored
+	}
+	for _, id := range deletedKeyIDs {
+		owner := findKeyOwner(s, id)
+		kept := make([]domain.UpstreamKey, 0, len(s.keysByEndpoint[owner]))
+		for _, key := range s.keysByEndpoint[owner] {
+			if key.ID() != id {
+				kept = append(kept, key)
+			}
+		}
+		s.keysByEndpoint[owner] = kept
+	}
+	return nil
+}
+
+// findKeyOwner answers which account holds a credential id, which is how the double
+// reaches a key the way the real table does: through the endpoint it belongs to.
+func findKeyOwner(s *memEndpointStore, keyID string) string {
+	for endpointID, keys := range s.keysByEndpoint {
+		for _, key := range keys {
+			if key.ID() == keyID {
+				return endpointID
+			}
+		}
+	}
+	return ""
+}
+
 func (s *memEndpointStore) AddKeys(_ context.Context, endpointID string, keys []domain.UpstreamKey) error {
 	if _, ok := s.byID[endpointID]; !ok {
 		return domain.ErrEndpointNotFound

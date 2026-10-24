@@ -7,6 +7,7 @@
 	// response's `Retry-After`, so the screen puts the two together.
 	import { session } from '$lib/stores/session.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { schemaLoginForm } from '$lib/schemas/auth';
 	import { lockoutMinutes, LOGIN_COPY } from '$lib/strings/login';
@@ -78,13 +79,11 @@
 			</p>
 		{/if}
 
-		<button
-			type="submit"
-			disabled={submitting}
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-		>
+		<!-- The screen's one primary action. In flight it keeps the accent and says `aria-busy`, because a
+		     filled control that greys under the finger reads as broken (DESIGN.md §3.5). -->
+		<Button type="submit" disabled={submitting} aria-busy={submitting}>
 			{submitting ? 'Signing in' : 'Sign in'}
-		</button>
+		</Button>
 	</form>
 
 	{#if session.status?.password_configured === false}

@@ -2,8 +2,8 @@
 //
 // Two behaviours here are worth pinning rather than leaving to the template. The first is that `models` is
 // always sent, even when empty: the API marks it required, so omitting it would be read as an error rather
-// than as "no models". The second is the warning §6.4 requires, because "enabled with nothing selected" is
-// a state that looks configured and adapts nothing.
+// than as "no models". The second is the warning §6.4 requires, and it is in
+// `vision-adapter-copy.test.ts` with the status sentence the tab shows.
 
 import { describe, expect, it } from 'vitest';
 import {
@@ -11,21 +11,11 @@ import {
 	buildVisionAdapterBody,
 	schemaVisionAdapter,
 	schemaVisionAdapterForm,
-	visionAdapterStatusText,
 	visionAdapterToForm,
-	visionAdapterWarning,
 	visionModelRef
 } from '$lib/schemas/vision-adapter';
 
-function adapter(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return {
-		enabled: true,
-		round_robin: false,
-		models: ['openai/gpt-4o'],
-		updated_at: '2026-09-18T00:00:00Z',
-		...overrides
-	};
-}
+import { visionAdapterDocument as adapter } from '../support/vision-adapter-document';
 
 describe('visionModelRef', () => {
 	const ACCEPTED: { value: string; expected: string; why: string }[] = [
@@ -190,79 +180,4 @@ describe('visionAdapterToForm', () => {
 			models: []
 		});
 	});
-});
-
-describe('visionAdapterWarning', () => {
-	const CASES: { enabled: boolean; models: string[]; expected: string | null; why: string }[] = [
-		{ enabled: false, models: [], expected: null, why: 'the adapter is off, so nothing is wrong' },
-		{
-			enabled: false,
-			models: ['openai/gpt-4o'],
-			expected: null,
-			why: 'off with a model selected is still off'
-		},
-		{
-			enabled: true,
-			models: ['openai/gpt-4o'],
-			expected: null,
-			why: 'on with a model selected is the configured state'
-		},
-		{
-			enabled: true,
-			models: [],
-			expected: 'On, but no model selected. Pick one to adapt images.',
-			why: 'on with nothing selected adapts nothing, which §6.4 requires the screen to say'
-		}
-	];
-
-	for (const testCase of CASES) {
-		it(`returns ${testCase.expected === null ? 'no warning' : 'a warning'} when ${testCase.why}`, () => {
-			expect(visionAdapterWarning(testCase)).toBe(testCase.expected);
-		});
-	}
-});
-
-describe('visionAdapterStatusText', () => {
-	const CASES: {
-		adapter: { enabled: boolean; roundRobin: boolean; models: string[] };
-		expected: string;
-		why: string;
-	}[] = [
-		{
-			adapter: { enabled: false, roundRobin: false, models: [] },
-			expected: 'Off',
-			why: 'the adapter is off'
-		},
-		{
-			adapter: { enabled: false, roundRobin: true, models: ['openai/gpt-4o'] },
-			expected: 'Off',
-			why: 'off is off regardless of the rotation setting'
-		},
-		{
-			adapter: { enabled: true, roundRobin: false, models: [] },
-			expected: 'On, with no model selected',
-			why: 'on with nothing selected'
-		},
-		{
-			adapter: { enabled: true, roundRobin: false, models: ['openai/gpt-4o'] },
-			expected: 'On, 1 model in order',
-			why: 'on with one model, singular, in order'
-		},
-		{
-			adapter: { enabled: true, roundRobin: false, models: ['a/b', 'c/d'] },
-			expected: 'On, 2 models in order',
-			why: 'on with several models, plural, in order'
-		},
-		{
-			adapter: { enabled: true, roundRobin: true, models: ['a/b', 'c/d', 'e/f'] },
-			expected: 'On, 3 models round robin',
-			why: 'on with several models rotating'
-		}
-	];
-
-	for (const testCase of CASES) {
-		it(`says "${testCase.expected}" when ${testCase.why}`, () => {
-			expect(visionAdapterStatusText(testCase.adapter)).toBe(testCase.expected);
-		});
-	}
 });

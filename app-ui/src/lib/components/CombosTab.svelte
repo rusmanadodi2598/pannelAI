@@ -14,7 +14,9 @@
 	import ComboEditor from '$lib/components/ComboEditor.svelte';
 	import ComboTable from '$lib/components/ComboTable.svelte';
 	import CombosToolbar from '$lib/components/CombosToolbar.svelte';
+	import PagingControls from '$lib/components/PagingControls.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { deleteCombo, listCombos } from '$lib/api/combos';
 	import { loadPickerSources } from '$lib/model-picker-data';
@@ -25,8 +27,6 @@
 	import type { ApiError } from '$lib/api/errors';
 
 	const AddIcon = CONTROL_ICONS.add.icon;
-	const PreviousIcon = CONTROL_ICONS.previous.icon;
-	const NextIcon = CONTROL_ICONS.next.icon;
 	const RetryIcon = CONTROL_ICONS.refresh.icon;
 
 	const PAGE_SIZE = 25;
@@ -83,6 +83,11 @@
 		error = null;
 		combos = result.data.data;
 		total = result.data.meta.total;
+	}
+
+	function goPage(next: number): void {
+		pageNumber = next;
+		void load();
 	}
 
 	// The picker's sources are a convenience, so a failure here does not block the screen: the editor still
@@ -146,14 +151,10 @@
 	{:else if error}
 		<StateMessage kind="error" title="Combos could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center gap-2 px-2 underline"
-					onclick={load}
-				>
+				<Button variant="ghost" class="underline" onclick={load}>
 					<RetryIcon class="size-4" aria-hidden="true" />
 					Try again
-				</button>
+				</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if combos.length === 0}
@@ -164,9 +165,9 @@
 		>
 			{#snippet action()}
 				{#if !showEditor}
-					<button
-						type="button"
-						class="inline-flex min-h-11 items-center gap-2 px-2 underline"
+					<Button
+						variant="ghost"
+						class="underline"
 						onclick={() => {
 							editing = null;
 							creating = true;
@@ -174,7 +175,7 @@
 					>
 						<AddIcon class="size-4" aria-hidden="true" />
 						Create the first combo
-					</button>
+					</Button>
 				{/if}
 			{/snippet}
 		</StateMessage>
@@ -192,33 +193,7 @@
 			}}
 		/>
 
-		<div class="flex flex-wrap items-center gap-3 text-sm">
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
-				disabled={pageNumber <= 1}
-				onclick={() => {
-					pageNumber -= 1;
-					void load();
-				}}
-			>
-				<PreviousIcon class="size-4" aria-hidden="true" />
-				Previous
-			</button>
-			<span class="text-[var(--color-text-muted)]">Page {pageNumber} of {lastPage}</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
-				disabled={pageNumber >= lastPage}
-				onclick={() => {
-					pageNumber += 1;
-					void load();
-				}}
-			>
-				Next
-				<NextIcon class="size-4" aria-hidden="true" />
-			</button>
-		</div>
+		<PagingControls page={pageNumber} {lastPage} onpage={goPage} />
 	{/if}
 </div>
 

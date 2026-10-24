@@ -57,6 +57,8 @@ func (r *retentionLogRepo) DeleteOlderThan(_ context.Context, cutoff time.Time) 
 	return r.deleted, nil
 }
 
+func (*retentionLogRepo) TrimTo(context.Context, int) (int64, error) { return 0, nil }
+
 func retentionPolicy() LogRetentionPolicy {
 	return LogRetentionPolicy{Interval: time.Millisecond, MaxAttempts: 3, Timeout: time.Second}
 }

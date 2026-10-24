@@ -21,7 +21,7 @@ afterEach(() => {
 describe('UsageLivePanel connection', () => {
 	it('reports live only once a frame has arrived', async () => {
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 
 		expect(await screen.findByText('Connecting')).toBeTruthy();
 		expect(screen.queryByText('Live')).toBeNull();
@@ -32,8 +32,8 @@ describe('UsageLivePanel connection', () => {
 	});
 
 	it('names the cause when the route is not served', async () => {
-		stubPanel({ liveAnswers: [() => new Response('', { status: 404 })] });
-		render(UsageLivePanel);
+		const stub = stubPanel({ liveAnswers: [() => new Response('', { status: 404 })] });
+		render(UsageLivePanel, { props: stub.props });
 
 		expect(await screen.findByText('Unavailable')).toBeTruthy();
 		expect(screen.getByText(/has no live stream route yet \(it answered 404\)/)).toBeTruthy();
@@ -42,7 +42,7 @@ describe('UsageLivePanel connection', () => {
 	it('reads again when the operator asks it to, and goes live on the next frame', async () => {
 		const { answer, streams } = liveStreams();
 		const stub = stubPanel({ liveAnswers: [() => new Response('', { status: 404 }), answer] });
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await screen.findByText('Unavailable');
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -55,7 +55,7 @@ describe('UsageLivePanel connection', () => {
 
 	it('stops reading while paused and reads again on resume', async () => {
 		const stub = stubPanel();
-		render(UsageLivePanel);
+		render(UsageLivePanel, { props: stub.props });
 		await screen.findByText('Connecting');
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Pause live updates' }));

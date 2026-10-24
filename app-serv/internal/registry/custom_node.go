@@ -25,6 +25,15 @@ const (
 	AnthropicCompatiblePrefix = "anthropic-compatible-"
 )
 
+// CustomNodeTimeoutMS bounds one attempt against a user-defined node. The
+// operator's upstream is an unknown quantity: it may be a fast paid API or a
+// free tier that holds a request for minutes. Without a declared value a node
+// inherited the 120s total timeout, so one credential could burn most of the
+// failover walk and the walk reported a timeout instead of the real refusal
+// the upstream had already sent. The value matches the documented failover
+// total: no single credential may spend more than one whole default walk.
+const CustomNodeTimeoutMS = 30_000
+
 // CustomNode is a user-defined provider created through the management API: a
 // base URL the embedded registry does not ship (SPEC-API-001 §7.4). It is
 // declared here rather than in the domain layer because synthesizing the
@@ -140,15 +149,23 @@ func (i *Index) Synthesize(node CustomNode) (Provider, error) {
 	}
 
 	provider := Provider{
-		ID:        node.ID,
-		Priority:  CustomPriority,
-		Alias:     node.Prefix,
-		Category:  "apikey",
-		AuthType:  AuthAPIKey,
-		Custom:    true,
-		Display:   Display{Name: node.Name},
-		Models:    copyModels(node.Models),
-		Transport: Transport{Format: node.format(), BaseURL: node.BaseURL, ChatPath: node.chatPath()},
+		ID:       node.ID,
+		Priority: CustomPriority,
+		Alias:    node.Prefix,
+		Category: "apikey",
+		AuthType: AuthAPIKey,
+		Custom:   true,
+		Display:  Display{Name: node.Name},
+		Models:   copyModels(node.Models),
+		Transport: Transport{
+			Format: node.format(), BaseURL: node.BaseURL, ChatPath: node.chatPath(),
+			// A node declares no timeout of its own, and the 120s total an
+			// undeclared entry inherits is longer than the whole failover walk:
+			// one credential would spend it all before the walk could report the
+			// refusal the upstream already sent. The custom-node bound keeps one
+			// attempt inside one default walk.
+			TimeoutMS: CustomNodeTimeoutMS,
+		},
 	}
 	return provider, nil
 }

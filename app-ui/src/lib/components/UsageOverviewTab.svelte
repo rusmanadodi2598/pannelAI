@@ -19,7 +19,9 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { untrack } from 'svelte';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import UsageLivePanel from '$lib/components/UsageLivePanel.svelte';
@@ -30,23 +32,23 @@
 	import UsageOverviewEmpty from '$lib/components/UsageOverviewEmpty.svelte';
 	import UsageTotalsTiles from '$lib/components/UsageTotalsTiles.svelte';
 	import { listProviders } from '$lib/api/providers';
+	import type { Provider } from '$lib/schemas/provider';
 	import { getUsageSummary, getUsageTimeseries } from '$lib/api/usage';
 	import { type UsageSort, type UsageSummary, type UsageTimeseries } from '$lib/schemas/usage';
 	import { granularityFor, periodRange, sortGroups, usageQuery } from '$lib/schemas/usage-view';
 	import { providerNameMap } from '$lib/schemas/usage-topology-nodeset';
 	import { nextUsageSearch, parseUsageSearch, type UsageSearch } from '$lib/schemas/usage-search';
-	import { formatTimestamp } from '$lib/utils/time';
 
 	let summary = $state<UsageSummary | null>(null);
 	let timeseries = $state<UsageTimeseries | null>(null);
 	let loading = $state(true);
 	let error = $state<ApiError | null>(null);
-	// The provider names resolve a provider key to its name, which is a second read and not a dependency: a
-	// registry that cannot be read leaves the breakdown table and the provider chart rendering the ids, with
-	// one line saying so. It runs on every load, because the provider chart is on screen whatever dimension
-	// the breakdown table is showing.
+	// The provider registry is read once here and shared with the breakdown, the provider chart, and the
+	// live drawing. A registry that cannot be read leaves the tables rendering ids and the drawing with no
+	// nodes, with one line saying both.
+	let providers = $state<Provider[]>([]);
 	let providerNames = $state<Map<string, string> | null>(null);
-	let namesNotice = $state<{ text: string; apiError?: ApiError } | null>(null);
+	let providersNotice = $state<{ text: string; apiError?: ApiError } | null>(null);
 
 	const search = $derived(parseUsageSearch(page.url.searchParams));
 
@@ -91,6 +93,14 @@
 	// The sort is the panel's own: §7.12 has no sort parameter, and the API sends the whole breakdown for
 	// the window, so the order is applied to every group rather than to a page of them.
 	const groups = $derived(sortGroups(summary?.groups ?? [], search.sort, search.order));
+	const windowReadout = $derived(
+		summary && timeseries
+			? { from: summary.from, to: summary.to, granularity: timeseries.granularity }
+			: null
+	);
+	const recordPath = $derived(
+		search.groupBy === 'provider' || search.groupBy === 'model' ? recordsPath : null
+	);
 
 	function navigate(params: URLSearchParams): void {
 		const next = params.toString();
@@ -99,6 +109,28 @@
 
 	function change(key: string, value: string): void {
 		navigate(nextUsageSearch(page.url.searchParams, key, value));
+	}
+
+	/**
+	 * The Records view behind one breakdown row, carrying the dimension the row was grouped by.
+	 *
+	 * The key the API grouped by is the raw provider id or model id, which is exactly what the records
+	 * filters take. The page parameter is dropped because the matching rows start at the first page.
+	 */
+	function recordsPath(key: string): `/usage?${string}` {
+		const next = new SvelteURLSearchParams(page.url.searchParams);
+		next.set('tab', 'records');
+		next.delete('page');
+
+		if (search.groupBy === 'provider') {
+			next.set('provider_id', key);
+			next.delete('model');
+		} else {
+			next.set('model', key);
+			next.delete('provider_id');
+		}
+
+		return `/usage?${next.toString()}`;
 	}
 
 	/**
@@ -125,47 +157,56 @@
 		navigate(next);
 	}
 
-	async function loadProviderNames(): Promise<void> {
+	async function loadProviders(): Promise<void> {
 		const result = await listProviders({ per_page: 100 });
 
 		if (!result.ok) {
+			providers = [];
 			providerNames = null;
-			namesNotice = {
-				text: 'Provider names could not be read, so ids show. ',
+			providersNotice = {
+				text: 'Providers could not be read. The drawing has no nodes. Ids show instead. ',
 				apiError: result.error
 			};
 			return;
 		}
 
-		namesNotice = null;
-		providerNames = providerNameMap(result.data.data);
+		const { data, meta } = result.data;
+		providers = data;
+		providerNames = providerNameMap(data);
+		providersNotice =
+			meta.total > data.length
+				? { text: `Shows the first ${data.length} of ${meta.total} providers.` }
+				: null;
 	}
 
 	function refresh(): void {
 		void load(search);
-		void loadProviderNames();
+		void loadProviders();
 	}
 
-	// Names are read once on mount, because the provider chart is on screen whatever the breakdown table is
-	// showing. The effect reads nothing reactive, so it runs when the tab mounts and not on every load; a
-	// refresh repeats the read through its own call above.
+	// The registry is read once on mount, because the provider chart and the live drawing are on screen
+	// whatever the breakdown table is showing. The effect reads nothing reactive, so it runs when the tab
+	// mounts and not on every load; a refresh repeats the read through its own call above.
 	$effect(() => {
-		void loadProviderNames();
+		void loadProviders();
 	});
 </script>
 
 <div class="flex flex-col gap-5">
-	<UsageOverviewControls {search} onchange={change} onrefresh={refresh} />
+	<UsageOverviewControls {search} window={windowReadout} onchange={change} onrefresh={refresh} />
+
+	<!-- The one live thing on the screen sits directly under the toolbar, outside the aggregate read's
+	     branches: it is what an operator opens the tab for during an incident, and a failed or empty
+	     aggregate read cannot take it off the screen. -->
+	<UsageLivePanel {providers} {providersNotice} />
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading usage" />
 	{:else if error}
 		<StateMessage kind="error" title="Usage could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => load(search)}>Try again</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => load(search)}
+					>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>
@@ -173,11 +214,6 @@
 		{#if totals.requests === 0}
 			<UsageOverviewEmpty period={search.period} onperiod={(value) => change('period', value)} />
 		{:else}
-			<p class="text-sm text-[var(--color-text-muted)]">
-				Showing {formatTimestamp(summary.from)} to {formatTimestamp(summary.to)}, bucketed by
-				{timeseries.granularity}.
-			</p>
-
 			<UsageTotalsTiles {totals} />
 
 			<UsageOverviewCharts {buckets} />
@@ -201,14 +237,9 @@
 				order={search.order}
 				{groups}
 				{providerNames}
-				{namesNotice}
+				{recordPath}
 				onsort={sortBy}
 			/>
 		{/if}
 	{/if}
-
-	<!-- The live half of the tab, and the one part of it that is outside the branches above. It reads the
-	     stream itself and renders in its own states, so a failed or empty aggregate read cannot take it
-	     off the screen, which is exactly when an operator most wants to see what is happening now. -->
-	<UsageLivePanel />
 </div>

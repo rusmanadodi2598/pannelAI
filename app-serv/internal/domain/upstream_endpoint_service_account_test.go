@@ -104,7 +104,7 @@ func TestRehydrateUpstreamEndpoint_CarriesTheServiceAccountFields(t *testing.T) 
 		nil, nil, keyNow, keyNow, nil,
 		ServiceAccountRef{ProjectID: "pannelai-prod", Location: "us-central1"},
 		EndpointParity{},
-	)
+		OperatorState{})
 	got := endpoint.ServiceAccount()
 	if got.ProjectID != "pannelai-prod" || got.Location != "us-central1" {
 		t.Fatalf("ServiceAccount() = %+v, want the stored pair", got)

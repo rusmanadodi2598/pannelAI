@@ -18,6 +18,7 @@
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { CONTROL_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { AUTH_TYPES, AUTH_TYPE_LABELS } from '$lib/schemas/endpoint';
 	import {
 		REQUIRES_KEY_AUTH_TYPES,
@@ -153,14 +154,15 @@
 			/>
 		</label>
 
-		<button
-			type="button"
-			class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50 sm:w-auto"
+		<Button
+			variant="default"
+			class="w-full sm:w-auto"
 			disabled={saving}
+			aria-busy={saving}
 			onclick={submit}
 		>
 			<AddIcon class="size-4" aria-hidden="true" />
 			Add endpoint
-		</button>
+		</Button>
 	</div>
 </div>

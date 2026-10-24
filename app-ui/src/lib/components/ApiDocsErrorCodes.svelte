@@ -34,20 +34,24 @@
 					class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
 				>
 					<table class="mobile-key-value-table w-full border-collapse text-sm">
-						<caption class="sr-only">Error codes in the {plane.label} plane</caption>
+						<caption class="sr-only">{copy.errors.caption(plane.label)}</caption>
 						<thead class="bg-[var(--color-surface-2)] text-left">
 							<tr>
-								<th scope="col" class="px-3 py-2 font-medium">Code</th>
-								<th scope="col" class="px-3 py-2 font-medium">HTTP</th>
-								<th scope="col" class="px-3 py-2 font-medium">Meaning</th>
+								<th scope="col" class="px-3 py-2 font-medium">{copy.errors.columns.code}</th>
+								<th scope="col" class="px-3 py-2 font-medium">{copy.errors.columns.http}</th>
+								<th scope="col" class="px-3 py-2 font-medium">{copy.errors.columns.meaning}</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each plane.rows as row (row.code)}
 								<tr class="border-t border-[var(--color-border)] align-top">
-									<td data-label="Code" class="px-3 py-2 font-mono text-xs">{row.code}</td>
-									<td data-label="HTTP" class="px-3 py-2 tabular-nums">{row.status}</td>
-									<td data-label="Meaning" class="px-3 py-2">
+									<td data-label={copy.errors.columns.code} class="px-3 py-2 font-mono text-xs"
+										>{row.code}</td
+									>
+									<td data-label={copy.errors.columns.http} class="px-3 py-2 tabular-nums"
+										>{row.status}</td
+									>
+									<td data-label={copy.errors.columns.meaning} class="px-3 py-2">
 										{#if row.description}
 											{row.description}
 										{:else}

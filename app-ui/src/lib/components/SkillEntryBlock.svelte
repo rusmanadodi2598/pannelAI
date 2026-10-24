@@ -8,6 +8,7 @@
 	// shipped. So the line and its control appear only once the entry skill's own source has answered, and
 	// the block states the cause in their place otherwise.
 	import CopyButton from '$lib/components/CopyButton.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { installLine, type SourceProbe } from '$lib/schemas/skill-source';
 	import type { Skill } from '$lib/schemas/skill';
 	import { SKILLS_COPY as copy, causeSentence } from '$lib/strings/skills';
@@ -23,34 +24,48 @@
 <section
 	class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4"
 >
-	<div class="flex flex-col gap-1">
-		<h2 class="text-sm font-semibold">{copy.entry.heading}</h2>
-		<p class="text-xs text-[var(--color-text-muted)]">{copy.entry.intro}</p>
+	<div class="flex items-start gap-3">
+		<div class="flex min-w-0 flex-1 flex-col gap-1">
+			<h2 class="text-sm font-semibold">{copy.entry.heading}</h2>
+			<p class="text-xs text-[var(--color-text-muted)]">{copy.entry.intro}</p>
+		</div>
+		{#if available}
+			<CopyButton
+				value={installLine(skill)}
+				label={copy.sources.copyInstall}
+				ariaLabel={`Copy install line for ${skill.name}`}
+				iconOnly
+				glyphOutcome
+				touchTarget
+			/>
+		{/if}
 	</div>
 
 	<div class="flex flex-col gap-1">
 		<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-			<span class="text-sm font-medium">{skill.name}</span>
+			<span class="min-w-0 break-words text-sm font-medium">{skill.name}</span>
 			<span class="text-xs text-[var(--color-text-muted)]">{state}</span>
 		</div>
-		<p class="text-sm text-[var(--color-text-muted)]">{skill.description}</p>
+		<p class="break-words text-sm text-[var(--color-text-muted)]">{skill.description}</p>
 	</div>
 
 	{#if available}
-		<div class="flex flex-wrap items-center gap-3">
-			<CopyButton value={installLine(skill)} label={copy.sources.copyInstall} />
-		</div>
-
-		<!-- The line stays on screen beside the control, so a refused clipboard write still leaves the
-		     operator something to select. -->
+		<!-- The line stays on screen even when the clipboard refuses, so the operator can still select
+		     it by hand. -->
 		<pre
 			class="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-xs break-all whitespace-pre-wrap"><code
 				>{installLine(skill)}</code
 			></pre>
 
+		<!-- The page's one off-site route, so it takes the scale like any other control here. -->
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- the blob URL is the source host's own absolute URL, never a route of this app -->
-		<a class="text-xs underline" href={skill.blob_url} target="_blank" rel="noreferrer"
-			>{copy.sources.readOnGitHub}</a
+		<Button
+			href={skill.blob_url}
+			variant="ghost"
+			class="self-start px-2 text-xs underline"
+			aria-label={`${copy.sources.readOnGitHub}: ${skill.name}`}
+			target="_blank"
+			rel="noreferrer">{copy.sources.readOnGitHub}</Button
 		>
 	{:else if probe?.state === 'unavailable'}
 		<p class="text-xs text-[var(--color-text-muted)]">{causeSentence(probe.cause)}</p>

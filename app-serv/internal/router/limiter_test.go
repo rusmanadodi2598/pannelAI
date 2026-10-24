@@ -47,6 +47,30 @@ func (l rateLimiterTestDouble) Allow(context.Context, string, int, time.Duration
 // sit inside the budget. /health answers every call with live Postgres and Redis
 // probes, so the exemption they used to carry let any unauthenticated caller aim
 // an unlimited number of dependency checks at the panel's own databases.
+// TestRequestRateLimitReadsEveryForwardedLine pins the trusted-proxy rule against
+// a second header line: a proxy that appends its own XFF line must not let the
+// caller's forged first line choose the bucket.
+func TestRequestRateLimitReadsEveryForwardedLine(t *testing.T) {
+	_, trusted, err := net.ParseCIDR("10.0.0.0/8")
+	if err != nil {
+		t.Fatalf("parsing trusted proxy CIDR: %v", err)
+	}
+	limiter := &recordingLimiter{}
+	handler := requestRateLimit(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}), limiter, 5, []*net.IPNet{trusted})
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/health", nil)
+	request.RemoteAddr = "10.0.0.5:1234"
+	request.Header.Add("X-Forwarded-For", "198.51.100.77")
+	request.Header.Add("X-Forwarded-For", "203.0.113.9")
+	handler.ServeHTTP(httptest.NewRecorder(), request)
+
+	if len(limiter.keys) != 1 || limiter.keys[0] != "203.0.113.9" {
+		t.Fatalf("buckets = %v, want the hop the trusted proxy appended", limiter.keys)
+	}
+}
+
 func TestRequestRateLimitMetersThePublicSystemRoutes(t *testing.T) {
 	serve := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
 

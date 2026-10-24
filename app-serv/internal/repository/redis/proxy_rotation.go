@@ -22,9 +22,9 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// proxyRotationPrefix namespaces the round-robin counter. The pool key is
-// hashed into it rather than embedded, mirroring the combo store, so a key an
-// operator-typed name could not collide with stays a non-question.
+// proxyRotationPrefix namespaces the round-robin counter. The pool key is hashed
+// into it rather than embedded, mirroring the combo store, so a name an operator
+// typed cannot collide with another pool's counter.
 const proxyRotationPrefix = "pannelai:proxy:rotation:"
 
 // proxyParkPrefix namespaces the failure-cooldown keys.
@@ -48,7 +48,6 @@ type ProxyRouteStore struct {
 	client redis.UniversalClient
 }
 
-// NewProxyRouteStore constructs the store.
 func NewProxyRouteStore(client redis.UniversalClient) *ProxyRouteStore {
 	return &ProxyRouteStore{client: client}
 }

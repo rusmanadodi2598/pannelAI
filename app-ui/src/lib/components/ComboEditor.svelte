@@ -22,6 +22,7 @@
 	import ComboStrategyFields from '$lib/components/ComboStrategyFields.svelte';
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import ModelPickerDialog from '$lib/components/ModelPickerDialog.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { registerDirtyForm } from '$lib/dirty-guard';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import { reorderComboModels, type Combo } from '$lib/schemas/combo';
@@ -173,14 +174,10 @@
 			<span class="text-sm text-[var(--color-text-muted)]">
 				Models, in the order the strategy uses them.
 			</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
-				onclick={() => (pickerTarget = 'models')}
-			>
+			<Button variant="outline" onclick={() => (pickerTarget = 'models')}>
 				<AddIcon class="size-4" aria-hidden="true" />
 				Add models
-			</button>
+			</Button>
 		</div>
 		<ComboModelRows models={form.models} onchange={(models) => (form.models = models)} />
 	</div>
@@ -197,22 +194,19 @@
 	{/if}
 
 	<div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-		<button
+		<Button
 			type="submit"
+			class="min-h-12 w-full px-4 sm:w-auto"
 			disabled={saving}
-			class="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50 sm:w-auto"
+			aria-busy={saving}
 		>
 			<SaveIcon class="size-4" aria-hidden="true" />
 			{saving ? 'Saving' : combo === null ? 'Create the combo' : 'Save the combo'}
-		</button>
-		<button
-			type="button"
-			class="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 text-sm hover:bg-[var(--color-surface-2)] sm:w-auto"
-			onclick={oncancel}
-		>
+		</Button>
+		<Button variant="outline" class="min-h-12 w-full px-4 sm:w-auto" onclick={oncancel}>
 			<CancelIcon class="size-4" aria-hidden="true" />
 			Cancel
-		</button>
+		</Button>
 	</div>
 </form>
 

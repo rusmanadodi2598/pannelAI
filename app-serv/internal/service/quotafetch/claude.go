@@ -55,7 +55,8 @@ func fetchClaude(ctx context.Context, creds Credentials) Result {
 	endpoint := endpointFor(declaredOr(creds.Endpoints.OAuthURL, claudeOAuthUsageURL), creds.Endpoint)
 	response, err := requestUsage(ctx, http.MethodGet, endpoint, claudeOAuthHeaders(token, creds.UsageHeaders), "")
 	if err != nil {
-		return Result{Plan: claudePlanLabel, Message: fmt.Sprintf("Claude connected. Unable to fetch usage: %s", err)}
+		return Result{Plan: claudePlanLabel,
+			Message: fmt.Sprintf("Claude connected. Unable to fetch usage: %s", err), transient: true}
 	}
 
 	// A 429 is the endpoint throttling its own meter, not the credential: chat with the same

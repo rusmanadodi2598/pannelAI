@@ -62,13 +62,14 @@ describe('UsageTopology motion', () => {
 		);
 	});
 
-	it('marks the routing node with the status colour and a glow, and no other node', () => {
+	it('marks the routing node with its border and a 3px marker, and gives it no glow', () => {
 		const container = draw({ active: [entry('openai')] });
 		const routing = nodeFor(container, 'OpenAI');
 		const idle = nodeFor(container, 'Anthropic');
 
 		expect(routing.classList.contains('border-[var(--color-ok)]')).toBe(true);
-		expect(routing.classList.contains(GLOW)).toBe(true);
+		expect(routing.classList.contains(GLOW)).toBe(false);
+		expect(routing.firstElementChild?.classList.contains('bg-[var(--color-ok)]')).toBe(true);
 		expect(idle.classList.contains('border-[var(--color-ok)]')).toBe(false);
 		expect(idle.classList.contains(GLOW)).toBe(false);
 	});

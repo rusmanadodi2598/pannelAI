@@ -77,10 +77,12 @@ func fetchGeminiCLI(ctx context.Context, creds Credentials) Result {
 	response, err := requestUsage(ctx, http.MethodPost, endpoint,
 		googleJSONHeaders(token, "", creds.UsageHeaders), googleProjectBody(project))
 	if err != nil {
-		return Result{Plan: plan, Message: fmt.Sprintf("%s error: %s", googleCLIDisplay, err)}
+		return Result{Plan: plan, Message: fmt.Sprintf("%s error: %s", googleCLIDisplay, err), transient: true}
 	}
 	if response.status < 200 || response.status >= 300 {
-		return Result{Plan: plan, Message: fmt.Sprintf("%s quota error (%d).", googleCLIDisplay, response.status)}
+		return Result{Plan: plan,
+			Message:   fmt.Sprintf("%s quota error (%d).", googleCLIDisplay, response.status),
+			transient: transientStatus(response.status)}
 	}
 
 	var answer googleQuotaAnswer

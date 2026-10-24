@@ -6,21 +6,31 @@
 	// is hidden, and §6.14 says the control is labelled "Auto refresh", not "Live", because a poll is not
 	// a stream and calling it live would be a false claim.
 	//
-	// Lines are rendered verbatim, oldest first, in a monospace block (§7.5.2). "Follow newest" pins the
-	// view to the last line after each read; a pause stops the timer but leaves the buffer on the page,
-	// which is what "pause" is for.
+	// "Follow newest" pins the view to the last line after each read; a pause stops the timer but leaves
+	// the buffer on the page, which is what "pause" is for.
 	//
-	// The cross-link to `/logs` is the way the operator moves between the two §7.13 surfaces. It is a real
-	// destination, so it carries a visible label and an icon whose meaning is written in the icon map.
+	// Clearing empties the ring on the server, so the commit sits behind a confirmation and a failed delete
+	// is reported there rather than as a read error: the buffer on screen is still the last one read.
+	//
+	// Reads are serialized. The one-second timer checks whether a poll is due, and without a guard a slow
+	// read would start another request every second; a manual press during a read queues one more read
+	// instead of racing it.
 	import { ScrollText } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import RefreshControl from '$lib/components/RefreshControl.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import ClearConsoleDialog from '$lib/components/ClearConsoleDialog.svelte';
+	import ConsoleToolbar from '$lib/components/ConsoleToolbar.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { clearConsoleLog, fetchConsoleLog } from '$lib/api/log';
 	import type { ApiError } from '$lib/api/errors';
-	import { CONSOLE_POLL_MS, pollDue, pollIntervalLabel, type PollState } from '$lib/polling';
+	import { CONSOLE_POLL_MS, pollDue, readStamp, type PollState } from '$lib/polling';
 	import { consoleSummary } from '$lib/schemas/log-view';
+	import { formatTimestampWithSeconds } from '$lib/utils/time';
 	import { onMount } from 'svelte';
+
+	const uid = $props.id();
+	const summaryId = `${uid}-summary`;
 
 	let lines = $state<string[]>([]);
 	let maxRecords = $state(0);
@@ -30,32 +40,77 @@
 
 	let auto = $state(true);
 	let follow = $state(true);
+	let clearOpen = $state(false);
 	let busy = $state(false);
-	let lastLoadedAt = $state(0);
+	let clearError = $state<ApiError | null>(null);
+	let cleared = $state('');
+	let lastLoadedAt = 0;
 
 	let scroll = $state<HTMLElement | null>(null);
+	let inflight: Promise<void> | null = null;
+	let rerunRequested = false;
+	let generation = 0;
 
 	onMount(() => {
 		void load();
 
 		const timer = setInterval(() => {
 			const state: PollState = { paused: !auto, lastLoadedAt };
-			if (pollDue(state, Date.now(), CONSOLE_POLL_MS, document.visibilityState)) {
-				void load();
-			}
+			if (pollDue(state, Date.now(), CONSOLE_POLL_MS, document.visibilityState)) pollRead();
 		}, 1_000);
-		return () => clearInterval(timer);
+		const onVisibility = (): void => {
+			if (auto && document.visibilityState === 'visible') void load();
+		};
+		document.addEventListener('visibilitychange', onVisibility);
+
+		return () => {
+			clearInterval(timer);
+			document.removeEventListener('visibilitychange', onVisibility);
+		};
 	});
 
-	// "Follow newest" pins the view to the last line. It runs after the browser lays the new lines out,
-	// because the pin has to move the scroll of a block whose height just changed.
+	// "Follow newest" pins the view to the last line. Reading `lines` makes the effect run when a read
+	// appends text, after the browser has laid out the height the scroll has to reach.
 	$effect(() => {
+		void lines;
 		if (follow && scroll) scroll.scrollTop = scroll.scrollHeight;
 	});
 
-	async function load(): Promise<void> {
+	function pollRead(): void {
+		if (inflight) return;
+		void load();
+	}
+
+	function load(): Promise<void> {
+		if (inflight) {
+			rerunRequested = true;
+			return inflight;
+		}
+
+		inflight = runReads().finally(() => {
+			inflight = null;
+		});
+		return inflight;
+	}
+
+	async function runReads(): Promise<void> {
+		try {
+			do {
+				rerunRequested = false;
+				await readOnce();
+			} while (rerunRequested);
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function readOnce(): Promise<void> {
+		const readGeneration = generation;
 		const result = await fetchConsoleLog();
-		loading = false;
+
+		// A clear that landed while this read was in flight makes its buffer stale.
+		if (readGeneration !== generation) return;
+
 		lastLoadedAt = Date.now();
 
 		if (!result.ok) {
@@ -66,91 +121,104 @@
 		error = null;
 		lines = result.data.lines;
 		maxRecords = result.data.max_records;
-		lastRead = new Date().toLocaleTimeString('en-US');
+		lastRead = readStamp(Date.now());
 	}
 
-	async function clear(): Promise<void> {
-		if (busy) return;
+	function openClear(): void {
+		clearError = null;
+		cleared = '';
+		clearOpen = true;
+	}
+
+	function closeClear(): void {
+		clearError = null;
+		clearOpen = false;
+	}
+
+	async function confirmClear(): Promise<void> {
 		busy = true;
 		const result = await clearConsoleLog();
 		busy = false;
 
 		if (!result.ok) {
-			error = result.error;
+			clearError = result.error;
 			return;
 		}
 
-		error = null;
+		clearOpen = false;
+		generation += 1;
 		lines = [];
+		cleared = 'Console buffer cleared on the gateway.';
 		await load();
 	}
 </script>
 
 <div class="flex flex-col gap-4">
-	<div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-		<div class="flex items-center gap-3">
-			<span class="text-[var(--color-text-muted)]"
-				>Auto refresh, {pollIntervalLabel(CONSOLE_POLL_MS)}</span
-			>
-			<button type="button" class="min-h-11 underline" onclick={() => (auto = !auto)}>
-				{auto ? 'Pause auto refresh' : 'Resume auto refresh'}
-			</button>
-			<label class="flex items-center gap-2">
-				<input
-					type="checkbox"
-					checked={follow}
-					onchange={(event) => (follow = event.currentTarget.checked)}
-				/>
-				Follow newest
-			</label>
-		</div>
+	<ConsoleToolbar
+		{auto}
+		{follow}
+		{lastRead}
+		onrefresh={load}
+		ontoggleauto={() => (auto = !auto)}
+		ontogglefollow={(next) => (follow = next)}
+		onclear={openClear}
+	/>
 
-		<div class="ml-auto flex items-center gap-3">
-			{#if lastRead && !error}
-				<span class="text-[var(--color-text-muted)]">Last read {lastRead}</span>
-			{/if}
-			<!-- §8.6.2's explicit control sits beside the poll it distrusts: a paused poll must not be the
-			     only way to get a current buffer, and the "Last read" stamp above it is the acknowledgement. -->
-			<RefreshControl onrefresh={load} />
-			<button
-				type="button"
-				disabled={busy}
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50"
-				onclick={clear}>Clear buffer</button
-			>
-		</div>
-	</div>
+	<ClearConsoleDialog
+		open={clearOpen}
+		{busy}
+		result={clearError}
+		onclose={closeClear}
+		onconfirm={confirmClear}
+	/>
 
-	<a href={resolve('/logs')} class="inline-flex min-h-11 items-center gap-2 text-sm">
+	{#if cleared}
+		<p class="text-sm text-[var(--color-text-muted)]" role="status">{cleared}</p>
+	{/if}
+
+	<!-- The way back to the other §7.13 surface. It routes, so it is pressed like a button and takes the
+	     same states as the pointer on `/logs` that leads here. -->
+	<Button href={resolve('/logs')} variant="ghost" class="self-start">
 		<ScrollText class="size-4" aria-hidden="true" />
 		Request logs
-	</a>
+	</Button>
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the console log" />
-	{:else if error}
+	{:else if error && lines.length === 0}
 		<StateMessage kind="error" title="Could not read the console log" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={load}>Try again</button
-				>
+				<Button variant="ghost" class="px-2 underline" onclick={load}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if lines.length === 0}
 		<StateMessage
 			kind="empty"
-			title="Console log is empty"
+			title="Console buffer is empty"
 			description="Output is kept only while running. A restart clears it."
 		/>
 	{:else}
-		<div class="flex flex-col gap-1">
-			<div class="text-xs text-[var(--color-text-muted)]">
+		<div class="flex flex-col gap-2">
+			{#if error}
+				<p role="alert" class="text-sm text-[var(--color-danger)]">
+					<ApiErrorText
+						{error}
+						prefix="Could not read the console log. "
+						suffix={` Showing the last read at ${formatTimestampWithSeconds(lastRead)}.`}
+					/>
+				</p>
+			{/if}
+			<div id={summaryId} class="text-xs text-[var(--color-text-muted)]">
 				{consoleSummary(lines.length, maxRecords)}
 			</div>
+			<!-- The buffer scrolls its own overflow, so keyboard focus is how its lower lines are reached. -->
+			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<pre
 				bind:this={scroll}
+				role="region"
+				aria-label="Console output"
+				aria-describedby={summaryId}
+				tabindex="0"
 				class="max-h-96 overflow-auto rounded-[var(--radius-md)] bg-[var(--color-surface-2)] p-3 text-xs">{lines.join(
 					'\n'
 				)}</pre>

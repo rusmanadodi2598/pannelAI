@@ -22,6 +22,7 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { deleteCustomModel, listCustomModels } from '$lib/api/models';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { providerCustomModels, type CustomModel } from '$lib/schemas/custom-model';
 	import { nodeTypeOfId } from '$lib/schemas/provider-node';
 	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
@@ -133,11 +134,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the custom models" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center underline"
-					onclick={() => load()}>Try again</button
-				>
+				<Button variant="ghost" class="underline" onclick={() => load()}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if mine.length === 0}

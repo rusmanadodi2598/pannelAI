@@ -38,7 +38,7 @@ func TestDefaultSettings(t *testing.T) {
 		{"headroom disabled", defaults.TokenSaver.Headroom.Enabled, false},
 		{"ponytail disabled", defaults.TokenSaver.Ponytail.Enabled, false},
 		{"request_capture_enabled", defaults.Logging.RequestCaptureEnabled, false},
-		{"retention_days", defaults.Logging.RetentionDays, 7},
+		{"retention_days", defaults.Logging.RetentionDays, 2},
 		{"capture_body_max_bytes", defaults.Logging.CaptureBodyMaxBytes, 65536},
 		{"observability_max_records", defaults.Logging.ObservabilityMaxRecords, 1000},
 	}

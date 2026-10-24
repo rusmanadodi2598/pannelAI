@@ -11,7 +11,10 @@
 // @since     2026-09-24
 package domain
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 // CredentialRotation is how a provider's credential walk orders its endpoints
 // and the keys inside them. The set is closed and mirrors the reference's
@@ -63,12 +66,19 @@ func (m CredentialRotation) IsValid() bool {
 func (m CredentialRotation) UsesRotation() bool { return m == RotationRoundRobin }
 
 // ProviderStrategy is one provider's override of the global rotation policy.
-// Both fields are optional: an absent field inherits the global default. An
-// entry that sets neither is refused by validateRouting rather than stored as
-// dead configuration.
+// Every field is optional: an absent one inherits the global default. An entry
+// that sets nothing is refused by validateRouting rather than stored as dead
+// configuration.
 type ProviderStrategy struct {
 	FallbackStrategy CredentialRotation `json:"fallback_strategy,omitempty"`
 	StickyLimit      *int               `json:"sticky_limit,omitempty"`
+	// KeyPark retunes the parking windows for this provider alone. An empty entry
+	// inherits every window from the group.
+	KeyPark KeyParkWindows `json:"key_park,omitempty"`
+	// FailureClasses retunes what one recognised failure class does for this
+	// provider alone: its action, its ceiling, its cooldown. An empty entry
+	// inherits every class from the group.
+	FailureClasses FailureClassPolicies `json:"failure_classes,omitempty"`
 }
 
 // RotationPolicy is the credential walk resolved for one provider: the mode the
@@ -80,6 +90,54 @@ type RotationPolicy struct {
 
 // UsesRotation reports whether the policy advances the shared cursor.
 func (p RotationPolicy) UsesRotation() bool { return p.Strategy.UsesRotation() }
+
+// FailoverBudget bounds one client request's whole walk over the credentials it may try.
+// The chain is combinatorial: a combo of 64 members, each with up to 100 accounts, each
+// holding up to 100 keys. Each attempt carried its own 120-second budget with no total
+// above it, so a request could outlive its client by hours.
+//
+// Both bounds stop the walk and report what it already learned; neither turns an answer
+// the client received into a failure, because a stream that has spoken is committed.
+type FailoverBudget struct {
+	// TotalMS is the wall clock the PRE-COMMIT walk may spend.
+	TotalMS int `json:"total_ms"`
+	// MaxAttempts is how many credentials one request may spend, the bound a deadline
+	// cannot give: a provider that answers instantly with an error on every one of its keys.
+	MaxAttempts int `json:"max_attempts"`
+}
+
+// The §7.14 failover defaults and their stored bounds. The total ceiling is the transport's
+// own per-credential budget, so one request never gets more time than a single call may take;
+// the attempt ceiling walks a large provider without ever permitting the full chain.
+const (
+	DefaultFailoverTotalMS  = 30_000
+	MinFailoverTotalMS      = 1_000
+	MaxFailoverTotalMS      = 120_000
+	DefaultFailoverAttempts = 8
+	MinFailoverAttempts     = 1
+	MaxFailoverAttempts     = 200
+)
+
+// Normalized fills the two keys a stored row written before they existed cannot carry. A
+// group decode replaces the routing document wholesale, so an absent key arrives as a zero,
+// and a walk handed zero attempts answers NO_PROVIDER_AVAILABLE for a provider that has keys.
+func (b FailoverBudget) Normalized() FailoverBudget {
+	if b.TotalMS < MinFailoverTotalMS || b.TotalMS > MaxFailoverTotalMS {
+		b.TotalMS = DefaultFailoverTotalMS
+	}
+	if b.MaxAttempts < MinFailoverAttempts || b.MaxAttempts > MaxFailoverAttempts {
+		b.MaxAttempts = DefaultFailoverAttempts
+	}
+	return b
+}
+
+// Total answers the budget as the duration a walk measures against.
+func (b FailoverBudget) Total() time.Duration {
+	return time.Duration(b.Normalized().TotalMS) * time.Millisecond
+}
+
+// Attempts answers the budget as a count.
+func (b FailoverBudget) Attempts() int { return b.Normalized().MaxAttempts }
 
 // RoutingSettings is the §7.14 routing group. The combo keys are the defaults a
 // new combo starts from; the credential keys are the policy the data plane's
@@ -94,18 +152,49 @@ type RoutingSettings struct {
 	// ProviderStrategies holds the per-provider overrides, keyed by provider
 	// id. It is written whole, like the reference's providerStrategies map.
 	ProviderStrategies map[string]ProviderStrategy `json:"provider_strategies,omitempty"`
+	// KeyPark holds the global key-parking windows. It is the §7.5 budget the
+	// ladder starts from before any provider override.
+	KeyPark KeyParkWindows `json:"key_park,omitempty"`
+	// FailureClasses holds the global per-class action and windows: what the
+	// router does with a recognised failure, before any provider override.
+	FailureClasses FailureClassPolicies `json:"failure_classes,omitempty"`
+	// Failover bounds one request's whole credential walk: global rather than per-provider,
+	// because the chain it cuts belongs to the request (a combo, its accounts, their keys).
+	Failover FailoverBudget `json:"failover,omitempty"`
 }
 
 // defaultRoutingSettings is the §7.14 routing default: combo fallback with a
-// sticky of 1, credential fill-first with a sticky of 3.
+// sticky of 1, credential fill-first with a sticky of 3, and the five-hour reset
+// cadence the vendors below publish for their free and event allowances.
+//
+// The cadence is stated as data rather than as a branch at the call site, so it is one
+// document an operator can retune through §7.14 without a rebuild, and the quota ladder
+// and an operator's park read the same answer from HealthFor.
 func defaultRoutingSettings() RoutingSettings {
+	fiveHours := KeyParkWindows{QuotaSeconds: int((5 * time.Hour).Seconds())}
 	return RoutingSettings{
 		ComboStrategy:      ComboFallback,
 		ComboStickyLimit:   1,
 		StickyLimit:        DefaultStickyLimit,
 		FallbackStrategy:   RotationFillFirst,
-		ProviderStrategies: map[string]ProviderStrategy{},
+		ProviderStrategies: fiveHourResetStrategies(fiveHours),
+		Failover: FailoverBudget{
+			TotalMS:     DefaultFailoverTotalMS,
+			MaxAttempts: DefaultFailoverAttempts,
+		},
 	}
+}
+
+// fiveHourResetStrategies seeds the providers whose allowance returns on a five-hour
+// window rather than a daily one: the three the owner named and the two CLI-shaped
+// siblings that read the same vendor period.
+func fiveHourResetStrategies(windows KeyParkWindows) map[string]ProviderStrategy {
+	ids := []string{"openai", "claude", "gemini", "gemini-cli", "antigravity"}
+	out := make(map[string]ProviderStrategy, len(ids))
+	for _, id := range ids {
+		out[id] = ProviderStrategy{KeyPark: windows}
+	}
+	return out
 }
 
 // Normalized fills the keys a stored row written before this change cannot
@@ -122,6 +211,7 @@ func (s RoutingSettings) Normalized() RoutingSettings {
 	if s.StickyLimit < 1 {
 		s.StickyLimit = DefaultStickyLimit
 	}
+	s.Failover = s.Failover.Normalized()
 	return s
 }
 
@@ -147,70 +237,4 @@ func (s RoutingSettings) RotationFor(providerID string) RotationPolicy {
 		policy.StickyLimit = DefaultStickyLimit
 	}
 	return policy
-}
-
-// RoutingSettingsPatch updates the routing group.
-type RoutingSettingsPatch struct {
-	ComboStrategy    *ComboStrategy
-	ComboStickyLimit *int
-	StickyLimit      *int
-	FallbackStrategy *CredentialRotation
-	// ProviderStrategies replaces the whole override map when present, so an
-	// empty map is a real value (clear every override) rather than "leave
-	// unchanged", which the nil pointer already means.
-	ProviderStrategies *map[string]ProviderStrategy
-}
-
-// applyRouting writes the routing group from a patch.
-func applyRouting(dst *RoutingSettings, p *RoutingSettingsPatch) {
-	if p.ComboStrategy != nil {
-		dst.ComboStrategy = *p.ComboStrategy
-	}
-	applyInt(&dst.ComboStickyLimit, p.ComboStickyLimit)
-	applyInt(&dst.StickyLimit, p.StickyLimit)
-	if p.FallbackStrategy != nil {
-		dst.FallbackStrategy = *p.FallbackStrategy
-	}
-	if p.ProviderStrategies != nil {
-		replaced := make(map[string]ProviderStrategy, len(*p.ProviderStrategies))
-		for id, override := range *p.ProviderStrategies {
-			replaced[id] = override
-		}
-		dst.ProviderStrategies = replaced
-	}
-}
-
-// validateRouting checks the routing group's rules. The per-field bounds live
-// in the schema tags; these are the cross-key ones and the entry rule the tags
-// cannot state.
-func validateRouting(s RoutingSettings) error {
-	if s.ComboStickyLimit < 1 {
-		return NewValidationError("routing.combo_sticky_limit must be at least 1")
-	}
-	if s.StickyLimit < 1 {
-		return NewValidationError("routing.sticky_limit must be at least 1")
-	}
-	if s.StickyLimit > MaxStickyLimit {
-		return NewValidationError("routing.sticky_limit must be at most 100")
-	}
-	if !s.ComboStrategy.IsValid() {
-		return NewValidationError("routing.combo_strategy is invalid")
-	}
-	if s.FallbackStrategy != "" && !s.FallbackStrategy.IsValid() {
-		return NewValidationError("routing.fallback_strategy must be one of fill-first, round-robin")
-	}
-	for id, override := range s.ProviderStrategies {
-		if override.FallbackStrategy == "" && override.StickyLimit == nil {
-			return NewValidationError("routing.provider_strategies[" + id +
-				"] must set fallback_strategy or sticky_limit; delete the entry to inherit the default")
-		}
-		if override.FallbackStrategy != "" && !override.FallbackStrategy.IsValid() {
-			return NewValidationError("routing.provider_strategies[" + id +
-				"].fallback_strategy must be one of fill-first, round-robin")
-		}
-		if override.StickyLimit != nil && (*override.StickyLimit < 1 || *override.StickyLimit > MaxStickyLimit) {
-			return NewValidationError("routing.provider_strategies[" + id + "].sticky_limit must be between 1 and 100")
-		}
-	}
-	return nil
 }

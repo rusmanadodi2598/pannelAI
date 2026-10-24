@@ -22,11 +22,13 @@
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import ModelTestState from '$lib/components/ModelTestState.svelte';
+	import PagingControls from '$lib/components/PagingControls.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { catalogModelLabel, catalogSourceLabel, type CatalogModel } from '$lib/schemas/model';
 	import { disabledRefKey } from '$lib/schemas/model-disabled';
 	import { isChatRoutable } from '$lib/schemas/model-test';
-	import { thinkingSuffix } from '$lib/schemas/settings';
+	import { thinkingSuffix } from '$lib/schemas/settings-provider-thinking';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
@@ -52,11 +54,6 @@
 	const DisableIcon = ROW_ACTION_ICONS.disable.icon;
 	const TestIcon = ROW_ACTION_ICONS.test.icon;
 
-	// One tap target and one hover wash for both row actions, the same rule the key table states:
-	// two competing text colours on one button resolve by stylesheet order, not by intent.
-	const actionClass =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50';
-
 	const modelKeys = $derived(new Set(models.map((model) => disabledRefKey(model))));
 
 	// The last write's outcome renders in whichever half of the screen holds the ref it names: a model that
@@ -73,9 +70,6 @@
 			onchanged();
 	}
 	import { pageOf } from '$lib/schemas/local-page';
-	import { CONTROL_ICONS } from '$lib/icons';
-	const PreviousIcon = CONTROL_ICONS.previous.icon;
-	const NextIcon = CONTROL_ICONS.next.icon;
 
 	// Ten rows a page, so a registry provider with a long catalog does not stack its whole list.
 	let requestedPage = $state(1);
@@ -141,27 +135,29 @@
 							<div class="flex flex-wrap items-center justify-end gap-1">
 								<CopyButton value={address} label="Copy model address" iconOnly touchTarget />
 								{#if routable}
-									<button
-										type="button"
-										class={actionClass}
+									<Button
+										variant="ghost"
+										size="icon"
 										aria-label={running ? 'Testing' : 'Test'}
 										title="Test"
 										disabled={running}
+										aria-busy={running}
 										onclick={() => void tests.testOne(model.provider_id, model.model_id)}
 									>
 										<TestIcon class="size-4" aria-hidden="true" />
-									</button>
+									</Button>
 								{/if}
-								<button
-									type="button"
-									class={actionClass}
+								<Button
+									variant="ghost"
+									size="icon"
 									aria-label={disabled.saving === disabledRefKey(model) ? 'Disabling' : 'Disable'}
 									title="Disable"
 									disabled={disabled.saving !== null}
+									aria-busy={disabled.saving === disabledRefKey(model)}
 									onclick={() => disable(model)}
 								>
 									<DisableIcon class="size-4" aria-hidden="true" />
-								</button>
+								</Button>
 							</div>
 						</td>
 					</tr>
@@ -171,27 +167,11 @@
 	</div>
 
 	{#if view.pages > 1}
-		<div class="flex flex-wrap items-center gap-3 text-sm">
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
-				disabled={view.page <= 1}
-				onclick={() => (requestedPage = view.page - 1)}
-			>
-				<PreviousIcon class="size-4" aria-hidden="true" />
-				Previous
-			</button>
-			<span class="text-[var(--color-text-muted)]">Page {view.page} of {view.pages}</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
-				disabled={view.page >= view.pages}
-				onclick={() => (requestedPage = view.page + 1)}
-			>
-				Next
-				<NextIcon class="size-4" aria-hidden="true" />
-			</button>
-		</div>
+		<PagingControls
+			page={view.page}
+			lastPage={view.pages}
+			onpage={(next) => (requestedPage = next)}
+		/>
 	{/if}
 
 	{#if outcome}

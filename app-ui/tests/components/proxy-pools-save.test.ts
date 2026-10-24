@@ -119,16 +119,18 @@ describe('editing a proxy', () => {
 		expect(stub.patches[0].id).toBe('prx_01HZZ9K2');
 		expect(stub.patches[0].body.password).toBe('');
 
-		// The fake API applies the same keep rule the real one does, so the row still reports a secret.
+		// The fake API applies the same keep rule the real one does, so the form still reports a secret
+		// after the write and the re-read.
 		expect(await screen.findByText('Frankfurt egress two')).toBeTruthy();
-		expect(screen.getByText('Set')).toBeTruthy();
+		await waitFor(() => expect(document.querySelectorAll('dialog[open]').length).toBe(0));
+		await fireEvent.click(screen.getByRole('button', { name: 'Edit Frankfurt egress two' }));
+		expect(screen.getByText(/Leave empty to keep it/)).toBeTruthy();
 	});
 
 	it('replaces the stored password when a new one is typed', async () => {
 		const stub = stubProxies({ pool: [proxyRow({ has_password: false })] });
 		render(ProxyPoolsPage);
 		await screen.findByRole('table');
-		expect(screen.getByText('Not set')).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Edit Frankfurt egress' }));
 		expect(screen.getByText('No password is stored.')).toBeTruthy();
@@ -138,7 +140,12 @@ describe('editing a proxy', () => {
 
 		await waitFor(() => expect(stub.patches.length).toBe(1));
 		expect(stub.patches[0].body.password).toBe('hunter2');
-		expect(await screen.findByText('Set')).toBeTruthy();
+
+		// The write ends with a re-read and the dialog's own close, and the patch lands before both.
+		// Opening it earlier would read the draft the save started from rather than the row stored.
+		await waitFor(() => expect(document.querySelectorAll('dialog[open]').length).toBe(0));
+		await fireEvent.click(screen.getByRole('button', { name: 'Edit Frankfurt egress' }));
+		expect(screen.getByText(/Leave empty to keep it/)).toBeTruthy();
 	});
 
 	it('shows a refused save as an alert and keeps the dialog open', async () => {
@@ -201,12 +208,16 @@ describe('testing and deleting a stored proxy', () => {
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Delete Frankfurt egress' }));
 
-		// §8.5 wants the object named, and the consequence stated precisely: the outbound path is a
-		// separate setting, so deleting a row does not reroute anything.
+		// §8.5 wants the object named and the consequence stated precisely. The consequence used to
+		// be claimed here was the opposite of the truth: an endpoint pins a candidate by id string,
+		// not by a foreign key, so deleting a row does strand the connections that used it. The
+		// global outbound proxy stays a separate setting, which is the half that was true.
 		const dialog = squashed(screen.getByRole('dialog'));
 		expect(dialog).toContain('Frankfurt egress');
 		expect(dialog).toContain('proxy.example.com:8443');
-		expect(dialog).toContain('does not change the outbound path');
+		expect(dialog).toContain('stops routing through it');
+		expect(dialog).toContain('loses its egress path');
+		expect(dialog).toContain('separate setting');
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Delete the proxy' }));
 

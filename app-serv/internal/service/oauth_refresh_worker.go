@@ -40,9 +40,15 @@ type OAuthRefreshWorker struct {
 
 	mu       sync.Mutex
 	attempts map[string]int
+	next     map[string]time.Time
 	rng      *mathrand.Rand
-	sleep    func(time.Duration)
+	now      func() time.Time
+	lease    WorkerLease
 }
+
+// UseLease makes the sweep single-owner across replicas. A nil lease keeps the
+// single-process behaviour the tests use.
+func (w *OAuthRefreshWorker) UseLease(lease WorkerLease) { w.lease = lease }
 
 // NewOAuthRefreshWorker builds the worker over a flow service and the provider
 // index it sweeps.
@@ -50,8 +56,9 @@ func NewOAuthRefreshWorker(flow *OAuthFlowService, index ProviderIndex) *OAuthRe
 	return &OAuthRefreshWorker{
 		flow: flow, index: index,
 		attempts: map[string]int{},
+		next:     map[string]time.Time{},
 		rng:      mathrand.New(mathrand.NewSource(time.Now().UnixNano())),
-		sleep:    time.Sleep,
+		now:      time.Now,
 	}
 }
 
@@ -60,26 +67,35 @@ func NewOAuthRefreshWorker(flow *OAuthFlowService, index ProviderIndex) *OAuthRe
 // boundary lives in the composition root's runSupervised, which is where every
 // worker in this process gets it.
 func (w *OAuthRefreshWorker) Run(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-timer.C:
 			refreshed := w.Sweep(ctx)
 			if refreshed > 0 {
 				slog.Info("oauth refresh worker refreshed tokens", "count", refreshed)
 			}
+			timer.Reset(w.nextWake(interval))
 		}
 	}
 }
 
-// Sweep refreshes every due, active OAuth endpoint of every provider whose
-// flow the shared client can serve, and returns how many tokens it refreshed.
-// Device and connector flows are skipped: their cadence belongs to their own
-// connectors, and a provider with no token endpoint has nothing to refresh.
+// Sweep refreshes every due, active OAuth endpoint of every provider whose flow
+// the shared client can serve, and visits the dead-lettered ones whose ladder window
+// has passed. It returns how many tokens it refreshed. Device and connector flows
+// are skipped: their cadence belongs to their own connectors, and a provider with no
+// token endpoint has nothing to refresh.
 func (w *OAuthRefreshWorker) Sweep(ctx context.Context) int {
+	release, ok := acquireWorkerLease(ctx, w.lease, slog.Default(), "oauth refresh")
+	if !ok {
+		return 0
+	}
+	if release != nil {
+		defer release()
+	}
 	refreshed := 0
 	for _, provider := range w.index.All() {
 		oauth := provider.OAuth
@@ -93,27 +109,61 @@ func (w *OAuthRefreshWorker) Sweep(ctx context.Context) int {
 			continue
 		}
 		for _, endpoint := range status.Endpoints {
-			if endpoint.Status != string(domain.UpstreamEndpointActive) ||
-				endpoint.RefreshState != domain.RefreshDue {
-				continue
-			}
-			if w.sweepOne(ctx, provider.ID, endpoint) {
-				refreshed++
+			switch endpoint.Status {
+			case string(domain.UpstreamEndpointActive):
+				if endpoint.RefreshState != domain.RefreshDue {
+					continue
+				}
+				if w.sweepOne(ctx, provider.ID, endpoint) {
+					refreshed++
+				}
+			case string(domain.UpstreamEndpointError):
+				// The ladder window, not the token expiry, decides a grave visit:
+				// an account whose token states no expiry still has to be revisited.
+				if !endpoint.RetryDue {
+					continue
+				}
+				if w.retryDeadLettered(ctx, provider.ID, endpoint) {
+					refreshed++
+				}
 			}
 		}
 	}
 	return refreshed
 }
 
+// retryDeadLettered revisits one buried account with a single grant. Success ends
+// the dead-letter and the ladder, both inside the refresh path; failure widens the
+// next window and leaves the account where it is, still `error`, with the reason
+// replaced by what this attempt actually hit.
+func (w *OAuthRefreshWorker) retryDeadLettered(ctx context.Context, providerID string, endpoint OAuthEndpointState) bool {
+	_, err := w.flow.Refresh(ctx, providerID, endpoint.EndpointID)
+	if err == nil {
+		slog.Info("oauth refresh worker recovered a dead-lettered account",
+			"provider", providerID, "endpoint", endpoint.EndpointID, "rounds", endpoint.RetryRounds)
+		return true
+	}
+	message := "oauth refresh revisit failed: " + err.Error()
+	if deadErr := w.flow.MarkRefreshDeadLetter(ctx, endpoint.EndpointID, message); deadErr != nil {
+		slog.Error("oauth refresh worker could not re-schedule the dead-lettered endpoint",
+			"endpoint", endpoint.EndpointID, "error", deadErr)
+	}
+	slog.Warn("oauth refresh revisit of a dead-lettered account failed",
+		"provider", providerID, "endpoint", endpoint.EndpointID,
+		"round", endpoint.RetryRounds, "error", err)
+	return false
+}
+
 // sweepOne refreshes one endpoint and applies the retry policy on failure:
 // count the attempt, back off below the limit, dead-letter at it. It reports
 // whether the token was refreshed.
 func (w *OAuthRefreshWorker) sweepOne(ctx context.Context, providerID string, endpoint OAuthEndpointState) bool {
+	if !w.due(endpoint.EndpointID, w.now()) {
+		return false
+	}
 	_, err := w.flow.Refresh(ctx, providerID, endpoint.EndpointID)
 	if err == nil {
-		w.mu.Lock()
-		delete(w.attempts, endpoint.EndpointID)
-		w.mu.Unlock()
+		w.clearRetry(endpoint.EndpointID)
 		return true
 	}
 
@@ -131,12 +181,10 @@ func (w *OAuthRefreshWorker) sweepOne(ctx context.Context, providerID string, en
 			slog.Error("oauth refresh worker could not dead-letter the endpoint",
 				"endpoint", endpoint.EndpointID, "error", deadErr)
 		}
-		w.mu.Lock()
-		delete(w.attempts, endpoint.EndpointID)
-		w.mu.Unlock()
+		w.clearRetry(endpoint.EndpointID)
 		return false
 	}
-	w.sleep(w.backoffDelay(attempt))
+	w.scheduleRetry(endpoint.EndpointID, w.now().Add(w.backoffDelay(attempt)))
 	return false
 }
 

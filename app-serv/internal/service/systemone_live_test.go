@@ -104,7 +104,7 @@ func (r *liveKeylessRouter) SelectEndpoint(context.Context, string, string) (dat
 }
 
 func (r *liveKeylessRouter) RecordSuccess(context.Context, dataplane.Selection) error { return nil }
-func (r *liveKeylessRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass) error {
+func (r *liveKeylessRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass, domain.RestDirective) error {
 	return nil
 }
 

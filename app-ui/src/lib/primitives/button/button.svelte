@@ -1,34 +1,60 @@
 <script lang="ts" module>
+	// The panel's one source of button state (DESIGN.md §3.5). A control takes its rest, hover, pressed,
+	// and disabled colour from these variants rather than from a class written at the call site, and the
+	// values are the tokens in `src/lib/states.css`.
+	//
+	// One text colour per state: two `text-*` utilities in the same state resolve by stylesheet order
+	// rather than by intent. No elevation (DESIGN.md §5). No focus ring either, because the panel has one
+	// focus treatment, the `:focus-visible` rule in `src/app.css`.
+	//
+	// A disabled filled control says one of two things. Gated by a precondition it has not met, so the
+	// action is not the operator's yet: it steps off the accent onto a neutral surface. In flight with a
+	// call the operator just pressed for: it keeps the accent and carries `aria-busy`, because grey under
+	// a finger reads as a broken button.
 	import { type VariantProps, tv } from "tailwind-variants";
 	import { cn, type WithElementRef } from "$lib/utils.js";
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
 
+	// Two heights: 44px for anything a screen asks the operator to press (SPEC-UI §8.7, §11.3), and the
+	// dense desktop pair `sm`/`icon-sm` at 36, one height so an icon and a text button in one toolbar
+	// finish on the same line.
 	export const buttonVariants = tv({
-		base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-md border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 aria-invalid:ring-3 active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+		base: "group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[var(--radius-sm)] border border-transparent bg-clip-padding text-sm font-medium transition-colors select-none active:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 		variants: {
 			variant: {
-				default: "bg-primary text-primary-foreground hover:bg-primary/80",
-				outline: "border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 aria-expanded:bg-muted aria-expanded:text-foreground shadow-xs",
-				secondary: "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-				ghost: "hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground",
-				destructive: "bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30",
-				link: "text-primary underline-offset-4 hover:underline",
+				// The one primary action on a screen (DESIGN.md §3.4).
+				default:
+					"bg-[var(--color-accent)] text-[var(--color-accent-text)] hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-press)] disabled:bg-[var(--color-surface-3)] disabled:text-[var(--color-text-muted)] disabled:opacity-100 [&[aria-busy='true']:disabled]:bg-[var(--color-accent)] [&[aria-busy='true']:disabled]:text-[var(--color-accent-text)]",
+				outline:
+					"border-[var(--color-border)] bg-transparent text-[var(--color-text)] hover:bg-[var(--color-state-hover)] active:bg-[var(--color-state-press)]",
+				ghost:
+					"text-[var(--color-text-muted)] hover:bg-[var(--color-state-hover)] hover:text-[var(--color-text)] active:bg-[var(--color-state-press)]",
+				// A filter chip. Selection rides `aria-pressed`, which is what announces the chosen one, so
+				// the state is read from the attribute rather than from a class a call site must remember
+				// to apply, and a chosen chip still answers a pointer instead of sitting at its own ground.
+				toggle:
+					"border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-state-hover)] hover:text-[var(--color-text)] active:bg-[var(--color-state-press)] aria-[pressed=true]:border-[var(--color-text)] aria-[pressed=true]:bg-[var(--color-surface-3)] aria-[pressed=true]:font-medium aria-[pressed=true]:text-[var(--color-text)] aria-[pressed=true]:hover:bg-[var(--color-state-deep)]",
+				// The commit in a confirmation dialog. A solid control needs a fixed label pair the way the
+				// accent does, so `danger-ink` is to `danger` what `accent-text` is to `accent`.
+				destructive:
+					"bg-[var(--color-danger)] text-[var(--color-danger-ink)] hover:bg-[var(--color-danger-hover)] active:bg-[var(--color-danger-press)] disabled:bg-[var(--color-surface-3)] disabled:text-[var(--color-text-muted)] disabled:opacity-100 [&[aria-busy='true']:disabled]:bg-[var(--color-danger)] [&[aria-busy='true']:disabled]:text-[var(--color-danger-ink)]",
+				// A danger action beside others in a row: the glyph carries the colour and the fill stays
+				// the neutral wash, because a red block on every row shouts. The glyph cannot sit on a
+				// pressed wash in its rest colour (4.17:1 on a raised panel), so it steps the danger ramp.
+				"destructive-ghost":
+					"text-[var(--color-danger)] hover:bg-[var(--color-state-hover)] hover:text-[var(--color-danger-hover)] active:bg-[var(--color-state-press)] active:text-[var(--color-danger-press)]"
 			},
 			size: {
-				default: "h-9 gap-1.5 px-2.5 in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-				xs: "h-6 gap-1 rounded-[min(var(--radius-md),8px)] px-2 text-xs in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-				sm: "h-8 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 in-data-[slot=button-group]:rounded-md has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5",
-				lg: "h-10 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-				icon: "size-9",
-				"icon-xs": "size-6 rounded-[min(var(--radius-md),8px)] in-data-[slot=button-group]:rounded-md [&_svg:not([class*='size-'])]:size-3",
-				"icon-sm": "size-8 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-md",
-				"icon-lg": "size-10",
-			},
+				default: "min-h-11 gap-2 px-3",
+				sm: "min-h-9 gap-1.5 px-2.5 text-xs",
+				icon: "size-11",
+				"icon-sm": "size-9"
+			}
 		},
 		defaultVariants: {
 			variant: "default",
-			size: "default",
-		},
+			size: "default"
+		}
 	});
 
 	export type ButtonVariant = VariantProps<typeof buttonVariants>["variant"];

@@ -161,7 +161,6 @@ describe('UsageOverviewTab with the live half', () => {
 		const container = render(UsageOverviewTab).container;
 
 		expect(await screen.findByText('OpenAI')).toBeTruthy();
-		expect(container.querySelector('.animate-ping')).toBeNull();
 
 		stub.streams[0].send(
 			frameText({
@@ -172,6 +171,11 @@ describe('UsageOverviewTab with the live half', () => {
 		);
 
 		expect(await screen.findByText('OpenAI (gpt-4o)')).toBeTruthy();
-		expect(container.querySelector('.animate-ping')).toBeTruthy();
+		expect(
+			(screen.getByText('OpenAI').parentElement as HTMLElement).classList.contains(
+				'border-[var(--color-ok)]'
+			)
+		).toBe(true);
+		expect(container.querySelector('.animate-ping')).toBeNull();
 	});
 });

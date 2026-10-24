@@ -13,6 +13,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { resolve } from '$app/paths';
 
 	let {
@@ -77,14 +78,9 @@
 	{/if}
 
 	{#snippet footer()}
-		<button type="button" class="min-h-11 underline" onclick={oncancel}>Keep it</button>
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
-			disabled={deleting}
-			onclick={onconfirm}
-		>
+		<Button type="button" variant="ghost" class="underline" onclick={oncancel}>Keep it</Button>
+		<Button variant="destructive" disabled={deleting} aria-busy={deleting} onclick={onconfirm}>
 			{deleting ? 'Deleting' : 'Delete the provider'}
-		</button>
+		</Button>
 	{/snippet}
 </Modal>

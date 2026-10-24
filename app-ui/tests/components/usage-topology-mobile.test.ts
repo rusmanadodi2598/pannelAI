@@ -36,7 +36,15 @@ describe('UsageTopology mobile P0 Fase A', () => {
 				name: 'drawing still owns the container unit',
 				pass: box.classList.contains('[container-type:inline-size]')
 			},
-			{ name: 'figure itself never scrolls', pass: !figure.classList.contains('overflow-x-auto') }
+			{ name: 'figure itself never scrolls', pass: !figure.classList.contains('overflow-x-auto') },
+			{
+				name: 'the scroller is a labelled region',
+				pass: scroller.getAttribute('role') === 'region' && scroller.hasAttribute('aria-label')
+			},
+			{
+				name: 'the scroller is keyboard reachable',
+				pass: scroller.getAttribute('tabindex') === '0'
+			}
 		];
 
 		for (const item of cases) {
@@ -44,23 +52,22 @@ describe('UsageTopology mobile P0 Fase A', () => {
 		}
 	});
 
-	it('F26 gives the frame mobile margins and padding, desktop keeps its own', () => {
+	it('F26 gives the scroller the panel gutter, not a 128px tablet margin', () => {
 		const container = draw();
 		const figure = container.querySelector('figure') as HTMLElement;
 		const scroller = figure.firstElementChild as HTMLElement;
 
 		const cases = [
-			{ name: 'figure pads tight on mobile', pass: figure.classList.contains('p-2') },
-			{ name: 'figure restores padding past mobile', pass: figure.classList.contains('sm:p-4') },
-			{ name: 'no bare desktop padding on the figure', pass: !figure.classList.contains('p-4') },
-			{ name: 'scroller margins tight on mobile', pass: scroller.classList.contains('mx-2') },
+			{ name: 'the live card owns the frame', pass: !figure.classList.contains('border') },
+			{ name: 'figure adds no padding of its own', pass: !figure.classList.contains('p-2') },
+			{ name: 'scroller needs no mobile margin', pass: scroller.classList.contains('mx-0') },
 			{
-				name: 'scroller restores margins past mobile',
-				pass: scroller.classList.contains('sm:mx-16')
+				name: 'scroller keeps the panel inner gutter from sm',
+				pass: scroller.classList.contains('sm:mx-4')
 			},
 			{
-				name: 'no bare desktop margin on the scroller',
-				pass: !scroller.classList.contains('mx-12')
+				name: 'the old tablet margin is gone',
+				pass: !scroller.classList.contains('sm:mx-16')
 			}
 		];
 
@@ -141,7 +148,6 @@ describe('UsageTopology mobile P0 Fase A', () => {
 		const figure = container.querySelector('figure') as HTMLElement;
 
 		const cases = [
-			{ name: 'figure still pads tight on mobile', pass: figure.classList.contains('p-2') },
 			{ name: 'no scroller without a drawing', pass: !figure.querySelector('.overflow-x-auto') },
 			{ name: 'no min-width without a drawing', pass: !figure.querySelector('.min-w-\\[520px\\]') }
 		];

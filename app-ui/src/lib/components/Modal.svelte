@@ -1,9 +1,8 @@
 <script lang="ts">
-	// Dialog built on the native <dialog> element.
-	//
-	// Native modal mode gives Escape-to-close, focus containment, and inert background for free, which
-	// is what R-32 requires. Reimplementing that on a div is how focus handling goes wrong.
+	// Dialog built on native <dialog>, which gives Escape, focus containment, and an inert background
+	// (R-32). Reimplementing that on a div is how focus handling goes wrong.
 	import { X } from '@lucide/svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { Snippet } from 'svelte';
 
 	type Props = {
@@ -11,15 +10,23 @@
 		open: boolean;
 		onclose: () => void;
 		dismissible?: boolean;
+		/** For a dialog whose body is a table: the standard column is a form's width, not a grid's. */
+		wide?: boolean;
 		children: Snippet;
 		footer?: Snippet;
 	};
 
-	let { title, open, onclose, dismissible = true, children, footer }: Props = $props();
+	let {
+		title,
+		open,
+		onclose,
+		dismissible = true,
+		wide = false,
+		children,
+		footer
+	}: Props = $props();
 
-	// One id per instance. The panel renders more than one dialog at a time (a combo's test result sits
-	// beside the tab's delete confirmation), and a fixed id would name every dialog with the first one's
-	// title, so a screen reader would read the wrong heading.
+	// One id per instance: two dialogs can be open, and a fixed id would name both with the first title.
 	const titleId = $props.id();
 
 	let element = $state<HTMLDialogElement | null>(null);
@@ -28,9 +35,8 @@
 		const node = element;
 		if (!node) return;
 
-		// jsdom, the panel's test environment, predates showModal/close on <dialog>. The open attribute is
-		// the fallback that keeps the dialog readable there; real browsers take the native path, which is
-		// what brings Escape-to-close and focus containment (R-32).
+		// jsdom has no showModal/close; the open attribute keeps tests readable while browsers take the
+		// native path.
 		if (open && !node.open) {
 			if (typeof node.showModal === 'function') node.showModal();
 			else node.setAttribute('open', '');
@@ -55,19 +61,24 @@
 	oncancel={handleCancel}
 	onclose={handleClose}
 	aria-labelledby={titleId}
-	class="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 text-[var(--color-text)] backdrop:bg-black/50"
+	class="m-auto max-h-[calc(100dvh-2rem)] {wide
+		? 'w-[min(56rem,calc(100vw-2rem))]'
+		: 'w-[min(32rem,calc(100vw-2rem))]'} overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 text-[var(--color-text)] backdrop:bg-black/50"
 >
 	<div class="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
-		<h2 id={titleId} class="text-sm font-semibold">{title}</h2>
+		<h2 id={titleId} class="min-w-0 flex-1 break-all text-sm font-semibold">{title}</h2>
 		{#if dismissible}
-			<button
-				type="button"
-				class="ml-auto inline-flex size-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)]"
+			<!-- The shared button, so a dialog closes with the same states as every other control: the
+			     glyph rests at the icon colour DESIGN.md §3.2 gives it, and the press paints. -->
+			<Button
+				variant="ghost"
+				size="icon"
+				class="ml-auto shrink-0"
 				onclick={onclose}
 				aria-label="Close dialog"
 			>
 				<X class="size-4" aria-hidden="true" />
-			</button>
+			</Button>
 		{/if}
 	</div>
 

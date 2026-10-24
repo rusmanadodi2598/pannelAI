@@ -16,6 +16,7 @@
 	import { createCustomModel } from '$lib/api/models';
 	import { listProviderModels } from '$lib/api/providers';
 	import type { ApiError } from '$lib/api/errors';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { customModelBody, type CustomModel } from '$lib/schemas/custom-model';
 	import { ENDPOINT_STATUS_DISABLED } from '$lib/schemas/endpoint';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
@@ -125,15 +126,15 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-3">
-	<button
-		type="button"
-		class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 disabled:opacity-50"
+	<Button
+		variant="outline"
 		disabled={importing || blocked}
+		aria-busy={importing}
 		onclick={() => void run()}
 	>
 		<ImportIcon class="size-4" aria-hidden="true" />
 		{importing ? 'Importing' : 'Import from /models'}
-	</button>
+	</Button>
 
 	{#if blocked}
 		<span class="text-sm text-[var(--color-text-muted)]">

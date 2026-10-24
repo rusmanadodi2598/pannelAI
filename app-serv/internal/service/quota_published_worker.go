@@ -60,7 +60,11 @@ type QuotaPublishedWorker struct {
 	seedPage int
 	// running is the single-flight guard against a sweep stacking on its own tick.
 	running atomic.Bool
+	lease   WorkerLease
 }
+
+// UseLease makes one seed-and-sweep cycle single-owner across replicas.
+func (w *QuotaPublishedWorker) UseLease(lease WorkerLease) { w.lease = lease }
 
 // NewQuotaPublishedWorker validates deps and returns a ready worker.
 func NewQuotaPublishedWorker(deps QuotaPublishedWorkerDeps) (*QuotaPublishedWorker, error) {
@@ -101,12 +105,25 @@ func (w *QuotaPublishedWorker) Run(ctx context.Context, interval time.Duration) 
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			scheduled, polled := w.Seed(ctx), w.Sweep(ctx)
+			scheduled, polled := w.runCycle(ctx)
 			if scheduled+polled > 0 {
 				w.logger.Info("published quota worker swept", "scheduled", scheduled, "polled", polled)
 			}
 		}
 	}
+}
+
+// runCycle holds the replica lease across the seed and sweep, so two replicas
+// do not schedule or poll the same due set in one tick.
+func (w *QuotaPublishedWorker) runCycle(ctx context.Context) (scheduled, polled int) {
+	release, ok := acquireWorkerLease(ctx, w.lease, w.logger, "published quota poll")
+	if !ok {
+		return 0, 0
+	}
+	if release != nil {
+		defer release()
+	}
+	return w.Seed(ctx), w.Sweep(ctx)
 }
 
 // Sweep asks at most policy.Budget due endpoints and returns how many it polled.

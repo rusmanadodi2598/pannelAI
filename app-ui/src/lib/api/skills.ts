@@ -45,10 +45,22 @@ export async function probeSkillSource(url: string): Promise<SourceProbe> {
 	}
 }
 
-/** Ask every row's address, keyed by row id so the page can render one row at a time. */
-export async function probeSkillSources(skills: Skill[]): Promise<Record<string, SourceProbe>> {
+/**
+ * Ask every row's address, keyed by row id.
+ *
+ * `onprobe` fires as each answer lands, so the entry skill's install line does not wait for the slowest
+ * capability source before it can be used.
+ */
+export async function probeSkillSources(
+	skills: Skill[],
+	onprobe?: (id: string, probe: SourceProbe) => void
+): Promise<Record<string, SourceProbe>> {
 	const answered = await Promise.all(
-		skills.map(async (skill) => [skill.id, await probeSkillSource(skill.raw_url)] as const)
+		skills.map(async (skill) => {
+			const probe = await probeSkillSource(skill.raw_url);
+			onprobe?.(skill.id, probe);
+			return [skill.id, probe] as const;
+		})
 	);
 
 	return Object.fromEntries(answered);

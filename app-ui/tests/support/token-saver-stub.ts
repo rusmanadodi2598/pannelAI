@@ -7,10 +7,9 @@
 // Reading a control's state is `tests/support/dom.ts`, which the component tests share.
 
 import { vi } from 'vitest';
+import type { TokenSaver } from '$lib/schemas/token-saver';
 
-export function tokenSaverDocument(
-	overrides: Record<string, unknown> = {}
-): Record<string, unknown> {
+export function tokenSaverDocument(overrides: Partial<TokenSaver> = {}): TokenSaver {
 	return {
 		rtk: { enabled: false, filters: [] },
 		headroom: { enabled: false, url: '', compress_user_messages: false },
@@ -21,9 +20,11 @@ export function tokenSaverDocument(
 
 export type TokenSaverStub = {
 	puts: Record<string, unknown>[];
-	config: Record<string, unknown>;
+	config: TokenSaver;
 	readStatus: number;
 	writeStatus: number;
+	/** Holds the PUT open, for the one-write-at-a-time rule. */
+	putDelayMs: number;
 };
 
 export function stubTokenSaver(overrides: Partial<TokenSaverStub> = {}): TokenSaverStub {
@@ -32,6 +33,7 @@ export function stubTokenSaver(overrides: Partial<TokenSaverStub> = {}): TokenSa
 		config: tokenSaverDocument(),
 		readStatus: 200,
 		writeStatus: 200,
+		putDelayMs: 0,
 		...overrides
 	};
 
@@ -42,7 +44,12 @@ export function stubTokenSaver(overrides: Partial<TokenSaverStub> = {}): TokenSa
 		const method = init?.method ?? 'GET';
 
 		if (method === 'PUT') {
-			stub.puts.push(JSON.parse(String(init?.body ?? '{}')));
+			const body = JSON.parse(String(init?.body ?? '{}')) as TokenSaver;
+			stub.puts.push(body);
+
+			if (stub.putDelayMs > 0) {
+				await new Promise((resolve) => setTimeout(resolve, stub.putDelayMs));
+			}
 
 			if (stub.writeStatus !== 200) {
 				return new Response(envelope('VALIDATION_ERROR', 'The gateway refused this value.'), {
@@ -51,6 +58,8 @@ export function stubTokenSaver(overrides: Partial<TokenSaverStub> = {}): TokenSa
 				});
 			}
 
+			// A successful replace is what the next read answers with, which is what the page re-reads.
+			stub.config = body;
 			return new Response(JSON.stringify(stub.config), {
 				status: 200,
 				headers: { 'content-type': 'application/json' }

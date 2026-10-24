@@ -24,10 +24,13 @@ func TestProvider_ChatRoutability(t *testing.T) {
 		{name: "openai is translated natively", format: "openai", want: Routable, wantOK: true},
 		{name: "claude is translated natively", format: "claude", want: Routable, wantOK: true},
 		{name: "openai-responses is translated natively", format: "openai-responses", want: Routable, wantOK: true},
+		{name: "the generateContent wire is translated natively", format: "gemini", want: Routable, wantOK: true},
 		{name: "a bespoke protocol needs a connector", format: "kiro", want: RoutableNeedsConnector},
 		{name: "a cursor-style protocol needs a connector", format: "cursor", want: RoutableNeedsConnector},
-		{name: "an antigravity-style protocol needs a connector", format: "antigravity", want: RoutableNeedsConnector},
-		{name: "a gemini-style protocol needs a connector", format: "gemini", want: RoutableNeedsConnector},
+		{name: "a project-and-region protocol needs a connector", format: "vertex", want: RoutableNeedsConnector},
+		{name: "the cloudcode envelope wire is translated natively", format: "gemini-cli", want: Routable, wantOK: true},
+		{name: "the ide envelope wire is translated natively", format: "antigravity", want: Routable, wantOK: true},
+		{name: "a project-and-region protocol needs a connector", format: "vertex", want: RoutableNeedsConnector},
 		{name: "an unknown format needs a connector", format: "something-new", want: RoutableNeedsConnector},
 	}
 	for _, tc := range cases {
@@ -53,13 +56,15 @@ func TestProvider_ChatRoutabilityOnEmbeddedRegistry(t *testing.T) {
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	// Providers on the three formats P1 translates. Two are deliberately absent
-	// despite being on the owner's list: `commandcode` declares format
-	// "commandcode" and `gemini-cli` declares "gemini-cli", both bespoke
-	// protocols, so they are in the connector-only bucket below.
+	// Providers on the formats the gateway translates. The three Gemini families
+	// joined this bucket when generateContent got its translator (draft 061); two
+	// entries stay out despite being on the owner's list: `commandcode` declares
+	// its own protocol, and `vertex` puts the project and region in the path rather
+	// than in an envelope, so no connector serves it yet.
 	nativelyServed := []string{
 		"deepseek", "openai", "openrouter", "nvidia",
 		"glm", "minimax", "kimi", "grok-cli", "tencent",
+		"gemini", "gemini-cli", "antigravity",
 	}
 	for _, id := range nativelyServed {
 		p, ok := idx.Provider(id)
@@ -71,10 +76,10 @@ func TestProvider_ChatRoutabilityOnEmbeddedRegistry(t *testing.T) {
 		}
 	}
 
-	// These speak protocols P1 does not translate, so a connector is required.
-	// All four are on the owner's list and would otherwise be "configured but
-	// always failing".
-	needsConnector := []string{"antigravity", "gemini", "gemini-cli", "commandcode"}
+	// These speak protocols the gateway does not translate, so a connector is
+	// required. Both are on the owner's list and would otherwise be "configured but
+	// always failing", which is the trap this flag exists to keep out of the panel.
+	needsConnector := []string{"vertex", "commandcode"}
 	for _, id := range needsConnector {
 		p, ok := idx.Provider(id)
 		if !ok {

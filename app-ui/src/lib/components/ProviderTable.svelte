@@ -4,14 +4,20 @@
 	// Columns follow the operator's question here: can the gateway route to this provider at all, and does it
 	// have a working account. The name carries the id beneath it because the registry has both and an
 	// operator matching a log line needs the id, not the display name. A provider with no endpoint links
-	// straight to the create form for that provider, which is the one action its row can offer.
+	// to the Connections tab with the create form open, which is the one action its row can offer. Custom
+	// nodes are synthesized into this same list, so the row marks them Custom rather than giving them a
+	// second presentation.
 	//
 	// The two row actions are links rather than buttons, because both navigate: the glyph rides beside the
 	// label (CONTROL_ICONS.open, CONTROL_ICONS.add), the way the reference renders its own provider rows'
-	// actions, and the label stays because a link's name is what the operator reads.
+	// actions, and the label stays because a link's name is what the operator reads. An action link is a
+	// control (DESIGN.md §3.5), so both go through the button: it renders an anchor when given `href`,
+	// which keeps the role and the navigation and takes the four states off the call site.
 	import { resolve } from '$app/paths';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { AUTH_TYPE_LABELS } from '$lib/schemas/endpoint';
+	import { isNodeId } from '$lib/schemas/provider-node';
 	import { statusSummaryText, type Provider } from '$lib/schemas/provider';
 
 	const OpenIcon = CONTROL_ICONS.open.icon;
@@ -40,6 +46,9 @@
 				<tr class="border-t border-[var(--color-border)]">
 					<td data-label="Provider" class="px-3 py-2">
 						<span class="font-medium">{provider.name}</span>
+						{#if isNodeId(provider.id)}
+							<span class="ms-1 text-xs text-[var(--color-text-muted)]">Custom</span>
+						{/if}
 						<br />
 						<span class="text-[var(--color-text-muted)]">{provider.id}</span>
 					</td>
@@ -52,21 +61,25 @@
 					>
 					<td data-label="Actions" class="px-3 py-2">
 						<div class="flex flex-wrap items-center gap-2">
-							<a
+							<Button
 								href={resolve('/providers/[provider_id]', { provider_id: provider.id })}
-								class="inline-flex min-h-11 items-center gap-1 underline"
+								variant="ghost"
+								class="gap-1 px-2 underline"
 							>
 								<OpenIcon class="size-4" aria-hidden="true" />
 								Open
-							</a>
+							</Button>
 							{#if provider.endpoint_count === 0}
-								<a
-									href={resolve('/providers/[provider_id]', { provider_id: provider.id })}
-									class="inline-flex min-h-11 items-center gap-1 underline"
+								<Button
+									href={`${resolve('/providers/[provider_id]', {
+										provider_id: provider.id
+									})}?tab=connections&add=endpoint`}
+									variant="ghost"
+									class="gap-1 px-2 underline"
 								>
 									<AddIcon class="size-4" aria-hidden="true" />
 									Add endpoint
-								</a>
+								</Button>
 							{/if}
 						</div>
 					</td>

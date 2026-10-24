@@ -1,0 +1,237 @@
+// The settings screen's own rules: one tab, one group, one write (docs/SPEC-UI/001-SPEC-UI.md §6.13, §8.4).
+//
+// The load-bearing assertion is the PATCH body, because §6.13 makes `PATCH` per changed group: a tab that
+// sent the whole document could overwrite a key another tab owns with a value it read before that tab
+// changed it. Checking the wire is checking where the rule actually lives.
+
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import SettingsPage from '../../src/routes/settings/+page.svelte';
+import { openTab, stubSettings } from '../support/settings-stub';
+
+vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
+
+describe('SettingsPage', () => {
+	afterEach(() => {
+		cleanup();
+		vi.unstubAllGlobals();
+	});
+
+	it('renders the five §6.13 tabs', async () => {
+		stubSettings();
+		render(SettingsPage);
+
+		await screen.findByRole('tablist');
+
+		for (const label of ['Security', 'Routing', 'Network', 'Logging', 'Token Saver']) {
+			expect(screen.getByRole('tab', { name: label }), label).toBeTruthy();
+		}
+	});
+
+	it('puts the draft back on the loaded value when Discard is pressed', async () => {
+		const stub = stubSettings();
+		render(SettingsPage);
+		await openTab('Routing');
+
+		await fireEvent.input(screen.getByLabelText('Routing sticky limit'), {
+			target: { value: '9' }
+		});
+		expect(screen.getByText('Unsaved changes')).toBeTruthy();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
+
+		expect((screen.getByLabelText('Routing sticky limit') as HTMLInputElement).value).toBe('3');
+		expect(screen.queryByText('Unsaved changes')).toBeNull();
+		expect(stub.patches).toEqual([]);
+	});
+
+	it('shows the loaded routing values on the Routing tab', async () => {
+		stubSettings();
+		render(SettingsPage);
+		await openTab('Routing');
+
+		expect((screen.getByLabelText('Default combo strategy') as HTMLSelectElement).value).toBe(
+			'fallback'
+		);
+		expect((screen.getByLabelText('Combo sticky limit') as HTMLInputElement).value).toBe('1');
+		expect((screen.getByLabelText('Routing sticky limit') as HTMLInputElement).value).toBe('3');
+		expect((screen.getByLabelText('Credential rotation') as HTMLSelectElement).value).toBe(
+			'fill-first'
+		);
+	});
+
+	it('sends only the routing group when the Routing tab saves', async () => {
+		const stub = stubSettings();
+		render(SettingsPage);
+		await openTab('Routing');
+
+		await fireEvent.input(screen.getByLabelText('Routing sticky limit'), {
+			target: { value: '5' }
+		});
+		await fireEvent.click(screen.getByRole('button', { name: 'Save routing settings' }));
+
+		await waitFor(() => {
+			expect(stub.patches.length).toBe(1);
+		});
+
+		expect(Object.keys(stub.patches[0])).toEqual(['routing']);
+		expect(stub.patches[0].routing).toEqual({
+			combo_strategy: 'fallback',
+			combo_sticky_limit: 1,
+			sticky_limit: 5,
+			fallback_strategy: 'fill-first',
+			key_park: {
+				auth_seconds: 120,
+				rate_limit_seconds: 60,
+				transient_seconds: 15,
+				billing_seconds: 900
+			},
+			failover: { total_ms: 30000, max_attempts: 8 }
+		});
+	});
+
+	it('refuses a routing limit below the API floor without sending anything', async () => {
+		const stub = stubSettings();
+		render(SettingsPage);
+		await openTab('Routing');
+
+		await fireEvent.input(screen.getByLabelText('Routing sticky limit'), {
+			target: { value: '0' }
+		});
+		await fireEvent.click(screen.getByRole('button', { name: 'Save routing settings' }));
+
+		// Asserted on the field's own validation message, not on a shared hint substring: every hint on
+		// this tab ends with "At least 1", so a substring match would pass without the form refusing.
+		expect(await screen.findByText('The routing sticky limit must be at least 1.')).toBeTruthy();
+		expect(stub.patches.length).toBe(0);
+	});
+
+	it('sends only the logging group when the Logging tab saves', async () => {
+		const stub = stubSettings();
+		render(SettingsPage);
+		await openTab('Logging');
+
+		await fireEvent.input(screen.getByLabelText('Retention days'), { target: { value: '30' } });
+		await fireEvent.click(screen.getByRole('button', { name: 'Save logging settings' }));
+
+		await waitFor(() => {
+			expect(stub.patches.length).toBe(1);
+		});
+
+		expect(Object.keys(stub.patches[0])).toEqual(['logging']);
+		expect(stub.patches[0].logging).toEqual({
+			request_capture_enabled: false,
+			retention_days: 30,
+			capture_body_max_bytes: 65536,
+			observability_max_records: 1000
+		});
+	});
+
+	it('states the privacy cost of turning capture on', async () => {
+		stubSettings();
+		render(SettingsPage);
+		await openTab('Logging');
+
+		// The warning names what is stored and the risk, per §6.13's "capture sets a privacy cost".
+		expect(screen.getByText(/Stores full request and response bodies/i)).toBeTruthy();
+		expect(screen.getByText(/can be sensitive/i)).toBeTruthy();
+	});
+
+	it('links the Network tab to Proxy Pools instead of repeating the outbound form', async () => {
+		// §6.13 gives this tab a link, not a second editor: one configuration with two editors is how
+		// the two drift. The link is real because the route exists, which R-24 requires.
+		const stub = stubSettings();
+		render(SettingsPage);
+		await openTab('Network');
+
+		const link = screen.getByRole('link', { name: 'Open Proxy Pools' });
+		expect(link.getAttribute('href')).toBe('/proxy-pools');
+		expect(screen.queryByLabelText('Last-resort proxy URL')).toBeNull();
+
+		// Nothing is written from this tab any more, so a click here must not produce a PATCH.
+		await fireEvent.click(link);
+		expect(stub.patches).toEqual([]);
+	});
+
+	it('links the Token Saver tab to its own screen instead of repeating the form', async () => {
+		stubSettings();
+		render(SettingsPage);
+		await openTab('Token Saver');
+
+		expect(screen.getByRole('link', { name: 'Open Token Saver' }).getAttribute('href')).toBe(
+			'/token-saver'
+		);
+		expect(screen.queryByRole('button', { name: 'Save RTK' })).toBeNull();
+	});
+
+	it('shows the server message when a save is refused, and keeps the draft', async () => {
+		const stub = stubSettings({ writeStatus: 400 });
+		render(SettingsPage);
+		await openTab('Routing');
+
+		await fireEvent.input(screen.getByLabelText('Routing sticky limit'), {
+			target: { value: '5' }
+		});
+		await fireEvent.click(screen.getByRole('button', { name: 'Save routing settings' }));
+
+		expect(await screen.findByText('The gateway refused this value.')).toBeTruthy();
+		expect(stub.patches.length).toBe(1);
+	});
+
+	it('reports a load failure and offers a retry', async () => {
+		const stub = stubSettings({ readStatus: 500 });
+		render(SettingsPage);
+
+		expect(await screen.findByText('Settings could not be loaded')).toBeTruthy();
+
+		const before = stub.patches.length;
+		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+		await waitFor(() => {
+			expect(stub.patches.length).toBe(before);
+		});
+	});
+
+	it('asks before opening the panel, and writes nothing until the band is pressed', async () => {
+		// The flip is the dangerous direction, so it asks. It does not commit: a write from inside the
+		// dialog would also carry an unsaved edit on the row beside it, which the operator never saved.
+		const stub = stubSettings();
+		render(SettingsPage);
+		await openTab('Security');
+
+		const box = screen.getByLabelText(/Require a password to open the panel/) as HTMLInputElement;
+
+		await fireEvent.click(box);
+		expect(await screen.findByRole('button', { name: 'Turn it off' })).toBeTruthy();
+		expect(stub.patches).toEqual([]);
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Keep the password' }));
+		expect(box.checked).toBe(true);
+		expect(screen.queryByText('Unsaved changes')).toBeNull();
+
+		await fireEvent.click(box);
+		await fireEvent.click(screen.getByRole('button', { name: 'Turn it off' }));
+
+		expect(box.checked).toBe(false);
+		expect(screen.getByText('Unsaved changes')).toBeTruthy();
+		expect(stub.patches).toEqual([]);
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Save access settings' }));
+		await waitFor(() => expect(stub.patches.length).toBe(1));
+		expect(stub.patches[0].security).toEqual({ require_login: false, require_api_key: true });
+	});
+
+	it('keeps the commit band pinned while a long tab scrolls', async () => {
+		// The Routing tab is 2938px tall: its band sat 2764px below the first field, so the unsaved
+		// marker and the commit were both off screen while the operator was editing.
+		stubSettings();
+		render(SettingsPage);
+		await openTab('Routing');
+
+		const band = screen
+			.getByRole('button', { name: 'Save routing settings' })
+			.closest('div') as HTMLElement;
+		expect(band.className).toContain('sticky');
+		expect(band.className).toContain('bottom-0');
+	});
+});

@@ -48,7 +48,7 @@
 						{#if icon}
 							<icon.icon aria-hidden="true" />
 						{/if}
-						<span>{item.label}</span>
+						<span class="group-data-[collapsible=icon]:sr-only">{item.label}</span>
 						<ChevronRight
 							aria-hidden="true"
 							class="ml-auto size-4 transition-transform data-[open=true]:rotate-90 group-data-[collapsible=icon]:hidden"
@@ -118,7 +118,7 @@
 					{#if icon}
 						<icon.icon aria-hidden="true" />
 					{/if}
-					<span>{item.label}</span>
+					<span class="group-data-[collapsible=icon]:sr-only">{item.label}</span>
 				</a>
 			{/snippet}
 		</Sidebar.MenuButton>

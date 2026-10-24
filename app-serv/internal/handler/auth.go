@@ -13,6 +13,7 @@ package handler
 import (
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/clientip"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
@@ -116,5 +117,5 @@ func (h *AuthHandler) RequireSession(next http.Handler) http.Handler {
 // clientAddress answers which client the login limiter buckets this request
 // under, the same trusted-proxy rule the gateway limiter uses.
 func (h *AuthHandler) clientAddress(r *http.Request) string {
-	return clientip.Address(r.RemoteAddr, r.Header.Get("X-Forwarded-For"), h.proxies)
+	return clientip.Address(r.RemoteAddr, strings.Join(r.Header.Values("X-Forwarded-For"), ","), h.proxies)
 }

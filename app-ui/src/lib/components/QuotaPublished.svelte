@@ -19,20 +19,23 @@
 	// the counted rows' geometry so one screen cannot hold two answers to "percent used".
 	import { getPublishedQuota } from '$lib/api/usage';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import {
 		PUBLISHED_QUOTA_NOTE,
 		publishedAmountText,
-		publishedAskedStamp,
 		publishedBar,
-		publishedAttemptFailure,
-		publishedQuotaNotice,
 		publishedRefillVerb,
-		publishedWasNeverPolled,
 		publishedWindowView,
 		type PublishedQuotaUsage
 	} from '$lib/schemas/quota-published';
-	import { countdownText, formatTimestamp } from '$lib/utils/time';
+	import {
+		publishedAskedStamp,
+		publishedAttemptFailure,
+		publishedQuotaNotice,
+		publishedWasNeverPolled
+	} from '$lib/schemas/quota-published-status';
+	import { countdownText, formatTimestampWithTime } from '$lib/utils/time';
 
 	type Props = {
 		/** The connection this block speaks for, which is also the key the page's answer arrived under. */
@@ -107,15 +110,15 @@
 	{/if}
 
 	<div class="flex flex-wrap items-center gap-2">
-		<button
-			type="button"
-			class="inline-flex min-h-11 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50"
+		<Button
+			variant="outline"
 			aria-label={`Ask the provider about ${label}`}
 			disabled={loading}
+			aria-busy={loading}
 			onclick={() => void askNow()}
 		>
-			Ask {provider} now
-		</button>
+			Ask now
+		</Button>
 		{#if loading}
 			<span role="status" class="text-xs text-[var(--color-text-muted)]">Asking the provider…</span>
 		{/if}
@@ -142,7 +145,7 @@
 			{@const bar = publishedBar(row)}
 			<div class="flex flex-col gap-1">
 				<div class="flex items-center justify-between gap-2 text-sm">
-					<span class="truncate font-medium">{row.label}</span>
+					<span class="min-w-0 break-words font-medium" title={row.label}>{row.label}</span>
 					{#if row.creditBalance}
 						<!-- A balance is a sum of money, so it does not wear the shape of a percentage. -->
 						<span
@@ -171,7 +174,7 @@
 						<span
 							>{publishedRefillVerb(row)}
 							{countdownText(row.resetsAt, now)} (at
-							{formatTimestamp(row.resetsAt)})</span
+							{formatTimestampWithTime(row.resetsAt)})</span
 						>
 					{/if}
 				</div>
@@ -184,7 +187,8 @@
 			     since. Warn, not danger, because the read that produced them completed. -->
 			<p class="text-xs text-[var(--color-warn)]">
 				Last poll failed ({failed.count} in a row){#if failed.at !== null}, asked
-					{formatTimestamp(failed.at)}{/if}. The figures above are the last the provider gave.
+					{formatTimestampWithTime(failed.at)}{/if}. The figures above are the last the provider
+				gave.
 			</p>
 		{/if}
 
@@ -200,7 +204,7 @@
 		     no numbers and no real instant, so it prints its sentence alone. -->
 		{#if asked !== null}
 			<p class="text-xs tabular-nums text-[var(--color-text-muted)]">
-				Asked {formatTimestamp(asked)}{shown.cached === true ? ' · cached' : ''}
+				Asked {formatTimestampWithTime(asked)}{shown.cached === true ? ' · cached' : ''}
 			</p>
 		{/if}
 	{/if}

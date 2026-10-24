@@ -26,6 +26,7 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { providerOAuthStatus, startProviderOAuth } from '$lib/api/providers';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		OAUTH_RETURN_KEYS,
 		hasOAuthReturn,
@@ -138,10 +139,8 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the OAuth state" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => load(providerId)}>Try again</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => load(providerId)}
+					>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>
@@ -150,14 +149,14 @@
 
 		{#if oauthFlowStartable(status.flow)}
 			<div class="flex flex-wrap items-center gap-3">
-				<button
-					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
+				<Button
+					variant="outline"
 					disabled={starting}
+					aria-busy={starting}
 					onclick={() => void start()}
 				>
 					{starting ? 'Starting' : 'Start the authorization'}
-				</button>
+				</Button>
 
 				{#if authorizeUrl}
 					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- the authorize URL is the provider's own absolute URL, never a route of this app -->

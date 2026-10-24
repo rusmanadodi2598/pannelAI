@@ -28,7 +28,7 @@ func insertKeys(ctx context.Context, tx pgx.Tx, keys []domain.UpstreamKey) error
 	_, err := tx.CopyFrom(ctx, pgx.Identifier{"upstream_keys"},
 		upstreamKeyCopyColumns,
 		pgx.CopyFromSlice(len(keys), func(i int) ([]any, error) {
-			return keyCopyRow(keys[i]), nil
+			return keyCopyRow(keys[i])
 		}))
 	if err != nil {
 		return translateKeyError(err)

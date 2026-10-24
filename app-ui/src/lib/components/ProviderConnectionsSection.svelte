@@ -22,6 +22,7 @@
 	import ProviderEndpoints from '$lib/components/ProviderEndpoints.svelte';
 	import ProviderRotationSwitch from '$lib/components/ProviderRotationSwitch.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
+	import { Button } from '$lib/primitives/button/index.js';
 	import {
 		keyCredentialLabel,
 		takesKeyCredential,
@@ -33,6 +34,7 @@
 		provider,
 		token = 0,
 		notice = null,
+		initialCreating = false,
 		onaddkey
 	}: {
 		provider: ProviderDetail;
@@ -40,6 +42,8 @@
 		token?: number;
 		/** The last add's outcome, reported by the page that owns the dialog. */
 		notice?: string | null;
+		/** A deep link asked for the create form, so it opens with the section. */
+		initialCreating?: boolean;
 		onaddkey: () => void;
 	} = $props();
 
@@ -62,9 +66,11 @@
 	const showKeyButton = $derived(supportsKey);
 	const showConnectionButton = $derived(!supportsKey || supportsOAuth);
 
-	// The inline create form's own state: the add button toggles it, and a successful create bumps a local
-	// revision so the list below re-reads without a page reload.
-	let creating = $state(false);
+	// The inline create form's own state: the add button toggles it, a deep link can open it, and a
+	// successful create bumps a local revision so the list below re-reads without a page reload.
+	// Seeded once from the deep link; the operator owns the form state after mount.
+	// svelte-ignore state_referenced_locally
+	let creating = $state(initialCreating);
 	let createRevision = $state(0);
 	let createMessage = $state<string | null>(null);
 </script>
@@ -75,21 +81,13 @@
 		<div class="flex flex-wrap items-start gap-3">
 			<ProviderRotationSwitch providerId={provider.id} />
 			{#if showKeyButton}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
-					onclick={onaddkey}
-				>
+				<Button variant="outline" onclick={onaddkey}>
 					<AddKeyIcon class="size-4" aria-hidden="true" />
 					Add {credentialLabel}
-				</button>
+				</Button>
 			{/if}
 			{#if showConnectionButton}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
-					onclick={() => (creating = !creating)}
-				>
+				<Button variant="outline" onclick={() => (creating = !creating)}>
 					{#if creating}
 						<CancelIcon class="size-4" aria-hidden="true" />
 						Hide the form
@@ -97,7 +95,7 @@
 						<AddIcon class="size-4" aria-hidden="true" />
 						Add a connection
 					{/if}
-				</button>
+				</Button>
 			{/if}
 		</div>
 	</div>

@@ -47,6 +47,11 @@ type responsesStreamState struct {
 	// sawToolCall makes the finish reason tool_calls, which is what a client
 	// dispatches on.
 	sawToolCall bool
+	// openCall marks the call the stream never closed. The upstream opens a call
+	// with `output_item.added` and closes it with `output_item.done`, so a stop
+	// between the two cut the arguments mid-write and the client cannot dispatch
+	// what it was given.
+	openCall bool
 }
 
 // chunk maps one Responses event onto the OpenAI chunk it stands for, or nil
@@ -80,10 +85,11 @@ func (r *responsesStreamState) chunk(payload []byte) []byte {
 		}
 	case EventResponseItemDone:
 		if item, ok := objectField(event, "item"); ok && isResponsesCallItem(item) {
+			r.openCall = false
 			r.toolIndex++
 			return nil
 		}
-	case EventResponseCompleted, EventResponseDone:
+	case EventResponseCompleted, EventResponseDone, EventResponseIncomplete:
 		return r.completed(response)
 	case EventResponseFailed, EventResponseError:
 		return r.failure(event, response)
@@ -107,6 +113,7 @@ func (r *responsesStreamState) itemAdded(event object) []byte {
 		callID = "call_pannelai_" + strconv.Itoa(r.toolIndex)
 	}
 	r.sawToolCall = true
+	r.openCall = true
 	return r.chunkWith(map[string]any{"tool_calls": []any{map[string]any{
 		"index": r.toolIndex,
 		"id":    callID,
@@ -127,12 +134,11 @@ func (r *responsesStreamState) argumentsDelta(delta string) []byte {
 
 // completed closes the answer: the finish reason the stream implies and the
 // accounting the upstream reported, in the shape the client states read.
+//
+// The reason comes from the fold's own function, so a stream and the body it folds
+// into cannot disagree about a ceiling stop.
 func (r *responsesStreamState) completed(response object) []byte {
-	finish := FinishStop
-	if r.sawToolCall {
-		finish = FinishToolCalls
-	}
-	chunk := r.chunkWith(map[string]any{}, finish)
+	chunk := r.chunkWith(map[string]any{}, responsesFinishReason(response, r.sawToolCall, r.openCall))
 	body, ok := decodeObject(chunk)
 	if !ok {
 		return chunk

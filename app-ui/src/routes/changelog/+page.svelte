@@ -13,6 +13,7 @@
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { CHANGELOG_PATH, fetchChangelog } from '$lib/api/changelog';
 	import { fetchSystemInfo } from '$lib/api/system';
@@ -106,11 +107,9 @@
 	{:else if error}
 		<StateMessage kind="error" title={copy.error.title} apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => void load()}>{copy.error.retry}</button
-				>
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>
+					{copy.error.retry}
+				</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if changelog && releases.length === 0}

@@ -20,9 +20,12 @@
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
+	import { createProxyBulkActions } from '$lib/stores/proxy-bulk.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { deleteProxy, listProxies, testProxy } from '$lib/api/proxies';
+	import BulkActionBar from '$lib/components/BulkActionBar.svelte';
 	import { proxyTestStateLabel, type Proxy } from '$lib/schemas/proxy';
 
 	const AddIcon = CONTROL_ICONS.add.icon;
@@ -41,7 +44,19 @@
 	let testingId = $state<string | null>(null);
 	let notice = $state<string | ApiError | null>(null);
 	let noticePrefix = $state('');
-	let showBatch = $state(false);
+	let batchOpen = $state(false);
+
+	const total = $derived(proxies?.length ?? 0);
+
+	const bulk = createProxyBulkActions({
+		ids: () => (proxies ?? []).map((proxy) => proxy.id),
+		total: () => total,
+		onapplied: load,
+		onremoved: (message) => {
+			noticePrefix = 'Pool';
+			notice = message;
+		}
+	});
 
 	onMount(() => void load());
 
@@ -113,11 +128,7 @@
 	{:else if error && proxies === null}
 		<StateMessage kind="error" title="Proxy pool not loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => void load()}>Try again</button
-				>
+				<Button variant="ghost" class="underline" onclick={() => void load()}>Try again</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if proxies}
@@ -138,60 +149,80 @@
 				<!-- The empty state owns the primary action while the pool is empty, so the toolbar does not
 				     repeat it. Two buttons with one label is a redundant control, and an ambiguous one for
 				     anyone reading the screen rather than looking at it. -->
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)]"
-					onclick={() => (formTarget = 'new')}
-				>
+				<Button onclick={() => (formTarget = 'new')}>
 					<AddIcon class="size-4" aria-hidden="true" />
 					Add a proxy
-				</button>
+				</Button>
 			{/if}
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-2 underline"
-				onclick={() => (showBatch = !showBatch)}
-			>
+			<Button variant="ghost" class="underline" onclick={() => (batchOpen = true)}>
 				<AddManyIcon class="size-4" aria-hidden="true" />
-				{showBatch ? 'Hide the paste box' : 'Add several at once'}
-			</button>
+				Add several at once
+			</Button>
 			<!-- Refresh lives only in the shared control above: a second
 			     plain "Refresh" here would be the same action written twice, and the shared control renders in
 			     every state this toolbar can appear in. -->
 		</div>
 
-		{#if showBatch}
-			<ProxyBatchAdd onsubmitted={load} />
+		{#if batchOpen}
+			<!-- Mounted only while open, so closing the dialog discards the paste rather than holding a
+			     draft the operator cannot see. -->
+			<ProxyBatchAdd onsubmitted={load} onclose={() => (batchOpen = false)} />
 		{/if}
 
 		{#if proxies.length === 0}
 			<StateMessage
 				kind="empty"
 				title="No proxies yet"
-				description="Add one to route upstream calls."
+				description="Add one to route upstream calls through it once proxying is on."
 			>
 				{#snippet action()}
-					<button
-						type="button"
-						class="inline-flex min-h-11 items-center gap-2 underline"
-						onclick={() => (formTarget = 'new')}
-					>
+					<Button variant="ghost" class="underline" onclick={() => (formTarget = 'new')}>
 						<AddIcon class="size-4" aria-hidden="true" />
 						Add a proxy
-					</button>
+					</Button>
 				{/snippet}
 			</StateMessage>
 		{:else}
 			<ProxyTable
 				{proxies}
 				{testingId}
+				selected={bulk.selected.ids}
+				allSelected={bulk.selected.all}
+				{total}
 				onedit={(proxy) => (formTarget = proxy)}
 				ontest={(proxy) => void runTest(proxy)}
+				ontoggle={(proxy, enabled) => void bulk.setRowEnabled(proxy, enabled)}
+				onselect={bulk.toggle}
 				ondelete={(proxy) => {
 					deleteError = null;
 					deleting = proxy;
 				}}
 			/>
+
+			<BulkActionBar
+				kind="candidates"
+				unit="candidate"
+				selected={bulk.count}
+				{total}
+				scope={bulk.scope}
+				allSelected={bulk.selected.all}
+				ondisable={() => void bulk.setStatus(false)}
+				onenable={() => void bulk.setStatus(true)}
+				ondelete={() => void bulk.erase()}
+				onclear={bulk.clear}
+				ontoggleall={bulk.toggleEvery}
+			/>
+
+			{#if bulk.error}
+				<p role="alert" class="text-sm text-[var(--color-danger)]">
+					<ApiErrorText error={bulk.error} />
+				</p>
+			{/if}
+			{#if bulk.busy}
+				<p role="status" class="text-sm text-[var(--color-text-muted)]">
+					Applying the bulk action...
+				</p>
+			{/if}
 		{/if}
 
 		<ProxyOutboundSettings />

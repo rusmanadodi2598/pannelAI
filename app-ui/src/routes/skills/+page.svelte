@@ -13,6 +13,7 @@
 	import SkillCard from '$lib/components/SkillCard.svelte';
 	import SkillEntryBlock from '$lib/components/SkillEntryBlock.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { fetchSkillCatalog, probeSkillSources, SKILLS_PATH } from '$lib/api/skills';
 	import { orderSkills, type SourceProbe } from '$lib/schemas/skill-source';
@@ -46,12 +47,19 @@
 	}
 
 	// `probes` is emptied first, so a row with no entry in it is one the check has not answered yet
-	// rather than one the panel has an old answer for.
+	// rather than one the panel has an old answer for. Each answer lands on its own row, so the entry
+	// line is usable while a slower capability source is still being checked.
 	async function checkSources(next: SkillCatalog): Promise<void> {
 		probing = true;
 		probes = {};
-		probes = await probeSkillSources(orderSkills(next.data));
-		probing = false;
+
+		try {
+			await probeSkillSources(orderSkills(next.data), (id, probe) => {
+				probes = { ...probes, [id]: probe };
+			});
+		} finally {
+			probing = false;
+		}
 	}
 
 	// Reads the catalog out of state before awaiting, so the control never hands a null to the probe.
@@ -81,11 +89,9 @@
 	{:else if error}
 		<StateMessage kind="error" title={copy.catalog.errorTitle} apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => void load()}>{copy.catalog.retry}</button
-				>
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>
+					{copy.catalog.retry}
+				</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if catalog && skills.length === 0}
@@ -111,11 +117,12 @@
 					? copy.sources.checking(skills.length)
 					: copy.sources.summary(published, skills.length)}
 			</p>
-			<button
-				type="button"
-				class="min-h-11 text-sm underline disabled:opacity-50"
+			<Button
+				variant="ghost"
+				class="underline"
 				disabled={probing}
-				onclick={() => void checkAgain()}>{copy.sources.checkAgain}</button
+				aria-busy={probing}
+				onclick={() => void checkAgain()}>{copy.sources.checkAgain}</Button
 			>
 		</div>
 

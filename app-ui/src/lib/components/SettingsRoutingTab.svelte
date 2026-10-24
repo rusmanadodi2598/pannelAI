@@ -9,24 +9,34 @@
 	// No native `min` attribute: a browser bound blocks the submit before Zod sees the value, so the
 	// message the operator reads would be the browser's and in the browser's language, which is a second
 	// validator the panel cannot keep in English.
+	//
+	// Two groups of the form are components: the park windows and the failure-class table, because a tab
+	// that wrote both would spend its line budget on markup rather than on the draft it owns.
 	import { untrack } from 'svelte';
-	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import SettingsFailureClassesEditor from '$lib/components/SettingsFailureClassesEditor.svelte';
+	import SettingsKeyParkFields from '$lib/components/SettingsKeyParkFields.svelte';
+	import SaveBar from '$lib/components/SaveBar.svelte';
 	import { patchRoutingSettings } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
+		buildRoutingSettingsBody,
+		schemaRoutingSettingsForm,
+		type RoutingSettings,
+		type RoutingSettingsForm
+	} from '$lib/schemas/settings';
+	import { cloneRoutingDraft, routingDraftFromSettings } from '$lib/schemas/settings-routing-draft';
+	import { settingsGroupDirty } from '$lib/schemas/settings-dirty';
+	import {
 		COMBO_STRATEGIES,
 		COMBO_STRATEGY_LABELS,
 		CREDENTIAL_ROTATIONS,
-		CREDENTIAL_ROTATION_LABELS,
-		schemaRoutingSettingsForm,
-		settingsGroupDirty,
-		type RoutingSettingsForm
-	} from '$lib/schemas/settings';
+		CREDENTIAL_ROTATION_LABELS
+	} from '$lib/schemas/settings-strategies';
 
 	type Props = {
-		/** The routing group as the page last read it. */
-		loaded: RoutingSettingsForm;
+		/** The routing group as the page last read it, before this tab narrows it to its own keys. */
+		loaded: RoutingSettings;
 		/** Asks the page to re-read the whole settings document after a successful write (§8.6.3). */
 		onrefresh: () => Promise<void>;
 	};
@@ -37,20 +47,11 @@
 	// is what makes the dirty indicator honest after a save: the response replaces `server`, so the tab
 	// stops reporting an unsaved change the moment the gateway has it.
 	// `untrack` marks the initial read as deliberate: the prop supplies the first value, and the save
-	// response is what updates it afterwards.
-	//
-	// The tab owns four keys and nothing else. `provider_strategies` belongs to the provider screen's own
-	// switch, and carrying it here would put it in a strict form that refuses it and in a PATCH body the
-	// tab has no business writing.
-	const ownKeys = (group: RoutingSettingsForm & Record<string, unknown>): RoutingSettingsForm => ({
-		combo_strategy: group.combo_strategy,
-		combo_sticky_limit: group.combo_sticky_limit,
-		sticky_limit: group.sticky_limit,
-		fallback_strategy: group.fallback_strategy
-	});
-	const initial = untrack(() => ownKeys(loaded));
-	let draft = $state<RoutingSettingsForm>({ ...initial });
-	let server = $state<RoutingSettingsForm>({ ...initial });
+	// response is what updates it afterwards. The narrowing and the copying are the routing draft's own
+	// rules and live in `settings-routing-draft`.
+	const initial = untrack(() => routingDraftFromSettings(loaded));
+	let draft = $state<RoutingSettingsForm>(initial);
+	let server = $state<RoutingSettingsForm>(cloneRoutingDraft(initial));
 
 	let message = $state<string | ApiError | null>(null);
 	let saving = $state(false);
@@ -69,7 +70,7 @@
 		}
 
 		saving = true;
-		const result = await patchRoutingSettings(parsed.data);
+		const result = await patchRoutingSettings(buildRoutingSettingsBody(parsed.data));
 		saving = false;
 
 		if (!result.ok) {
@@ -79,16 +80,16 @@
 
 		// The response is the whole stored document, so its routing group is what the gateway kept. Both
 		// copies take it: the draft stops being dirty, and Discard returns to the stored value rather
-		// than to a stale read (§8.6.3).
-		const saved = ownKeys(result.data.routing);
+		// than to a stale read (§8.6.3). The draft gets a fresh copy so a later edit cannot touch server.
+		const saved = routingDraftFromSettings(result.data.routing);
 		server = saved;
-		draft = saved;
+		draft = cloneRoutingDraft(saved);
 		message = 'Saved. Applies to new combos and decisions.';
 		await onrefresh();
 	}
 
 	function discard(): void {
-		draft = { ...server };
+		draft = cloneRoutingDraft(server);
 		message = null;
 	}
 
@@ -165,21 +166,50 @@
 		</span>
 	</div>
 
-	<div class="flex flex-wrap items-center gap-3">
-		<button
-			type="button"
-			disabled={saving}
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-			onclick={save}>Save routing settings</button
-		>
-		{#if dirty}
-			<button type="button" class="min-h-11 underline" onclick={discard}>Discard changes</button>
-			<span class="text-sm font-medium text-[var(--color-text-muted)]">Unsaved changes</span>
-		{/if}
-		{#if message}
-			<p class="text-sm text-[var(--color-text-muted)]" role="status">
-				<ApiErrorText error={message} />
-			</p>
-		{/if}
+	<SettingsKeyParkFields bind:park={draft.key_park} />
+
+	<SettingsFailureClassesEditor bind:classes={draft.failure_classes} />
+
+	<h3 class="pt-1 text-sm font-semibold">Failover budget</h3>
+	<p class="text-sm text-[var(--color-text-muted)]">
+		How far one client request may go trying credentials before it gives up.
+	</p>
+
+	<div class="flex flex-col gap-1 text-sm">
+		<label for="settings-failover-total">Failover time budget</label>
+		<input
+			id="settings-failover-total"
+			type="number"
+			bind:value={draft.failover.total_ms}
+			aria-describedby="settings-failover-total-help"
+			class={fieldClass}
+		/>
+		<span id="settings-failover-total-help" class="text-xs text-[var(--color-text-muted)]">
+			Milliseconds one request spends failing over before it stops. 1000 to 120000.
+		</span>
 	</div>
+
+	<div class="flex flex-col gap-1 text-sm">
+		<label for="settings-failover-attempts">Failover attempt cap</label>
+		<input
+			id="settings-failover-attempts"
+			type="number"
+			bind:value={draft.failover.max_attempts}
+			aria-describedby="settings-failover-attempts-help"
+			class={fieldClass}
+		/>
+		<span id="settings-failover-attempts-help" class="text-xs text-[var(--color-text-muted)]">
+			Credentials one request may try before it stops. 1 to 200.
+		</span>
+	</div>
+
+	<SaveBar
+		saveLabel="Save routing settings"
+		sticky
+		{saving}
+		{dirty}
+		{message}
+		onsave={() => void save()}
+		ondiscard={discard}
+	/>
 </div>

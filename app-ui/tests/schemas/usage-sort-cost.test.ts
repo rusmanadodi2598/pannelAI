@@ -7,7 +7,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
-import { formatCost, seriesSummary, sortGroups, type SeriesPoint } from '$lib/schemas/usage-view';
+import { formatCost, sortGroups } from '$lib/schemas/usage-view';
+import { seriesSummary, type SeriesPoint } from '$lib/schemas/usage-series';
 
 describe('sortGroups', () => {
 	// The API sends the whole breakdown, so ordering it is a view and not a read: these cases exist because

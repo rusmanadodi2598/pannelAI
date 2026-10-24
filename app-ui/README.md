@@ -101,7 +101,8 @@ src/lib/components/  panel components (shell, sidebar, header, dialogs, table ro
 src/lib/primitives/  shadcn-svelte components, generated, not hand-edited
 src/lib/stores/      session, theme, and sidebar preference state
 src/lib/navigation.ts  the sidebar tree as data, five groups and 20 nodes
-src/lib/icons.ts     the one icon map, one written reason per icon
+src/lib/icons.ts     the icon-map barrel; the four maps sit in src/lib/icon-maps/, one written reason per icon
+src/lib/icon-maps/   the sidebar's rows, the non-nav section headers, the row actions, and the other controls
 src/lib/utils.ts     class-name helper (clsx plus tailwind-merge)
 src/app.css          the token layer: DESIGN.md §3 to §5
 assets/static/       owner-supplied source assets (the logo original)
@@ -113,7 +114,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Thirty-nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Sixty-one passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -234,7 +235,944 @@ that sentence became a tab of the row itself, filed as `docs/DRAFT/035-USAGE-LIV
 thirty-ninth is the vertex service-account credential in the endpoint forms, measured 2026-10-12: the
 panel learns the gateway's fourth auth type, `service_account`, on both create paths (the inline form and
 the key dialog), with the project and location fields offered exactly where the API reads them and refused
-everywhere else, filed as `docs/PORT/012-PORT-VERTEX-VEO.md`.
+everywhere else, filed as `docs/PORT/012-PORT-VERTEX-VEO.md`. The fortieth is the interaction-state scale
+and the Endpoint & Key screen on it, measured 2026-10-19: nothing on that screen painted a colour under a
+press, half of it painted nothing under a pointer either (which is no state at all on a touch layout, where
+`hover:` is not applied), and the dialog's destructive commit measured 2.42:1 in dark, so the four states
+of a control are now decided in one token file and one component rather than on each screen. The
+forty-first is that Provider registry list on the same scale, measured the same day: its search, its category
+chips and its row actions read the one source, and the refresh control that three screens shared turned out
+to carry no pressed colour on any of them. The forty-second is the Combos screen, measured the same day:
+twenty-four controls in three readings of the same affordance, a chosen model chip moved off the accent
+because a dialog of coral chips is the accent everywhere §3.4 forbids it, and the Previous / Page n of m /
+Next band proved to be copied on three screens with drifted padding, so it is one component now. The
+forty-third is Proxy Pools, measured the same day: the panel's largest page file at 339 lines, and two
+colours that pointed at nothing, because `--color-primary-contrast` and `--color-surface-1` are not declared
+anywhere and an undeclared token falls through silently rather than failing. The forty-fourth is the provider
+detail screen, measured the same day: 59 controls across the cluster the screen pulls in, two of them the
+section fold and the tab strip every other screen is built from, four more copies of that paging band, and
+two files' worth of the same bulk orchestration written twice. The forty-fifth is the Quota Tracker, measured
+the same day: ten controls with no pressed colour, a chosen pause chip wearing the hovered ground as its
+selection, and a read loop that moved out of the route before the route could pass the line limit.
+The forty-sixth is the Usage screen, measured the next day:
+twenty-one controls with no pressed colour, four chips choosing `surface-2`, sort headers with no touch
+target of their own, and four test files that had each outgrown the subject they were named for. The
+forty-seventh is the Settings screen, measured the same day: ten hand-written controls, three copies of one
+write band, two action links carrying no state rule at all, and the largest schema file in the panel at 426
+lines with five subjects inside it. The forty-eighth is the Logs screen, measured the same day: eleven
+controls, a second action link with no state rule, a danger outline the primitive had no name for, and two
+test files that each held three subjects. The forty-ninth is the Console Log screen, measured the same day:
+four hand-written controls, a third action link with no state rule, a clear that emptied the gateway's
+buffer on the first click with no confirmation in front of it, and a checkbox label 4px short of the target
+the rest of its screen meets. The fiftieth is the Token Saver screen, measured the same day: the band a
+fourth screen was still writing by hand, a copy control whose one clipboard path cannot exist on the origin
+the panel runs on, and a schema test file at 370 lines with eight subjects inside it. The fifty-first is the
+Skills screen, measured the same day: four hand-written controls, an off-site link that was the row's only
+other affordance and answered nothing under a finger, and a copy control shipped in its table shape on the
+one screen whose whole job is that control. The fifty-second is the Media Provider screen, measured the same
+day: six control shapes written at the call site, of which four were links and one of those is a card's heading,
+a commit that cannot take the accent because every card carries one, and four test files that had each outgrown
+the subject they were named for. The fifty-third is the Provider registry list, measured 2026-10-20: three
+anchors still written at the call site, missed by a pass that had recorded the screen as done because its walk
+read the components it edited and never opened the table. The fifty-fourth is the Playground screen, measured
+the same day: the retry a failed model read leaves behind and the send and stop that share one slot, none of
+them painted under a press, plus the two test files in the panel that had outgrown the screen, at 664 and 271
+lines. The fifty-fifth is the Login screen, measured 2026-10-21: the last primary action written as a hand-made
+accent fill, carrying the `disabled:opacity-60` that §3.5 already records as the wrong fade, and a sign-in that
+greyed under the finger while it worked. The fifty-sixth is the Changelog screen, measured the same day: one
+retry written at the call site, and a fixture that existed only inside one test file. The fifty-seventh is the
+API Docs screen, measured the same day: a retry, and the jump list that is the reference's table of contents,
+the one control in the panel where the 44px floor costs visible height. The fifty-eighth is the icon maps,
+measured the same day: the last file over the cap in `src/`, split by where a glyph is used so that a screen
+reading the sidebar's icons no longer pulls the toolbar's into its module graph. The fifty-ninth is the eight
+test files over the cap, measured 2026-10-21: seven screens' suites split along the subjects each already held,
+and the shared model stub, which was the largest at 898 lines, into four route handlers behind the same
+exports. No file in `src/` or `tests/` is over the cap now. The sixtieth is the panel side of the contract
+gate, measured the same day: 46 response schemas read against the committed `openapi.json`, which named
+every field the panel requires except two, and those two are a contract gap recorded in the test rather
+than waived. The sixty-first is the two rules that were still applied by hand, measured the same day: the
+250-line cap and "every custom property is declared", each a test now, and the second found a live one:
+`--radius-full` was read by four components and declared nowhere, so the 3px status markers rendered
+square.
+
+### What each page still owes, measured 2026-10-21
+
+Every route has now had its pass. The three that were left owed one control each, and each is recorded below:
+`/login`'s submit, `/changelog`'s retry, and `/api-docs`'s retry plus the jump list that is its table of
+contents. No page's own tree has a call-site control left, and no page-specific test file is over the cap.
+
+`/media-providers` left this list on 2026-10-20: its six control shapes read the button and its four test files
+are under the cap. `/providers` came back onto it the same day, after its own pass had been recorded as done,
+and left it again with that record corrected: the walk of the earlier pass read the route file and the
+components it edited, and stopped there, so it never counted `ProviderTable`'s two row links or the custom node
+row's name link. `/playground` left it the same day too: its three buttons read the button, and the two test
+files that had outgrown the screen came down from 664 and 271 lines into six, the largest 213.
+
+What remains is not a page's. `src/lib/icons.ts` was the last file over the cap in `src/` at 281 lines, shared
+by every screen and deferred by the owner until the pages were done; it is split, recorded below. The eight
+test files that were over the cap are split too, in the record below them: the seven the earlier row named,
+and the shared `tests/support/model-stub.ts` at 898. The 36px checkbox label this row used to name is closed:
+the six that were short were fixed on 2026-10-20 (`6836910`), and `tests/tokens/touch-targets.test.ts` now
+walks every checkbox label in `src/` and fails on one without `min-h-11`.
+
+Measured across the whole panel on 2026-10-21, no file is over the cap in `src/` or in `tests/`, and no
+checkbox label is below the 44px row. The sweep the earlier row deferred is done, and the two numbers that
+were stale in it were corrected on the way.
+
+Two numbers in the earlier version of this row were stale and were corrected on 2026-10-20.
+`tests/schemas/vision-adapter.test.ts`, listed at 268 lines, measures 183: the `/combos` pass the row named
+did split it, and the row was never re-measured. And `/providers` was listed with no test file over the cap,
+while `tests/routes/providers-list.test.ts` was at 285; the walk that counted the page's files read the
+components and not the route's own test tree. Both came under with that day's passes.
+
+### The two rules that were still enforced by hand, and the radius token nobody declared, 2026-10-21
+
+Run with Bun 1.3.0. Two rule classes had no gate. The 250-line cap was measured by hand in every page pass,
+which is how two ledger rows drifted before they were caught. And "no undeclared custom property" was the bug
+the proxy pass found by eye, when `--color-primary-contrast` and `--color-surface-1` resolved to nothing
+because an undeclared var falls through silently instead of failing.
+
+Both are tests now. `tests/tokens/file-size.test.ts` walks `src/` and `tests/` and fails on the file that grew,
+with the generated `src/lib/primitives/` out of scope for the same reason the antislop gate excludes it.
+`tests/tokens/declared-tokens.test.ts` collects every `--name:` declaration in CSS files and computed style
+strings and every `var(--name` use, and fails on a name with no declaration.
+
+The second gate found a live defect on its first run. `--radius-full` is listed in `DESIGN.md` §5 and read by
+four components (the status markers on the changelog, the skill rows and the playground answer, and the nav
+row's), but it was declared nowhere: `border-radius: var(--radius-full)` resolved to nothing and those 3px
+markers rendered square. The token is declared in `src/app.css` and §5's row now names the marker among its
+uses. The same walk showed two sidebar names the generated primitive reads as raw properties
+(`--sidebar-accent`, `--sidebar-border`); the alias layer supplies them rather than the generated file being
+edited, which is the rule that file carries.
+
+| Check                       | Result                                                                      |
+| --------------------------- | --------------------------------------------------------------------------- |
+| File size                   | 300+ files walked, none over 250 lines                                      |
+| Declared tokens             | every name the panel reads resolves; 0 undeclared                           |
+| `bun run check`             | 0 errors, 0 warnings                                                        |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                       |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                |
+| SYSTEM_MAP.md               | N/A: two tests and one token declaration, no boundary or data shape changed |
+
+### The eight test files over the cap, and the stub they shared, 2026-10-21
+
+Run with Bun 1.3.0. The ledger above carried these as a list of names; they were split in one batch because
+four of the seven read the same fixture, and the fixture itself was the largest of the eight.
+
+Each split follows a describe boundary the file already had, and each shared piece moved to `tests/support/`
+rather than being copied: the catalog render and the 44px class contract for the touch-target pair, the parsed
+row casts for the two selection files, the page entry for the two custom-model files, the three combo fixtures,
+the key-dialog entry, the catalog probe's render and row lookup, and the settings document for the two
+thinking files. No case was dropped: the counts held at 14, 15, 16, 9, 11, 12 and 13.
+
+| File                                           | Was | Now                                                               |
+| ---------------------------------------------- | --- | ----------------------------------------------------------------- |
+| `provider-touch-targets.test.ts`               | 308 | 98, with 154 in `provider-touch-retries`                          |
+| `bulk-selection.test.ts`                       | 301 | 214, with 85 in `bulk-selection-tables`                           |
+| `provider-custom-models.test.ts`               | 297 | 115, with 167 in `provider-custom-models-add`                     |
+| `combo-editor.test.ts`                         | 286 | 123, with 142 in `combo-editor-save`                              |
+| `provider-detail-key-dialog.test.ts`           | 271 | 92, with 171 in `provider-detail-key-modes`                       |
+| `model-catalog-probe.test.ts`                  | 265 | 118, with 133 in `model-catalog-sweep`                            |
+| `provider-thinking-control.test.ts`            | 258 | 165, with 96 in `provider-thinking-wiring`                        |
+| `tests/support/model-stub.ts`                  | 898 | 155, the dispatcher and the stub's state                          |
+| `tests/support/model-stub-types.ts`            | -   | 156, the state type                                               |
+| `tests/support/model-stub-fixtures.ts`         | -   | 113, the six row builders and the auth-mode derivation            |
+| `tests/support/model-stub-context.ts`          | -   | 19, what a handler reads                                          |
+| `tests/support/model-stub-routes-providers.ts` | -   | 127, settings, proxies, the node and the provider reads           |
+| `tests/support/model-stub-routes-endpoints.ts` | -   | 154, the endpoint detail, list, create, delete and bulk create    |
+| `tests/support/model-stub-routes-oauth.ts`     | -   | 94, the OAuth status, start, refresh and the device round         |
+| `tests/support/model-stub-routes-models.ts`    | -   | 209, the disabled set, custom rows, combos, tests and the catalog |
+
+The stub needed a decision rather than a cut. Its 515-line fetch body held twenty-four branches, and two of
+them match one path: a provider id and an endpoint id both end in a path segment, so the order of the single
+`if` chain is behaviour, not style. The body is four handlers by resource now, and the dispatcher asks them in
+the order the chain had. Every import still resolves through `model-stub.ts`, so no test moved.
+
+| Check                       | Result                                                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                             |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                                            |
+| `bun run test`              | 3323 tests passed across 267 files, exit 0 (3323 across 260 before the splits: the seven added files, not cases) |
+| `bun run build`             | succeeds, output in `build/`                                                                                     |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                                                     |
+| File size                   | No file over the cap in `src/` or in `tests/`; the largest is 246 in `tests/navigation/` and 242 in `src/`       |
+| SYSTEM_MAP.md               | N/A: test-support modules only, no boundary, data shape, or interaction changed                                  |
+
+### The icon maps split by where a glyph is used, 2026-10-21
+
+Run with Bun 1.3.0. `src/lib/icons.ts` was the last file over the cap in `src/` at 281 lines, and the owner
+deferred it until every page had passed. The four maps inside it had nothing to do with each other except that
+they all name a glyph: the sidebar's rows, the section headers that are not nav rows, the row actions of the
+tables, and the controls that are neither.
+
+Each map now owns a file under `src/lib/icon-maps/` and imports only the glyphs it uses, so the glyphs a
+screen never reads are no longer evaluated in the module that defines the ones it does. `src/lib/icons.ts`
+stays the barrel, so every `$lib/icons` import and `tests/navigation/icons.test.ts` are unchanged; that test
+still cross-checks the maps against `src/lib/navigation.ts` and still holds every reason to at least 20
+characters.
+
+| File                               | Was | Now                                                          |
+| ---------------------------------- | --- | ------------------------------------------------------------ |
+| `src/lib/icons.ts`                 | 281 | 26, the barrel and the two lookups                           |
+| `src/lib/icon-maps/nav.ts`         | -   | 77, the sidebar rows and the non-nav section headers         |
+| `src/lib/icon-maps/row-actions.ts` | -   | 68, the table row actions and their `RowAction` type         |
+| `src/lib/icon-maps/controls.ts`    | -   | 116, the copy, toolbar, paging, fold and selection glyphs    |
+| `src/lib/icon-maps/types.ts`       | -   | 10, the `IconEntry` shape, inferred from one installed glyph |
+
+| Check                       | Result                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                  |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                 |
+| Icon map tests              | 18 tests, exit 0, unchanged: the maps are the same data, read through the same barrel |
+| `bun run test`              | 3323 tests passed across 260 files, exit 0 (3316 across 257 before this batch)        |
+| `bun run build`             | succeeds, output in `build/`                                                          |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                          |
+| File size                   | `src/` now has no file over the cap, the largest being 116 lines                      |
+| SYSTEM_MAP.md               | N/A: an internal module split with no boundary, data shape, or interaction change     |
+
+### The API Docs screen on the scale, the jump list that is its table of contents, and the height the 44px floor costs, 2026-10-21
+
+Run with Bun 1.3.0. Two shapes were written at the call site and neither painted under a press: the retry a
+failed document read leaves behind, and the jump list above the groups, which is this screen's table of
+contents.
+
+The jump list is the one place in the panel where the 44px row visibly costs height: twenty entries at 44px
+wrap onto more lines than a run of underlined text did. It keeps the floor anyway, because a reference opened
+on a phone is read by touching one of those entries, and the row is what the rest of the panel's controls meet.
+The spacing moved with it: the old list was separated by a 16px column gap, so the entries now carry `px-2` and
+the gap is 8px, which leaves the distance between two labels unchanged while every label owns its own box.
+Each entry keeps the destination it always had, the `h3` id `ApiDocsGroup` renders for that group.
+
+The retry is the ghost variant with `underline` in the class list it accepts, the shape every other screen's
+retry wears.
+
+| File                                           | Was | Now                                               |
+| ---------------------------------------------- | --- | ------------------------------------------------- |
+| `routes/api-docs/+page.svelte`                 | 117 | 118, the retry and every jump entry on the button |
+| `tests/routes/api-docs-control-states.test.ts` | -   | 67, the walk this screen had no file for          |
+
+| Check                       | Result                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                  |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                 |
+| API Docs cluster            | 17 tests across 2 files, exit 0 (the screen's 14 plus the walk's 3)                   |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                          |
+| File size                   | No file on this screen is over the cap in `src` or in `tests`                         |
+| SYSTEM_MAP.md               | N/A: no structural change. The rule these controls follow is already `DESIGN.md` §3.5 |
+
+Not yet verified: no Chromium pass. The jump list is the one control on these three screens whose density
+changed, and what a 44px row does to a twenty-entry wrap at 390 is measured here as class tokens rather than as
+a rendered height. The full panel suite and the emitted stylesheet are recorded once, under the Login record
+below, because all three pages were verified in one run.
+
+### The Changelog screen on the scale, the stub the walk and the screen now share, 2026-10-21
+
+Run with Bun 1.3.0. One control was written at the call site: the retry a failed release read leaves behind, an
+underline that painted nothing under a press. It is the screen's second action after the refresh control, and
+on the touch layout where `hover:` never applies it answered nothing at all.
+
+The screen's fixture had been written twice in effect, once as the render test's local stub and once as the
+shape any other test would have to rebuild. It is `tests/support/changelog-stub.ts` now, answering both routes
+the screen reads and recording the requests, so the state walk and the render tests ask the same fake. The
+render test dropped 32 lines and kept every case.
+
+| File                                            | Was | Now                                                      |
+| ----------------------------------------------- | --- | -------------------------------------------------------- |
+| `routes/changelog/+page.svelte`                 | 189 | 188, the retry on the button                             |
+| `tests/components/changelog.test.ts`            | 226 | 194, reading the shared stub                             |
+| `tests/support/changelog-stub.ts`               | -   | 50, both reads, their fixtures, and the request recorder |
+| `tests/routes/changelog-control-states.test.ts` | -   | 46, the walk this screen had no file for                 |
+
+| Check             | Result                                                        |
+| ----------------- | ------------------------------------------------------------- |
+| Changelog cluster | 15 tests across 2 files, exit 0 (the screen's 13 plus 2)      |
+| File size         | No file on this screen is over the cap in `src` or in `tests` |
+| SYSTEM_MAP.md     | N/A: no structural change                                     |
+
+### The Login screen on the scale, and the filled control that now stays filled while it works, 2026-10-21
+
+Run with Bun 1.3.0. The last screen in the panel whose primary action was hand-painted: an accent fill written
+at the call site with `disabled:opacity-60`, the exact fade `DESIGN.md` §3.5 records as the wrong one, because
+opacity moves a label and its own fill toward the page together.
+
+The swap also settles a state the screen had never expressed: while the sign-in is out, the control keeps the
+accent and says `aria-busy`, instead of greying under the finger that pressed it. That is §3.5's in-flight
+rule, and it is why the disabled attribute alone would not have been enough here.
+
+| File                                        | Was | Now                                                |
+| ------------------------------------------- | --- | -------------------------------------------------- |
+| `routes/login/+page.svelte`                 | 95  | 94, the sign-in on the button, busy while it works |
+| `tests/routes/login-control-states.test.ts` | -   | 68, the walk this screen had no file for           |
+
+| Check                       | Result                                                                                                                                                         |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                           |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                                                                                          |
+| `bun run test`              | 3323 tests passed across 260 files, exit 0 (3316 across 257 before this batch)                                                                                 |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet carries the state and accent ramp rules the three controls read                                           |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                                                                                                   |
+| File size                   | No file on this screen is over the cap in `src` or in `tests`; the `src/` debt this row used to name, `icons.ts` at 281, is closed by the split recorded above |
+| SYSTEM_MAP.md               | N/A: no structural change                                                                                                                                      |
+
+Not yet verified: no Chromium pass, for the reason the two later records already state. `/login` is the one
+screen in the panel reachable without a session, so it is the one these passes could have driven in a browser
+had a harness been installed; what is proved here is the class contract, the submit type, and the busy pair.
+
+### The Playground screen on the scale, one slot that wears the accent, and the two files that outgrew the screen, 2026-10-20
+
+Run with Bun 1.3.0. Three controls were written at the call site and none of them painted under a press: the
+retry a failed model read leaves behind, and the composer's send and stop, which share one slot. The composer
+is the screen's only way to spend money, so the row that needed a ruling was not the states but the colour.
+
+Send and stop are one control read two ways, so both take the primary treatment and only one of them is ever
+on screen: the accent stays on exactly one visible control rather than moving to a second when a stream
+begins, and `DESIGN.md` §11 now carries that reason. A disabled send leaves the accent the way §3.5 says a
+filled control does, which also retires the hand-written `disabled:opacity-50` the composer had: the same
+fade this scale already records as the wrong one. The retry is an underlined action, so it is the ghost
+variant with `underline` in the class list it accepts, and it keeps no colour of its own.
+
+| File                                                   | Was | Now                                                                                 |
+| ------------------------------------------------------ | --- | ----------------------------------------------------------------------------------- |
+| `tests/api/playground.test.ts`                         | 271 | 76, the models read alone                                                           |
+| `tests/api/playground-send.test.ts`                    | -   | 212, taking the send: the body, the credential it refuses, and each way to fail     |
+| `tests/server/playground-relay.test.ts`                | 664 | 213, the pipe, the translation and the credential                                   |
+| `tests/server/playground-relay-request-id.test.ts`     | -   | 159, the forwarded id, which is the one header the key can hide inside              |
+| `tests/server/playground-relay-gateway-fields.test.ts` | -   | 180, the gateway's three error fields and the replacement that can recreate the key |
+| `tests/server/playground-relay-fallback.test.ts`       | -   | 107, the sentences the panel writes itself                                          |
+| `tests/support/playground-relay-redaction.ts`          | -   | 74, the upstream shape and the field loop those three files each read               |
+| `components/PlaygroundComposer.svelte`                 | 112 | 107, send and stop on the button                                                    |
+| `routes/playground/+page.svelte`                       | 178 | 177, the retry on the button                                                        |
+| `tests/routes/playground-control-states.test.ts`       | -   | 79, the walk this screen had no file for                                            |
+
+Every split is along a `describe` boundary the file already had, and the cluster's 82 cases stayed 82 across
+the seven files this pass wrote; the new state walk adds 3, so the cluster reads 85 across 13. The upstream failure shape and
+the per-field assertion loop had been written once inside the 664-line file and were read by three of the
+split's four subjects, so they moved to `tests/support/` rather than being copied into each file that needed
+them.
+
+| Check                       | Result                                                                                                                                                                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                   |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                                                                                                                                                                                                  |
+| `bun run test`              | 3316 tests passed across 257 files, exit 0 (3310 across 240 at the last recorded row)                                                                                                                                                                                  |
+| Playground cluster          | 85 tests across 13 files, exit 0. The 82 cases the cluster held before the split are all still there and the new state walk adds 3                                                                                                                                     |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.hover\:bg-[var(--color-state-hover)]:hover` and `.active\:bg-[var(--color-state-press)]:active`, with the accent ramp's hover and press tokens declared in both the light root and `.dark` |
+| `scrypts/gates/antislop.sh` | PASS, exit 0                                                                                                                                                                                                                                                           |
+| File size                   | No playground file is over the cap in `src` or in `tests`, after 664 and 271 came down to 213 and 76                                                                                                                                                                   |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The one design reading is in `DESIGN.md` §11                                                                                                                                  |
+
+Not yet verified: no Chromium pass, for the same reason the `/providers` row records: Playwright is not
+installed here and the screen's send writes a real usage record, so nothing was clicked in a browser. The send
+and the stop are asserted as roles, as `type`, as `disabled`, and as class lists, and the accent is asserted to
+be on exactly one control at a time, which is the §3.4 reading this pass had to decide. What jsdom cannot see
+is what the coral actually looks like under a finger at 1440 and at 390; the accent ramp's steps are measured
+in `tests/tokens/state-scale.test.ts` and were measured on the pointer for the filled commit in the
+`/endpoint-keys` pass.
+
+### The Provider registry's three row links on the scale, and the route test that outgrew the page, 2026-10-20
+
+Run with Bun 1.3.0. Three anchors were still written at the call site and none of them painted under a press:
+the registry row's `Open`, the same row's `Add endpoint` when the provider has no endpoint yet, and the custom
+node row's name. The screen's own pass had been recorded as done on 2026-10-19, and the walk that recorded it
+read the route file and the components that pass had edited, then stopped: the registry table was never
+opened, so its two row actions and the node row's heading-shaped link were outside the count.
+
+An action link is a control (§3.5), so all three go through `primitives/button`, which renders an anchor when
+it is given `href`. The role stays `link` and the navigation stays real, and the four states come from the one
+component every other control on the panel reads. The label stays where it was: `Open` beside its glyph is
+what the operator reads, and the accessible name still comes from the text rather than from an `aria-label` a
+call site has to remember, which is also why the glyph keeps `aria-hidden`.
+
+The same stopped-short walk is why the row of this ledger that read `/providers`, no test file over the cap was
+wrong: `tests/routes/providers-list.test.ts` measured 285. It is split here along the two subjects it already
+held, the registry's own reads and the search's server contract, and both halves come in under the cap.
+
+| File                                            | Was | Now                                                                    |
+| ----------------------------------------------- | --- | ---------------------------------------------------------------------- |
+| `components/ProviderTable.svelte`               | 77  | 82, both row actions on the button                                     |
+| `components/CustomProviderSection.svelte`       | 114 | 117, the node's name on the button                                     |
+| `tests/routes/providers-control-states.test.ts` | 58  | 89, the walk extended to anchors, the three hrefs added                |
+| `tests/routes/providers-list.test.ts`           | 285 | 167, the registry's own reads                                          |
+| `tests/routes/providers-search.test.ts`         | -   | 139, the six rows whose contract is the server's (`?q`, and the bound) |
+
+The walk now reads `button, a[data-slot="button"]` rather than `button`, which is what let the three links sit
+outside it, and its mock resolves the parameterised route instead of returning the bracket, so an href is
+asserted as the address a browser would follow rather than as a template. The 14 cases the route test held are
+the 8 plus the 6 above, and the page's cluster reads 57 tests across 7 files with nothing moved out of scope.
+
+| Check                       | Result                                                                                                                                                                                                                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                         |
+| `bun run lint`              | Prettier clean across the tree, and `eslint .` silent                                                                                                                                                                                                                        |
+| `bun run test`              | 3316 tests passed across 257 files, exit 0, measured against a tree that also carries the uncommitted provider OAuth split and the `app-serv` refusal work, so the total is this pass's to report but not to claim. The counts it is answerable for are the two cluster rows |
+| Providers cluster           | 57 tests across 7 files, exit 0: `providers-list` (8), `providers-search` (6), `providers-custom-section` (2), `providers-control-states` (3), `provider-touch-targets` (14), `provider-custom-models` (16), `provider-custom-models-node` (8)                               |
+| `scrypts/gates/antislop.sh` | PASS, exit 0. `src/` still has exactly one file over the cap, `icons.ts` at 281, deferred by the owner until the pages are done, and three pages are done short of that                                                                                                      |
+| File size                   | No file on this screen is over the cap in `src` or in `tests`, after 285 came down to 167 and 139                                                                                                                                                                            |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The rule these three follow is already §3.5                                                                                                                                         |
+
+Not yet verified: no Chromium pass. Playwright is not installed in this environment and the screen sits behind
+the panel's own session, so what is proved here is the class contract, the href, and the 44px box as jsdom
+reads them, plus the emitted stylesheet, not a pointer landing on a row action. The hover and pressed washes
+these three controls now inherit are the ones the token scale measures in `tests/tokens/state-scale.test.ts`,
+and they were measured on the pointer in the `/media-providers` and `/skills` passes, which route the same
+shapes through the same component.
+
+### The Media Provider screen on the scale, the title that is also a link, and the four files that outgrew their subject, 2026-10-20
+
+Run with Bun 1.3.0. Six control shapes were written at the call site and none of them painted under a press:
+the commit each card ends with, the retry a failed read leaves behind, and four links. Three of the links are
+one screen's whole way out of a bad address (the six kind names a slug that is not a kind renders instead of a
+card), one routes a provider to its registry entry, and two route back to `/providers`.
+
+Two of those needed a ruling rather than a swap. The provider name is a card's heading _and_ its link, so the
+`h2` now holds the anchor and keeps `text-base` while the ramp supplies the colour: the title sits at
+`text-muted` at rest and lifts to full text on hover, which is what the ghost variant says, and the alternative
+was a rest colour written at the call site. The commit is the other one: a screen with one save per provider
+cannot spend the accent on all of them, so the card's save takes the neutral ramp and keeps its border, and
+`DESIGN.md` §3.4 now says the primary action is counted per screen rather than per card.
+
+| File                                            | Was | Now                                                                                                  |
+| ----------------------------------------------- | --- | ---------------------------------------------------------------------------------------------------- |
+| `tests/schemas/media-provider-form.test.ts`     | 398 | 197, with `media-provider-form-fields.test.ts` (200) taking the selector and the two hints           |
+| `tests/schemas/media-provider.test.ts`          | 326 | 176, with `media-provider-answer.test.ts` (135) taking the list, the detail answer and the refusal   |
+| `tests/components/media-providers.test.ts`      | 313 | 173, with `media-provider-card.test.ts` (171) taking what a card shows                               |
+| `tests/components/media-providers-save.test.ts` | 263 | 176, with `media-providers-write.test.ts` (124) taking what reaches the wire                         |
+| `components/MediaProviderCard.svelte`           | 203 | 200, the title link and the commit on the scale                                                      |
+| `routes/media-providers/[kind]/+page.svelte`    | 148 | 149, the retry, the way back, and the six kind links                                                 |
+| `tests/support/media-stub.ts`                   | 143 | 163, holding the kind block three schema files had each copied, and a knob that holds the PATCH open |
+
+Every split is along a `describe` boundary the file already had, and the cluster's 121 cases stayed 121 across
+the eight files; the new state walk adds 7. The fixture that had been written twice, once in the stub and once
+inside `media-provider.test.ts`, is one export now, and the block fixture moved with it rather than being
+copied into each of the three files that needed it.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `bun run test`              | 3310 tests passed across 240 files, exit 0 (3303 across 235 at the last row). The seven tests and the five files are this pass: four splits and `tests/routes/media-providers-control-states.test.ts`. The media cluster was re-run against the final tree: 128 tests across 9 files                                                                                                                                                                                                                                                                                                                     |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries the hover and the pressed wash utilities once each, which is the whole rule set the six migrated controls needed, so routing them through the primitive added no new utility to the CSS                                                                                                                                                                                                                                                                                                                                        |
+| Browser measurement         | Chromium against the dev server with `/api/v1` stubbed, both themes, four readings of the route (cards, unknown kind, failed read, empty kind): every control reports three distinct computed colours across rest, hover and held (the ghost label lifting 95/87/78 to 26/22/20 in light and 166/158/147 to 237/234/230 in dark, on the ink wash at 9% then 16%; the refresh and the commit on the same wash over their own border). The cards' 5 controls, the kind list's 6, the failed read's 3 and the empty kind's 2 all measure 44px tall at 1440 and at 390, and none stretches past the viewport |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| File size                   | `src/` files over the cap: 1 (`icons.ts` 281), deferred by the owner until the pages are done. No media file is over the cap in `src` or in `tests`, after four of them came down from 398, 326, 313 and 263                                                                                                                                                                                                                                                                                                                                                                                             |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The two decisions are in `DESIGN.md` §3.4 and §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+Not yet verified: the commit's fade while its write is in flight is asserted as an attribute, and Chromium
+measured the control at rest rather than disabled, so what that fade looks like beside a `surface-2` card is
+unmeasured. The PATCH was stubbed, so the case Q18 records (clearing an override the panel cannot check) is
+proved only against a fake that refuses the way the server refuses. And the walk covers the route itself: the
+six sidebar rows that link to these addresses belong to `tests/navigation/`, not to this screen.
+
+### The Skills screen on the scale, the source link that routes off-site, and the copy control's dense shape, 2026-10-20
+
+Run with Bun 1.3.0. Four controls written at the call site, none painted under a press: the retry a failed
+catalog read leaves behind, the check that re-reads every source, and the copy control and source link each
+row carries. The screen's one job is to hand over a line, so its controls are the screen.
+
+The source link is the fourth action link the week found, and the first that leaves the app: `text-xs
+underline` text routing to the source host's blob URL. It stays an anchor with its `target` and `rel`, and
+takes the ghost scale with `underline` kept in the class list. The copy control needed a different answer:
+`CopyButton` ships a dense 36px shape because the provider tables asked for one, and this screen inherited
+that default while being the one screen whose only affordance is the control. Both call sites pass
+`touchTarget` now, which is the flag the table callers already opt into.
+
+| File                                | Was | Now                                                                                  |
+| ----------------------------------- | --- | ------------------------------------------------------------------------------------ |
+| `tests/components/skills.test.ts`   | 243 | 198, on the shared `support/skills-stub.ts` (60)                                     |
+| `routes/skills/+page.svelte`        | 143 | 143: the two controls collapsed onto the primitive, and the check gained `aria-busy` |
+| `components/SkillCard.svelte`       | 77  | 84, the link on the scale and the copy control at 44px                               |
+| `components/SkillEntryBlock.svelte` | 59  | 63, the same two changes                                                             |
+
+Nothing on this screen was over the 250-line cap, so the file debt was the harness: the fetch stub and the
+two DOM helpers lived inside the screen's test file and the state walk needed them, so they moved to
+`support/skills-stub.ts` with the read counters on the returned object rather than in module globals. The
+13 cases stayed 13, and the new file adds 5.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run test`              | 3303 tests passed across 235 files, exit 0 (3298 across 234 at the last row). The five tests and the one file are this pass: `tests/routes/skills-control-states.test.ts`. The skills cluster was re-run against the final tree: 91 tests across 5 files, including the navigation rows that name this route                                                                                                                                                                                            |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.active\:bg-\[var\(--color-state-press\)\]:active` with its hover twin, which is the whole rule set the migrated link needed: routing it through the primitive added no new utility, because the anchor and the button already shared one                                                                                                                                                                                    |
+| Browser measurement         | Chromium against the dev server with the catalog and the source host stubbed, both themes: 4 controls each report three distinct computed colours across rest, hover and held (the check, the retry and the source link on the ink wash at 9% then 16%, lifting 95/87/78 to 26/22/20 in light and 166/158/147 to 237/234/230 in dark; the copy control on the same wash over its border). All 7 of the screen's own controls measure 44px tall at 1440 and at 390, and none stretches past the viewport |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| File size                   | `src/` files over the cap: 1 (`icons.ts` 281), deferred by the owner until the pages are done. The screen's test file came down from 243 to 198 when its harness moved out, and no skills file is over the cap in `src` or in `tests`                                                                                                                                                                                                                                                                   |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decision is in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                            |
+
+Not yet verified: the source link was measured with the blob address stubbed, so what Chromium proved is
+that the anchor keeps its role, its `target`, its `rel` and its states. Whether GitHub answers a real
+`blob_url` for every served skill row is the live pass's question, not this one, and the copy control's
+selection fallback is covered by `tests/components/copy-button.test.ts` rather than by this screen.
+
+### The Token Saver screen on the shared band, the copy control that could not copy, and the 370-line file, 2026-10-20
+
+Run with Bun 1.3.0. `TokenSaverSectionShell` framed three sections and wrote their save row by hand: the
+commit with `disabled:opacity-60`, which `DESIGN.md` §3.5 already records as the wrong fade for a filled
+control, and the discard beside it as a bare underline with no ground at all. The row is `SaveBar` now,
+which is also the rename that let it be reused: the component was `SettingsSaveBar`, and §6.7 makes the save
+per section while §6.13 makes it per tab, which is one band stated in two spec sections. The shell maps its
+`saved` flag onto the band's outcome line and yields it while the draft is dirty, because "Saved." cannot
+sit beside "Unsaved changes".
+
+The bypass header was the sharper finding. The screen wrote its own copy control: one `navigator.clipboard`
+path, a hover onto `surface-2` and nothing under a press. The panel is normally reached at
+`http://<host>:3000`, which is not a secure context, so `navigator.clipboard` is not merely refusing there,
+it does not exist, and the catch branch would have told an operator to copy the header by hand while the
+shared control copied it through the selection path. It is `CopyButton` now, which carries the fallback, the
+44px row the screen's own shape had already reached, and the outcome sentence.
+
+The touch pass found the class of target the colour work does not cover. Fifteen of the screen's sixteen
+checkbox labels were 36px tall: twelve allowlist rows, whose title and caption fit inside that height, and
+the three section toggles written the same way. The label is the target, because clicking the words toggles
+the box, so the five label sites took `min-h-11` and §8.7's 44px now holds across the screen.
+
+| File                                       | Was | Now                                                                                              |
+| ------------------------------------------ | --- | ------------------------------------------------------------------------------------------------ |
+| `tests/schemas/token-saver-form.test.ts`   | 370 | 231, plus `token-saver-rtk.test.ts` (143)                                                        |
+| `components/SettingsSaveBar.svelte`        | 39  | `SaveBar.svelte` (40), unchanged in behaviour, renamed so a second screen can import it honestly |
+| `components/TokenSaverSectionShell.svelte` | 50  | 45, its band replaced by the shared one                                                          |
+| `components/TokenSaverBypass.svelte`       | 71  | 44, its copy logic replaced by `CopyButton`                                                      |
+
+The schema split is along describes that were already separate subjects, the allowlist and the draft, and
+its case count is unchanged: 40 before, 21 plus 19 after. `tokenSaverDocument` moved to the screen's stub
+file and is typed as `TokenSaver` rather than `Record<string, unknown>`, so the schema tests and the
+component tests read the same fixture.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run test`              | 3298 tests passed across 234 files, exit 0 (3292 across 232 at the last row). The six tests and the two files are this pass: the control-state walk and the RTK half of the split schema file, whose 40 cases stayed 40. The token saver cluster was re-run whole against the final tree: 113 tests across 8 files, including the shared `copy-button.test.ts` this screen now leans on                                                                                                                                                                                                                                                                                 |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries the four `[aria-busy=true]:disabled` rules that keep a filled commit on its own colour while a write is in flight, plus `.disabled:bg-[var(--color-surface-3)]:disabled`, which is the pair the shell's hand-written `disabled:opacity-60` was replacing                                                                                                                                                                                                                                                                                                                                      |
+| Browser measurement         | Chromium against the dev server with the token-saver routes stubbed, both themes: 5 controls each report three distinct computed colours across rest, hover and held (the section commit 184/65/42 to 171/49/28 to 156/36/18 in light and 229/106/74 to 240/122/90 to 250/138/108 in dark, stepping its own ramp; the copy control and the discard on the ink wash at 9% then 16%). At 390px every measured press target is 44px tall (three commits, the copy control, the discard, both text fields and the four section labels), and the twelve allowlist rows that measured 36px before the label fix measure 44px after, with nothing stretching past the viewport |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| File size                   | `src/` files over the cap: 1 (`icons.ts` 281), deferred by the owner until the pages are done. The screen's 370-line schema test is now 231 plus 143, and no token-saver file is over the cap in `src` or in `tests`                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+
+Not yet verified: the bypass copy was exercised in Chromium on a loopback origin, which is a secure context,
+so the async clipboard path is the one that ran there. The selection fallback the screen now inherits is
+covered by `tests/components/copy-button.test.ts` and by the API Docs and Skills passes rather than by this
+pass's browser run. The same label shape without a 44px row also still stands on five other screens (`SettingsSecurityTab`,
+`SettingsLoggingTab`, `OneTimeKeyModal`, `ProxyFormFields`, `ProxyOutboundSettings`); the tables and the
+quota cards already carry it. Sweeping those five is a page-agnostic decision the owner has not given.
+
+### The Console Log screen on the scale, and the delete that had no confirmation in front of it, 2026-10-20
+
+Run with Bun 1.3.0. Four controls written at the call site, none painted under a press: the pause, the clear,
+the cross-link to `/logs`, and the retry a failed read leaves behind. The link is the third instance of the
+defect `/settings` and `/logs` recorded on the same day, and it is the twin of the pointer that leads here,
+so the two routes between the screen's halves now take their states from one component and read the same.
+
+The screen had also shipped without the confirmation §6.14 names. `Clear buffer` sent
+`DELETE /api/v1/logs/console` on the first click, emptying the ring on the gateway for every panel open on
+it, with nothing between a finger and the loss. The commit sits in `ClearConsoleDialog` now, which says the
+lines go from the server rather than from the view, and the trigger takes the quiet danger shape with the
+border `/logs`'s purge set.
+
+A failed delete is a write, not a read. It set the same `error` the load uses, so a refused clear replaced
+the whole buffer with "Could not read the console log", the screen claiming it could not see what it had
+just failed to destroy. The error stays in the dialog now, the buffer stays on the page, and the
+acknowledgement for a clear that did land is one status row rather than a count: the ring is already
+refilling by the time the re-read lands.
+
+The touch pass found the row it was not looking for. The "Follow newest" label is the target, because
+clicking the words toggles the checkbox, and it measured 40px on a screen whose seven other targets are 44.
+
+| File                                   | Was | Now                                                                                                      |
+| -------------------------------------- | --- | -------------------------------------------------------------------------------------------------------- |
+| `components/ConsoleLog.svelte`         | 159 | 183: four controls on the scale, and the delete it fired on the first click now hands over to the dialog |
+| `components/ClearConsoleDialog.svelte` | -   | 48, new: the §6.14 confirmation this screen did not have                                                 |
+| `tests/components/console-log.test.ts` | 168 | 109, plus `console-log-clear.test.ts` (76) on the shared `support/console-stub.ts` (68)                  |
+
+Nothing on this screen was over the 250-line cap before and nothing is over it now, so the debt this pass
+cleared is the missing confirmation rather than a file size. The case count goes from 9 to 18: the eight
+screen rows, the four around the clear, and six in `tests/routes/console-log-control-states.test.ts` that
+walk every rendered control.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `bun run test`              | 3292 tests passed across 232 files, exit 0 (3283 across 230 at the last row). The nine tests and the two files are this pass: the clear family and the control-state walk. The console cluster was re-run whole against the final tree: 18 tests across 3 files                                                                                                                                                                                                                                                                                                                                                                             |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.hover\:text-\[var\(--color-danger-hover\)\]:hover`, `.active\:text-\[var\(--color-danger-press\)\]:active`, `.hover\:bg-\[var\(--color-danger-hover\)\]:hover`, `.active\:bg-\[var\(--color-danger-press\)\]:active` and `border-color:var(--color-danger)`, the ramp the trigger and the dialog's commit need from the same two tokens at two different weights                                                                                                                                                                                                |
+| Browser measurement         | Chromium against the dev server with the console routes stubbed, both themes: 8 controls each report three distinct computed colours across rest, hover and held (the pause, the refresh, the cross-link, the retry, and the dialog's dismiss, commit and close; the trigger steps its own ink 179/38/30 to 161/24/21 to 144/7/12 in light and 240/138/132 to 253/153/146 to 255/170/163 in dark, over the same 9% then 16% wash, while its border holds). At 390px the seven pressable targets and the follow label are 44px tall, nothing stretches past the viewport, and a tapped confirmation empties the buffer and closes the dialog |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| File size                   | `src/` files over the cap: 1 (`icons.ts` 281), shared by every screen. No console-log file is over it, in `src` or in `tests`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decision is in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+
+Not yet verified: the confirmation was measured against a stubbed gateway. The real `DELETE /api/v1/logs/console`
+was not called during this pass, so the wording that names the server-side consequence rests on SPEC-API §7.13
+rather than on an observed response, and the app-serv tree was left untouched as instructed. The 40px checkbox
+label is a shape the other screens carry too (`SettingsSecurityTab`, `SettingsLoggingTab`, `QuotaCards`,
+`OneTimeKeyModal`, the Token Saver field sets, `VisionAdapterForm`): this pass fixed the one on its own screen,
+and a sweep across the rest is a page-agnostic decision the owner has not given.
+
+### The Logs screen on the scale, and the two test files that held three subjects, 2026-10-20
+
+Run with Bun 1.3.0. Eleven controls written at the call site, none painted under a press. The pointer to
+`/console-log` was the same defect `/settings` recorded the same day one screen over: an anchor with
+`inline-flex min-h-11 items-center gap-2 text-sm` carries no state rule at all, so the only route to the
+screen's other half answered nothing on any device. It is an anchor still, with `href` and `role="link"`, and
+it takes the scale.
+
+The purge control needed a decision rather than a swap. It was `border-[var(--color-danger)] text-[var(--color-danger)]`,
+and the primitive offers a filled destructive commit and a quiet danger glyph but no outlined third. It takes
+the quiet variant with the border kept in the class list it accepts: the label steps along the danger ramp
+(179/38/30 to 161/24/21 to 144/7/12 in light, 240/138/132 to 253/153/146 to 255/170/163 in dark) instead of
+sitting under an ink wash, and the dialog's fill stays the only red block on the screen. Its paging band
+stays written out for the reason the records tab gives, that its counter carries the request total beside the
+page number, and the two steps read the primitive.
+
+| File                                | Was | Now                                                                                                            |
+| ----------------------------------- | --- | -------------------------------------------------------------------------------------------------------------- |
+| `tests/components/logs.test.ts`     | 288 | 104 plus `logs-states.test.ts` (83) and `logs-detail.test.ts` (105), on the shared `support/logs-stub.ts` (84) |
+| `tests/schemas/log.test.ts`         | 279 | 157 plus `log-search.test.ts` (127)                                                                            |
+| `components/LogsRequestsTab.svelte` | 225 | 220, five controls shorter than the markup they replaced                                                       |
+
+The case counts are unchanged: 12 in the screen file before and 12 across its three after, 35 in the schema
+file before and 35 across the two after. The split is along describes that were already separate subjects,
+the read and its URL, the list's states, and the detail behind the row.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `bun run test`              | 3283 tests passed across 230 files (3277 across 226 at the last row). This pass adds the 6 rows of `tests/routes/logs-control-states.test.ts`; the other four files are the two overgrown ones split along their describe boundaries, and the cases inside them are the same count. The logs cluster was re-run whole against the final tree after a class fix landed post-run: 72 tests across 7 files                                                                                                                             |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.active\:text-\[var\(--color-danger-press\)\]:active` and `.hover\:text-\[var\(--color-danger-hover\)\]:hover`, the two rules the quiet danger control needs and no screen wrote before                                                                                                                                                                                                                                                                  |
+| Browser measurement         | Chromium against the dev server with the log routes stubbed, both themes: 7 controls each report three distinct computed colours across rest, hover and held (the ghost row open and the pointer link 95/87/78 to 26/22/20 to 26/22/20 over a 9% then 16% wash in light; the purge 179/38/30 to 161/24/21 to 144/7/12, stepping its own ink rather than washing under it, and the same ramp read brighter going in in dark). At 390px the pointer, the commit, the purge, the row open, the page step and the refresh are 44px tall |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| File size                   | `src/` files over the cap now: 1 (`icons.ts` 281), shared by every screen. No logs file is over it, in `src` or in `tests`                                                                                                                                                                                                                                                                                                                                                                                                          |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decision is in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                        |
+
+Not yet verified: at 390px the stacked table stretches the row's Open control to the width of its value
+column (207px), which is how the records tab's identical cell already behaves. Whether a full-width
+underline in a stacked row reads as a control or as the row itself is a question this pass measured but did
+not answer.
+
+### The Settings screen on the scale, one write band instead of three, and the schema file with five subjects, 2026-10-20
+
+Run with Bun 1.3.0. Ten controls written at the call site, none of them painted under a press. Three of them
+were the tabs' commit, each carrying its own `bg-[var(--color-accent)] ... disabled:opacity-60`: the 60% fade
+§3.5 already records as wrong for a filled control, found again on three more buttons. Three more were the
+discards beside them, bare underlined buttons with no ground at all. Then the retry a failed load leaves
+behind, the password form's submit, and the two pointer tabs' links.
+
+The links were the sharpest finding: `min-h-11 self-start underline` is a tap target with no state rule
+behind it, so the only way off two of the five tabs answered nothing on any device. `primitives/button`
+renders an anchor when it is given `href`, so those two are still links, with `role="link"`, an `href`, and
+the same four states as every control on the screen. The two cards they sat in became one
+`SettingsPointerPanel`, because "this tab is a pointer, not an editor" is one rule rather than two copies.
+
+The three tabs also ended with the same row of markup, so that row is now `SettingsSaveBar`, taking `saving`,
+`dirty` and the last message from the tab that owns the draft. The proxy screen's outbound card has a fourth
+reading of the same row and keeps it: its band answers a `saved` flag and reports a refusal on its own alert
+line, which is a different question from the one message these tabs carry.
+
+| File                                             | Was | Now                                                                                                                                                                                                                                            |
+| ------------------------------------------------ | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schemas/settings.ts`                            | 426 | 233, with the strategy vocabulary in `settings-strategies.ts` (35), the provider overrides in `settings-provider-overrides.ts` (65), the thinking map in `settings-provider-thinking.ts` (75) and the dirty answer in `settings-dirty.ts` (45) |
+| `components/SettingsRoutingTab.svelte`           | 322 | 214, with the park windows in `SettingsKeyParkFields.svelte` (85) and the draft mapping in `schemas/settings-routing-draft.ts` (49)                                                                                                            |
+| `tests/components/settings.test.ts`              | 418 | 194 plus `settings-class-editor.test.ts` (176), on the shared `support/settings-stub.ts` (79)                                                                                                                                                  |
+| `tests/schemas/settings-forms.test.ts`           | 291 | 142 plus `settings-routing-form.test.ts` (116) and `settings-dirty.test.ts` (47)                                                                                                                                                               |
+| `tests/schemas/settings-failure-classes.test.ts` | 285 | 129 plus `settings-failure-classes-mapping.test.ts` (162)                                                                                                                                                                                      |
+
+The case counts are unchanged where nothing was added: 50 in the forms file before and 50 across its three
+after, 39 in the class file before and 39 across the two after. The screen file went from 18 to 19 because
+the band made one case worth pinning, that a pressed Discard returns the draft to the loaded value without
+writing anything. Three files come with the modules they cover: `settings-key-park` (4 cases, the writeback
+the park component does through a bindable prop rather than by mutating a field), `settings-routing-draft`
+(4, the narrowing and the copying), and `routes/settings-control-states` (6).
+
+Moving the provider-scoped names out of `settings.ts` changed one import line in eight files that belong to
+other screens: the provider detail surface (its proxy card, rotation switch, thinking control, the two model
+tables and the thinking store, plus `proxy-binding`), the proxy screen's outbound card, and the settings API
+module. No behaviour moved with them; those names were never this screen's to hold.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `bun run test`              | 3277 tests passed across 226 files. The run started one case before the discard test was written, so the tree now carries 3278; the settings cluster was re-run whole against the final tree, 172 tests across 14 files, all passing                                                                                                                                                                                                                                                                                                                                                                         |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries the accent hover and press steps, the ink wash pair, `aria-[pressed=true]:hover:bg-[var(--color-state-deep)]`, and the `aria-busy` rule that keeps a write in flight on its own accent                                                                                                                                                                                                                                                                                                                                             |
+| Browser measurement         | Chromium against the dev server with the settings document stubbed, both themes: 7 controls each report three distinct computed colours across rest, hover and held (the accent write 184/65/42 to 171/49/28 to 156/36/18 in light and 229/106/74 to 240/122/90 to 250/138/108 in dark; the destructive commit in the password dialog 179/38/30 to 161/24/21 to 144/7/12, carrying `danger-ink` rather than the accent's label pair). At 390px the tab, the write, the discard and the pointer link measure 44px tall, and pressing Discard returned the sticky limit from 9 to the loaded 3 without a PATCH |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| File size                   | `src/` files over the cap now: 1 (`icons.ts` 281), shared by every screen and so not this page's to split. No settings file is over it, and the five that were are listed above                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+
+Not yet verified: a refused write still lands on the band's `role="status"` line in muted ink rather than the
+danger `role="alert"` the proxy screen's card uses. That is how the three tabs wrote it before this pass and
+it is unchanged here; the band moved the control, not the reporting.
+
+### The Usage screen on the scale, the chosen chips that wore the hovered ground, and the test tree's four overgrown files, 2026-10-20
+
+Run with Bun 1.3.0. Twenty-one controls across ten components, none painted under a press. Four of them were
+the defect `/quota` recorded the day before, found again: the live row's pause chip and the three chart chips
+(the measure pair on a bar chart, the Tokens/Cost pair on the value chart) marked themselves chosen with
+`aria-pressed:bg-[var(--color-surface-2)]`, which is the ground §3.2 hands a _hovered_ control. All four read
+the toggle variant now, so the chosen state sits on `surface-3`, lifts to `state-deep` under a pointer, and
+a bar chart's chip no longer needs the segment box to draw its own.
+
+The breakdown's sort headers had no touch target at all: the class was `underline decoration-dotted` and
+nothing else, so the control was measured at the height of its text line rather than the 44px the panel asks
+of anything a finger presses (§8.7). As a ghost control it carries the floor and the states from the same place every
+other control does. The dotted underline stays, because it is what says "this column can be sorted" before
+anything is pressed.
+
+Two other readings came out of the screen rather than into it. Its paging band was an eighth copy of the
+Previous / Page n of m / Next row, so the breakdown now renders the shared one. And the records tab's band
+did not: its counter carries the request total beside the page number, which the shared component does not
+have room for, so that one stays written out and the two steps read the primitive.
+
+The debt here was mostly in the test tree, and one of it was this pass's own making:
+
+| File                                        | Was | Now                                                                                                                                     |
+| ------------------------------------------- | --- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `schemas/usage-view.ts`                     | 264 | 208, with the series arithmetic in `usage-series.ts` (64)                                                                               |
+| `tests/schemas/usage-view.test.ts`          | 463 | 176, plus `usage-series.test.ts` (108) and `usage-search.test.ts` (195)                                                                 |
+| `tests/components/usage-records.test.ts`    | 418 | 179, plus `usage-record-drawer.test.ts` (97), `usage-records-paging.test.ts` (112) and the shared `support/usage-records-stub.ts` (121) |
+| `tests/schemas/usage.test.ts`               | 364 | 173, plus `usage-record.test.ts` (196)                                                                                                  |
+| `tests/schemas/usage-topology-view.test.ts` | 263 | 213, plus `usage-topology-terminals.test.ts` (62)                                                                                       |
+
+Every split is along a describe boundary that was already a second subject in one file, and the case counts
+are unchanged: 19 in the records file before, 19 across the three after; the series and search cases moved
+with the module they test. Two dead imports from the quota split the day before turned up here, which is
+disclosed in the record below.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run lint`              | Prettier clean across the tree, and `eslint src tests` silent. The quota pass recorded the same two gates as clean with a truncated read of the output, which is how two dead imports shipped; they are removed here and the check is read whole                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `bun run test`              | 3262 tests passed across 219 files (3257 across 212 at the last row). This pass adds 5 rows in the new `tests/routes/usage-control-states.test.ts`; the other seven files are the four overgrown ones split along their describe boundaries, and the cases inside them are the same count, so nothing moved against its grain                                                                                                                                                                                                                                                                                                                                                  |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.active\:bg-[var(--color-state-press)]:active`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Browser measurement         | Chromium against the dev server with the usage routes stubbed, both themes: 8 controls each report three distinct computed colours across rest, hover and held (the outline wash on the page surface 0/0/0 to 26/22/20 at 9% to 16% in light, 237/234/230 at the same two steps in dark; the ghost row open 95/87/78 to 26/22/20 to 26/22/20 over a lifted wash), the chosen measure chip measured separately as resting on `surface-3` and sharing one ground when pressed, which is what §3.5 records for a chosen control. At 390px the seven controls measured are 44px tall in both themes, the sort header among them, which is the target its old class never asked for |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| File size                   | `src/` files over the cap now: 3 (`schemas/settings.ts` 426, `SettingsRoutingTab.svelte` 322, `icons.ts` 281). No usage test file is over it any more, and the four that were are listed above                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+
+Not yet verified: the records band's counter keeps the request total outside the shared component's
+sentence, which is the one place in the panel where a paged list states its size.
+
+### The Quota Tracker on the scale, and the six test files that held two subjects, 2026-10-19
+
+Run with Bun 1.3.0. Ten controls across four components, and not one of them painted a colour under a press.
+The chosen pause chip was the loudest finding: it marked itself with a hand-written
+`aria-pressed:bg-[var(--color-surface-2)]`, and `surface-2` is the ground DESIGN.md §3.2 calls _hovered_, so
+a chosen chip wore the same colour as every hovered control on the screen and answered nothing when pressed.
+It reads the toggle variant now, which puts it on `surface-3`, lifts it to `state-deep` under a pointer and
+steps it on a press.
+
+The refresh control is the one the screen could not borrow. `RefreshControl` drops a second press while a
+read is in flight; this screen queues it, because a press that arrives during a poll is a press the operator
+still means. The reason is written into the component and locked by a new case, and the control now says
+"Refreshing" while a read runs, which is the acknowledgment it used to give nothing.
+
+The size debt here was not in the route alone. The route sat at exactly the cap (250), its schema file
+carried two subjects (257), and six test files had grown past it: the read loop moved to
+`src/lib/stores/quota-poll.svelte.ts`, the published read's _status_ half (never polled, the soft sentence,
+the stamp, a failed attempt) moved to `src/lib/schemas/quota-published-status.ts` and its cases followed it,
+and the test files split along describe boundaries that were already two subjects in one file. No case moved
+against its grain: 21 + 19 cases in the two schema files before, 21 + 19 in the four after, and the card
+file's 24 in three.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `bun run test`              | 3257 tests passed across 212 files (3252 across 205 at the last row). This pass adds 4 rows in the new `tests/routes/quota-control-states.test.ts` and one case in `tests/components/quota-polling.test.ts` for the press a poll queues; the other 205 files are the same suite split along the describe lines that were already two subjects in one file, so no case moved against its grain                                                                                |
+| `bun run build`             | succeeds, output in `build/`                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Browser measurement         | Chromium against the dev server with the quota routes stubbed, both themes: seven controls each report three distinct computed colours across rest, hover and held (the outline wash 0/0/0 to 26/22/20 at 9% to 16% in light, 237/234/230 at the same two steps in dark; the fold glyph 95/87/78 to 26/22/20), and the chosen chip's pressed read stays on `state-deep`, the one step §3.5 says a chosen control does not take again                                         |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| File size                   | `quota/+page.svelte` 250 to 209, `schemas/quota-published.ts` 257 to 195, `quota-stub.ts` 345 to 223, and six over-cap test files (460, 426, 417, 344, 319, 345) split to eleven, largest 237. `src/lib/stores/quota-poll.svelte.ts` 72, `schemas/quota-published-status.ts` 71. Remaining over-cap files in `src/`: 4 (`schemas/settings.ts` 426, `SettingsRoutingTab.svelte` 322, `icons.ts` 281, `schemas/usage-view.ts` 264), each scheduled with the page that reads it |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                           |
+
+Not yet verified: the published block's own refresh round-trip was measured only through its control's
+computed colours, not through a held request. Three controls on this screen (the card fold glyph, the
+published ask, and the two paging steps) were drawn on `radius-md` while every control elsewhere in the panel
+is on `radius-sm`; they take the primitive's radius now, which the browser check shows as a corner change and
+no test pins.
+
+### The provider detail screen on the scale, and the two shells it is built from, 2026-10-19
+
+Run with Bun 1.3.0. Following the route's imports reaches 45 components, and 59 of its controls wrote their
+own class lists: the connection table, its drawer, the two add-key paths, three model sections, the proxy
+binding and the OAuth half. None of them painted anything under a press, and four painted nothing under a
+pointer either.
+
+Two of the 59 were not controls the screen owns but the shells it is built from: every section fold and
+every tab in the tab strip. Both washed to `surface-2` on hover with no press, and Usage, Settings and
+Combos use them too, so converting them is the difference between one screen fixed and a rule the next
+screen can follow. Each keeps its own identity in the class list the primitive accepts (a bottom rule on the
+tab, a chevron and a left-aligned label on the fold) and takes its four states from the scale.
+
+The audit's other findings were not colour:
+
+- The connection list and the endpoint drawer each carried their own selection, three bulk writes, a busy
+  flag and an error slot: 77 lines and 67 lines of the same orchestration. `src/lib/stores/bulk-actions.svelte.ts`
+  is the one reading now, and it clears the selection after an erase, which is the defect the Proxy Pools
+  pass found in a third copy of this shape.
+- Four more copies of the Previous / Page n of m / Next band (the key table, the catalog table, the
+  custom-model table, the connection list), which makes seven copies of one band across five screens.
+- One row action arrived as an underlined red text link with an icon inside and no label, so it is the row
+  glyph treatment now, like every other delete in the panel.
+- Four dialogs paired the danger fill with `--color-accent-text` instead of `--color-danger-ink`. No contrast
+  test can see that: the two tokens hold the same value in both themes today. The pairing belongs to the ramp
+  because a re-tune of the accent must not move a destructive label with it.
+
+The size debt moved with the page, per the owner's rule that a page's audit and its fix stay in one diff:
+the route 308 to 224 (the Models tab is now `ProviderModelsSection.svelte`), the drawer 333 to 183
+(`EndpointCredentials.svelte`), the connection list 296 to 230, and the proxy card 251 to 240 by moving the
+binding's own sentence into `describeProxyBinding`, which is a derivation rather than markup.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `bun run test`              | 3252 tests passed across 205 files (3247 across 204 at the last row). This pass adds 5 rows in the new `tests/routes/provider-detail-control-states.test.ts` and rewrites one assertion in `tests/components/bulk-selection.test.ts` that had pinned a hand-written `min-h-11` on a row glyph now taking the primitive's icon size                                                                                                                                                  |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read and carries `.active\:bg-[var(--color-state-press)]:active` and both themes' `--color-danger-ink`                                                                                                                                                                                                                                                                                                                     |
+| Browser measurement         | Chromium against the dev server with the provider routes stubbed, both themes: 16 controls each report three distinct computed colours across rest, hover and held (light row delete glyph 179/38/30 to 161/24/21 to 144/7/12; dark 240/138/132 to 253/153/146 to 255/170/163; the drawer's accent fill 184/65/42 to 171/49/28 to 156/36/18 in light, 229/106/74 to 240/122/90 to 250/138/108 in dark), and at 390px every measured control is 44px tall and a tap opens the drawer |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| File size                   | 4 files in this page's cluster were over the 250-line cap and all four are under it now, with the two new components at 105 and 115 and the store at 106. Remaining over-cap files in `src/`: 5 (`schemas/settings.ts` 426, `SettingsRoutingTab.svelte` 322, `icons.ts` 281, `schemas/usage-view.ts` 264, `schemas/quota-published.ts` 257), each scheduled with the page that reads it                                                                                             |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.5                                                                                                                                                                                                                                                                                                                                  |
+
+Not yet verified: the node shape's OAuth device flow was read through the shared components but not
+click-through audited on a live device round, and the fold and tab shells were only re-measured on this
+screen; Usage, Settings and Combos inherit the same states without a guard test of their own for them.
+
+### Proxy Pools on the scale, and two colours that pointed at nothing, 2026-10-19
+
+Run with Bun 1.3.0. The screen was 339 lines, the largest page file in the panel, and its eighteen controls
+were hand-written in four readings of the same affordance: the row switch carried no text colour at all,
+the row actions washed to a raised surface with no press, the bulk bar's icons had a border and a hover and
+no press, and the text actions faded at 60% while the rest of the panel fades at 50%.
+
+The audit found two colours that pointed at nothing. The bulk bar painted its commit with
+`--color-primary-contrast` and its tag field with `--color-surface-1`, and neither token is declared
+anywhere, so the utility resolved to nothing and the button inherited the page's text colour: near-white on
+the coral fill in dark, 1.44:1. An undeclared token is not a missing value, it is a silent fallthrough, and
+the reason it is now a rule rather than a fix is written in DESIGN.md §11.
+
+Moving the selection and the three bulk writes out of the page (`src/lib/stores/proxy-bulk.svelte.ts`, the
+same shape as the panel's other stores) brought the page to 239 lines. It also surfaced a defect on the
+way: the erase called `toggleAll(false)` and dropped the result, so the selection survived the rows it
+pointed at. Clearing it is now the store's own `clear()`.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                     |
+| `bun run test`              | 3247 tests passed across 204 files (3244 across 203 at the last row). This pass adds 3 rows in the new `tests/routes/proxy-pools-control-states.test.ts`                                                                                                                                                                                                                                 |
+| `bun run build`             | succeeds, output in `build/`                                                                                                                                                                                                                                                                                                                                                             |
+| Browser measurement         | Chromium against the dev server with the pool routes stubbed, both themes: eight controls each report three distinct computed colours across rest, hover and held (light row delete glyph 179/38/30 to 161/24/21 to 144/7/12; dark 240/138/132 to 253/153/146 to 255/170/163), including the bulk bar's select-all toggle, its disable glyph and its delete glyph once a row is selected |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                     |
+| File size                   | `proxy-pools/+page.svelte` 339 to 239; `src/lib/stores/proxy-bulk.svelte.ts` 135. Largest file in the cluster now `ProxyOutboundSettings.svelte` at 248, under the cap. Remaining over-cap files in `src/`: 9 (largest `schemas/settings.ts` 426), each scheduled with the page that reads it                                                                                            |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed                                                                                                                                                                                                                                                                                                  |
+
+### The Combos screen on the scale, and the paging band that was copied three times, 2026-10-19
+
+Run with Bun 1.3.0. The widest screen so far: twenty-four controls across ten components, in three
+different readings of the same affordance. The create action was an accent fill wearing a warm hairline
+border, the model picker's chosen chips were accent fills too, the row actions washed to a raised surface
+with no press under any of them, and the vision adapter's retry had no 44px target at all.
+
+Two readings came out of the screen rather than into it. A chosen model chip is now marked the way a
+chosen filter is (the pressed surface, the text border, the weight): a dialog of a dozen coral chips is
+the accent everywhere DESIGN.md §3.4 forbids, and it made the chosen set read as the screen's primary
+action. And the Previous / Page n of m / Next band turned out to be copied on three screens with drifted
+padding and icons on two of them, so it is one component now, which is also what brought `CombosTab.svelte`
+from 257 lines to 232: the size debt and the state work land in the same diff, per the owner's rule that a
+page's audit and its fix stay together.
+
+Two pinned tokens in `combo-fase-6.test.ts` moved with the source that now owns them: the text actions'
+`px-2` is the button's `px-3`, and `max-sm:justify-center` is the button's unconditional centring. Each
+carries the reason at the assertion rather than being dropped.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `bun run test`              | 3244 tests passed across 203 files (3241 across 202 at the last row). This pass adds 3 rows in the new `tests/components/combos-control-states.test.ts`                                                                                                                                                                                                                                                                                                                                                    |
+| `bun run build`             | succeeds, output in `build/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Browser measurement         | Chromium against the dev server with the combos routes stubbed, both themes: create, refresh, the row disclosure, the row edit glyph and the row delete glyph each report three distinct computed colours across rest, hover and held (light delete glyph 179/38/30 to 161/24/21 to 144/7/12; dark 240/138/132 to 253/153/146 to 255/170/163). The paging band is in the screenshot and covered by the unit guard, but the harness's selector for it timed out, so its painted steps are not measured here |
+| Guard found                 | the disclosure row button, the widest control on the screen, painted nothing under a pointer before this pass                                                                                                                                                                                                                                                                                                                                                                                              |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| File size                   | `CombosTab.svelte` 257 to 232, now under the cap; `providers/+page.svelte` 255 to 175 by extracting `ProvidersFilters.svelte`; every file in the cluster is under 250 (largest touched: `VisionAdapterForm.svelte` 239). Net across the pass: 270 lines removed, 126 added                                                                                                                                                                                                                                 |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed                                                                                                                                                                                                                                                                                                                                                                                                                    |
+
+### The Provider registry list on the state scale, 2026-10-19
+
+Run with Bun 1.3.0. The second screen on the scale, and the one that showed the scale was incomplete.
+Sixteen controls were hand-written here: the search submit, the two add actions, the node dialog's commit
+and its cancel, and the pagination pair painted a border or an underline and nothing else, so a live
+control and the panel behind it were the same picture. The six category chips changed only their text
+colour, which leaves a chosen filter and a hovered one indistinguishable from each other.
+
+Selection had no place on a scale built for pointer states, so it gained one. A chosen chip sits on
+`surface-3`, the ground DESIGN.md §3.2 already calls pressed, and its hover reaches the new `state-deep`
+from there; no fourth step, because re-pressing a chip that is already chosen changes nothing and the 1px
+shift is the whole answer. The state is read from `aria-pressed`, which is the attribute that already
+announces it, so a screen cannot paint the chosen filter without reporting it.
+
+The pressed-state assertions moved into `tests/support/control-states.ts` the way the icon-only contract
+did, so a second screen answers the same question instead of writing its own version of it.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `bun run test`              | 3241 tests passed across 202 files (3238 across 201 at the last row). This pass adds 3 rows: 2 in the new `tests/routes/providers-control-states.test.ts` and 1 in `tests/tokens/state-scale.test.ts` for the selected step                                                                                                                                                                                                                                                                                                                        |
+| `bun run build`             | succeeds; the emitted stylesheet carries the `aria-pressed` rules and both themes' `state-deep`, read from the built CSS rather than assumed                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Browser measurement         | Chromium against the dev server with the registry routes stubbed, both themes: search, an unchosen chip, and an add action each report three distinct computed colours (transparent, 9% ink, 16% ink); a chosen chip reads rgb(233,228,220) at rest and rgba(26,22,20,0.2) under the pointer in light, rgb(48,45,41) and rgba(237,234,230,0.2) in dark. Not measured in the browser: this screen's pagination pair, which the harness's fixture timing skipped; the unit test covers it and the identical treatment was measured on Endpoint & Key |
+| Guard found                 | the screen-scoped test caught two more hand-written controls the inventory had missed (the node dialog's Cancel and its commit), because a closed dialog keeps its markup in the document; both are converted here                                                                                                                                                                                                                                                                                                                                 |
+| `scrypts/gates/antislop.sh` | PASS                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| File size                   | `src/routes/providers/+page.svelte` is 254 lines, over the 250 cap: it was 263 before this pass, so the file shrank by 9 rather than growing, and it is disclosed rather than split, the practice recorded for the other over-cap files. `CustomProviderDialog.svelte` 231, `CustomProviderCard.svelte` 224, `states.css` 49, `primitives/button/button.svelte` 108                                                                                                                                                                                |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+
+### The interaction-state scale and Endpoint & Key, 2026-10-19
+
+Run with Bun 1.3.0. The question asked was what colour tells an operator that a button is live, and what
+colour tells them it was pressed, starting on Endpoint & Key. Measured against the screen, the second half
+had no answer. Eight control groups rendered there from eight hand-written class lists: none carried a
+pressed colour, three carried no hover either, and the only feedback a click got was a label swap that
+appears after the request has already started. Because Tailwind applies `hover:` only under
+`(hover: hover)`, the half that did have a hover wash had no state of any kind on a touch layout. The first
+half was failing too: the refresh control and a dialog's dismiss button paint the same hairline border as
+the static panel behind them, so "alive" was not visible either.
+
+That made it a palette problem rather than eight screen fixes. The scale is `src/lib/states.css`, and
+`primitives/button` is the component that reads it into classes: `default`, `outline`, `ghost`,
+`destructive` (the commit in a dialog) and `destructive-ghost` (one danger action among four in a row).
+Steps are sized in L\* (about 5 per state, about 10 across a ramp) rather than by contrast ratio, because a
+wash and its ground are deliberately close and the washes this replaced measured 3.1 L\*, which reads as a
+flicker. A control with no colour of its own takes an ink wash, so one token calibrates itself against the
+page, a card, or a table header; a control that carries a colour steps its own ramp instead, because a
+danger glyph under a 16% ink wash measures 4.17:1 on a raised panel. Direction follows the ramp each theme
+already draws, where `surface-3` is the pressed row: deeper in light, brighter in dark.
+
+The measurement found three defects and fixed them where it stood. The dialog's Delete key button carried
+a raw `text-white` on the danger token, which measures 2.42:1 in dark; the same pair sat on
+`PurgeLogsDialog` and `SettingsSecurityTab`, and all three now read `danger-ink`. The registry variant's
+`hover:bg-primary/80` lifts a filled button toward the page and puts its own label at 3.88:1, so a filled
+control darkens instead. And fading a filled button with element opacity pulls label and fill toward the
+page together (1.87:1), which is why a primary that is gated steps off the accent onto `surface-3` with a
+muted label, while a primary with a call in flight keeps the accent and says so with `aria-busy`: grey on
+a button the operator just pressed reads as a broken one, which is the failure the refresh control already
+records about its own gate.
+
+Endpoint & Key is converted: the create form, the refresh control, the five row actions, the pagination and
+retry steps, both dialog footers, the one-time key modal's copy and Done, and the shared `Modal` close
+control, which every dialog in the panel inherits. `RefreshControl` and `CopyButton` are shared too, so ten
+further screens gain the states without being touched. The rest of the panel's hand-written buttons are not
+migrated by this pass, and the new screen-scoped test guards that one screen only.
+
+| Check                       | Result                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`             | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                         |
+| `bun run test`              | 3238 tests passed across 201 files on the final tree. This pass adds 33 rows: 28 in the new `tests/tokens/state-scale.test.ts` and 5 in the new `tests/components/endpoint-key-control-states.test.ts`. The last whole-panel count recorded in this file was 2548 across 147 files                                                                                                           |
+| `bun run build`             | succeeds, output in `build/`; the emitted stylesheet was read rather than assumed, and carries both themes' state tokens and the `aria-busy` rules                                                                                                                                                                                                                                           |
+| Token measurement           | every ramp step at least 4 L\* and every label pairing at AA on both grounds, in both themes; the accent steps are held to within 15% chroma and 5 degrees of hue, so a ramp cannot quietly become a second accent                                                                                                                                                                           |
+| Browser measurement         | Chromium against the dev server with the gateway routes stubbed, both themes: each control reports three distinct computed colours across rest, hover and held (light primary 184/65/42 to 171/49/28 to 156/36/18, dark 229/106/74 to 240/122/90 to 250/138/108); an in-flight primary keeps the accent and a gated one reads `surface-3`; at 390px a tap opens the dialog on a 44x44 target |
+| `scrypts/gates/antislop.sh` | PASS: tree-wide R-02, the changed-file citation and header checks, and the suppression checks                                                                                                                                                                                                                                                                                                |
+| File size                   | `src/app.css` 249 lines, at the ceiling, which is why the scale is its own file (the same seam `motion.css` records); `src/lib/states.css` 63; `primitives/button/button.svelte` 117; the largest touched test is `tests/tokens/contrast.test.ts` at 223, above the 220 warning and disclosed rather than split                                                                              |
+| SYSTEM_MAP.md               | N/A: no domain boundary, data structure, service interaction, or async topology changed. The decisions and measured values are in `DESIGN.md` §3.2, the new §3.5, §11 and §12                                                                                                                                                                                                                |
+
+Not yet verified: the screens that inherit `RefreshControl`, `CopyButton`, and `Modal` were not each
+click-through audited; their controls now read the same states, but only Endpoint & Key carries the test
+that pins it.
 
 ### The vertex service-account credential in the endpoint forms, 2026-10-12
 
@@ -2049,18 +2987,26 @@ gateway.
 
 ## Open items that block later phases
 
-1. **The panel's response schemas are not compared against the served contract by a gate.** The
+1. **The panel's response schemas are compared against the served contract by a gate, for names.** The
    error-code half is wired: `scrypts/gates/contract-drift.sh` compares SPEC-API §8 with the panel's own
    enum in `src/lib/schemas/error.ts`, and it runs in `scrypts/gates/all.sh`. The document half is pinned
    twice: `scrypts/gates/contract-openapi.sh` compares the served `GET /api/v1/openapi.json` with
    `docs/CONTRACT/001-CONTRACT-API-V1.yaml`, and `TestOpenAPICoversEveryRegisteredRoute` (in
-   `app-serv/internal/router`) pins the document to the router. What is left is the panel side of a field
-   rename: a field the panel reads strictly is caught by that resource's tests only where a fixture covers
-   it. The file this item originally waited for (`docs/SPEC-API/002-SPEC-API-openapi.md`) is superseded;
-   see spec §14 Q3.
+   `app-serv/internal/router`) pins the document to the router. The panel half is
+   `tests/contract/panel-schemas.test.ts`: it reads the committed `openapi.json` and asks, of 46 response
+   schemas, whether the contract names every field the panel requires. It compares property names, not
+   types, so a renamed or removed field fails here and a retyped one is still the resource tests' job. It
+   carried one recorded divergence: `EndpointOAuthResponse` did not declare `has_access_token`,
+   `has_refresh_token`, `project_id`, `account_id`, or `last_refresh_at` although the service's DTO
+   serves them. The contract now declares all five, so the exception is gone and the gate requires the
+   contract to name every field the panel reads. See spec §14 Q3.
 2. `AGENTS.md` scopes itself to the Go services (`app-*/**`), so it does not govern this panel. The
-   panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and they are applied by
-   hand here. The panel's gates live in `scrypts/gates/panel-check.sh`.
+   panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and most of them are
+   machine-checked rather than reviewed: the toolchain in `scrypts/gates/panel-check.sh`, the line cap in
+   `tests/tokens/file-size.test.ts`, the declared-token rule in `tests/tokens/declared-tokens.test.ts`,
+   contrast and the state scale in `tests/tokens/`, tap targets in `tests/tokens/touch-targets.test.ts`,
+   icon relevance in `tests/navigation/icons.test.ts`, and navigation destinations in
+   `tests/navigation/navigation.test.ts`.
 3. Gateway key `status` values are not enumerated in SPEC-API §7.3. The panel currently writes `active`
    and `disabled` and renders any other value verbatim; see §14 Q9.
 

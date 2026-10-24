@@ -8,6 +8,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import VisionAdapterForm from '../../src/lib/components/VisionAdapterForm.svelte';
+import { formatTimestamp } from '$lib/utils/time';
 
 type Row = Record<string, unknown>;
 
@@ -149,7 +150,13 @@ describe('the vision adapter picker', () => {
 		stubApi({ catalog: [catalogRow()], providers: [providerRow()] });
 
 		render(VisionAdapterForm);
-		await fireEvent.click(await screen.findByRole('button', { name: 'Add models' }));
+
+		const add = await screen.findByRole('button', { name: 'Add models' });
+		expect(add.className).toContain('min-h-11');
+		expect(add.className).toContain('w-fit');
+		expect(add.className).toContain('active:bg-[var(--color-state-press)]');
+
+		await fireEvent.click(add);
 
 		const dialog = await screen.findByRole('dialog');
 		await fireEvent.click(within(dialog).getByRole('button', { name: 'GPT-4o' }));
@@ -157,8 +164,24 @@ describe('the vision adapter picker', () => {
 		expect(screen.getByText('openai/gpt-4o')).toBeTruthy();
 		expect(screen.queryByText('No model selected.')).toBeNull();
 
-		await fireEvent.click(screen.getByRole('button', { name: 'Remove openai/gpt-4o' }));
+		const remove = screen.getByRole('button', { name: 'Remove openai/gpt-4o' });
+		expect(remove.className).toContain('text-[var(--color-danger)]');
+		expect(remove.className).toContain('active:bg-[var(--color-state-press)]');
+		await fireEvent.click(remove);
 		expect(screen.getByText('No model selected.')).toBeTruthy();
+	});
+
+	it('shows the last-saved instant in the panel format, not the wire value', async () => {
+		const saved = '2026-09-18T00:00:00Z';
+		stubApi({
+			adapter: { enabled: false, round_robin: false, models: [], updated_at: saved }
+		});
+
+		render(VisionAdapterForm);
+
+		expect(await screen.findByText(/last saved/)).toBeTruthy();
+		expect(screen.getByText(formatTimestamp(saved), { exact: false })).toBeTruthy();
+		expect(screen.queryByText(saved)).toBeNull();
 	});
 
 	it('keeps a selected ref the picker cannot offer and says why', async () => {

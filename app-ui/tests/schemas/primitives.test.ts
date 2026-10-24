@@ -117,6 +117,9 @@ describe('proxyHost', () => {
 			{ name: 'the bracketed loopback', input: '[::1]', ok: true },
 			{ name: 'a host with a scheme', input: 'http://proxy.example.com', ok: false },
 			{ name: 'a host with a port', input: 'proxy.example.com:8080', ok: false },
+			// `new URL` percent-encodes a space instead of failing, so a pasted line with a stray word in
+			// it reaches the schema as `not%20a%20host`. The batch preview would call that ready.
+			{ name: 'a host percent-encoded from a space', input: 'not%20a%20host', ok: false },
 			{ name: 'an empty value', input: '', ok: false },
 			{ name: 'a host past the limit', input: `${'h'.repeat(250)}.com`, ok: false },
 			{ name: 'a bare IPv6 literal, which needs brackets', input: '2001:db8::1', ok: false },

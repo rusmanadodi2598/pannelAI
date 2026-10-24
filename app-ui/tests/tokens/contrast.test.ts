@@ -24,6 +24,8 @@ const TEXT_PAIRS: { fg: string; bg: string; label: string }[] = [
 	{ fg: 'accent', bg: 'surface', label: 'accent text on the page surface' },
 	{ fg: 'accent', bg: 'surface-2', label: 'accent text on a raised panel' },
 	{ fg: 'accent-text', bg: 'accent', label: 'accent button label' },
+	{ fg: 'accent-text', bg: 'accent-hover', label: 'accent button label on hover' },
+	{ fg: 'accent-text', bg: 'accent-press', label: 'accent button label while pressed' },
 	{ fg: 'ok', bg: 'surface-2', label: 'success status on a raised panel' },
 	{ fg: 'warn', bg: 'surface-2', label: 'warning status on a raised panel' },
 	{ fg: 'danger', bg: 'surface-2', label: 'danger status on a raised panel' },
@@ -64,6 +66,14 @@ const REQUIRED = [
 	'text-muted',
 	'accent',
 	'accent-text',
+	'accent-hover',
+	'accent-press',
+	'state-hover',
+	'state-press',
+	'state-deep',
+	'danger-hover',
+	'danger-press',
+	'danger-ink',
 	'ok',
 	'warn',
 	'danger',
@@ -125,13 +135,20 @@ describe('token layer', () => {
 		// Neutral surfaces do not count toward the cap (R-29); ok, warn, and danger are status colours,
 		// not brand colours, so the brand palette is one accent plus the neutrals. Checked per theme so a
 		// second accent added to only one theme cannot slip through. DESIGN.md §3.1 records why the light
-		// accent is not the raw legacy coral.
+		// accent is not the raw legacy coral. `accent-hover` and `accent-press` are the same coral at two
+		// depths rather than two more accents, which is what tests/tokens/state-scale.test.ts proves from
+		// their chroma.
 		it(`keeps exactly one accent family in the ${theme} theme`, () => {
 			const accentTokens = Object.keys(tokens)
 				.filter((token) => token.startsWith('accent'))
 				.sort();
 
-			expect(accentTokens, `${theme} theme accent tokens`).toEqual(['accent', 'accent-text']);
+			expect(accentTokens, `${theme} theme accent tokens`).toEqual([
+				'accent',
+				'accent-hover',
+				'accent-press',
+				'accent-text'
+			]);
 		});
 	}
 });
@@ -152,6 +169,13 @@ describe('typography', () => {
 
 	it('references no third-party font host', () => {
 		expect(stylesheet).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
+	});
+
+	// Preflight fades the placeholder to 50% of the field's text colour, which is 3.67:1 on the page
+	// ground. The muted token is already asserted at AA in both themes above.
+	it('paints placeholders with the muted token rather than a 50% fade', () => {
+		expect(stylesheet).toMatch(/::placeholder\s*\{[^}]*color:\s*var\(--color-text-muted\)/);
+		expect(stylesheet).toMatch(/::placeholder\s*\{[^}]*opacity:\s*1/);
 	});
 });
 

@@ -85,6 +85,32 @@ func (r *memProxyRepo) Update(_ context.Context, proxy domain.Proxy) error {
 	return nil
 }
 
+// UpdateBulk and DeleteBulk mirror the real transaction: a candidate that is not there
+// aborts the set instead of applying to the rest of it.
+func (r *memProxyRepo) UpdateBulk(_ context.Context, proxies []domain.Proxy) error {
+	for _, proxy := range proxies {
+		if _, ok := r.byID[proxy.ID()]; !ok {
+			return domain.ErrProxyNotFound
+		}
+	}
+	for _, proxy := range proxies {
+		r.byID[proxy.ID()] = proxy
+	}
+	return nil
+}
+
+func (r *memProxyRepo) DeleteBulk(_ context.Context, ids []string) error {
+	for _, id := range ids {
+		if _, ok := r.byID[id]; !ok {
+			return domain.ErrProxyNotFound
+		}
+	}
+	for _, id := range ids {
+		delete(r.byID, id)
+	}
+	return nil
+}
+
 func (r *memProxyRepo) Delete(_ context.Context, id string) error {
 	if _, ok := r.byID[id]; !ok {
 		return domain.ErrProxyNotFound

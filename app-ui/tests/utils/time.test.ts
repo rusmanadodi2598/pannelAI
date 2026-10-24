@@ -6,11 +6,18 @@
 // the row yet rather than that the window is overdue.
 //
 // `elapsedText` is the same set of boundaries in the other direction, for the live list of requests that
-// have just finished.
+// have just finished, and `runningText` is the figure for the ones still open.
 
 import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
-import { countdownText, elapsedText, formatTimestamp } from '$lib/utils/time';
+import {
+	countdownText,
+	elapsedText,
+	formatTimestamp,
+	formatTimestampWithSeconds,
+	formatTimestampWithTime,
+	runningText
+} from '$lib/utils/time';
 
 const NOW = Date.parse('2026-09-18T12:00:00Z');
 
@@ -75,6 +82,30 @@ describe('formatTimestamp', () => {
 	});
 });
 
+describe('formatTimestampWithTime', () => {
+	it('states an unparseable value rather than rendering a native invalid date', () => {
+		expect(formatTimestampWithTime('2026-13-45')).toBe('Invalid timestamp');
+	});
+
+	it('prints the clock beside the date, with the zone named', () => {
+		// A range bound needs the hour: a rolling 24 hours rendered as two dates reads as two whole days.
+		expect(formatTimestampWithTime('2026-09-18T12:00:00Z')).toMatch(/\d{1,2}[.:]\d{2}.*,\s*\S+$/);
+	});
+});
+
+describe('formatTimestampWithSeconds', () => {
+	it('states an unparseable value rather than rendering a native invalid date', () => {
+		expect(formatTimestampWithSeconds('2026-13-45')).toBe('Invalid timestamp');
+	});
+
+	it('prints seconds beside the date and clock, with the zone named', () => {
+		// The console's five-second acknowledgement must move when Refresh is pressed within a minute.
+		expect(formatTimestampWithSeconds('2026-09-18T12:00:00Z')).toMatch(
+			/\d{1,2}[.:]\d{2}[.:]\d{2}.*,\s*\S+$/
+		);
+	});
+});
+
 describe('elapsedText', () => {
 	forEachCase(
 		[
@@ -106,5 +137,30 @@ describe('elapsedText', () => {
 
 	it('states an unparseable instant instead of inventing a duration', () => {
 		expect(elapsedText('not a timestamp', NOW)).toBe('Invalid timestamp');
+	});
+});
+
+// The in-flight row's figure, for a request the gateway is still holding. `elapsedText` collapses a minute
+// into "just now", which would freeze every in-flight row at the same words, so this counts seconds.
+describe('runningText', () => {
+	forEachCase(
+		[
+			{ name: 'counts the first second', offset: -1_000, expected: '1s' },
+			{ name: 'counts the last second before a minute', offset: -59_000, expected: '59s' },
+			{ name: 'counts a whole minute', offset: -60_000, expected: '1m' },
+			{ name: 'drops the seconds rather than rounding up', offset: -119_000, expected: '1m' },
+			{ name: 'counts a whole hour', offset: -3_600_000, expected: '1h' }
+		],
+		(testCase) => {
+			expect(runningText(at(testCase.offset), NOW)).toBe(testCase.expected);
+		}
+	);
+
+	it('reads a future instant as 0s rather than as a negative duration', () => {
+		expect(runningText(at(5_000), NOW)).toBe('0s');
+	});
+
+	it('states an unparseable instant instead of inventing a duration', () => {
+		expect(runningText('not a timestamp', NOW)).toBe('Invalid timestamp');
 	});
 });

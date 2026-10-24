@@ -45,7 +45,11 @@ type QuotaFlusher struct {
 	// cannot see. That also survives a future caller invoking FlushOnce from a
 	// request path: it fails fast instead of blocking a handler.
 	running atomic.Bool
+	lease   WorkerLease
 }
+
+// UseLease makes the flush single-owner across replicas.
+func (f *QuotaFlusher) UseLease(lease WorkerLease) { f.lease = lease }
 
 // NewQuotaFlusher validates deps and returns a flusher.
 func NewQuotaFlusher(counters repository.QuotaCounterStore, quotas repository.QuotaRepository, policy QuotaFlushPolicy, logger *slog.Logger) (*QuotaFlusher, error) {
@@ -124,6 +128,14 @@ func (f *QuotaFlusher) FlushUntilQuiet(ctx context.Context) bool {
 func (f *QuotaFlusher) flushOnce(ctx context.Context) (ran, more bool) {
 	if !f.running.CompareAndSwap(false, true) {
 		return false, false
+	}
+	release, ok := acquireWorkerLease(ctx, f.lease, f.logger, "quota flush")
+	if !ok {
+		f.running.Store(false)
+		return false, false
+	}
+	if release != nil {
+		defer release()
 	}
 
 	done := make(chan struct{})

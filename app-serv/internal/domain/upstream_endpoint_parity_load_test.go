@@ -33,8 +33,11 @@ func TestRehydrateUpstreamEndpoint_CarriesTheParityFields(t *testing.T) {
 			LastErrorMessage:    "the upstream answered 500",
 			LastErrorAt:         &at,
 			ProxyPoolID:         "proxy-01ABC",
+			QuotaCooldownUntil:  &at,
+			RefreshRetryAt:      &at,
+			RefreshRetryRounds:  4,
 		},
-	)
+		OperatorState{})
 	if endpoint.GlobalPriority() != 5 {
 		t.Fatalf("GlobalPriority() = %d, want 5", endpoint.GlobalPriority())
 	}
@@ -46,6 +49,15 @@ func TestRehydrateUpstreamEndpoint_CarriesTheParityFields(t *testing.T) {
 	}
 	if endpoint.ProxyPoolID() != "proxy-01ABC" {
 		t.Fatalf("ProxyPoolID() = %q, want proxy-01ABC", endpoint.ProxyPoolID())
+	}
+	if endpoint.QuotaCooldownUntil() == nil || !endpoint.QuotaCooldownUntil().Equal(at) {
+		t.Fatalf("QuotaCooldownUntil() = %v, want the stored deadline", endpoint.QuotaCooldownUntil())
+	}
+	if endpoint.RefreshRetryAt() == nil || !endpoint.RefreshRetryAt().Equal(at) {
+		t.Fatalf("RefreshRetryAt() = %v, want the stored deadline", endpoint.RefreshRetryAt())
+	}
+	if endpoint.RefreshRetryRounds() != 4 {
+		t.Fatalf("RefreshRetryRounds() = %d, want the stored step 4", endpoint.RefreshRetryRounds())
 	}
 	code, message, errAt := endpoint.LastError()
 	if code != "UPSTREAM_ERROR" || message != "the upstream answered 500" || errAt == nil {

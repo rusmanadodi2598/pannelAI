@@ -123,7 +123,7 @@
 	<div class="grid min-w-0 gap-4 lg:grid-cols-2">
 		<UsageBarChart
 			title="By provider"
-			caption="Largest first. Tokens counts in plus out, not cache."
+			caption="Largest first, by tokens in plus tokens out. Cache is excluded."
 			noun="provider"
 			set={providerSet}
 			measure={providerMeasure}
@@ -133,7 +133,7 @@
 		/>
 		<UsageBarChart
 			title="Top models"
-			caption="Top five. Tokens counts in plus out, not cache."
+			caption="Top five, by tokens in plus tokens out. Cache is excluded."
 			noun="model"
 			set={modelSet}
 			measure={modelMeasure}

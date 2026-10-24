@@ -122,10 +122,25 @@ describe('CopyButton', () => {
 	});
 });
 
-// The icon-only shape the two modals use. The word leaves the face of the
-// button and becomes its accessible name, so the control still announces itself while the value and the
-// outcome sentence stay the only text beside it. The outcome is part of the shape: a copy that reported
-// nothing would be a dead control, pressed in either shape.
+// The icon-only shape the modals use. The word leaves the face of the button and becomes its accessible
+// name, so the control still announces itself while the outcome sentence stays visible beside it, because
+// a failure that is announced only reads as a dead button. The Skill cards ask for `glyphOutcome`, which
+// draws the answer on the glyph and leaves the sentence to the live region so an anchored icon never shifts.
+describe('CopyButton, repeated on a page', () => {
+	it('takes a more specific name without changing the visible label', () => {
+		render(CopyButton, {
+			props: {
+				value: VALUE,
+				label: 'Copy install line',
+				ariaLabel: 'Copy install line for Chat'
+			}
+		});
+
+		const button = screen.getByRole('button', { name: 'Copy install line for Chat' });
+		expect(button.textContent).toContain('Copy install line');
+	});
+});
+
 describe('CopyButton, icon-only', () => {
 	it('carries no visible text and keeps the name on the button', () => {
 		render(CopyButton, { props: { value: VALUE, iconOnly: true } });
@@ -149,13 +164,47 @@ describe('CopyButton, icon-only', () => {
 		}
 	});
 
-	it('reports the outcome the same way, with the value still on screen', async () => {
+	it('keeps the outcome sentence visible beside the icon by default', async () => {
 		const spy = stubExecCommand(() => true);
 		render(CopyButton, { props: { value: VALUE, iconOnly: true } });
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
 
 		expect(spy).toHaveBeenCalledWith('copy');
-		expect(await screen.findByText(COPIED)).toBeTruthy();
+		const outcome = await screen.findByText(COPIED);
+		expect(outcome.className).not.toContain('sr-only');
+		expect(document.querySelector('button svg')?.getAttribute('class')).not.toContain(
+			'text-[var(--color-ok)]'
+		);
+	});
+});
+
+describe('CopyButton, glyph outcome', () => {
+	it('draws a successful write on the glyph, with the sentence left to the live region', async () => {
+		const spy = stubExecCommand(() => true);
+		render(CopyButton, { props: { value: VALUE, iconOnly: true, glyphOutcome: true } });
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+
+		expect(spy).toHaveBeenCalledWith('copy');
+		const outcome = await screen.findByText(COPIED);
+		expect(outcome.className).toContain('sr-only');
+		expect(screen.getByRole('button', { name: 'Copy' }).textContent?.trim()).toBe('');
+		expect(document.querySelector('button svg')?.getAttribute('class')).toContain(
+			'text-[var(--color-ok)]'
+		);
+	});
+
+	it('marks a refused write on the glyph and keeps the recovery sentence announced', async () => {
+		stubExecCommand(() => false);
+		render(CopyButton, { props: { value: VALUE, iconOnly: true, glyphOutcome: true } });
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+
+		const outcome = await screen.findByText(FAILED);
+		expect(outcome.className).toContain('sr-only');
+		expect(document.querySelector('button svg')?.getAttribute('class')).toContain(
+			'text-[var(--color-danger)]'
+		);
 	});
 });

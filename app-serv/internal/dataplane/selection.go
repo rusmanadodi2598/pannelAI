@@ -14,8 +14,6 @@ package dataplane
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"log/slog"
 	"sort"
 	"time"
@@ -25,37 +23,6 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
-
-// CursorKeyPrefix is the Redis key space for the round-robin endpoint cursor.
-// The cursor is the only selection state Redis holds: endpoint availability and
-// key health live in the domain and in PostgreSQL, so losing this namespace
-// degrades rotation to priority order without changing which account is usable.
-const CursorKeyPrefix = "pannelai:dataplane:endpoint-cursor:"
-
-// MaxEndpointsPerProvider bounds the candidate list. A provider with more
-// accounts than this is a configuration mistake, and the bound keeps selection
-// from reading an unbounded result set (AGENTS.md §1.7).
-const MaxEndpointsPerProvider = 100
-
-// CursorStore advances the round-robin position over one provider's endpoints.
-// It is an interface because the data plane must not import a Redis client
-// (AGENTS.md §1.5 keeps driver access in the repository layer), so the
-// composition root adapts the Redis implementation to it.
-type CursorStore interface {
-	// NextOffset returns the zero-based offset to start selecting at, then moves
-	// the cursor on. A sticky budget keeps one offset for a bounded number of
-	// calls, so one account serves a short burst instead of the pool
-	// alternating on every request.
-	NextOffset(ctx context.Context, providerID string, size int, stickyLimit int) (int, error)
-}
-
-// CursorKey returns the Redis key the cursor for one provider occupies. The
-// provider id is hashed so an id with odd characters cannot collide with
-// another key in the namespace.
-func CursorKey(providerID string) string {
-	digest := sha256.Sum256([]byte(providerID))
-	return CursorKeyPrefix + hex.EncodeToString(digest[:])
-}
 
 // Selection is one usable endpoint, the key routing picked inside it, and the
 // credential that key stands for.
@@ -67,34 +34,20 @@ type Selection struct {
 	Credential provider.Credential
 }
 
-// BudgetGate reports whether an endpoint has already spent its budget. It is a
-// one-method seam because selection asks exactly one question, and it keeps the
-// router from importing the quota repository (AGENTS.md §1.5).
-//
-// The second return being false means "allowed", which is also what an endpoint
-// with no cap answers: an uncapped endpoint is not an exhausted one.
-type BudgetGate interface {
-	// Exhausted reports whether the endpoint's month-to-date spend has reached
-	// its stored budget cap (SPEC-API-001 §7.12).
-	Exhausted(ctx context.Context, endpointID string) (bool, error)
-}
-
-// CredentialStrategy answers the credential rotation policy for one provider
-// (SPEC-API-001 §7.5): fill-first, or round-robin with a sticky limit. It is a
-// one-question seam, and it keeps the data plane from importing the settings
-// service (AGENTS.md §1.5). A policy that cannot be read degrades to fill-first
-// rather than failing the request, because rotation is an optimisation.
-type CredentialStrategy interface {
-	RotationPolicy(ctx context.Context, providerID string) (domain.RotationPolicy, error)
-}
-
 // Selector picks the endpoint and key for a provider (SPEC-API-001 §7.5).
 type Selector struct {
-	endpoints  repository.EndpointRepository
-	opener     SecretOpener
-	cursor     CursorStore
+	endpoints repository.EndpointRepository
+	opener    SecretOpener
+	cursor    CursorStore
+	// keyCursor is the per-account credential counter, the arbiter that makes two
+	// concurrent selections choose different keys. Optional: without it a
+	// round-robin walk orders by the selection stamp instead.
+	keyCursor  KeyCursorStore
 	gates      BudgetGate
 	strategies CredentialStrategy
+	// health answers the parking windows the provider's operator configured
+	// (§7.14). Optional: without it a failure parks at the documented windows.
+	health KeyHealthPolicyReader
 	// registry answers the one question the virtual-endpoint rule asks: whether
 	// this provider needs no credential. It is optional, and without it a
 	// provider with no stored endpoint is simply unavailable.
@@ -105,12 +58,17 @@ type Selector struct {
 	clock  func() time.Time
 }
 
-// SelectorDeps holds the collaborators selection needs.
+// SelectorDeps holds the collaborators selection needs, of which Endpoints is the
+// only one NewSelector refuses to run without.
 type SelectorDeps struct {
 	Endpoints  repository.EndpointRepository
 	Opener     SecretOpener
 	Cursor     CursorStore
+	KeyCursor  KeyCursorStore
 	Strategies CredentialStrategy
+	// Health is the optional §7.14 key-park window read. A nil one parks at the
+	// documented defaults.
+	Health KeyHealthPolicyReader
 	// Gate is the optional §7.12 budget check. A nil one selects every
 	// configured endpoint, which is the behaviour a deployment without quota
 	// caps had before the check existed.
@@ -124,18 +82,20 @@ type SelectorDeps struct {
 	Logger *slog.Logger
 }
 
-// NewSelector validates deps and returns a selector. The opener is optional so a
-// credential-free provider can still be routed; selecting a key that needs
-// decryption without one fails rather than sending a sealed value upstream. The
-// strategy seam is optional too: without it the walk is fill-first, the
-// documented default and the degradation a failed policy read gets.
+// NewSelector refuses a nil endpoint repository and treats every other seam as
+// optional. The opener is optional so a credential-free provider can still be
+// routed; selecting a key that needs decryption without one fails rather than
+// sending a sealed value upstream. The strategy seam is optional too: without it
+// the walk is fill-first, the documented default and the degradation a failed
+// policy read gets.
 func NewSelector(deps SelectorDeps) (*Selector, error) {
 	if deps.Endpoints == nil {
 		return nil, domain.NewValidationError("endpoint repository is required")
 	}
 	return &Selector{
-		endpoints: deps.Endpoints, opener: deps.Opener, cursor: deps.Cursor, gates: deps.Gate,
-		strategies: deps.Strategies, registry: deps.Registry, logger: deps.Logger, clock: time.Now,
+		endpoints: deps.Endpoints, opener: deps.Opener, cursor: deps.Cursor, keyCursor: deps.KeyCursor,
+		gates: deps.Gate, strategies: deps.Strategies, health: deps.Health, registry: deps.Registry,
+		logger: deps.Logger, clock: time.Now,
 	}, nil
 }
 

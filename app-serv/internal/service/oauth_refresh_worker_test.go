@@ -22,10 +22,11 @@ import (
 )
 
 // workerFixture assembles the worker over the same fakes the flow tests use,
-// with the clock under the test's control so backoff sleeps are simulated
+// with the clock under the test's control so a retry schedule is advanced
 // rather than waited for.
 type workerFixture struct {
 	worker  *OAuthRefreshWorker
+	flow    *OAuthFlowService
 	store   *memEndpointStore
 	tokens  *fakeTokenClient
 	index   *fakeIndex
@@ -55,6 +56,7 @@ func newWorkerFixture(t *testing.T, providers ...registry.Provider) *workerFixtu
 	if err != nil {
 		t.Fatalf("NewOAuthFlowService: %v", err)
 	}
+	fixture.flow = svc
 	fixture.clockAt = testNow
 	svc.clock = func() time.Time {
 		fixture.clockMu.Lock()
@@ -62,7 +64,11 @@ func newWorkerFixture(t *testing.T, providers ...registry.Provider) *workerFixtu
 		return fixture.clockAt
 	}
 	fixture.worker = NewOAuthRefreshWorker(svc, index)
-	fixture.worker.sleep = func(time.Duration) {}
+	fixture.worker.now = func() time.Time {
+		fixture.clockMu.Lock()
+		defer fixture.clockMu.Unlock()
+		return fixture.clockAt
+	}
 	return fixture
 }
 
@@ -135,11 +141,9 @@ func TestOAuthRefreshWorkerRetriesThenDeadLetters(t *testing.T) {
 	if endpoint.TestStatus().State() != domain.EndpointTestFail {
 		t.Fatalf("test state = %q, want fail with a reason", endpoint.TestStatus().State())
 	}
-	// A dead-lettered endpoint is not retried on later sweeps.
-	fixture.advance(time.Hour)
-	if refreshed := fixture.worker.Sweep(context.Background()); refreshed != 0 {
-		t.Fatalf("post-dead-letter sweep refreshed = %d, want 0", refreshed)
-	}
+	// The burst stops at the dead letter: the sweep that buries an account does not
+	// visit it again, because the ladder in the row decides when that happens
+	// (TestOAuthRefreshWorkerVisitsTheGraveOnItsWindow owns the visits).
 	if calls := len(fixture.tokens.grantCalls); calls != oauthRefreshMaxAttempts {
 		t.Fatalf("grant calls = %d, want exactly the %d attempts", calls, oauthRefreshMaxAttempts)
 	}
@@ -152,19 +156,16 @@ func TestOAuthRefreshWorkerBackoffGrowsPerAttempt(t *testing.T) {
 	fixture.tokens.grantFn = func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
 		return oauthhttp.TokenResponse{}, domain.NewUpstreamError("temporarily unavailable")
 	}
-	var slept []time.Duration
-	fixture.worker.sleep = func(d time.Duration) { slept = append(slept, d) }
-
 	fixture.worker.Sweep(context.Background())
+	firstDelay := fixture.retryDelay(t, "ep_retry")
+	fixture.advance(firstDelay)
 	fixture.worker.Sweep(context.Background())
-	if len(slept) != 2 {
-		t.Fatalf("sleeps = %d, want one per failed attempt", len(slept))
+	secondDelay := fixture.retryDelay(t, "ep_retry")
+	if secondDelay <= firstDelay {
+		t.Fatalf("backoff did not grow: %v then %v", firstDelay, secondDelay)
 	}
-	if slept[1] <= slept[0] {
-		t.Fatalf("backoff did not grow: %v then %v", slept[0], slept[1])
-	}
-	if slept[1] > oauthRefreshBackoffCeiling {
-		t.Fatalf("backoff %v exceeds the ceiling %v", slept[1], oauthRefreshBackoffCeiling)
+	if secondDelay > oauthRefreshBackoffCeiling {
+		t.Fatalf("backoff %v exceeds the ceiling %v", secondDelay, oauthRefreshBackoffCeiling)
 	}
 }
 
@@ -191,4 +192,30 @@ func mustWorkerSealer(t *testing.T) (sealer *domain.Sealer) {
 		t.Fatalf("sealer: %v", err)
 	}
 	return sealer
+}
+
+// TestOAuthRefreshWorkerLeavesDisabledAccountsAlone pins that neither sweep
+// touches an operator-disabled account: `disabled` is a decision, not a symptom.
+func TestOAuthRefreshWorkerLeavesDisabledAccountsAlone(t *testing.T) {
+	fixture := newWorkerFixture(t, providerWithIdentity("identity-provider"))
+	endpoint := seedOAuthEndpoint(t, oauthFlowFixture{store: fixture.store, sealer: mustWorkerSealer(t)},
+		"ep_off", "identity-provider", "off@example.com", "off@example.com", testNow.Add(-time.Minute))
+	ctx := context.Background()
+	if err := endpoint.Update(endpoint.Label(), endpoint.Priority(), string(domain.UpstreamEndpointDisabled), testNow); err != nil {
+		t.Fatalf("disabling: %v", err)
+	}
+	if err := fixture.store.Update(ctx, endpoint); err != nil {
+		t.Fatalf("storing the disabled account: %v", err)
+	}
+
+	if refreshed := fixture.worker.Sweep(ctx); refreshed != 0 {
+		t.Fatalf("sweep of a disabled account = %d, want 0", refreshed)
+	}
+	stored, err := fixture.store.GetByID(ctx, "ep_off")
+	if err != nil {
+		t.Fatalf("reloading: %v", err)
+	}
+	if stored.Status() != domain.UpstreamEndpointDisabled {
+		t.Fatalf("status = %q, want it left disabled", stored.Status())
+	}
 }

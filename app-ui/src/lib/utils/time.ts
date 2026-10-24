@@ -11,6 +11,23 @@ const DATE_TIME = new Intl.DateTimeFormat(undefined, {
 	day: '2-digit'
 });
 
+const DATE_TIME_WITH_CLOCK = new Intl.DateTimeFormat(undefined, {
+	year: 'numeric',
+	month: 'short',
+	day: '2-digit',
+	hour: '2-digit',
+	minute: '2-digit'
+});
+
+const DATE_TIME_WITH_SECONDS = new Intl.DateTimeFormat(undefined, {
+	year: 'numeric',
+	month: 'short',
+	day: '2-digit',
+	hour: '2-digit',
+	minute: '2-digit',
+	second: '2-digit'
+});
+
 const ZONE = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' });
 
 /**
@@ -26,6 +43,35 @@ export function formatTimestamp(value: string): string {
 
 	const zone = ZONE.formatToParts(parsed).find((part) => part.type === 'timeZoneName')?.value;
 	return zone ? `${DATE_TIME.format(parsed)}, ${zone}` : DATE_TIME.format(parsed);
+}
+
+/**
+ * Formats an RFC3339 instant with its time, for a range bound where the date alone would hide the edge.
+ */
+export function formatTimestampWithTime(value: string): string {
+	const parsed = new Date(value);
+	if (Number.isNaN(parsed.getTime())) return 'Invalid timestamp';
+
+	const zone = ZONE.formatToParts(parsed).find((part) => part.type === 'timeZoneName')?.value;
+	return zone
+		? `${DATE_TIME_WITH_CLOCK.format(parsed)}, ${zone}`
+		: DATE_TIME_WITH_CLOCK.format(parsed);
+}
+
+/**
+ * Formats an instant to the second, for a control whose acknowledgement follows a five-second poll.
+ *
+ * A manual refresh inside the same minute would otherwise leave the stamp unchanged, which reads as a
+ * press that did nothing.
+ */
+export function formatTimestampWithSeconds(value: string): string {
+	const parsed = new Date(value);
+	if (Number.isNaN(parsed.getTime())) return 'Invalid timestamp';
+
+	const zone = ZONE.formatToParts(parsed).find((part) => part.type === 'timeZoneName')?.value;
+	return zone
+		? `${DATE_TIME_WITH_SECONDS.format(parsed)}, ${zone}`
+		: DATE_TIME_WITH_SECONDS.format(parsed);
 }
 
 const MINUTE_MS = 60_000;
@@ -87,4 +133,23 @@ export function elapsedText(value: string, now: number): string {
 	if (elapsed < DAY_MS) return `${Math.floor(elapsed / HOUR_MS)}h ago`;
 
 	return formatTimestamp(value);
+}
+
+/**
+ * How long a request that has not finished has been running.
+ *
+ * The mirror of `elapsedText` for a row that is still open, where "just now" would be a frozen figure: the
+ * number an operator reads there is how long the gateway has been holding the request, and the live panel
+ * drops an in-flight entry at a minute. An instant ahead of this clock is a gateway clock running loose,
+ * not a request that started in the future, so it reads as 0s rather than as a negative duration.
+ */
+export function runningText(value: string, now: number): string {
+	const parsed = Date.parse(value);
+	if (Number.isNaN(parsed)) return 'Invalid timestamp';
+
+	const elapsed = Math.max(0, now - parsed);
+	if (elapsed < MINUTE_MS) return `${Math.floor(elapsed / 1000)}s`;
+	if (elapsed < HOUR_MS) return `${Math.floor(elapsed / MINUTE_MS)}m`;
+
+	return `${Math.floor(elapsed / HOUR_MS)}h`;
 }

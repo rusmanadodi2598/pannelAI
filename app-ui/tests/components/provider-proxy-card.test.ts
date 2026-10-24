@@ -21,7 +21,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProviderProxyCard from '$lib/components/ProviderProxyCard.svelte';
 import { settingsDocument, networkGroup } from '../support/settings-document';
 import { proxyRow, stubProxies, type ProxyStub } from '../support/proxy-stub';
-import { PROXY_POOL_NONE } from '$lib/schemas/settings';
+import { PROXY_POOL_NONE } from '$lib/schemas/settings-provider-overrides';
 
 const PROVIDER = 'openai';
 const POOL = 'prx_01HZZ9K2';

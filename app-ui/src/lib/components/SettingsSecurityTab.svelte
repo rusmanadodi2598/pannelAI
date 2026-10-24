@@ -2,22 +2,22 @@
 	// Settings, Security tab (docs/SPEC-UI/001-SPEC-UI.md §6.13).
 	// PATCH /api/v1/settings, the security group.
 	//
-	// Turning login off exposes the panel on the network, so it asks for confirmation and states what
-	// changes rather than applying the toggle on the click that flipped it. The password form is part of
-	// this tab because a password is a security setting, and giving it a second screen would split one
-	// concern across two places.
+	// Turning login off exposes the panel on the network, so the flip asks for confirmation and the box is
+	// put back until the answer arrives. It does not write: this group commits through the band below,
+	// like the row beside it, and a commit from the dialog would also carry an unsaved edit the operator
+	// made on the other row without pressing Save. The password form is part of this tab because a
+	// password is a security setting, and giving it a second screen would split one concern across two
+	// places.
 	import { untrack } from 'svelte';
 	import Modal from '$lib/components/Modal.svelte';
-	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import SaveBar from '$lib/components/SaveBar.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import PasswordChangeForm from '$lib/components/PasswordChangeForm.svelte';
 	import { patchSecuritySettings } from '$lib/api/settings';
 	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
-	import {
-		schemaSecuritySettingsForm,
-		settingsGroupDirty,
-		type SecuritySettingsForm
-	} from '$lib/schemas/settings';
+	import { schemaSecuritySettingsForm, type SecuritySettingsForm } from '$lib/schemas/settings';
+	import { settingsGroupDirty } from '$lib/schemas/settings-dirty';
 
 	type Props = {
 		loaded: SecuritySettingsForm;
@@ -76,16 +76,16 @@
 <div class="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4">
 	<h2 class="text-sm font-semibold">Access</h2>
 
-	<label class="flex items-start gap-3 text-sm">
+	<label class="flex min-h-11 items-start gap-3 text-sm">
 		<input
 			type="checkbox"
-			checked={draft.require_login}
+			bind:checked={draft.require_login}
 			class="mt-1"
 			onchange={(event) => {
-				if (event.currentTarget.checked) {
+				// Unchecking is the direction that exposes the panel, so the box goes back to its stored
+				// value and only the confirmation moves it.
+				if (!event.currentTarget.checked) {
 					draft.require_login = true;
-					void save();
-				} else {
 					confirmingOpenPanel = true;
 				}
 			}}
@@ -98,7 +98,7 @@
 		</span>
 	</label>
 
-	<label class="flex items-start gap-3 text-sm">
+	<label class="flex min-h-11 items-start gap-3 text-sm">
 		<input type="checkbox" bind:checked={draft.require_api_key} class="mt-1" />
 		<span>
 			Require a gateway key on data plane requests
@@ -108,23 +108,15 @@
 		</span>
 	</label>
 
-	<div class="flex flex-wrap items-center gap-3">
-		<button
-			type="button"
-			disabled={saving}
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-			onclick={save}>Save access settings</button
-		>
-		{#if dirty}
-			<button type="button" class="min-h-11 underline" onclick={discard}>Discard changes</button>
-			<span class="text-sm font-medium text-[var(--color-text-muted)]">Unsaved changes</span>
-		{/if}
-		{#if message}
-			<p class="text-sm text-[var(--color-text-muted)]" role="status">
-				<ApiErrorText error={message} />
-			</p>
-		{/if}
-	</div>
+	<SaveBar
+		saveLabel="Save access settings"
+		sticky
+		{saving}
+		{dirty}
+		{message}
+		onsave={() => void save()}
+		ondiscard={discard}
+	/>
 </div>
 
 <PasswordChangeForm />
@@ -139,19 +131,15 @@
 	</p>
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			onclick={() => (confirmingOpenPanel = false)}>Keep the password</button
+		<Button variant="outline" onclick={() => (confirmingOpenPanel = false)}
+			>Keep the password</Button
 		>
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-3 text-sm font-medium text-white"
+		<Button
+			variant="destructive"
 			onclick={() => {
 				confirmingOpenPanel = false;
 				draft.require_login = false;
-				void save();
-			}}>Turn it off</button
+			}}>Turn it off</Button
 		>
 	{/snippet}
 </Modal>

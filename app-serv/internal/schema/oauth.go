@@ -50,6 +50,11 @@ type OAuthEndpointStatus struct {
 	// (no expiry known), "fresh", "due" (inside the lead window), or
 	// "expired".
 	RefreshState string `json:"refresh_state"`
+	// RefreshRetryAt is when the worker will next attempt a dead-lettered account's
+	// grant, and RefreshRetryRounds how many times it has been buried since. Both are
+	// absent on a live account: the ladder only ever speaks for a grave.
+	RefreshRetryAt     *string `json:"refresh_retry_at,omitempty"`
+	RefreshRetryRounds int     `json:"refresh_retry_rounds,omitempty"`
 }
 
 // OAuthStatusResponse answers GET /api/v1/providers/{id}/oauth/status.

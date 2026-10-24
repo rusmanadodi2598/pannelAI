@@ -581,6 +581,17 @@ function mapModels(models) {
 // and kiro, whose flows then cannot be started at all.
 const OAUTH_TRANSPORT_FIELDS = ["clientId", "tokenUrl", "refreshUrl", "authUrl"];
 
+// RUNTIME_CLIENT_PROVIDERS are the entries whose OAuth client belongs to the
+// deployment rather than to this document. The two Google installed-app families
+// ship a client secret together with their id, and the reference publishes both,
+// so carrying either half here would put a live client credential in git history:
+// GitHub's secret scanning reads the id and the GOCSPX secret as a verified pair
+// and refuses the push. Their flows read both halves from typed config
+// (internal/config/oauth_clients.go) and refuse to start when it states nothing.
+// `gemini` joins because its whole oauth block is that one published id; with the
+// id stripped the block declares nothing and disappears.
+const RUNTIME_CLIENT_PROVIDERS = new Set(["antigravity", "gemini-cli", "gemini"]);
+
 // mapOAuth carries the flow configuration with two deliberate omissions.
 //
 // clientSecret is dropped rather than copied: the reference checkout holds live
@@ -604,6 +615,16 @@ function mapOAuth(entry) {
     if (transport[key] !== undefined && out[tag] === undefined) out[tag] = transport[key];
   }
   delete out.client_secret;
+  if (RUNTIME_CLIENT_PROVIDERS.has(entry.id)) {
+    delete out.client_id;
+  }
+  // Offline consent is the port's declaration, so it lands after the reference's
+  // own members and a provider that ever states the parameter itself keeps its
+  // value rather than being overwritten by a default.
+  const consent = APP_SERV_OAUTH_CONSENT[entry.id];
+  if (consent) {
+    out.extra_params = { ...consent, ...(isPlainObject(out.extra_params) ? out.extra_params : {}) };
+  }
   // scopes arrives as a string for some providers and a list for others; the
   // Go StringList accepts both, so the shape is preserved as written.
   return Object.keys(out).length > 0 ? out : undefined;
@@ -629,6 +650,104 @@ const APP_SERV_PROVIDER_EXTENSIONS = {
   },
 };
 
+// APP_SERV_PROVIDER_ENTRIES are whole provider entries app-serv serves that the
+// reference carries no entry for. Agnes AI (https://www.agnes-ai.com, measured
+// 2026-10-21) is an OpenAI-compatible hub at https://apihub.agnes-ai.com/v1
+// whose catalog mixes chat, image, and video models. Its video API is
+// asynchronous: POST /v1/videos creates a task, and
+// GET /agnesapi?video_id=<id>&model_name=<model> reports it, which is why the
+// service carries an agnes video plan rather than the collection path alone.
+// The catalog lists exactly the ids GET /v1/models advertises; the documented
+// 2.5-pro, 2.5-pro-beta, and 3.0-pro ids are absent from that feed and stay out
+// until the endpoint serves them.
+const APP_SERV_PROVIDER_ENTRIES = {
+  agnes: {
+    priority: 340,
+    alias: "agnes",
+    aliases: ["agnesai", "agnes-ai"],
+    uiAlias: "agnes",
+    category: "apikey",
+    passthroughModels: true,
+    display: {
+      name: "Agnes AI",
+      icon: "hub",
+      color: "#0F766E",
+      textIcon: "AG",
+      website: "https://www.agnes-ai.com",
+      notice: {
+        text: "OpenAI-compatible gateway for chat, image, and video models.",
+        apiKeyUrl: "https://www.agnes-ai.com",
+      },
+    },
+    transport: {
+      format: "openai",
+      baseUrl: "https://apihub.agnes-ai.com/v1/chat/completions",
+      validateUrl: "https://apihub.agnes-ai.com/v1/models",
+    },
+    models: [
+      {
+        id: "agnes-2.5-flash",
+        name: "Agnes 2.5 Flash",
+        contextLength: 512000,
+        maxOutputTokens: 65536,
+        description: "General-purpose model with tool calling and image understanding.",
+      },
+      {
+        id: "agnes-3.0-flash",
+        name: "Agnes 3.0 Flash",
+        contextLength: 512000,
+        maxOutputTokens: 65536,
+        description: "Faster 3.0 generation with tool calling and image understanding.",
+      },
+      {
+        id: "agnes-image-2.0-flash",
+        name: "Agnes Image 2.0 Flash",
+        kind: "image",
+        params: ["size", "ratio", "image", "return_base64"],
+        capabilities: ["textToImage", "edit"],
+      },
+      {
+        id: "agnes-image-2.1-flash",
+        name: "Agnes Image 2.1 Flash",
+        kind: "image",
+        params: ["size", "ratio", "image", "return_base64"],
+        capabilities: ["textToImage", "edit"],
+      },
+      {
+        id: "agnes-image-2.5-flash",
+        name: "Agnes Image 2.5 Flash",
+        kind: "image",
+        params: ["size", "ratio", "image", "return_base64"],
+        capabilities: ["textToImage", "edit"],
+      },
+      {
+        id: "agnes-video-2.5-flash",
+        name: "Agnes Video 2.5 Flash",
+        kind: "video",
+        params: [
+          "mode",
+          "seconds",
+          "size",
+          "aspect_ratio",
+          "seed",
+          "first_frame",
+          "last_frame",
+          "images",
+          "audios",
+          "videos",
+        ],
+      },
+    ],
+    imageConfig: {
+      base_url: "https://apihub.agnes-ai.com/v1/images/generations",
+      auth_type: "apikey",
+      auth_header: "bearer",
+    },
+    videoConfig: { base_url: "https://apihub.agnes-ai.com/v1/videos" },
+    serviceKinds: ["llm", "image", "video"],
+  },
+};
+
 // APP_SERV_MODEL_KINDS narrows a provider's catalog to the model kinds this
 // port serves. vertex declares four chat models and four video models, and
 // only the video half has a wire this gateway speaks; listing a chat model the
@@ -638,6 +757,20 @@ const APP_SERV_PROVIDER_EXTENSIONS = {
 // keeps its whole catalog.
 const APP_SERV_MODEL_KINDS = {
   vertex: new Set(["video"]),
+};
+
+// APP_SERV_OAUTH_CONSENT names the providers whose authorization must ask for
+// offline consent: Google returns no refresh token without `access_type=offline`,
+// and a login that stores no refresh token dies when the access token expires,
+// which the panel then reports as a provider that keeps disconnecting.
+//
+// The reference states this in its authorize builder rather than in its entry
+// data, so there is nothing for this generator to copy: the rule is declared
+// here as the port's own knowledge about the vendors it serves, and reaches the
+// document as the entry data the flow reads.
+const APP_SERV_OAUTH_CONSENT = {
+  "antigravity": { access_type: "offline", prompt: "consent" },
+  "gemini-cli": { access_type: "offline", prompt: "consent" },
 };
 
 // modelsFor applies the per-provider kind filter before the allowlist pass.
@@ -714,10 +847,14 @@ function mapEntry(entry) {
 
 // Sort by priority then id: the reference order is incidental, and the router
 // reads priority explicitly. A deterministic order keeps the diff honest.
-const providers = entries
-  .filter(kept)
-  .map(mapEntry)
-  .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999) || a.id.localeCompare(b.id));
+const providers = [
+  ...entries.filter(kept).map(mapEntry),
+  // An app-serv entry yields to a reference entry the KEEP set later carries,
+  // the same precedence the media extensions use.
+  ...Object.entries(APP_SERV_PROVIDER_ENTRIES)
+    .filter(([id]) => !kept({ id }))
+    .map(([id, entry]) => mapEntry({ id, ...entry })),
+].sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999) || a.id.localeCompare(b.id));
 
 const droppedProviders = entries.filter((entry) => !kept(entry)).map((entry) => entry.id);
 
@@ -728,6 +865,7 @@ const droppedProviders = entries.filter((entry) => !kept(entry)).map((entry) => 
 const extendedProviders = providers
   .filter(
     (provider) =>
+      APP_SERV_PROVIDER_ENTRIES[provider.id] ||
       APP_SERV_PROVIDER_EXTENSIONS[provider.id] ||
       APP_SERV_MEDIA_EXTENSIONS[provider.id] ||
       APP_SERV_MEDIA_OVERRIDES[provider.id]

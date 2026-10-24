@@ -40,12 +40,13 @@ func TestSelector_ParityAccounting(t *testing.T) {
 	}
 
 	cases := []struct {
-		name        string
-		keyless     bool
-		record      func(*Selector, Selection) error
-		wantOutcome bool
-		wantCode    string
-		wantUses    int
+		name         string
+		keyless      bool
+		record       func(*Selector, Selection) error
+		wantOutcome  bool
+		wantCode     string
+		wantUses     int
+		wantCooldown bool
 	}{
 		{
 			name: "a served call clears the recorded error and the use run",
@@ -67,8 +68,9 @@ func TestSelector_ParityAccounting(t *testing.T) {
 		{
 			name: "a transient failure is recorded under the wire's upstream code",
 			record: func(s *Selector, sel Selection) error {
-				return s.RecordFailure(context.Background(), sel,
-					"the upstream answered 500", domain.KeyFailureTransient)
+				_, err := s.RecordFailure(context.Background(), sel,
+					"the upstream answered 500", domain.KeyFailureTransient, domain.RestDirective{})
+				return err
 			},
 			wantOutcome: true,
 			wantCode:    CodeUpstreamError,
@@ -77,18 +79,21 @@ func TestSelector_ParityAccounting(t *testing.T) {
 		{
 			name: "a rate limit is recorded under the wire's rate-limit code",
 			record: func(s *Selector, sel Selection) error {
-				return s.RecordFailure(context.Background(), sel,
-					"the upstream answered 429", domain.KeyFailureRateLimit)
+				_, err := s.RecordFailure(context.Background(), sel,
+					"the upstream answered 429", domain.KeyFailureRateLimit, domain.RestDirective{})
+				return err
 			},
-			wantOutcome: true,
-			wantCode:    CodeRateLimited,
-			wantUses:    2,
+			wantOutcome:  true,
+			wantCode:     CodeRateLimited,
+			wantUses:     2,
+			wantCooldown: true,
 		},
 		{
 			name: "a request-shaped failure records nothing",
 			record: func(s *Selector, sel Selection) error {
-				return s.RecordFailure(context.Background(), sel,
-					"upstream rejected the request", domain.KeyFailureRequest)
+				_, err := s.RecordFailure(context.Background(), sel,
+					"upstream rejected the request", domain.KeyFailureRequest, domain.RestDirective{})
+				return err
 			},
 			wantUses: 2,
 		},
@@ -143,6 +148,11 @@ func TestSelector_ParityAccounting(t *testing.T) {
 			}
 			if at == nil {
 				t.Fatal("stored error instant = nil, want the outcome's instant")
+			}
+			// The vendor's 429 is the poller's evidence, and only a 429 is: the
+			// cooldown rides the same outcome write and nothing else opens it.
+			if got := stored.QuotaCooldownUntil() != nil; got != tc.wantCooldown {
+				t.Fatalf("quota cooldown present = %v, want %v", got, tc.wantCooldown)
 			}
 		})
 	}

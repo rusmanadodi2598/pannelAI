@@ -10,6 +10,7 @@
 	import CapturedBodies from '$lib/components/CapturedBodies.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { Button } from '$lib/primitives/button/index.js';
 	import type { ApiError } from '$lib/api/errors';
 	import { getRequestLog } from '$lib/api/log';
 	import { REQUEST_STATUS_LABELS } from '$lib/schemas/primitives';
@@ -125,10 +126,6 @@
 	{/if}
 
 	{#snippet footer()}
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			onclick={onclose}>Close</button
-		>
+		<Button variant="outline" onclick={onclose}>Close</Button>
 	{/snippet}
 </Modal>

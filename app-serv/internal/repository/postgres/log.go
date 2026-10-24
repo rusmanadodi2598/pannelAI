@@ -58,22 +58,21 @@ func NewLogRepository(pool *pgxpool.Pool) *LogRepository {
 	return &LogRepository{pool: pool}
 }
 
-// Insert appends one log row. It is idempotent on the request id, which is the
-// primary key: a retried write is the same fact stated twice, and letting it
-// duplicate would make the retention purge delete two rows for one request.
+// Insert appends one log row under a server-generated id. A retried write may
+// duplicate the audit row, which is safer than letting a reused request id
+// suppress a second event.
 func (r *LogRepository) Insert(ctx context.Context, entry domain.RequestLog) error {
 	const q = `
 INSERT INTO request_logs
-    (request_id, ts, gateway_key_id, endpoint_id, provider_id, model, status,
+    (id, request_id, ts, gateway_key_id, endpoint_id, provider_id, model, status,
      latency_ms, request_body, response_body, error)
-VALUES ($1, $2, nullif($3, ''), nullif($4, ''), nullif($5, ''), nullif($6, ''),
-        $7, $8, nullif($9, ''), nullif($10, ''), nullif($11, ''))
-ON CONFLICT (request_id) DO NOTHING`
+VALUES ($1, $2, $3, nullif($4, ''), nullif($5, ''), nullif($6, ''), nullif($7, ''),
+        $8, $9, nullif($10, ''), nullif($11, ''), nullif($12, ''))`
 
 	if _, err := r.pool.Exec(ctx, q,
-		entry.RequestID(), entry.TS(), entry.GatewayKeyID(), entry.EndpointID(),
-		entry.ProviderID(), entry.Model(), entry.Status(), entry.LatencyMS(),
-		entry.RequestBody(), entry.ResponseBody(), entry.Error()); err != nil {
+		domain.NewULID(entry.TS()), entry.RequestID(), entry.TS(), entry.GatewayKeyID(),
+		entry.EndpointID(), entry.ProviderID(), entry.Model(), entry.Status(),
+		entry.LatencyMS(), entry.RequestBody(), entry.ResponseBody(), entry.Error()); err != nil {
 		return translateLogError(err)
 	}
 	return nil
@@ -119,26 +118,78 @@ func (r *LogRepository) List(ctx context.Context, filter domain.LogFilter, q rep
 	return entries, total, nil
 }
 
-// GetByRequestID loads one row including its captured bodies. A missing row
+// GetByRequestID loads the newest row including its captured bodies. A client
+// may reuse a request id, so the id alone no longer names one row. A missing row
 // yields domain.ErrRequestLogNotFound.
 func (r *LogRepository) GetByRequestID(ctx context.Context, requestID string) (domain.RequestLog, error) {
 	entry, err := scanLogDetailRow(r.pool.QueryRow(ctx,
-		`SELECT `+logDetailColumns+` FROM request_logs WHERE request_id = $1`, requestID))
+		`SELECT `+logDetailColumns+` FROM request_logs WHERE request_id = $1
+		 ORDER BY ts DESC LIMIT 1`, requestID))
 	if err != nil {
 		return domain.RequestLog{}, translateLogError(err)
 	}
 	return entry, nil
 }
 
-// DeleteOlderThan removes rows strictly older than the cutoff and reports how
-// many were removed. The boundary itself survives, so a purge of "the last 7
-// days" keeps exactly the last 7 days.
+// retentionBatchSize bounds one DELETE, so a backlog larger than the worker's
+// timeout still makes progress: each batch commits before the next one starts.
+var retentionBatchSize = 5000
+
+// DeleteOlderThan removes rows strictly older than the cutoff in bounded batches
+// and reports the committed count, which survives a deadline between batches.
 func (r *LogRepository) DeleteOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM request_logs WHERE ts < $1`, cutoff)
-	if err != nil {
-		return 0, translateLogError(err)
+	var total int64
+	for {
+		tag, err := r.pool.Exec(ctx, `
+DELETE FROM request_logs
+ WHERE ctid IN (
+   SELECT ctid FROM request_logs WHERE ts < $1 ORDER BY ts LIMIT $2
+ )`, cutoff, retentionBatchSize)
+		if err != nil {
+			return total, translateLogError(err)
+		}
+		deleted := tag.RowsAffected()
+		total += deleted
+		if deleted < int64(retentionBatchSize) {
+			return total, nil
+		}
 	}
-	return tag.RowsAffected(), nil
+}
+
+// TrimTo removes the oldest rows beyond keep, in the same bounded batches, so
+// a burst between retention runs cannot grow the table without limit.
+func (r *LogRepository) TrimTo(ctx context.Context, keep int) (int64, error) {
+	if keep < 0 {
+		keep = 0
+	}
+	var total int64
+	for {
+		var count int64
+		if err := r.pool.QueryRow(ctx, `SELECT count(*) FROM request_logs`).Scan(&count); err != nil {
+			return total, translateLogError(err)
+		}
+		excess := count - int64(keep)
+		if excess <= 0 {
+			return total, nil
+		}
+		limit := excess
+		if limit > int64(retentionBatchSize) {
+			limit = int64(retentionBatchSize)
+		}
+		tag, err := r.pool.Exec(ctx, `
+DELETE FROM request_logs
+ WHERE ctid IN (
+   SELECT ctid FROM request_logs ORDER BY ts ASC LIMIT $1
+ )`, limit)
+		if err != nil {
+			return total, translateLogError(err)
+		}
+		deleted := tag.RowsAffected()
+		total += deleted
+		if deleted < limit {
+			return total, nil
+		}
+	}
 }
 
 // logFilterArgs renders a filter as the seven positional arguments the

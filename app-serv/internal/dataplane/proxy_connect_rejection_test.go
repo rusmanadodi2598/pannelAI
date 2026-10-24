@@ -102,8 +102,8 @@ func TestProxyDialer_FailsOverWhenTheProxyRefusesTheConnect(t *testing.T) {
 	if string(raw) != "served" {
 		t.Fatalf("the response body = %q, want the tunnel candidate's answer", raw)
 	}
-	if len(planner.reported) != 1 || planner.reported[0] != "prx_refusing" {
-		t.Fatalf("reported failures = %v, want [prx_refusing]", planner.reported)
+	if len(planner.parks) != 1 || planner.parks[0].id != "prx_refusing" {
+		t.Fatalf("parked candidates = %v, want [prx_refusing]", planner.parks)
 	}
 }
 

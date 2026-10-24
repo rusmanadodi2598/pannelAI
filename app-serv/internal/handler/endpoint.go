@@ -2,7 +2,7 @@
 //
 // @file      internal/handler/endpoint.go
 // @for       The upstream endpoint CRUD, test, and batch routes (SPEC-API-001 §7.5).
-// @uses      internal/domain, internal/schema, internal/service, net/http, time.
+// @uses      internal/domain, internal/schema, internal/service, net/http, strings, time.
 // @reason    §7.5 fixes the endpoint wire contract and AGENTS.md §1.5 keeps SQL and business rules out of this layer: the handler decodes a validated DTO, calls the service, and maps the aggregate onto the response shape. A credential never appears in a response, only the hint the aggregate already holds.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
@@ -12,6 +12,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
@@ -34,8 +35,15 @@ func (h *EndpointHandler) List(w http.ResponseWriter, r *http.Request) {
 		schema.WriteError(w, err)
 		return
 	}
-	query := r.URL.Query()
-	endpoints, total, err := h.endpoints.List(r.Context(), query.Get("provider_id"), query.Get("status"), page, perPage)
+	query := schema.EndpointListQuery{
+		ProviderID: strings.TrimSpace(r.URL.Query().Get("provider_id")),
+		Status:     strings.TrimSpace(r.URL.Query().Get("status")),
+	}
+	if err := schema.ValidateStruct(query); err != nil {
+		schema.WriteError(w, err)
+		return
+	}
+	endpoints, total, err := h.endpoints.List(r.Context(), query.ProviderID, query.Status, page, perPage)
 	if err != nil {
 		schema.WriteError(w, err)
 		return

@@ -27,7 +27,7 @@ func TestOpenAIToGeminiMovesTheSystemPrompt(t *testing.T) {
 		{Role: schema.RoleSystem, Content: schema.MessageContent{Text: "be brief"}},
 		{Role: schema.RoleUser, Content: schema.MessageContent{Text: "ping"}},
 	}}
-	out := OpenAIToGemini(request, "gemini-2.5-pro")
+	out := OpenAIToGemini(request, "gemini-2.5-pro", geminiProductAPI)
 
 	if out.Model != "gemini-2.5-pro" {
 		t.Fatalf("Model = %q, want the upstream model", out.Model)
@@ -49,7 +49,7 @@ func TestOpenAIToGeminiKeepsALoneSystemMessageAsATurn(t *testing.T) {
 	request := schema.ChatRequest{Messages: []schema.ChatMessage{
 		{Role: schema.RoleSystem, Content: schema.MessageContent{Text: "only"}},
 	}}
-	out := OpenAIToGemini(request, "m")
+	out := OpenAIToGemini(request, "m", geminiProductAPI)
 
 	if out.SystemInstruction != nil {
 		t.Fatalf("SystemInstruction = %+v, want none for a lone system message", out.SystemInstruction)
@@ -70,7 +70,7 @@ func TestOpenAIToGeminiPairsAToolResultByName(t *testing.T) {
 		}}},
 		{Role: schema.RoleTool, ToolCallID: "call_1", Content: schema.MessageContent{Text: `{"temp":31}`}},
 	}}
-	out := OpenAIToGemini(request, "m")
+	out := OpenAIToGemini(request, "m", geminiProductAPI)
 
 	if len(out.Contents) != 3 {
 		t.Fatalf("contents = %d, want 3 turns", len(out.Contents))
@@ -110,7 +110,7 @@ func TestOpenAIToGeminiUnparseableArgumentsBecomeAnEmptyObject(t *testing.T) {
 			ID: "c1", Function: schema.FunctionCall{Name: "f", Arguments: "not json"},
 		}}},
 	}}
-	out := OpenAIToGemini(request, "m")
+	out := OpenAIToGemini(request, "m", geminiProductAPI)
 
 	call := out.Contents[1].Parts[0].FunctionCall
 	if call == nil || call.Args == nil || len(call.Args) != 0 {
@@ -130,7 +130,7 @@ func TestOpenAIToGeminiImages(t *testing.T) {
 			{Type: schema.PartImageURL, ImageURL: &schema.ImageURL{URL: "ftp://nope"}},
 		}},
 	}}}
-	out := OpenAIToGemini(request, "m")
+	out := OpenAIToGemini(request, "m", geminiProductAPI)
 
 	parts := out.Contents[0].Parts
 	if len(parts) != 3 {

@@ -51,6 +51,7 @@ type videoRequestBuilder func(call MediaCall, taskID string, raw []byte) (datapl
 // (videoProviders/index.js:3-5): the creation posts to `/generations` and the
 // poll reads `request_id`, `status`, and `video.url`.
 var videoPlans = map[string]videoPlan{
+	"agnes":       {poll: buildAgnesVideoPoll, read: readAgnesVideoJob},
 	"openrouter":  {read: readOpenRouterVideoJob},
 	"tokenrouter": {read: readTokenRouterVideoJob},
 	"vertex":      {create: buildVertexVideoCreation, poll: buildVertexVideoPoll, read: readVertexVideoJob},

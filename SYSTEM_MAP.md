@@ -5,8 +5,8 @@ Diperbarui pada PR yang sama ketika topologi atau alur data berubah (AGENTS.md �
 
 | | |
 |---|---|
-| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (36 provider, decode ketat; `tokenrouter` dan `vertex` menyusul atas permintaan owner 2026-10-12), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis �? PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan §7.4-§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback: OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media §7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (§7.11). Sebelas format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS, Gemini STT). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 20 dari 21 item; yang terbuka bukan kriteria keluar fase: lima format media sisa (G21: AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
-| **Terakhir diperbarui** | 2026-10-21 (app-bot P1: service Telegram media bot, schema `bot`, health dan migrasi 000001-000002) |
+| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (37 provider, decode ketat; `tokenrouter` dan `vertex` menyusul atas permintaan owner 2026-10-12, lalu `agnes` 2026-10-21), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis → PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan §7.4-§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback: OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media §7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (§7.11). Sebelas format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS, Gemini STT). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 20 dari 21 item; yang terbuka bukan kriteria keluar fase: lima format media sisa (G21: AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
+| **Terakhir diperbarui** | 2026-10-24 (app-bot P1-P3 disinkronkan ke atas audit 063: schema `bot`, webhook intake dengan secret token dan dedupe, worker retry/dead-letter, builder master prompt lewat gateway; §2.2). Sebelumnya 2026-10-22 (audit 063: worker OAuth menjadwalkan retry tanpa tidur, tulis kredensial dipisah dari tulis manajemen, purge log bertahap dengan retensi 2 hari dan cap baris, retensi usage terpisah, ID audit server, masking proxy, lease worker multi-replika, konfigurasi Redis eksplisit, decode manajemen ketat; ronde LOW: filter endpoint dan poll video bertipe, ringkasan usage dibatasi top-100, cache transport proxy dibatasi 32 entri, deadline unggahan transkripsi diperpanjang, HSTS diserahkan ke terminator TLS; M2: 5xx/429/transport quota menjadi backoff dengan pengecualian OpenCode/Qoder/CodeBuddy; M12: stream tanpa terminal event ditandai `StreamTruncated`; §5, §6) |
 | **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` (semantik), `docs/CONTRACT/001-CONTRACT-API-V1.yaml` (wire contract), `app-serv/internal/handler/openapi.json` (generated served artifact) |
 
 ---
@@ -43,7 +43,7 @@ flowchart LR
     S -.->|"P1: translasi + upstream"| UP
 ```
 
-**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints` (kolom parity koneksi lewat 000012), `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008; repository, service, handler, dan data plane-nya terpasang); `proxies` (P2, 000009) dan `media_provider_settings` (P2, 000010), keduanya dimiliki role aplikasi lewat `000011`, sama seperti seluruh schema; `quota_published_state` + `quota_published_window` (migrasi 000013, cache jawaban provider yang ditulis worker dan dibaca layar); `000014` dan `000015` tidak menambah tabel atau kolom, hanya index untuk lookup jalur request (§1.7); `000015` mengganti ekspresi index email OAuth ke `lower(...)` karena query dedup memfilter bentuk itu, bukan ekspresi telanjangnya. Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
+**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints` (kolom parity koneksi lewat 000012), `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008; repository, service, handler, dan data plane-nya terpasang); `proxies` (P2, 000009) dan `media_provider_settings` (P2, 000010), keduanya dimiliki role aplikasi lewat `000011`, sama seperti seluruh schema; `quota_published_state` + `quota_published_window` (migrasi 000013, cache jawaban provider yang ditulis worker dan dibaca layar); `000014` dan `000015` tidak menambah tabel atau kolom, hanya index untuk lookup jalur request (§1.7); `000017` dan `000018` menambah kolom waktu di `upstream_endpoints` saja (`quota_cooldown_until` untuk poller kuota terbit, `oauth_retry_at` + `oauth_retry_rounds` untuk ladder dead-letter OAuth), keduanya dibaca lewat proyeksi parity yang sama dan keduanya sengaja tidak di-index karena pembacanya sudah dibatasi halaman; `000015` mengganti ekspresi index email OAuth ke `lower(...)` karena query dedup memfilter bentuk itu, bukan ekspresi telanjangnya. `000019` memindahkan pencatatan rotasi key dari momen sukses ke momen PEMILIHAN: `last_selected_at` di `upstream_keys` plus tiga run per kelas (`consecutive_auth|ratelimit|billing`) dan `last_error_class`; `000020` memberi akun yang tidak punya baris key breaker-nya sendiri (`consecutive_errors` + `last_selected_at` di `upstream_endpoints`), dan menghidupkan `rate_limited_until` endpoint yang selama ini dibaca `Available()` tapi tidak pernah ditulis jalur health. Keduanya aditif, tanpa index, dengan alasan yang sama: pembacanya halaman endpoint yang sudah dibatasi 100 baris. `000022` memberi `tags` (jsonb + GIN) dan `000023` memberi `disabled_until` pada `upstream_endpoints` DAN `upstream_keys`, karena aksi massal menunjuk key dan akun dengan selector yang sama dan label yang hanya ada di salah satu tabel tidak bisa menamai set di tabel lainnya. Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
 
 **Catatan migrasi P1:** kolom `quota_windows."window"` adalah reserved word PostgreSQL dan wajib dikutip; nama kolomnya dipertahankan agar sama dengan field API (SPEC-API §7.12 mengembalikan `window`). Idempotensi runner diuji, bukan diasumsikan: `migrations/apply_test.go` (tag `integration`) menjalankan runner sungguhan dua kali dan memastikan ledger tidak bertambah.
 
@@ -54,7 +54,7 @@ flowchart LR
 Alur satu arah, dipaksakan compiler lewat import antar-package (AGENTS.md §1.5):
 
 ```
-schema �? domain �? repository �? service �? handler �? router
+schema → domain → repository → service → handler → router
 ```
 
 | Layer | Paket | Tanggung jawab | Tidak boleh |
@@ -63,7 +63,7 @@ schema �? domain �? repository �? service �? handler �? router
 | domain | `internal/domain` | Entitas, value object, transisi state, envelope error | mengimpor `net/http` |
 | repository | `internal/repository`, `.../postgres` | Kontrak penyimpanan dan implementasinya | mengimpor service atau handler |
 | service | `internal/service` | Orkestrasi use case; nol import `net/http` di paket ini sendiri, egress tinggal di subpackagenya | memuat tipe inbound `*http.Request`/`http.ResponseWriter`, dan kini juga tidak lagi memuat klien HTTP outgoing |
-| service (egress) | `internal/service/oauthhttp`, `internal/service/quotafetch` | Ronde OAuth (grant, device flow, state round, identity decode) dan pembacaan kuota terbitan provider: keduanya pembicaraan HTTP keluar dengan timeout sendiri | mengimpor `internal/service` (arah dependensinya service �? subpackage) |
+| service (egress) | `internal/service/oauthhttp`, `internal/service/quotafetch` | Ronde OAuth (grant, device flow, state round, identity decode) dan pembacaan kuota terbitan provider: keduanya pembicaraan HTTP keluar dengan timeout sendiri | mengimpor `internal/service` (arah dependensinya service → subpackage) |
 | handler | `internal/handler` | Decode, panggil service, encode | memuat SQL atau Redis langsung |
 | router | `internal/router` | Tabel route dan middleware lintas-potong | memuat logika bisnis |
 | config | `internal/config` | Konfigurasi env bertipe, validasi fail-fast saat boot | memuat logika use case atau SQL |
@@ -91,40 +91,42 @@ Setiap provider berbeda dalam konektivitas: ada yang **api_key**, ada yang **OAu
 
 **Konsekuensi operasional:** menambah provider = menambah entri di `registry.yaml` (speak format standar) atau satu berkas connector (protokol khusus). Tidak ada `switch` pada provider id di core, sehingga provider A bisa di-patch tanpa menyentuh provider B.
 
-**Batasan yang diketahui:** `Connectors.Unsupported()` sengaja melaporkan provider ber-format khusus (mis. `kiro`, `cursor`, `antigravity`) selama connector-nya belum ditulis; laporan itu adalah daftar kerja, bukan kegagalan diam.
+**Batasan yang diketahui:** `Connectors.Unsupported()` sengaja melaporkan provider ber-format khusus selama connector-nya belum ditulis; yang tersisa saat ini, terukur dari boot, adalah `commandcode`, `kilocode`, dan `vertex` (10 konektor terdaftar atas 37 provider). Laporan itu adalah daftar kerja, bukan kegagalan diam. Keluarga Gemini tidak lagi termasuk: `gemini`, `gemini-cli`, dan `antigravity` punya konektor sejak draft 061, dan `vertex` tetap ada karena project dan regionnya duduk di path, bukan di body.
 
 **Forced stream diputuskan oleh deklarasi connector, bukan oleh field registry.** Seam-nya `provider.StreamForcer` (`ForcesStream() bool`), dan `transport.force_stream` pada entri hanyalah data yang belum dibaca siapa-siapa di jalur request. Yang saat ini mendeklarasikannya: OpenCode (`internal/provider/opencode.go`) dan CodeBuddy CN + Intl (`internal/provider/codebuddy.go`; connector itu ada karena dua hal, stream paksa dan bentuk body; sisanya wire OpenAI biasa yang sudah dilayani `Default`). Empat entri lain mendeklarasikan `force_stream: true` di registry tanpa connector yang memutuskannya (`openai`, `commandcode`, `grok-cli`, `zed`), tercatat sebagai F5 di `docs/DRAFT/011-CODEBUDDY-PROVIDER-READINESS.md` §10.7.
 
+**Kontrol thinking ditulis di satu seam, dan angka yang ditulis ditanyakan dulu ke modelnya.** `internal/reasoning` menerjemahkan satu niat reasoning menjadi field yang upstream baca: presedennya suffix model string -> niat yang body klien sudah bawa -> `settings.reasoning.provider_thinking` per provider, dan bentuk tujuannya dipilih oleh format model (`apply.go`, belasan bentuk vendor). Karena satu mode tersimpan berlaku untuk semua model di provider itu, level yang ditulis kedua bentuk OpenAI tidak boleh lebih buta daripada daftar level yang model terima (`registry.ThinkingLevels`): `ReasoningLevelFor` menurunkan level yang tidak di enumerasi upstream ke level terdekat yang diterima, naik kalau tidak ada yang di bawah, tidak pernah jatuh ke `none` (mematikan thinking adalah keputusan yang berbeda dari memikir lebih sedikit), dan membiarkan angka apa adanya untuk model yang tidak punya daftar. Model yang registry tidak laporkan sebagai reasoning tidak menerima field apa pun, dan format yang sudah memetakan level ke kosakata sendiri (`deepseek`, `kimi`, `zai`, `tokenrouter`) tidak diutak-atik.
+
 **Bentuk body adalah seam terpisah: `provider.Transformer` (`TransformRequest(req *Request) error`).** Ini jalan bagi vendor yang tidak menerima list pesan OpenAI apa adanya; core tidak pernah bercabang pada provider id, dan `applyShape` (`internal/dataplane/transport_shape.go`) memanggilnya sebelum URL dibangun. Yang mengimplementasikannya hari ini: OpenCode (`opencode_body.go`), Qoder (`qoder_body.go`), dan CodeBuddy (`codebuddy_body.go`: satu turn `system` leading yang membawa prompt vendor **plus** instruksi system milik caller, konten `user` string diangkat jadi typed blocks, `reasoning_effort` none/off dihapus dan yang lain dicerminkan sebagai `reasoning_summary: "auto"`) karena vendor itu menjawab body polos dengan `11101 invalid request`.
+
+**Connector OpenCode tidak lagi stateless, dan itu keputusan yang dibayar.** Lane free tier (`opencode`, `oc`) presenting identitas CLI lewat empat header, `x-opencode-client`, `x-opencode-session`, `x-opencode-request`, `x-opencode-project`, plus User-Agent `opencode/1.19.0`. Sejak OpenCode 1.19.0 dua di antaranya tidak bisa lagi diturunkan sebagai fungsi murni: dua belas karakter hex pertama `ses_` dan `msg_` **didekode** upstream sebagai waktu (`~(ms*0x1000+counter)` untuk sesi yang descending, `ms*0x1000+1` untuk pesan yang ascending), jadi nilai acak dari digest, yang lolos regex selama ini, dibacakan sebagai timestamp mustahil dan dijawab `403 FreeTierError` (terukur 2026-10-14, draft 051 §2). Id kini diingat di store bounded per (klien, endpoint) dengan satu mutex yang menutup map sekaligus pasangan `(lastMs, counter)`, TTL 2 jam dan sweep yang berjalan di dalam mint, bukan goroutine sendiri, karena gateway tidak menyerahkan lifecycle ke connector. Konsekuensi urutan yang dipakai `x-opencode-request`: `TransformRequest` jalan **lebih dulu** (`transport_call.go:35`), jadi `ApplyAuth` membaca body yang sudah final lewat `req.GetBody()` dan menamai turn dari pesan user terakhirnya, itu juga yang membuat retry satu turn membawa id yang sama. Di sisi response, jalur stream OpenAI→Claude tidak lagi meneruskan fragmen `arguments` apa adanya: fragment dikumpulkan per index blok dan satu `input_json_delta` yang sudah dikoreksi nama parameternya disembur tepat sebelum `content_block_stop` (`translate_stream_claude_tools.go`), sehingga input tool muncul sekali di akhir blok, bukan sedikit demi sedikit. Lane berkunci (`opencode-zen`, `opencode-go`, dengan key tersimpan) tidak menulis header identitas apa pun, `ApplyAuth` keluar lebih awal di `opencode_auth.go:36-46`.
 
 **Qoder (`qoder`, `qoder-cn`) punya connector khusus dan sudah dilayani end-to-end.** Provider ini tidak membaca bearer token: setiap request ditanda tangani (COSY: payload user info terenkripsi + MD5 atas lima bagian, lihat `internal/provider/qoder_cosy.go`), host inference dipilih dari jenis kredensial (`dt-` di `api3`, `jt-`/`pt-` di `api2` untuk intl; CN satu gateway), dan sebuah Personal Access Token lebih dulu ditukar menjadi job token lewat `POST /api/v1/jobToken/exchange` dengan cache berdasar expiry yang vendor nyatakan dalam **milidetik** (draft 036 §5). Body chat bukan hasil translasi OpenAI: `TransformRequest` membangun payload agent (`qoder_body.go`) dengan `model_config` yang dibaca dari katalog hidup milik akun (`qoder_catalog.go`, di-cache satu jam dan di-key per akun, bukan per gateway: vendor menjawab daftar model untuk akun yang bertanya, jadi cache berdasar host saja menyerahkan hak akses satu akun ke akun berikutnya, menolak model yang sebenarnya dipunya, dan menyerahkan 401 milik orang lain ke pemanggil yang tidak menandatanganinya, dan jawaban vendor tiba sebagai **envelope SSE** (`{statusCodeValue, body}` per frame) sehingga dibongkar sebelum di-pipe. Penolakan di frame pertama jadi kegagalan upstream, bukan jawaban yang ditagih (`qoder_envelope.go`, seam opsional `provider.StreamEnvelope`). Kuota dibaca lewat `internal/service/quotafetch/qoder.go` (dua bucket kredit, PAT ditukar lebih dulu) dan sejak 2026-09-28 punya pemanggil produksi: `GET /api/v1/quotas/{endpoint_id}/usage` (§7.12, aturannya di §3.7). Satu completion sukses kini terbukti lewat model yang vendor tagih nol (`qfmodel`), karena akun pengukur tetap kehabisan kuota untuk model berbayar (`code 112`) dan penolakan itu datang sebagai kegagalan kuota, bukan jawaban (draft 036 §5.4).
 
-### 2.2 app-bot: Telegram media bot (P1)
+### 2.2 app-bot: Telegram media bot
 
-`app-bot` adalah service ketiga di repositori ini dan satu-satunya yang berbicara ke Telegram. Ia bukan bagian dari data plane: ia klien `app-serv`, memanggil `/api/v1/images/generations`, `/api/v1/videos/generations`, dan `/api/v1/videos/{task_id}` dengan gateway key, dan tidak pernah mengimpor `app-serv/internal/...` (AGENTS.md 1.5). Kontrak lengkap ada di `docs/SPEC-BOT/001-SPEC-BOT.md`.
+`app-bot` adalah service ketiga di repositori ini dan satu-satunya yang berbicara ke Telegram. Ia bukan bagian dari data plane: ia klien `app-serv`, dan tidak pernah mengimpor `app-serv/internal/...` (AGENTS.md §1.5). Kontrak lengkap ada di `docs/SPEC-BOT/001-SPEC-BOT.md`.
 
 ```mermaid
 flowchart LR
     TG["Telegram Bot API"] -->|"webhook + secret token"| NG["Nginx: app-bot.kentang.ai.id"]
     NG --> BOT["app-bot (Go 1.26)"]
     BOT --> PG[("PostgreSQL schema bot")]
-    BOT --> RD[("Redis: dedupe, queue, lock")]
+    BOT --> RD[("Redis: dedupe, stream antrean, lock")]
     BOT -->|"gateway key"| SERV["app-serv data plane"]
-    BOT -->|"S2S HMAC"| PAY["Kentang Tech PG charges"]
 ```
 
-Batas domain: schema PostgreSQL `bot`, dimiliki service ini, tanpa foreign key ke tabel `app-serv`. P1 memuat module, config bertipe, logger, router, health, dan migrasi 000001-000002; webhook, builder master prompt, dan worker masuk pada fase berikutnya.
+Batas domain: schema PostgreSQL `bot`, dimiliki service ini, tanpa foreign key ke tabel `app-serv`. P1 memuat module, config bertipe, logger, router, health, dan migrasi 000001-000002. P2 menambah intake webhook (`POST /internal/telegram/webhook`, secret token Telegram, dedupe `SETNX`) dan worker yang mengonsumsi stream Redis dengan retry dan dead-letter. P3 menambah builder master prompt yang memanggil `POST /api/v1/chat/completions` dengan bearer gateway key lewat `internal/gateway`: dua percobaan model, lalu fallback deterministik. Panggilan media generation, pembayaran, dan S2S HMAC ke Kentang Tech masuk fase berikutnya.
 
 | Surface | Detail |
 |---|---|
-| Route | `GET /healthz`, `GET /readyz`, `GET /metrics` (loopback saja) |
+| Route | `GET /healthz`, `GET /readyz`, `GET /metrics` (loopback saja), `POST /internal/telegram/webhook` |
 | Data | `plans`, `users`, `subscriptions`, `credit_ledger`, `generation_jobs`, `referral_campaigns`, `referral_redemptions`, `payments`, `admin_audit` |
 | Migrasi | `app-bot/migrations`, di-embed ke binary, diterapkan dengan `app-bot -migrate` di bawah advisory lock |
 | Runtime | `127.0.0.1:8090` di belakang Nginx; systemd unit menyusul di P9 |
-| Status | P1: boot, health, readiness PostgreSQL + Redis, seed plan |
+| Status | P3: webhook intake, builder master prompt, worker retry/dead-letter |
 
 Tabel `generation_jobs` sudah ada sejak P1 agar migrasi tidak berubah saat P2-P5 mendarat.
-
 
 ---
 
@@ -334,6 +336,91 @@ bergambar tidak meninggalkan jejak sama sekali di permukaan panel tanpa flag ini
 kepada siapa gambar diserahkan; ia tidak bisa membuktikan apa yang model itu lakukan dengannya, sehingga
 inyinya log operator, bukan field kontrak klien.
 
+### 3.5b Walk kredensial: snapshot satu leg, cursor dua tingkat
+
+Rotasi dalam satu provider punya dua tingkat yang berputar pada kecepatan berbeda, dan keduanya
+adalah cursor Redis yang isinya integer tanpa makna: modulo diambil router, bukan store, karena
+pembaginya adalah berapa banyak yang boleh dibelanjakan SEKARANG, fakta yang dimiliki domain.
+
+- **Tingkat akun**: `pannelai:cursor:endpoint:<sha256(provider_id)>` + subkey `:used`, dengan sticky
+  limit. Naik satu langkah per LEG, bukan per percobaan.
+- **Tingkat kredensial**: `pannelai:cursor:key:<sha256(endpoint_id)>`, satu counter per akun, tanpa
+  sticky. `INCR` adalah pemutus atomiknya: dua request konkuren menerima angka berbeda sehingga
+  memilih key berbeda, tanpa membaca baris yang sama.
+
+Sebelum ini, urutan key dibaca dari `last_used_at`, dan kolom itu hanya ditulis saat SUKSES. N request
+konkuren membaca timestamp yang identik dan semuanya memilih key yang sama; key yang dipilih lalu gagal
+di kelas target (DNS, TLS, 400 milik upstream) tidak dipark maupun di-stamp, jadi ia kekal paling tua
+dan merebut setiap request berikutnya. Sekarang seleksi men-stamp `last_selected_at` pada saat
+MEMILIH, dan stamp itu juga urutan fallback ketika Redis tidak menjawab, sehingga deployment yang
+terdegradasi tetap tersebar dalam satu ronde.
+
+Satu leg membaca kandidatnya SEKALI (`SelectionPlan`): daftar akun, policy rotasi, posisi cursor, dan
+jawaban gerbang kuota. Sebelumnya tiap percobaan memanggil ulang `List()` (dua query PostgreSQL) plus
+satu `Load()` settings, sehingga walk dua puluh kredensial menanyakan provider dua puluh kali dan
+mengulang akun yang sudah dilewati ketika cursor membulat. Stamp seleksi (`MarkSelected`) juga satu
+statement untuk dua hal: memilih kredensial berarti memilih akun di belakangnya, jadi kolom
+`last_selected_at` key dan akun naik bersama, bukan satu ditulis dan satu dibuang.
+
+Batas rantai ada di dua tempat sekarang. Per-credential 120 dtk tetap, dan di atasnya ada
+`routing.failover` (§7.14): `total_ms` 30000 dan `max_attempts` 8 untuk satu request. Batas ini
+mengikat walk PRA-COMMIT saja; setelah frame pertama sampai ke klien stream sudah committed dan
+idle guard yang memegang batas. Walk yang terpotong setelah sempat menghubungi upstream menjawab
+`UPSTREAM_TIMEOUT`, yang terpotong sebelum sempat menjawab `NO_PROVIDER_AVAILABLE`; tidak ada kode §8
+baru. Fusion berjalan paralel, jadi setiap anggotanya membuka budget sendiri, bukan satu counter
+bersama yang akan diraces.
+
+Park juga ikut berubah presisi: tiap kelas kegagalan punya run sendiri (`consecutive_auth`,
+`consecutive_ratelimit`, `consecutive_billing`), jadi rentetan 429 tidak lagi menaikkan window auth.
+`Retry-After` vendor sekarang dipakai sebagai panjang park untuk kelas rate-limit, di-clamp ke
+floor dan ceiling ladder itu sendiri sehingga satu header tidak bisa mengubur akun sehari penuh, dan
+angka yang sama diserahkan ke klien. Endpoint yang tidak punya baris key (OAuth, no-auth) dipark pada
+barisnya sendiri; itu breaker yang belum pernah ada, dan absennya membuat token mati terus dipilih.
+Stream yang ditinggalkan klien di tengah jawaban tidak mencatat sukses maupun gagal.
+
+### 3.5c Klasifikasi kegagalan: apa yang memarkir kunci dan apa yang menggerakkan walk
+
+Status HTTP tidak cukup untuk memutuskan park, karena satu status menyimpan dua kegagalan yang berbeda
+panjang umurnya. `FailureClass` (sembilan nilai, `internal/domain/failure_class.go`) duduk DI ATAS
+`KeyFailureClass`: yang kedua tetap memilih anak tangga ladder, yang pertama memilih apa yang sebenarnya
+terjadi. Rekognisi tinggal di connector (`internal/provider/failure_signature.go`): registry signature berisi
+pola yang diukur dari produksi (TH Harbor `heavy load` vs `free allowance`, envelope kuota Qoder, gerbang
+free-tier OpenCode) plus dua parser reset generik yang berjalan di atas body vendor mana pun. Domain memiliki
+vocabulary, connector memiliki kalimat vendor, dan itu alasan keduanya tidak berada di satu berkas.
+
+Satu `Classify()` menghasilkan kelas, reset, sumber, signature, dan jawaban retry; jawaban itu di-stamp SEKALI
+ke `UpstreamError` di tempat status, header, dan body masih lengkap. Park (`KeyHealthPolicy.RestUntil`) dan
+transport (`Do`) membaca stamp yang sama, sehingga tidak mungkin keduanya berbeda pendapat tentang satu
+kegagalan. Presedennya:
+
+```
+COALESCE(reset yang dinyatakan vendor, now + clamp(Retry-After, ceiling kelas), now + cooldown kelas)
+```
+
+Reset vendor menang atas apa pun yang dihitung gateway; ceiling hanya menjaga dari tanggal yang tidak mungkin.
+Quota memakai ladder empat langkah (15 menit → 1 jam → 6 jam → 24 jam), bukan doubling, karena setiap strike
+adalah satu leg walk yang sudah diketahui akan ditolak; run-nya menaikkan `consecutive_billing` karena bagi
+ akun keduanya kondisi yang sama.
+
+Aksi kelas (`park` / `rotate` / `stop`) tidak lagi hanya menentukan panjang park: `keepsWalking()`
+(`engine_relay.go`) membacanya: `stop` mengakhiri rantai dan `Outcome.ChainStopped` menghentikan walk di level
+combo juga, `rotate` berjalan terus tanpa menahan kunci, `park` mengikuti aturan `failoverWorthy` yang lama.
+`Selector.RecordFailure` mengembalikan aksi itu dari SATU pembacaan policy, supaya park dan failover menjawab
+pertanyaan yang sama. Default per kelas dipertahankan persis seperti perilaku sebelumnya (request → stop,
+target/gate → rotate, sisanya → park), jadi tabel konfigurasi tidak mengubah satu request pun yang hari ini
+sudah benar. Pembacaan settings tetap TIDAK di-hoist: kegagalan jaringan dan seleksi virtual sengaja tidak
+membayarnya.
+
+`routing.failure_classes` (global) dan `provider_strategies.<id>.failure_classes` (override per provider, merge
+field-per-field) adalah permukaan operator untuk aksi + ceiling + cooldown. Yang boleh di-tune hanya kelas yang
+memarkir kunci; `TARGET_UNREACHABLE`, `GATE_BLOCKED`, dan `REQUEST_INVALID` ditolak saat tulis karena router tidak
+membaca budget untuk kelas yang tidak memparkir apa pun; entry untuk ketiganya adalah konfigurasi mati.
+
+Setiap park menyimpan asal-usulnya (`upstream_keys.reset_source` = `header`/`body`/`default`,
+`upstream_keys.signature_id`, migrasi `000021`). Keduanya ditulis oleh health write dan TIDAK dibaca router;
+fungsinya satu: operator yang membuka kunci yang dipark bisa membedakan rest yang dijamin vendor dari rest yang
+ditebak gateway. Baris dari binary lama tetap terbaca karena keduanya nullable. Draft 052.
+
 ### 3.5a Provider tanpa kredensial (satu aturan, tiga pembaca)
 
 Provider yang menjawab tanpa kredensial (`no_auth` tingkat provider atau transport, atau
@@ -343,7 +430,8 @@ berbeda jawaban (draft 029 §4.8 F8, draft 031):
 - **Pemilihan endpoint** (`internal/dataplane/selection_virtual.go`) menyintesis satu `UpstreamEndpoint`
   virtual (`virtual:<provider-id>`, labuh "Public (no credential)") bila provider itu kredensial-free
   **dan** operator tidak menyimpan satu baris pun. Baris tersimpan selalu menang; provider ber-kunci tidak
-  pernah dibuatkan endpoint.
+  pernah dibuatkan endpoint. Karena tidak ada barisnya, selection stamp (§3.5b) melompati endpoint virtual:
+  men-stamp-nya berarti satu UPDATE primary-key yang tidak bisa mengenai apa pun, di setiap request.
 - **Filter katalog `?active=true`** (`internal/service/model_catalog_active.go`) menambahkan provider
   kredensial-free tanpa baris ke himpunan aktif, karena itulah populasi yang benar-benar dilayani router.
   Ini yang tadinya membuat panel menyembunyikan lane free tier sementara data plane menjawab 200.
@@ -367,7 +455,14 @@ sudah dikirim client dinaikkan ke `min_output_tokens` yang model deklarasikan di
 memakai `registry.Model` yang memang sudah sampai padanya, jadi tidak ada kolom baru): floor wire 16 token
 hanya menjaga agar upstream tidak menjawab 400, sedangkan floor per model menjaga agar jawabannya muat.
 Tiga batas menjadikannya kenaikan, bukan penulisan: ceiling yang tidak dikirim tetap tidak ada, ceiling di
-atas floor lewat apa adanya, dan model yang tidak mendeklarasikan floor tidak tersentuh.
+atas floor lewat apa adanya, dan model yang tidak mendeklarasikan floor tidak tersentuh. Kenaikan itu berlaku di
+kedua wire, bukan lagi hanya di Responses: jalur chat menaikkan `max_completion_tokens`/`max_tokens` di tempat
+(dengan preseden key yang sama seperti referensi), dan besarnya kenaikan dibatasi setengah `context_length` yang
+model nyatakan, `max_output_tokens` model, atau 4096 bila window tidak dinyatakan - guard gagal berarti angka
+klien diteruskan, karena 400 lebih buruk daripada jawaban kurus. Di sisi jawaban, call yang terpotong oleh ceiling
+kini dilaporkan `length`, bukan `tool_calls`: jawaban incomplete beralasan `max_output_tokens` dengan call yang
+belum tertutup (stream: `output_item.added` tanpa `output_item.done`; body: `arguments` absen, kosong, atau bukan
+JSON object) bukan sesuatu yang bisa klien dispatch.
 
 ### 3.6 Jalur media (§7.10)
 
@@ -379,12 +474,21 @@ Tujuh rute data plane media (`/audio/speech`, `/audio/transcriptions`, `/audio/v
   `{task_id, status, url?, b64_json?, progress?, error?}` dan mengembalikan endpoint pembuatnya di header
   `X-PannelAI-Endpoint-Id`, poll membacanya lewat `?provider=` (wajib) + `?endpoint=` (opsional, memaku akun
   pembuat job). Poll memakai `MediaCall.SkipHealth`: ia tidak menulis health endpoint, tetapi tetap menulis
-  baris usage + log. Empat dialect hidup di satu tabel (`media_video_plan.go`): default xAI, `openrouter`,
-  `tokenrouter`, dan `vertex` (Veo) yang menerjemahkan dua arah �� `:predictLongRunning` dengan body
+  baris usage + log. Konsekuensi breaker akun (§3.5b) perlu disebut di sini karena ia mengubah poll: akun yang
+  baru dipark tidak menerima pin poll-nya dan dijawab `NO_PROVIDER_AVAILABLE` sampai jendela park-nya lewat.
+  Itu jawaban yang jujur, bukan regresi: akun yang kredensialnya baru ditolak akan menolak poll yang sama, dan
+  membayar satu round trip penuh upstream untuk mengetahuinya lagi adalah tepat yang breaker ini hentikan;
+  job-nya tidak hilang, karena panel mem-poll ulang dan window-nya kedaluwarsa oleh jamnya sendiri.
+  Lima dialect hidup di satu tabel (`media_video_plan.go`): default xAI, `openrouter`,
+  `tokenrouter`, `vertex` (Veo) yang menerjemahkan dua arah → `:predictLongRunning` dengan body
   `{instances, parameters}` di bawah project/location endpoint, poll `:fetchPredictOperation` dengan
-  `{operationName}`, dan `task_id` berupa operation name base64url satu segmen dengan decode ber-anchor.
+  `{operationName}`, dan `task_id` berupa operation name base64url satu segmen dengan decode ber-anchor,
+  serta `agnes` yang create-nya POST ke `/v1/videos` dan poll-nya `GET /agnesapi?video_id=&model_name=`
+  di host yang sama. Poll Agnes tidak membawa model sedangkan task keyframe/reference menolak tanpanya,
+  jadi `task_id` yang dikembalikan create meng-encode video id + model (base64url) dan poll men-decode
+  keduanya; video id mentah tetap diterima untuk mode text yang tidak butuh model.
   `vertex` memakai kredensial `service_account`: `mintCredential` (seam `bindCredential`) menukar JSON SA
-  menjadi bearer (assertion RS256 �� grant jwt-bearer, cache ber-buffer) sebelum setiap fase, lewat klien
+  menjadi bearer (assertion RS256 → grant jwt-bearer, cache ber-buffer) sebelum setiap fase, lewat klien
   egress-guard yang sama dengan upstream lain.
 
 - model string berbentuk `provider/model` (split pada slash pertama, sehingga id ber-slash seperti
@@ -416,18 +520,18 @@ statement; yang menghubungi provider adalah worker:
 
 ```
 worker.QuotaPublishedWorker.Run/Sweep (tick, budget, interval per keluarga)
-  �? service.QuotaService.livePublishedUsage      (existence + feature gate + kredensial)
-      �? repository.EndpointRepository.GetByID    (baris koneksi + auth_type)
-      �? registry.Provider.Features               (usage, usageApikey)
-      �? domain.Sealer.Open                       (access token ATAU NextKey, satu sisi)
-  �? service/quotafetch.Fetch(family, creds)      �? HTTP ke endpoint kuota provider
-  �? repository.PublishedQuotaRepository
-      �? StorePublished  (quota_published_state + quota_published_window, prune label)
-      �? RecordAttempt   (jadwal berikutnya, run kegagalan)
+  → service.QuotaService.livePublishedUsage      (existence + feature gate + kredensial)
+      → repository.EndpointRepository.GetByID    (baris koneksi + auth_type)
+      → registry.Provider.Features               (usage, usageApikey)
+      → domain.Sealer.Open                       (access token ATAU NextKey, satu sisi)
+  → service/quotafetch.Fetch(family, creds)      → HTTP ke endpoint kuota provider
+  → repository.PublishedQuotaRepository
+      → StorePublished  (quota_published_state + quota_published_window, prune label)
+      → RecordAttempt   (jadwal berikutnya, run kegagalan)
 
-handler.QuotaHandler.List �? service.PagePublished �? ListPublishedByEndpointIDs (SATU query batch)
-handler.QuotaHandler.GetUsage �? service.PublishedUsage(force)
-      �? cache bila ada; `?force=1` �? livePublishedUsage
+handler.QuotaHandler.List → service.PagePublished → ListPublishedByEndpointIDs (SATU query batch)
+handler.QuotaHandler.GetUsage → service.PublishedUsage(force)
+      → cache bila ada; `?force=1` → livePublishedUsage
 ```
 
 Aturan yang berlaku untuk semua keluarga, bukan hanya Qoder:
@@ -497,6 +601,47 @@ cloudcode tidak membayar satu panggilan bootstrap `loadCodeAssist` per poll untu
 disimpannya sendiri. `email` jatuh ke baris account bila kredensial tidak memilikinya, dan akun tanpa
 keduanya menghasilkan map kosong, bukan string kosong yang bisa dibaca provider sebagai nilai nyata.
 
+`projectId` ditulis di satu tempat: round OAuth yang lolos menukar code ke token menanyakan project ke
+endpoint yang dideklarasikan entri (`registry.Provider.ProjectBootstrap()`, dibaca dari blok `oauth` lalu
+blok `transport.usage`), lalu menyimpannya di kredensial lewat seam `service.ProjectResolver` yang dipasang
+`cmd/app-serv` di atas `quotafetch.LoadProject`, jadi panggilan bootstrap itu riding egress client ter-guard
+yang sama seperti poller kuota, dan satu detail protokol tidak punya dua pembaca. Lookup yang tidak
+menjawab (ditolak, tanpa project, atau resolver tidak dipasang) **tidak** membatalkan login: kredensial yang
+operator setujui disimpan juga, `project_id` dibiarkan tidak hadir di JSONB, dan panggilan berikutnya yang
+membutuhkannya bertanya ulang.
+
+Keluar dari penyimpanan, project berjalan di **slot metadata** kredensial (`provider.MetadataProjectID`),
+bukan di `Credential.ProjectID`: field itu adalah workspace account yang dibaca penyedia bertanda tangan
+sebagai user id-nya, dan sebelum pemisahan ini login Google dengan kedua nilai tersimpan menimpanya, jadi
+satu field bermakna dua hal. Aturan seam yang melarang bahan kredensial masuk ke body karenanya tetap utuh
+tanpa pengecualian, karena project memang bukan bahan kredensial. Dua keluarga Cloud Code Assist
+(`gemini-cli`, `antigravity`) menaruhnya di dalam amplop `{project, model, request}` yang konektor
+`provider.CloudCode` bangun lewat seam `Transformer`; alamatnya `{base}:generateContent` tanpa segmen model,
+dan jawaban yang datang terbungkus `response` dibuka satu helper yang sama untuk candidate dan usage, sehingga
+pembacaan tagihan tidak bisa tertinggal dari pembacaan isi. Project yang tidak diketahui **tidak** dikarang:
+anggotanya dihilangkan dan penolakan vendor menjadi sinyalnya (draft 061 §8 mencatat `onboardUser` sebagai
+jalan jujur yang belum ditulis). Yang belum ada jalannya: `onboard_user_endpoint` milik entri `antigravity`,
+dipakai reference untuk akun yang belum punya project sama sekali (draft 061 §8 butir 6).
+
+Tool call keluarga Gemini dibentuk oleh satu pass per request (`dataplane.translate_gemini_calls.go`,
+`translate_gemini_turns.go`). Gemini memvalidasi id `functionCall` di **seluruh** history dan menolak satu
+request yang id-nya berulang, sementara `tool_call_id` OpenAI hanya unik di turn-nya sendiri, jadi tiap call
+mengambil id bebas berikutnya dan `functionResponse`-nya ditulis dengan id yang sama bersama nama yang call itu
+sendiri deklarasikan; sebuah hasil yang tidak cocok dengan call mana pun tetap dikirim, bernama id yang
+dibawa klien, karena id itu opaque dan membacanya sebagai nama akan mengarang nama tool. Turn bersebelahan
+ber-role sama digabung (hasil paralel datang sebagai satu pesan per call), history yang dibuka turn model
+diberi turn user pembuka, call yang ditinggal tanpa jawaban ditutup dengan `result: "Continue."`, dan pada
+model `gemini-4*` functionResponse dipindah ke akhir turn hasil penggabungan, mengikuti gerbang reference.
+`thoughtSignature` tidak punya penyimpan lintas request: dataplane tidak memegang state antar panggilan dan
+instance dilayani lebih dari satu, jadi call pertama tiap turn model diberi filler tetap per produk
+(`dataplane/gemini_thought.go`, satu nilai untuk antigravity dan API, nilai lain untuk gemini-cli) dan
+sibling-nya dibiarkan tanpa tanda tangan, yang adalah jalur cache-miss reference. Arah jawaban berhenti
+menyebut call sebagai `call_0`: id dari vendor dipakai bila ada, kalau tidak `call_<nama>_<created>_<indeks>`,
+dan satu stream menghitung call-nya sendiri supaya frame kedua membuka call kedua, bukan menimpa yang
+pertama. Frame finish dari stream yang memuat call dilaporkan sebagai `tool_calls`, bukan `stop`, karena klien
+dispatch dari nilai itu. Reference mengukur bahwa Gemini 3 menolak functionCall tanpa tanda tangan; angka
+dan penerimaan dua filler itu belum diukur di round hidup kita sendiri (draft 061 §8).
+
 
 ---
 
@@ -544,6 +689,32 @@ Migrasi `000014_request_path_indexes` tidak menambah kolom sama sekali: ia menam
 
 Migrasi `000015_oauth_email_index_expression` mengganti index email yang `000014` bangun. Query dedupnya memfilter `lower(account->>'email')` (`endpoint_batch.go`), dan index di atas ekspresi tanpa `lower()` tidak bisa menjawab predikat itu: `EXPLAIN` menempatkannya sebagai Filter, bukan Index Cond, bahkan dengan `enable_seqscan` dimatikan, jadi pembacaan yang seharusnya memakai index tetap memindai tabel. Nama index dipertahankan agar database yang sudah menjalankan `000014` dan database baru berakhir pada bentuk yang sama. Dua index tabel log sengaja dibiarkan apa adanya: `CREATE INDEX CONCURRENTLY` ditolak di dalam transaksi runner, dan dijalankan di luar `pg_advisory_lock` membuat build menunggu transaksi replica lain yang justru menunggu lock yang sama, sehingga start bersamaan deadlock (`SQLSTATE 40P01`, terbukti di `TestApply_ConcurrentCallsBothSucceed`). Window lock saat boot di tabel berisi karenanya diterima dan tercatat di file migrasinya, bukan disembunyikan.
 
+Migrasi `000017_endpoint_quota_cooldown` dan `000018_oauth_refresh_retry` menambah tiga kolom waktu pada `upstream_endpoints`, dan keduanya lahir dari temuan yang sama: sebuah deadline ditulis ke kolom yang pembacanya salah. Yang pertama (`quota_cooldown_until`) khusus untuk poller kuota terbit, karena `rate_limited_until` yang selama ini disaring poller adalah input `Available()`; memarkuhnya dengan 429 dari satu kunci akan menahan seluruh akun dari rotasi. Dua lainnya (`oauth_retry_at`, `oauth_retry_rounds`) adalah ladder kunjungan ulang untuk akun OAuth yang sudah di-dead-letter: token kuburan selalu `due`, jadi menyertakan akun `error` tanpa jendela mengulang budget lima percobaan setiap tick (terukur: `grant calls = 6` saat pin-nya 5). Ketiganya dibaca lewat proyeksi parity yang sama dan tidak di-index karena pembacanya sudah dibatasi halaman (§1.7). Rollback kedua migrasi hanya menjatuhkan kolom: tidak ada baris yang hilang, dan akun kuburan kembali ke keadaan sebelum fix, yaitu menunggu operator (draft 050 T1 keputusan b, T2 keputusan ii).
+
+Migrasi `000021_key_rest_classification` menambah dua kolom teks nullable (`reset_source`, `signature_id`) di
+`upstream_keys`: catatan bagaimana sebuah rest diperoleh, bukan input bagi router. Tidak ada index karena
+keduanya dibaca berdampingan dengan `last_error_class` pada halaman endpoint yang sudah dibatasi
+`MaxEndpointsPerProvider` (§1.7), dan setiap penulisnya menunjuk baris lewat primary key `(id, endpoint_id)`.
+Keduanya hanya ditulis oleh health write, jadi baris yang dipark binary lama sederhana tidak membawa keduanya.
+`down` menjatuhkan kolomnya dan tidak menyentuh baris: yang hilang jawaban "kenapa selama ini", park-nya sendiri
+tetap di `rate_limited_until`. Draft 052.
+
+Migrasi `000022_endpoint_tags` dan `000023_operator_disable_window` memberi dua agregat yang sama
+(`upstream_endpoints`, `upstream_keys`) dua hal yang selama ini hanya bisa mereka nyatakan lewat satu baris:
+label yang bisa dipakai menunjuk sekumpulan baris sekaligus, dan deadline milik operator. `tags` adalah `jsonb
+NOT NULL DEFAULT '[]'` dengan index GIN, bukan `text[]` dan bukan index ekspresi, karena pertanyaannya adalah
+containment (`tags @> '["x"]'`) atas satu nilai yang posisinya tidak tetap, dan index ekspresi `000014` untuk
+email OAuth tidak bisa dipakai ulang untuk itu; §1.7 menuntut kolom pencarian lahir bersama indexnya.
+`disabled_until` adalah `timestamptz` nullable dan **memang** input `Available()`, kebalikan sengaja dari
+`quota_cooldown_until` (`000017`) yang justru ditegaskan bukan: satu makna per kolom, dan itu alasan keduanya
+tidak digabung. NULL berarti permanen, jadi tidak ada backfill dan tidak ada baris lama yang berubah arti.
+Panjang jendela tidak disimpan di kolom: ia dihitung dari `settings.routing.key_park.quota_seconds` provider
+induknya saat disable ditulis, dan jenis window 5 jam yang sudah ada di domain (`QuotaWindowFiveHour`) kini
+boleh menjadi panjang park, bukan hanya jenis window kuota. Keduanya aditif dengan pasangan `down` yang hanya
+menjatuhkan kolom: label dan deadline adalah tambahan di atas baris yang sudah ada, jadi rollback tidak
+menghapus akun dan tidak mengembalikan sesuatu yang sudah tertutup - `status` tetap membawa switch-nya, dan
+yang hilang hanyalah janji bahwa ia membuka dirinya sendiri. Draft 059 D1/D3.
+
 Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, dan aturan kepemilikan tabel. Satu catatan yang lahir dari menjalankannya terhadap PostgreSQL nyata:
 
 - migration berjalan sebagai role yang mem-boot gateway, jadi boot ber-DSN superuser membuat tabel milik superuser dan role aplikasi tidak bisa membacanya (terukur: `permission denied for table media_provider_settings` di `PATCH /media-providers/{id}` dan di setiap rute §7.11, sementara tabel lain normal). `000011` memindahkan kedua tabel itu ke role pemilik `gateway_keys` (satu aturan, bukan nama role per deployment), dan karena role yang tidak memiliki tabel tidak bisa memindahkannya, penolakan dilaporkan sebagai warning boot berisi statement yang harus dijalankan, bukan kegagalan boot. Invariannya dikunci `migrations/ownership_test.go` untuk seluruh schema.
@@ -554,8 +725,8 @@ Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, da
 
 | Sumber | Isi | Catatan |
 |---|---|---|
-| PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints` (kolom parity koneksi lewat 000012), `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1), `proxies` (P2, 000009), `media_provider_settings` (P2, 000010; PK `(provider_id, kind)`), `quota_published_state` + `quota_published_window` (000013; PK masing-masing `endpoint_id` dan `(endpoint_id, label)`, index `next_attempt_at` untuk sweep dan `fetched_at` untuk prune TTL) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali; `proxies.password_encrypted` disegel sama dan `has_password` satu-satunya bentuk yang dibaca kembali; `quota_published_window.total` NULLable dengan sengaja (NULL = tanpa batas, `0` = batas habis); `upstream_keys.consecutive_errors` dan `upstream_endpoints.consecutive_use_count` naik di sisi database (`CASE WHEN $clear THEN 0 ELSE col + 1 END`), bukan ditulis dari nilai agregat, karena dua seleksi konkuren yang memuat baris yang sama akan saling menimpa tulisannya dan circuit breaker akan menghitung terlalu sedikit |
-| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer, sorted set `pannelai:usage:active` (penanda request in-flight, skor = `started_at`, prune 60 dtk; payload-nya membawa `combo`: nama combo yang dialamatkan client, `omitempty` sehingga penanda tanpa combo ditulis byte-identik dengan bentuk build sebelumnya, dan anggota yang tidak bisa di-decode DILEWAT, tidak dihapus, karena menghapus nilai yang reader tidak kenali akan memusnahkan penanda proses lain), channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
+| PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints` (kolom parity koneksi lewat 000012), `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1), `proxies` (P2, 000009), `media_provider_settings` (P2, 000010; PK `(provider_id, kind)`), `quota_published_state` + `quota_published_window` (000013; PK masing-masing `endpoint_id` dan `(endpoint_id, label)`, index `next_attempt_at` untuk sweep dan `fetched_at` untuk prune TTL); `upstream_endpoints.quota_cooldown_until` (000017) dan `oauth_retry_at` + `oauth_retry_rounds` (000018), tiga deadline yang diedarkan oleh proses latar dan tidak pernah dibaca `Available()` | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali; `proxies.password_encrypted` disegel sama dan `has_password` satu-satunya bentuk yang dibaca kembali; `quota_published_window.total` NULLable dengan sengaja (NULL = tanpa batas, `0` = batas habis); `upstream_keys.consecutive_errors` dan `upstream_endpoints.consecutive_use_count` naik di sisi database (`CASE WHEN $clear THEN 0 ELSE col + 1 END`), bukan ditulis dari nilai agregat, karena dua seleksi konkuren yang memuat baris yang sama akan saling menimpa tulisannya dan circuit breaker akan menghitung terlalu sedikit; jendela parkir yang mengisi `upstream_keys.rate_limited_until` berasal dari `settings.routing.key_park` (7.14), dibaca per provider saat kegagalan dicatat, oleh dua penulis yang sama yakni selector data plane dan probe panel, supaya satu kredensial tidak diparkir dua panjang berbeda. Run per kelas (`consecutive_auth|ratelimit|billing`, migrasi 000019) naik dengan cara yang sama dan hanya untuk kelas kegagalan yang baru saja terjadi; `consecutive_errors` tetap total untuk tampilan, dan `last_error_class` menyebut kolom mana yang baru saja naik karena statement-nya harus memilih satu. `upstream_keys.last_selected_at` dan `upstream_endpoints.last_selected_at` ditulis oleh seleksi itu sendiri (`MarkSelected`), BUKAN oleh tulisan health: sebuah hasil perjalanan memuat agregat yang timestamp-nya sudah usang, dan menulisnya balik akan membatalkan pilihan yang dibuat selagi call itu berjalan |
+| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, dua cursor rotasi (`pannelai:cursor:endpoint:<sha256(provider)>` dengan sticky, `pannelai:cursor:key:<sha256(endpoint)>` sebagai pemutus atomik pemilihan key), circuit state, console ring buffer, sorted set `pannelai:usage:active` (penanda request in-flight, skor = `started_at`, prune 60 dtk; payload-nya membawa `combo`: nama combo yang dialamatkan client, `omitempty` sehingga penanda tanpa combo ditulis byte-identik dengan bentuk build sebelumnya, dan anggota yang tidak bisa di-decode DILEWAT, tidak dihapus, karena menghapus nilai yang reader tidak kenali akan memusnahkan penanda proses lain), channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut. namespace cursor tinggal di implementasinya (`internal/repository/redis`), bukan di data plane, supaya satu ejaan tidak punya dua salinan |
 
 ---
 
@@ -565,10 +736,11 @@ Enam worker berjalan bersama server, semuanya dipulai lewat `cmd/app-serv/worker
 
 | Worker | Pemicu | Kebijakan retry | Dead-letter |
 |---|---|---|---|
-| Quota flush (`internal/service/quota_flush.go`) | tick 30 detik, batch terbatas; counter Redis memegang TOTAL BERJALAN window per endpoint (`internal/service/quota_counter.go`, rollover atomik lewat Lua di `internal/repository/redis/quota_counter_script.go`) dan flush memirror-nya ke `quota_windows`; `Settle` menandai yang sudah durable dan hanya pensiunkan window yang sudah tutup | fixed tick, `MaxAttempts: 5` | total berjalan tetap di Redis, dicoba lagi pada tick berikutnya; `FlushUntilQuiet` juga dipanggil composition root setelah server berhenti melayani request, dan ia mengulang cycle sampai batch datang lebih pendek dari ceiling: tick sengaja satu batch per tick (`quota_flush_policy.go`), sedangkan shutdown adalah satu-satunya moment tanpa tick berikutnya, sehingga backlog di atas satu batch akan tinggal di Redis dan panel membaca spend yang lebih rendah daripada yang benar-benar dibayar (`cmd/app-serv/shutdown_drain.go`) |
-| Log retention (`internal/service/log_retention.go`) | tick 1 jam, cutoff dari `settings.logging.retention_days` | fixed tick, `MaxAttempts: 3` | DELETE bersifat set-based dan atomik; baris tetap untuk percobaan berikutnya |
-| OAuth token refresh (`internal/service/oauth_refresh_worker.go`) | tick 5 menit, hanya endpoint `oauth` yang `refresh_state=due` | eksponensial dari 30 detik, jitter maksimum seperempat delay, plafon 30 menit, 5 percobaan | percobaan kelima menandai endpoint `error` lewat `MarkRefreshDeadLetter` dan berhenti di-retry |
-| Quota terbit / published quota (`internal/service/quota_published_worker.go`) | tick terjadwal; antrian = `DueForRefresh(now, budget)`, oldest-due dulu lewat index `next_attempt_at`, dengan endpoint yang masih dalam cooldown (`rate_limited_until` dari jalur data) disaring di `WHERE` sebelum `LIMIT` agar tidak memakan budget; concurrency dibatasi semaphore (bukan fan-out tak terbatas seperti `dataplane.engine_fusion.fanOut`); budget dan concurrency dibaca dari config bertipe (`QUOTA_POLL_BUDGET` default 40 maks 500, `QUOTA_POLL_CONCURRENCY` default 4 maks 16) sehingga operator memindahkannya tanpa ubah kode; setiap endpoint membawa interval per keluarga: claude 10 menit (endpoint-nya menjawab 429), google cloudcode dan grok-cli 5 menit, sisanya 2 menit; plus jitter agar seribu akun satu keluarga tidak bangun bersama | kegagalan Go dihitung lewat `consecutive_failures` dan menjadi backoff eksponensial 30 detik �? plafon 30 menit; jawaban lunak provider BUKAN kegagalan, ia disimpan sebagai `message` dan window baik yang sudah tersimpan dipertahankan | tidak ada dead-letter drop: endpoint yang gagal terus tetap di antrian pada interval plafon, karena tindakan operator (re-authenticate) harus memulihkannya tanpa edit baris manual |
+| Quota flush (`internal/service/quota_flush.go`) | tick 30 detik, batch terbatas; counter Redis memegang TOTAL BERJALAN window per endpoint (`internal/service/quota_counter.go`, rollover atomik lewat Lua di `internal/repository/redis/quota_counter_script.go`) dan flush memirror-nya ke `quota_windows`; `Settle` menandai yang sudah durable dan hanya pensiunkan window yang sudah tutup; satu lease Redis 5 menit menjaga flush tetap milik satu replika | fixed tick, `MaxAttempts: 5` | total berjalan tetap di Redis, dicoba lagi pada tick berikutnya; upsert menyimpan GREATEST untuk source computed dalam window yang sama sehingga flush lambat tidak menurunkan total, sedangkan reset atau source reported tetap menimpa; `FlushUntilQuiet` juga dipanggil composition root setelah server berhenti melayani request, dan ia mengulang cycle sampai batch datang lebih pendek dari ceiling: tick sengaja satu batch per tick (`quota_flush_policy.go`), sedangkan shutdown adalah satu-satunya moment tanpa tick berikutnya, sehingga backlog di atas satu batch akan tinggal di Redis dan panel membaca spend yang lebih rendah daripada yang benar-benar dibayar (`cmd/app-serv/shutdown_drain.go`) |
+| Log retention (`internal/service/log_retention.go`) | tick 2 hari, cutoff dari `settings.logging.retention_days` (default 2 hari), lalu `TrimTo` menjaga `REQUEST_LOG_MAX_ROWS` (default 20000) | fixed tick, `MaxAttempts: 3`, timeout 30 detik | DELETE dan trim dibatasi batch 5000 lewat `ctid`; setiap batch commit sebelum batch berikutnya, jadi context yang habis meninggalkan progres durable dan percobaan berikutnya melanjutkan sisa baris |
+| Usage retention (`internal/service/usage_retention.go`) | tick 24 jam, cutoff dari `USAGE_RETENTION_DAYS` (default 90 hari) | fixed tick, `MaxAttempts: 3`, timeout 30 detik | DELETE usage_records dibatasi batch 5000 lewat `ctid`; usage_records belum dipartisi bulanan seperti SPEC-API §6, deviasi dicatat di draft 063 |
+| OAuth token refresh (`internal/service/oauth_refresh_worker.go`) | tick 5 menit; endpoint `oauth` yang `refresh_state=due` berjalan lewat burst, akun `error` lewat satu kunjungan per jendela ladder (`oauth_retry_at`, `oauth_retry_rounds`, migrasi 000018), termasuk akun yang tokennya tidak menyatakan expiry; satu lease Redis 30 menit menjaga sweep tetap milik satu replika | burst: eksponensial dari 30 detik, jitter maksimum seperempat delay, plafon 30 menit, 5 percobaan. Jadwal per endpoint disimpan di map `next`; sweep tidak tidur, dan `Run` bangun pada attempt terdekat atau tick. Kunjungan ulang: satu grant per jendela, jendela 1 jam lalu berlipat dua tiap kunjungan gagal, plafon 24 jam | percobaan kelima menandai endpoint `error` lewat `MarkRefreshDeadLetter` dan membuka jendela kunjungan; grant yang berhasil mengakhiri dead-letter dan ladder-nya bersama-sama (draft 050 T2 ii) |
+| Quota terbit / published quota (`internal/service/quota_published_worker.go`) | tick terjadwal dengan lease Redis 5 menit per siklus seed+sweep; antrian = `DueForRefresh(now, budget)`, oldest-due dulu lewat index `next_attempt_at`, dengan endpoint yang masih dalam cooldown kuota (`quota_cooldown_until` pada `upstream_endpoints`, kolom yang `000017` tambahkan untuk poller) disaring di `WHERE` sebelum `LIMIT` agar tidak memakan budget; kolom itu ditulis jalur health data plane ketika vendor menjawab 429, dan sengaja bukan `rate_limited_until` karena kolom itu input `Available()`: throttle pada satu kunci tidak boleh menahan seluruh akun dari rotasi (draft 050 T1, keputusan owner (b)); concurrency dibatasi semaphore (bukan fan-out tak terbatas seperti `dataplane.engine_fusion.fanOut`); budget dan concurrency dibaca dari config bertipe (`QUOTA_POLL_BUDGET` default 40 maks 500, `QUOTA_POLL_CONCURRENCY` default 4 maks 16) sehingga operator memindahkannya tanpa ubah kode; setiap endpoint membawa interval per keluarga: claude 10 menit (endpoint-nya menjawab 429), google cloudcode dan grok-cli 5 menit, sisanya 2 menit; plus jitter agar seribu akun satu keluarga tidak bangun bersama | kegagalan Go dihitung lewat `consecutive_failures` dan menjadi backoff eksponensial 30 detik → plafon 30 menit; transport dan 5xx juga dihitung gagal untuk semua family, begitu pula 429 kecuali Claude yang punya cooldown sendiri dan OpenCode, Qoder, serta CodeBuddy yang mempertahankan jawaban lunak karena patch reference-nya sudah bekerja; 401/403/404 tetap jawaban lunak, disimpan sebagai `message`, dan window baik yang sudah tersimpan dipertahankan | tidak ada dead-letter drop: endpoint yang gagal terus tetap di antrian pada interval plafon, karena tindakan operator (re-authenticate) harus memulihkannya tanpa edit baris manual |
 | Usage event publisher (`internal/service/usage_event_publish.go`) | antrean bounded 256 yang diisi `UsageService.Record` (choke point akuntansi, dipakai chat dan media/embeddings) | tanpa retry terjadwal: kegagalan publish dihitung lalu dicatat, karena Pub/Sub tidak punya tujuan durable untuk di-retry | antrean penuh = event terbaru di-drop dan dihitung (`Dropped()`); baris usage adalah rekaman durabelnya |
 | Usage event consumer (`internal/service/usage_event_consume.go`) | subscribe channel `pannelai:events:usage.recorded`; tiap event dicerminkan jadi satu baris console ring | receive timeout = idle (bukan kegagalan); kegagalan transport backoff eksponensial 250ms sampai 30s, counter reset oleh receive sukses pertama | tidak ada: subscription dibangun ulang tiap percobaan, jadi tidak ada state yang perlu di-dead-letter |
 | Live Usage stream (`internal/handler/usage_live.go`) | satu goroutine per koneksi, dipicu tick baca 1 dtk dan keepalive 20 dtk; berakhir saat klien disconnect, batas umur 30 menit, gagal tulis, atau gagal baca | tanpa retry: koneksi yang gagal ditutup dan panel punya jadwal retry sendiri yang terbatas (`app-ui/src/lib/usage-live.ts`) | tidak ada: stream adalah view, bukan rekaman; rekamannya baris `usage_records` |
@@ -613,11 +785,45 @@ Ingest-nya ada di jalur accounting: `internal/service/quota_counter.go` menaikka
 untuk setiap request yang dilayani, lewat seam yang dipakai bersama oleh chat
 (`internal/service/chat_record.go`) dan media/embeddings (`internal/service/dataplane_record.go`).
 
-Alur OAuth §7.4 (`internal/service/oauth_flow*.go`) memakai dua state eksternal: `state` single-use 10 menit di Redis (`pannelai:oauth:state:*`, `SET NX` + `GETDEL`) sebagai replay guard, dan token yang disegel AES-GCM pada `upstream_endpoints.oauth`. `POST .../oauth/start`, `GET .../oauth/status`, dan `POST .../oauth/refresh` adalah rute sesi; `GET .../oauth/callback` publik karena browser provider tidak bisa membawa cookie sesi. Tujuan redirect browser tidak pernah diambil dari request: `PUBLIC_BASE_URL` menang, origin `redirect_uri` hanya fallback absolut http(s), dan bila keduanya tidak ada callback menjawab JSON. Rotasi token ditulis lewat `UpdateIfUnchanged`, yang hanya menulis kolom `oauth` dan `updated_at` dan membandingkan dua ciphertext kredensial di kolom `oauth`, bukan `updated_at` barisnya: setiap request yang dilayani menulis `updated_at` lewat `RecordUpstreamOutcome`, jadi guard berbasis timestamp kalah oleh traffic yang tidak pernah ia saingi, dan lima kekalahan itu mengirim akun sehat ke dead-letter worker. Kolom lain sengaja tidak ikut tertulis, dan itu separuh kedua dari guard yang sama: rotasi memuat agregat, menghabiskan satu round trip ke vendor, lalu menulis kembali; mengirim `status` dan `priority` hasil muatan itu akan menimpa edit operator yang terjadi di antaranya, dan perbandingan kredensial tidak bisa melihatnya karena operator tidak menyentuh token. Penyapu due tidak lagi berhenti pada satu akun: `POST .../oauth/refresh` tanpa `endpoint_id` menjawab `skipped[]` berisi akun yang ia lewati beserta alasannya, karena yang sudah tersimpan tetap tersimpan dan membatalkan laporan atas batch yang sebagian berhasil adalah kebohongan lain.
+Alur OAuth §7.4 (`internal/service/oauth_flow*.go`) memakai dua state eksternal: `state` single-use 10 menit di Redis (`pannelai:oauth:state:*`, `SET NX` + `GETDEL`) sebagai replay guard, dan token yang disegel AES-GCM pada `upstream_endpoints.oauth`. `POST .../oauth/start`, `GET .../oauth/status`, dan `POST .../oauth/refresh` adalah rute sesi; `GET .../oauth/callback` publik karena browser provider tidak bisa membawa cookie sesi. Tujuan redirect browser tidak pernah diambil dari request: `PUBLIC_BASE_URL` menang, origin `redirect_uri` hanya fallback absolut http(s), dan bila keduanya tidak ada callback menjawab JSON. Rotasi token ditulis lewat `UpdateIfUnchanged`, yang hanya menulis kolom `oauth`, `account`, dan `updated_at` dan membandingkan dua ciphertext kredensial di kolom `oauth`, bukan `updated_at` barisnya: setiap request yang dilayani menulis `updated_at` lewat `RecordUpstreamOutcome`, jadi guard berbasis timestamp kalah oleh traffic yang tidak pernah ia saingi, dan lima kekalahan itu mengirim akun sehat ke dead-letter worker. Kolom lain sengaja tidak ikut tertulis, dan itu separuh kedua dari guard yang sama: rotasi memuat agregat, menghabiskan satu round trip ke vendor, lalu menulis kembali; mengirim `status` dan `priority` hasil muatan itu akan menimpa edit operator yang terjadi di antaranya, dan perbandingan kredensial tidak bisa melihatnya karena operator tidak menyentuh token. Connect memakai guard yang sama, dan update penuh endpoint tidak lagi menulis `oauth`, `account`, atau `consecutive_use_count`: tiga kolom itu milik rotasi kredensial dan `RecordUpstreamOutcome`, jadi PATCH, probe, atau perubahan key yang memuat agregat lebih lama tidak bisa mengembalikan token yang sudah dirotasi atau counter yang sudah maju. Penyapu due tidak lagi berhenti pada satu akun: `POST .../oauth/refresh` tanpa `endpoint_id` menjawab `skipped[]` berisi akun yang ia lewati beserta alasannya, karena yang sudah tersimpan tetap tersimpan dan membatalkan laporan atas batch yang sebagian berhasil adalah kebohongan lain.
+
+Bahan klien OAuth datang dari dua tempat dengan aturan penulisan yang berbeda. `registry.OAuth` membawa
+`client_id` untuk provider yang client id publiknya memang terdokumentasi di reference, dan field
+`client_secret` **tidak ada** di tipe itu sama sekali: dokumen registry di-decode dengan `KnownFields(true)`,
+jadi satu baris `client_secret:` membuat registry gagal dimuat alih-alih membawa kredensial ke dalam git
+(`registry/embedded_test.go` memaku itu). Keluarga Google duduk di sisi lain aturan ini: reference mengirim
+pasangan id dan secret installed-app di dalam dokumen registry-nya, dan pemindai sekret GitHub membaca pasangan
+itu sebagai kredensial terverifikasi, jadi kedua anggota keluarga itu (`antigravity`, `gemini-cli`) kehilangan
+bahan kliennya di dokumen dan hanya membacanya dari environment
+(`ANTIGRAVITY_OAUTH_CLIENT_ID`/`_SECRET`, `GEMINI_CLI_OAUTH_CLIENT_ID`/`_SECRET`, didaftarkan di
+`internal/config/oauth_clients.go`, dan entri `gemini` kehilangan blok `oauth`-nya karena isinya hanya id itu).
+Konsekuensinya eksplisit: round yang tidak menemukan client id **ditolak sebelum satu state pun di-stage**,
+dengan pesan Inggris yang menyebut deployment dan bukan provider, jadi operator tidak dikirim ke browser untuk
+lalu gagal di sisi Google.
+
+Dua cacat kepemilikan yang draft 059 jadikan prasyarat sebelum satu pun rute bulk dibuka, keduanya sudah hidupdi binary dan keduanya hanya berbahaya dalam jumlah: (1) penyapu refresh OAuth memuat akun lewat filter provider
+saja, jadi akun yang operator matikan tetap punya refresh token hidup dan tetap membelanjakan grant vendor setiap
+tick - `sweepProvider` sekarang melewati akun `disabled` dan menamainya di `skipped[]`, sama seperti `OAuthRefreshWorker`
+yang sejak awal men-switch status dan tidak pernah menyentuh `disabled`; (2) `MarkUnhealthy` menulis `status = error`
+tanpa syarat sementara `MarkHealthy` justru menjaga `disabled` dengan alasan yang tertulis di komentarnya sendiri -
+satu aturan ditegakkan satu arah saja. `MarkUnhealthy` sekarang menghormati switch operator (kredensial mati tidak
+mengeluarkan akun dari keadaan yang diputuskan manusia) tapi tetap mencatat alasannya, karena hasil probe bukan
+kepunyaan siapa pun untuk dibuang. Setelah keduanya, sebuah disable massal tidak lagi berarti seribu grant dan tidak
+lagi bisa di-vote balik oleh worker.
+
+Cascade hapus `ProviderNode` juga berubah bentuk: ia dulunya lima statement di luar transaksi mana pun (guard combo,
+guard alias, `DeleteByProvider`, hapus model, hapus node), dan statement ketiga yang gagal meninggalkan baris endpoint
+yang menunjuk `base_url` yang sudah tidak ada. Erasure sekarang satu call repository (`DeleteCascade`) di dalam satu
+transaksi, memakai statement yang sama lewat seam execer pool-or-tx alih-alih salinan kedua; dua seam eraser di service
+dihapus karena tidak ada lagi yang memanggilnya dari luar transaksi itu.
 
 Provider tanpa `authorize_url` tetapi dengan `device_token_url` + `login_url` di blok `oauth`-nya (qoder, qoder-cn) dilayani **device flow** (`oauth_flow_device.go`, `oauth_flow_device_poll.go`) di kunci state yang sama: `POST .../oauth/device/start` mencetak pasangan PKCE + nonce + machine_id lalu mementaskan konteks privatnya di bawah nonce dengan TTL 6 menit, dan hanya mengembalikan `device_code` ke panel. Verifier dan machine_id tidak pernah keluar, sehingga `Peek` (`GET`, tanpa menyentuh TTL) dipakai bersama `Take` (`GETDEL`) karena satu ronde bisa di-poll berulang kali; `Peek` ada di seam repository justru supaya konsumsi tetap satu titik. `POST .../oauth/device/poll` melakukan tepat satu percobaan upstream per panggilan (`202`/`404` = pending, non-2xx lain = `UPSTREAM_ERROR` dan rondenya tetap bisa dicoba), dan mengonsumsi state **sebelum** menulis saat sukses sehingga token yang diberikan dua kali hanya tersimpan sekali. Connect device memakai `connectAccount` yang sama dengan callback (`oauth_flow_connect.go`) karena aturan dedup identitas tidak boleh punya dua salinan, kecuali pembacaan userinfo yang di sini **fail-open** dengan email sintetis `qoder-user-<user_id>`, dan machine_id ronde disimpan di `upstream_endpoints.account` karena setiap request bertanda tangan setelahnya memakai ulang nilai itu. Identitas itu dibandingkan pada email **kanonik**: `SetAccount` menyimpan hasil `domain.NormalizeEmail` (trim + lower-case) dan `FindOAuthEndpoint` membandingkan `lower(account->>'email')`, karena vendor yang mengembalikan huruf besar-kecil berbeda adalah akun yang sama; tanpa normalisasi satu impor ulang menghasilkan dua endpoint yang berdua mengklaim satu identitas (audit anti-slop 003 F33). Token device tidak di-refresh: `oauth/refresh` menolak provider tanpa `token_url`, dan login ulang adalah jalur perpanjangannya (draft 036).
 
 **Ronde kedua di rute yang sama: state round vendor (`codebuddy-cn`, `codebuddy-intl`).** Provider yang blok `oauth`-nya mendeklarasikan `state_url` + `token_url` (`registry.OAuth.StateExchangeFlow()`) dilayani lewat dua rute device yang sama, tapi handle-nya dicetak vendor: start menanyakan state ke endpoint vendor, mementaskan round di bawah state itu (TTL 6 menit yang sama), dan menjawab state tersebut sebagai `device_code` dengan halaman otorisasi vendor sebagai `verification_url`. Bentuk ini **tidak punya code singkat**: `user_code` dijawab **absent**, bukan string kosong, karena tidak ada pihak yang pernah meminta operator mengetiknya (kontraknya di SPEC-API §7.4; panel menggambar card tanpa blok code bila field tidak ada). Poll dan refresh mengikuti bentuknya: `StatePoll` membandingkan `code 11217` sebagai pending, dan `StateRefresh` mengirim refresh token lewat header ke `refresh_url`, jadi kalimat "token device tidak di-refresh" di atas berlaku untuk shape PKCE saja.
+
+Batas masukan HTTP pada ronde LOW: `GET /endpoints` memakai `schema.EndpointListQuery` sehingga status di luar himpunan siklus hidup ditolak alih-alih menjawab halaman kosong, dan `GET /videos/{task_id}` membatasi provider, endpoint, serta task id sebelum URL upstream dibangun. Ringkasan usage memakai `LIMIT 100` yang deterministik (urut jumlah request lalu kunci), jadi satu jendela dengan ribuan model atau endpoint tidak bisa menjawab ribuan baris. Cache transport per kandidat proxy dibatasi 32 entri FIFO dan menutup koneksi idle saat evict, supaya baris pool yang diedit tidak meninggalkan soket selama umur proses. Rute transkripsi memperpanjang deadline baca menjadi 5 menit dan tulis menjadi 2 menit di atasnya lewat `http.ResponseController`, karena unggahan 25 MB yang sah bisa melewati `ReadTimeout` 30 detik milik server. HSTS tidak dikirim app-serv: TLS berakhir di depan proses ini, jadi header itu milik terminator yang memegang host dan skema. Gate yang membaca perubahan kini menerima `GATES_CHANGE_FILES` dari hook pre-push, sehingga batas 250 baris tetap memeriksa commit yang sudah bersih worktree-nya.
+
+Stream yang EOF bersih tanpa terminal event (frame finish, `[DONE]`, `message_stop`, atau finish reason) ditandai `Outcome.StreamTruncated`. Gateway tetap mengirim finish dan `[DONE]` sintetis supaya client melepas koneksinya, tetapi `recordServedOutcome` tidak mencatat sukses dan hanya menulis warning berisi provider, endpoint, model, dan `frames_written`; endpoint tidak diparkir karena provider bisa menutup koneksi secara tidak lazim setelah jawabannya terkirim. Stream yang dibatalkan client tetap memakai aturan `StreamAborted` dan tidak menulis apa pun.
 
 Setiap goroutine baru wajib memulihkan panic dan punya kondisi terminasi eksplisit (AGENTS.md §1.6).
 

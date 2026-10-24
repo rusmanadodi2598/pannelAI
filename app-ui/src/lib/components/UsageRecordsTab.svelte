@@ -12,8 +12,8 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { Button } from '$lib/primitives/button/index.js';
 	import { untrack } from 'svelte';
-	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import UsageRecordDrawer from '$lib/components/UsageRecordDrawer.svelte';
@@ -126,9 +126,17 @@
 </script>
 
 <div class="flex flex-col gap-5">
-	<UsageRecordsFilters {search} onchange={change} onapply={applyFilters} onclear={clearFilters} />
+	<p class="text-sm text-[var(--color-text-muted)]">
+		The requests the Overview counted, one row each; the filters below narrow these rows.
+	</p>
 
-	<RefreshControl onrefresh={() => load(search)} />
+	<UsageRecordsFilters
+		{search}
+		onchange={change}
+		onapply={applyFilters}
+		onclear={clearFilters}
+		onrefresh={() => load(search)}
+	/>
 
 	{#if perPageNotice !== null || search.notices.length > 0}
 		<div
@@ -150,10 +158,8 @@
 	{:else if error}
 		<StateMessage kind="error" title="Requests could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={() => load(search)}>Try again</button
+				<Button variant="ghost" class="px-2 underline" onclick={() => load(search)}
+					>Try again</Button
 				>
 			{/snippet}
 		</StateMessage>
@@ -161,29 +167,23 @@
 		<StateMessage
 			kind="empty"
 			title="No requests match these filters"
-			description="The period holds records these filters exclude. Clear them."
+			description="No record in this period matches these filters. Clear them to see the window."
 		>
 			{#snippet action()}
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center px-2 underline"
-					onclick={clearFilters}>Clear filters</button
-				>
+				<Button variant="ghost" class="px-2 underline" onclick={clearFilters}>Clear filters</Button>
 			{/snippet}
 		</StateMessage>
 	{:else if records.length === 0}
 		<StateMessage
 			kind="empty"
 			title="No requests in this window"
-			description="Nothing routed in this period. No client has used the key yet."
+			description="Nothing was recorded in this period. Widen the window, or check that a client holds an active key."
 		>
 			{#snippet action()}
 				<div class="flex flex-wrap gap-3">
 					{#if search.period !== '60d'}
-						<button
-							type="button"
-							class="inline-flex min-h-11 items-center px-2 underline"
-							onclick={() => change('period', '60d')}>Look back 60 days</button
+						<Button variant="ghost" class="px-2 underline" onclick={() => change('period', '60d')}
+							>Look back 60 days</Button
 						>
 					{/if}
 					<a href={resolve('/api-docs')} class="inline-flex min-h-11 items-center px-2 underline"
@@ -196,21 +196,21 @@
 		<UsageRecordTable {records} onopen={(record) => (opened = record.request_id)} />
 
 		<div class="flex items-center gap-3 text-sm">
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
+			<Button
+				variant="ghost"
+				class="px-2 underline"
 				disabled={search.page <= 1}
-				onclick={() => change('page', String(search.page - 1))}>Previous</button
+				onclick={() => change('page', String(search.page - 1))}>Previous</Button
 			>
 			<span class="text-[var(--color-text-muted)]">
 				Page {search.page} of {lastPage}, {total}
 				{total === 1 ? 'request' : 'requests'}
 			</span>
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
+			<Button
+				variant="ghost"
+				class="px-2 underline"
 				disabled={search.page >= lastPage}
-				onclick={() => change('page', String(search.page + 1))}>Next</button
+				onclick={() => change('page', String(search.page + 1))}>Next</Button
 			>
 		</div>
 	{/if}

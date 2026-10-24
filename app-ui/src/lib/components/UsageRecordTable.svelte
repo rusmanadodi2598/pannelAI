@@ -7,6 +7,7 @@
 	//
 	// Detail is a button rather than a clickable row, so the action is reachable by keyboard and announced
 	// as a control.
+	import { Button } from '$lib/primitives/button/index.js';
 	import { REQUEST_STATUS_LABELS, type RequestStatus } from '$lib/schemas/primitives';
 	import type { UsageRecord } from '$lib/schemas/usage';
 	import { formatCount } from '$lib/schemas/usage-view';
@@ -44,7 +45,9 @@
 		<tbody>
 			{#each records as record (record.id)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td data-label="Timestamp" class="px-3 py-2">{formatTimestamp(record.ts)}</td>
+					<td data-label="Timestamp" class="whitespace-nowrap px-3 py-2"
+						>{formatTimestamp(record.ts)}</td
+					>
 					<td data-label="Request ID" class="px-3 py-2">{record.request_id}</td>
 					<td data-label="Model" class="px-3 py-2">{record.model}</td>
 					<td data-label="Provider" class="px-3 py-2">{record.provider_id}</td>
@@ -68,8 +71,11 @@
 						{/if}
 					</td>
 					<td data-label="Detail" class="px-3 py-2">
-						<button type="button" class="min-h-11 underline" onclick={() => onopen(record)}
-							>Open</button
+						<Button
+							variant="ghost"
+							class="underline"
+							aria-label={`Open request ${record.request_id}`}
+							onclick={() => onopen(record)}>Open</Button
 						>
 					</td>
 				</tr>

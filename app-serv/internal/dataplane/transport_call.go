@@ -3,8 +3,8 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/transport_call.go
-// @for       The outbound call itself: the retry loop, one attempt with its classification, and the §4 deadlines the attempt runs under.
-// @uses      internal/provider, bytes, context, errors, io, net/http, time.
+// @for       The retry loop around one upstream target: what the transport decides after an attempt, and how long it waits before deciding again.
+// @uses      context, time, internal/dataplane/retry.go for the attempt budget.
 // @reason    SPEC-API-001 §4 fixes the deadlines (connect 10s, total 120s, no total cap while streaming with a 300s idle read) and AGENTS.md §1.1 asks for the split before the limit forces it. The loop owns the decision rather than the plugin: the plugin only says whether an outcome is worth repeating and the registry entry only says how many attempts the provider allows, so neither can multiply a request on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -13,14 +13,8 @@
 package dataplane
 
 import (
-	"bytes"
 	"context"
-	"errors"
-	"io"
-	"net/http"
 	"time"
-
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 )
 
 // Do performs one call, retrying the same target per SPEC-API-001 §4. The
@@ -61,40 +55,85 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	// caller asked for.
 	call.Body = request.Body
 	call.Stream = request.Stream
+
+	// The session slot is taken before the attempt's clock starts, and the wait
+	// is handed back to the walk's budget, so a request that queued behind
+	// another on the same upstream session still gets its full bound. The slot
+	// travels with the answer body: the upstream request is in flight until the
+	// caller closes it.
+	release, err := t.acquireSession(ctx, plugin, call)
+	if err != nil {
+		return nil, sessionWaitTimeout(err)
+	}
+	handedOff := false
+	defer func() {
+		if !handedOff {
+			release()
+		}
+	}()
+
 	deadline := attemptDeadline(clientStream, call.Provider)
-	// TotalTimeout is documented as bounding one non-streamed call end to end, so
-	// the budget is measured once here and each attempt gets what is left of it.
-	// Passing the full deadline per attempt let one call run twice the bound plus
-	// the backoff between them, and hold a handler goroutine that much longer than
-	// the contract says.
-	budgetEnds := time.Time{}
+	// TotalTimeout bounds one non-streamed call end to end, so the budget is measured
+	// once here and each attempt gets what is left of it. The walk's own clock is the
+	// tighter bound wherever it reaches: one credential may not outlive the
+	// request's walk, which is what keeps a rate-limited upstream's honored
+	// Retry-After from swallowing it.
+	ends := time.Time{}
 	if deadline > 0 {
-		budgetEnds = time.Now().Add(deadline)
+		ends = time.Now().Add(deadline)
+	}
+	if call.Budget != nil && (ends.IsZero() || call.Budget.deadline.Before(ends)) {
+		ends = call.Budget.deadline
 	}
 
 	for retries := 0; ; retries++ {
 		attemptDeadlineLeft := deadline
-		if !budgetEnds.IsZero() {
-			attemptDeadlineLeft = time.Until(budgetEnds)
-			if attemptDeadlineLeft <= 0 {
+		if !ends.IsZero() {
+			left := time.Until(ends)
+			if left <= 0 {
 				return nil, timeoutError(context.DeadlineExceeded)
 			}
+			// A streamed client keeps no context deadline: the idle guard owns
+			// the stream once it has spoken, and the walk must not cut an answer
+			// the caller is already reading. Only its pre-commit wait below is
+			// bounded by the walk.
+			if deadline > 0 && left < attemptDeadlineLeft {
+				attemptDeadlineLeft = left
+			}
 		}
-		upstream, failure, err := t.attempt(ctx, plugin, call, url, attemptDeadlineLeft)
+		// The first-byte wait is part of the pre-commit phase, so the walk's
+		// clock clamps it too.
+		firstByte := firstByteTimeout(call.Provider)
+		if !ends.IsZero() {
+			if left := time.Until(ends); left < firstByte {
+				firstByte = left
+			}
+		}
+		upstream, failure, err := t.attempt(ctx, plugin, call, url, attemptDeadlineLeft, firstByte)
 		switch {
 		case err != nil:
 			decision := DecideRetry(call.Provider, plugin, Attempt{Retries: retries, Idempotent: call.Idempotent})
 			if !decision.Retry {
 				return nil, err
 			}
-			if waitErr := sleep(ctx, decision.After); waitErr != nil {
+			wait, ok := boundedWait(decision.After, ends)
+			if !ok {
+				// The wait cannot fit in what is left of the walk, so the retry
+				// would begin after the walk's own clock expired. The failure in
+				// hand is the real cause, so it is reported now rather than as
+				// the timeout the sleep would have earned.
+				return nil, err
+			}
+			if waitErr := sleep(ctx, wait); waitErr != nil {
 				return nil, timeoutError(waitErr)
 			}
 		case failure != nil:
-			// A quota rejection parks the account instead of retrying it:
-			// repeating a request the account cannot pay for only delays the
-			// failover to an account that can serve it.
-			if plugin.IsQuotaError(failure.Status, failure.Body) {
+			// A refusal the class or the signature says cannot answer differently
+			// a moment later is not asked again on this key: a spent allowance, a
+			// refused credential and a gate that closes on this gateway all spend
+			// the walk instead of the retry budget. The answer is stamped where the
+			// refusal was recognised, so the retry and the park read one verdict.
+			if !failure.Retryable {
 				return nil, failure
 			}
 			decision := DecideRetry(call.Provider, plugin, Attempt{
@@ -104,112 +143,24 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 			if !decision.Retry {
 				return nil, failure
 			}
-			if waitErr := sleep(ctx, decision.After); waitErr != nil {
+			wait, ok := boundedWait(decision.After, ends)
+			if !ok {
+				return nil, failure
+			}
+			if waitErr := sleep(ctx, wait); waitErr != nil {
 				return nil, timeoutError(waitErr)
 			}
 		default:
+			// The connector's rename record travels with the answer: a tool
+			// it had to conceal on the way out is restored to the caller's
+			// own name on the way back. It is the same shaped request every
+			// attempt sent, so it is read once, here.
+			upstream.ToolAliases = request.ToolAliases
+			upstream.Body = &sessionBody{ReadCloser: upstream.Body, release: release}
+			handedOff = true
 			return upstream, nil
 		}
 	}
-}
-
-// attempt performs exactly one outbound call and classifies its outcome, so Do
-// only has to decide. deadline is what attemptDeadline reported: zero for a
-// streamed client, which SPEC-API-001 §4 bounds by the idle read instead.
-func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Call, url string, deadline time.Duration) (*Upstream, *UpstreamError, error) {
-	var (
-		attemptCtx context.Context
-		cancel     context.CancelFunc
-	)
-	if deadline > 0 {
-		attemptCtx, cancel = context.WithTimeout(ctx, deadline)
-	} else {
-		attemptCtx, cancel = context.WithCancel(ctx)
-	}
-
-	request, err := http.NewRequestWithContext(attemptCtx, http.MethodPost, url, bytes.NewReader(call.Body))
-	if err != nil {
-		cancel()
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "upstream request could not be built", err)
-	}
-	applyHeaders(request.Header, call)
-	if err := plugin.ApplyAuth(request, call.Credential); err != nil {
-		cancel()
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "upstream credential could not be applied", err)
-	}
-
-	// The attempt's context travels with the request: a proxy walk clones the
-	// request with the context it is handed, so passing the caller's context
-	// here would replace the attempt deadline (and the idle guard's cancel)
-	// with one that has neither.
-	response, err := t.dialer.Do(attemptCtx, request, call.Provider.ID)
-	if err != nil {
-		cancel()
-		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-			return nil, nil, timeoutError(err)
-		}
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream could not be reached", err)
-	}
-
-	usage := plugin.DecodeUsage(response.StatusCode, response.Header)
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		failure := readUpstreamError(response)
-		cancel()
-		return nil, failure, nil
-	}
-
-	if call.Stream {
-		// A provider that wraps its answer in an envelope states its real status
-		// inside the body, so the first frame is read before anything is piped:
-		// a refusal there is an upstream failure the router can act on, not a
-		// served answer that gets billed.
-		stream := response.Body
-		if envelope, ok := plugin.(provider.StreamEnvelope); ok {
-			unwrapped, failure := envelope.OpenStream(response.Body)
-			if failure != nil {
-				cancel()
-				// Nothing was piped: the refusal was read out of the first frame
-				// precisely so that nothing could be. Repeating the call is
-				// therefore safe, which is what the budget below is told.
-				return nil, &UpstreamError{
-					Status:     failure.Status,
-					Header:     response.Header,
-					Message:    failure.Message,
-					Body:       []byte(failure.Message),
-					Replayable: true,
-				}, nil
-			}
-			stream = unwrapped
-		}
-		// The guard owns the cancel: it fires when reads stall, and it releases
-		// the context when the caller closes the body.
-		return &Upstream{
-			Status: response.StatusCode,
-			Header: response.Header,
-			Usage:  usage,
-			Body:   newIdleGuard(stream, idleTimeout(call.Provider), cancel),
-		}, nil, nil
-	}
-
-	// A non-streamed body is buffered so the context can be released before the
-	// caller reads it, which lets the total deadline bound the whole exchange.
-	body, readErr := readBounded(response.Body, maxUpstreamBodyBytes)
-	cancel()
-	if readErr != nil {
-		// reason: the body is fully consumed or the limit was hit, so a close
-		// error adds nothing to the read error already reported.
-		_ = response.Body.Close()
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream response could not be read", readErr)
-	}
-	if closeErr := response.Body.Close(); closeErr != nil {
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream response could not be read", closeErr)
-	}
-	return &Upstream{
-		Status: response.StatusCode,
-		Header: response.Header,
-		Usage:  usage,
-		Body:   io.NopCloser(bytes.NewReader(body)),
-	}, nil, nil
 }
 
 // sleep waits, or returns early when the caller's context ends.
@@ -225,4 +176,29 @@ func sleep(ctx context.Context, wait time.Duration) error {
 	case <-timer.C:
 		return nil
 	}
+}
+
+// clampWait bounds a wait to what is left of the walk's clock. The second
+// answer is false when the wait cannot fit: sleeping it would spend the rest of
+// the walk and leave nothing for the retry it was waiting for, so the caller
+// reports the failure it already has instead of the timeout the sleep would
+// earn. That is what turns a rate-limited upstream's honored Retry-After
+// (minutes) into an immediate RATE_LIMITED rather than a masked timeout.
+func clampWait(wait, remaining time.Duration) (time.Duration, bool) {
+	if wait <= 0 {
+		return 0, true
+	}
+	if remaining <= 0 || wait >= remaining {
+		return 0, false
+	}
+	return wait, true
+}
+
+// boundedWait applies clampWait to a walk clock. A zero ends means no walk
+// bound reaches this call, which is the case for a direct Do a test drives.
+func boundedWait(wait time.Duration, ends time.Time) (time.Duration, bool) {
+	if ends.IsZero() {
+		return wait, true
+	}
+	return clampWait(wait, time.Until(ends))
 }

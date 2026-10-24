@@ -2,7 +2,7 @@
 //
 // @file      internal/repository/postgres/endpoint_keys.go
 // @for       PostgreSQL persistence for the upstream_keys child rows, including the transactional reorder of a provider's endpoints.
-// @uses      github.com/jackc/pgx/v5, internal/domain, time.
+// @uses      github.com/jackc/pgx/v5, internal/domain.
 // @reason    A key is a child of the endpoint aggregate, so nothing here loads or stores a key on its own: every statement is scoped by endpoint_id and the aggregate's invariant (an api_key endpoint keeps a usable credential) is enforced in the domain before a call arrives. The batch and reorder statements live here because AGENTS.md §1.7 forbids a query per row and the interface's per-key methods cannot express one statement boundary across a set.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
@@ -12,69 +12,11 @@ package postgres
 
 import (
 	"context"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
-
-// upstreamKeyColumns is the projection every key read uses, in scan order.
-const upstreamKeyColumns = `id, endpoint_id, label, value_encrypted, key_hint,
-	priority, status, last_used_at, last_error, consecutive_errors,
-	rate_limited_until, created_at, updated_at`
-
-// upstreamKeyCopyColumns is the insert column list, which must match
-// keyCopyRow's argument order exactly.
-var upstreamKeyCopyColumns = []string{
-	"id", "endpoint_id", "label", "value_encrypted", "key_hint", "priority",
-	"status", "last_used_at", "last_error", "consecutive_errors",
-	"rate_limited_until", "created_at", "updated_at",
-}
-
-// scanUpstreamKey reads one key row into a rehydrated entity.
-func scanUpstreamKey(s scanner, extra ...any) (domain.UpstreamKey, error) {
-	var (
-		id, endpointID, label, valueEncrypted, keyHint string
-		priority, consecutiveErrors                    int
-		status                                         string
-		lastUsedAt, rateLimitedUntil                   *time.Time
-		lastError                                      *string
-		createdAt, updatedAt                           time.Time
-	)
-	dest := []any{
-		&id, &endpointID, &label, &valueEncrypted, &keyHint, &priority, &status,
-		&lastUsedAt, &lastError, &consecutiveErrors, &rateLimitedUntil,
-		&createdAt, &updatedAt,
-	}
-	dest = append(dest, extra...)
-	if err := s.Scan(dest...); err != nil {
-		return domain.UpstreamKey{}, err
-	}
-	message := ""
-	if lastError != nil {
-		message = *lastError
-	}
-	return domain.RehydrateUpstreamKey(id, endpointID, label, valueEncrypted,
-		keyHint, priority, domain.UpstreamKeyStatus(status), lastUsedAt, message,
-		consecutiveErrors, rateLimitedUntil, createdAt, updatedAt), nil
-}
-
-// keyCopyRow renders one key as a COPY row. A null column is encoded as nil
-// rather than an empty string, so "no last error" and "an empty last error"
-// stay distinguishable in storage as they are in the entity.
-func keyCopyRow(key domain.UpstreamKey) []any {
-	var lastError *string
-	if key.LastError() != "" {
-		message := key.LastError()
-		lastError = &message
-	}
-	return []any{
-		key.ID(), key.EndpointID(), key.Label(), key.EncryptedValue(), key.Hint(),
-		key.Priority(), string(key.Status()), key.LastUsedAt(), lastError,
-		key.ConsecutiveErrors(), key.RateLimitedUntil(), key.CreatedAt(), key.UpdatedAt(),
-	}
-}
 
 // AddKey persists one new key under an existing endpoint. A duplicate label is
 // the endpoint's own invariant, checked in the domain; the missing-row case here
@@ -98,11 +40,21 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 	return nil
 }
 
-// UpdateKey persists a key's mutable fields and, when a replacement credential
-// is supplied, its sealed value and hint. An empty value leaves the stored
-// credential untouched, because the value is write-only on the wire: a PATCH
+// UpdateKey persists a key's mutable fields, its operator marks, and, when a
+// replacement credential is supplied, its sealed value and hint. An empty value leaves
+// the stored credential untouched, because the value is write-only on the wire: a PATCH
 // that omits it must not blank the credential.
 func (r *EndpointRepository) UpdateKey(ctx context.Context, key domain.UpstreamKey) error {
+	tagsJSON, err := marshalTags(key.Tags())
+	if err != nil {
+		return err
+	}
+	return updateKey(ctx, r.pool, key, tagsJSON)
+}
+
+// updateKey writes one key's own fields through any execer, so the bulk path runs the
+// same statement inside its transaction instead of carrying a second spelling.
+func updateKey(ctx context.Context, exec dbExecer, key domain.UpstreamKey, tagsJSON string) error {
 	const q = `
 UPDATE upstream_keys
    SET label = $1,
@@ -110,11 +62,14 @@ UPDATE upstream_keys
        status = $3,
        value_encrypted = COALESCE(NULLIF($4, ''), value_encrypted),
        key_hint = COALESCE(NULLIF($5, ''), key_hint),
-       updated_at = $6
- WHERE id = $7 AND endpoint_id = $8`
+       updated_at = $6,
+       tags = $7,
+       disabled_until = $8
+ WHERE id = $9 AND endpoint_id = $10`
 
-	tag, err := r.pool.Exec(ctx, q, key.Label(), key.Priority(), string(key.Status()),
-		key.EncryptedValue(), key.Hint(), key.UpdatedAt(), key.ID(), key.EndpointID())
+	tag, err := exec.Exec(ctx, q, key.Label(), key.Priority(), string(key.Status()),
+		key.EncryptedValue(), key.Hint(), key.UpdatedAt(), tagsJSON, key.DisabledUntil(),
+		key.ID(), key.EndpointID())
 	if err != nil {
 		return translateKeyError(err)
 	}

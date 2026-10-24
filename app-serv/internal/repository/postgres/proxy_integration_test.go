@@ -169,3 +169,61 @@ func TestProxyRepository_NotFound(t *testing.T) {
 		t.Fatalf("Delete() error = %v, want ErrProxyNotFound", err)
 	}
 }
+
+// TestIntegration_ProxyPinsCountsTheEndpointsThatHangOnAPool proves the read a bulk
+// proxy erase refuses on: the pins are grouped per pool and provider by the server, and a
+// pool nothing references is absent rather than a zero the caller would have to interpret.
+func TestIntegration_ProxyPinsCountsTheEndpointsThatHangOnAPool(t *testing.T) {
+	pool := newTestPool(t)
+	ctx := context.Background()
+	for _, statement := range []string{`TRUNCATE upstream_endpoints CASCADE`, `TRUNCATE proxies`} {
+		if _, err := pool.Exec(ctx, statement); err != nil {
+			t.Fatalf("preparing the schema: %v", err)
+		}
+	}
+	endpoints := NewEndpointRepository(pool)
+	now := time.Now().UTC().Truncate(time.Microsecond).Add(time.Second)
+
+	// Two of one provider and one of another pin the same pool; a second pool takes one
+	// pin of its own; a third is nobody's egress path.
+	for _, seed := range []struct {
+		id, provider, poolID string
+	}{
+		{"ep_pin_a", "openai", "prx_pinned"},
+		{"ep_pin_b", "openai", "prx_pinned"},
+		{"ep_pin_c", "claude", "prx_pinned"},
+		{"ep_pin_d", "gemini", "prx_other"},
+		{"ep_pin_e", "deepseek", ""},
+	} {
+		endpoint, err := domain.NewUpstreamEndpoint(seed.id, seed.provider, seed.id, domain.UpstreamAuthNone, 1, now)
+		if err != nil {
+			t.Fatalf("building %s: %v", seed.id, err)
+		}
+		if err := endpoint.SetRouting(0, "", seed.poolID, now); err != nil {
+			t.Fatalf("binding %s to %q: %v", seed.id, seed.poolID, err)
+		}
+		if err := endpoints.Create(ctx, endpoint); err != nil {
+			t.Fatalf("storing %s: %v", seed.id, err)
+		}
+	}
+
+	pins, err := endpoints.ProxyPins(ctx, []string{"prx_pinned", "prx_other", "prx_unused"})
+	if err != nil {
+		t.Fatalf("ProxyPins(): %v", err)
+	}
+	if got := len(pins["prx_pinned"]); got != 2 {
+		t.Fatalf("prx_pinned rows = %d, want one per provider that pins it", got)
+	}
+	if got := pins["prx_pinned"][0]; got.ProviderID != "claude" || got.Endpoints != 1 {
+		t.Fatalf("first pin = %+v, want claude with its one endpoint", got)
+	}
+	if got := pins["prx_pinned"][1]; got.ProviderID != "openai" || got.Endpoints != 2 {
+		t.Fatalf("second pin = %+v, want openai with its two endpoints", got)
+	}
+	if got := pins["prx_other"]; len(got) != 1 || got[0].Endpoints != 1 {
+		t.Fatalf("prx_other pins = %+v, want gemini's single endpoint", got)
+	}
+	if _, ok := pins["prx_unused"]; ok {
+		t.Fatal("a pool nothing pins was reported as if it were")
+	}
+}

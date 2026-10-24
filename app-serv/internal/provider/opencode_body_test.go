@@ -4,7 +4,7 @@
 // @file      internal/provider/opencode_body_test.go
 // @for       The OpenCode Free request shape: forced streaming, the decoy tools, the tool_choice rule, and the Responses field names.
 // @uses      testing, encoding/json, internal/registry.
-// @reason    The free tier answers 403 to a body that does not carry a streamed request and both decoy tools, and 400 to a Responses body that names max_tokens or a tool_choice other than auto. Those are upstream rules the gateway must apply on the way out, so each one is pinned against the decoded body rather than against a string the test would have to keep in step with the encoder.
+// @reason    The free tier answers 403 to a body that does not carry a streamed request and the read/shell fingerprint tools, and 400 to a Responses body that names max_tokens or a tool_choice other than auto. Those are upstream rules the gateway must apply on the way out, so each one is pinned against the decoded body rather than against a string the test would have to keep in step with the encoder.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -108,11 +108,11 @@ func TestOpenCode_TransformForcesStreaming(t *testing.T) {
 	}
 }
 
-// TestOpenCode_TransformAddsBothDecoyTools pins the second half of the gate: the
-// upstream requires both `bash` and `read` in the payload, and a client's own
-// tools must survive alongside them because the model still has to be able to
-// call what the client declared.
-func TestOpenCode_TransformAddsBothDecoyTools(t *testing.T) {
+// TestOpenCode_TransformAddsTheFingerprintTools pins the second half of the
+// gate: the upstream requires the read/shell fingerprint tools in the payload,
+// and a client's own tools must survive alongside them because the model still
+// has to be able to call what the client declared.
+func TestOpenCode_TransformAddsTheFingerprintTools(t *testing.T) {
 	connector := NewOpenCode(opencodeEntry("https://opencode.ai", "openai"))
 
 	cases := []struct {
@@ -131,12 +131,12 @@ func TestOpenCode_TransformAddsBothDecoyTools(t *testing.T) {
 			body:  `{"model":"big-pickle","messages":[{"role":"user","content":"q"}],"tools":[]}`,
 		},
 		{
-			name:  "chat, only bash",
+			name:  "chat, a caller tool named bash",
 			model: registry.Model{ID: "big-pickle"},
 			body:  `{"model":"big-pickle","messages":[{"role":"user","content":"q"}],"tools":[{"type":"function","function":{"name":"bash","parameters":{"type":"object"}}}]}`,
 		},
 		{
-			name:  "chat, only read",
+			name:  "chat, a caller tool on the read name",
 			model: registry.Model{ID: "big-pickle"},
 			body:  `{"model":"big-pickle","messages":[{"role":"user","content":"q"}],"tools":[{"type":"function","function":{"name":"read","parameters":{"type":"object"}}}]}`,
 		},
@@ -164,7 +164,7 @@ func TestOpenCode_TransformAddsBothDecoyTools(t *testing.T) {
 				t.Fatalf("TransformRequest() error = %v", err)
 			}
 			names := toolNames(t, decodeBody(t, request.Body))
-			for _, want := range []string{"bash", "read"} {
+			for _, want := range []string{"read", "shell"} {
 				if !contains(names, want) {
 					t.Fatalf("tools = %v, want %q present", names, want)
 				}
@@ -172,8 +172,8 @@ func TestOpenCode_TransformAddsBothDecoyTools(t *testing.T) {
 		})
 	}
 
-	// A client's own tool must survive the injection, and a decoy the client
-	// already declared must not be duplicated.
+	// A client's own tool must survive the injection, and a fingerprint tool
+	// the client already declared canonically must not be duplicated.
 	t.Run("the client's own tool survives", func(t *testing.T) {
 		body := `{"model":"big-pickle","messages":[{"role":"user","content":"q"}],` +
 			`"tools":[{"type":"function","function":{"name":"my_tool","parameters":{"type":"object"}}}]}`
@@ -186,7 +186,7 @@ func TestOpenCode_TransformAddsBothDecoyTools(t *testing.T) {
 			t.Fatalf("tools = %v, want the client's own tool kept", names)
 		}
 		if len(names) != 3 {
-			t.Fatalf("tools = %v, want the client's tool plus one of each decoy", names)
+			t.Fatalf("tools = %v, want the client's tool plus both fingerprint tools", names)
 		}
 	})
 }

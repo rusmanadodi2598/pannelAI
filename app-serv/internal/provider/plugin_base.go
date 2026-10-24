@@ -49,20 +49,16 @@ func (Base) ShouldRetry(status int, header http.Header) RetryDecision {
 	switch status {
 	case http.StatusTooManyRequests, http.StatusBadGateway,
 		http.StatusServiceUnavailable, http.StatusGatewayTimeout:
-		return RetryDecision{Retry: true, After: retryAfter(header)}
+		return RetryDecision{Retry: true, After: RetryAfter(header)}
 	default:
 		return RetryDecision{}
 	}
 }
 
-// IsQuotaError implements Plugin with the common signal: a payment-required or
-// quota-exhausted status parks the account.
-func (Base) IsQuotaError(status int, _ []byte) bool {
-	return status == http.StatusPaymentRequired || status == http.StatusForbidden
-}
-
-// retryAfter reads a Retry-After header in either of its two permitted forms.
-func retryAfter(header http.Header) time.Duration {
+// RetryAfter reads a Retry-After header in either of its two permitted forms. Two readers
+// want the same parse for different jobs, the transport to schedule a same-target retry and
+// the router to park a credential, and one parser keeps them from disagreeing about the header.
+func RetryAfter(header http.Header) time.Duration {
 	value := strings.TrimSpace(header.Get("Retry-After"))
 	if value == "" {
 		return 0
