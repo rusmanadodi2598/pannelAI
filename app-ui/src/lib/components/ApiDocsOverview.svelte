@@ -33,15 +33,21 @@
 		<ul class="flex flex-col gap-2">
 			{#each servers as server (server.url)}
 				<li
-					class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2"
+					class="flex flex-col gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2"
 				>
-					<code class="font-mono text-sm break-all">{server.url}</code>
+					<div class="flex items-start gap-3">
+						<code class="min-w-0 flex-1 font-mono text-sm break-all">{server.url}</code>
+						<CopyButton
+							value={server.url}
+							ariaLabel={copy.baseUrl.copy(server.url)}
+							iconOnly
+							glyphOutcome
+							touchTarget
+						/>
+					</div>
 					{#if server.description}
 						<span class="text-xs text-[var(--color-text-muted)]">{server.description}</span>
 					{/if}
-					<span class="ms-auto">
-						<CopyButton value={server.url} />
-					</span>
 				</li>
 			{/each}
 		</ul>

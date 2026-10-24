@@ -64,4 +64,26 @@ describe('API Docs control states', () => {
 			'the API Docs screen'
 		);
 	});
+
+	it('names each of its Copy controls by what it copies, and gives each a 44px target', async () => {
+		stubDocument(openapiDocument());
+		render(ApiDocsPage);
+
+		await screen.findByRole('heading', { name: /Gateway Keys/ });
+
+		// One base URL and one example per group: a page of identical "Copy" controls tells a screen
+		// reader nothing about which value it is about to overwrite the clipboard with.
+		const copies = screen.getAllByRole('button', { name: /^Copy / });
+		expect(copies.length).toBe(5);
+
+		const names = copies.map((copy) => copy.getAttribute('aria-label'));
+		expect(new Set(names).size).toBe(names.length);
+
+		for (const copy of copies) {
+			expect(copy.textContent?.trim(), `${copy.getAttribute('aria-label')} shows text`).toBe('');
+			expect(copy.className, `${copy.getAttribute('aria-label')} is under 44px`).toContain(
+				'size-11'
+			);
+		}
+	});
 });

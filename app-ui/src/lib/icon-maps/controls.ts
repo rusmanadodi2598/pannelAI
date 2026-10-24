@@ -30,6 +30,16 @@ export const CONTROL_ICONS = {
 		icon: Copy,
 		reason: 'Copying puts the value on the clipboard, which is what the two stacked sheets mark.'
 	},
+	copyDone: {
+		icon: Check,
+		reason:
+			'A copy that reached the clipboard is an answer already done, the tick a committed save uses.'
+	},
+	copyFailed: {
+		icon: X,
+		reason:
+			'A copy the browser refused is crossed out, so the failure shows without a sentence beside the glyph.'
+	},
 	search: {
 		icon: Search,
 		reason: 'Search asks the list for the rows matching what was typed.'

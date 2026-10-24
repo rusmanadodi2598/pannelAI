@@ -24,7 +24,9 @@ export const API_DOCS_COPY = {
 		heading: 'Base URL',
 		/** Shown when the document carries no servers block. */
 		absent:
-			'This document declares no base URL, so the examples below show a placeholder. Ask the gateway operator for the address a client should call.'
+			'This document declares no base URL, so the examples below show a placeholder. Ask the gateway operator for the address a client should call.',
+		/** The control sits beside the address, so its name carries the address it copies. */
+		copy: (url: string) => `Copy base URL ${url}`
 	},
 
 	credentials: {
@@ -52,6 +54,9 @@ export const API_DOCS_COPY = {
 			credential: 'Credential'
 		},
 		example: 'Example call',
+		/** A page of groups repeats this control, so each one names the group it copies. */
+		copyExample: (group: string) => `Copy example call for ${group}`,
+		caption: (group: string) => `Operations in ${group}, with the credential each one requires`,
 		noSummary: 'The document gives this operation no summary.'
 	},
 
@@ -60,6 +65,12 @@ export const API_DOCS_COPY = {
 		/** Shown when the document carries no x-contract block. */
 		absent:
 			'This document carries no error code table, so the codes are not listed here. The contract publishes them in its x-contract block.',
-		envelope: (name: string) => `Failures arrive as ${name}.`
+		envelope: (name: string) => `Failures arrive as ${name}.`,
+		caption: (plane: string) => `Error codes in the ${plane} plane`,
+		columns: {
+			code: 'Code',
+			http: 'HTTP',
+			meaning: 'Meaning'
+		}
 	}
 } as const;
