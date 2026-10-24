@@ -6,7 +6,9 @@
 	// rule in one place instead of three copies that could drift apart, and the band itself is the one the
 	// settings tabs already end with, so the two screens cannot disagree about what a write looks like.
 	import type { Snippet } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import SaveBar from '$lib/components/SaveBar.svelte';
+	import type { ApiError } from '$lib/api/errors';
 
 	type Props = {
 		title: string;
@@ -14,14 +16,28 @@
 		dirty: boolean;
 		saving: boolean;
 		saved: boolean;
+		disabled?: boolean;
+		/** The failure of this section's last write, shown beside the control that retries it. */
+		error: string | ApiError | null;
 		saveLabel: string;
 		onsave: () => void;
 		ondiscard: () => void;
 		children: Snippet;
 	};
 
-	let { title, description, dirty, saving, saved, saveLabel, onsave, ondiscard, children }: Props =
-		$props();
+	let {
+		title,
+		description,
+		dirty,
+		saving,
+		saved,
+		disabled = false,
+		error,
+		saveLabel,
+		onsave,
+		ondiscard,
+		children
+	}: Props = $props();
 </script>
 
 <section
@@ -34,10 +50,20 @@
 
 	{@render children()}
 
+	{#if error}
+		<p
+			role="alert"
+			class="rounded-[var(--radius-sm)] border border-[var(--color-danger)] px-3 py-2 text-sm"
+		>
+			<ApiErrorText {error} />
+		</p>
+	{/if}
+
 	<SaveBar
 		{saveLabel}
 		{saving}
 		{dirty}
+		{disabled}
 		message={dirty || !saved ? null : 'Saved.'}
 		{onsave}
 		{ondiscard}

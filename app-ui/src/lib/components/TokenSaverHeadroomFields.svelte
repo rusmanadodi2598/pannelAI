@@ -25,7 +25,7 @@
 	</span>
 </label>
 
-<div class="flex flex-col gap-1 text-sm">
+<div class="flex w-full max-w-xl flex-col gap-1 text-sm">
 	<label for="headroom-url">Headroom URL</label>
 	<input
 		id="headroom-url"

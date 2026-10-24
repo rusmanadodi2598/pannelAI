@@ -18,21 +18,44 @@
 
 	let config = $state<TokenSaver | null>(null);
 	let loading = $state(true);
+	let reading = $state(false);
 	let error = $state<ApiError | null>(null);
+	let errorNode = $state<HTMLElement | null>(null);
+	let inflight: Promise<void> | null = null;
+
+	// A re-read failure arrives after a save that may have been pressed at the bottom of a long form, so
+	// the alert takes focus and the browser brings it into view.
+	$effect(() => {
+		if (error && config && errorNode) errorNode.focus();
+	});
 
 	onMount(() => void load());
 
-	async function load(): Promise<void> {
-		const result = await getTokenSaver();
-		loading = false;
+	function load(): Promise<void> {
+		if (inflight) return inflight;
 
-		if (!result.ok) {
-			error = result.error;
-			return;
+		inflight = runLoad().finally(() => {
+			inflight = null;
+		});
+		return inflight;
+	}
+
+	async function runLoad(): Promise<void> {
+		reading = true;
+		try {
+			const result = await getTokenSaver();
+
+			if (!result.ok) {
+				error = result.error;
+				return;
+			}
+
+			error = null;
+			config = result.data;
+		} finally {
+			reading = false;
+			loading = false;
 		}
-
-		error = null;
-		config = result.data;
 	}
 </script>
 
@@ -40,7 +63,7 @@
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Token Saver</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			How the gateway trims a request. All groups start off.
+			How the gateway trims a request. Each section saves on its own.
 		</p>
 	</div>
 
@@ -49,15 +72,38 @@
 	{:else if error && config === null}
 		<StateMessage kind="error" title="Token saver settings not loaded" apiError={error}>
 			{#snippet action()}
-				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>Try again</Button
+				<Button
+					variant="ghost"
+					class="px-2 underline"
+					disabled={reading}
+					aria-busy={reading}
+					onclick={() => void load()}>{reading ? 'Trying again' : 'Try again'}</Button
 				>
 			{/snippet}
 		</StateMessage>
 	{:else if config}
 		{#if error}
-			<p role="alert" class="text-sm text-[var(--color-danger)]">
-				<ApiErrorText {error} suffix=" The form still shows the last read." />
-			</p>
+			<div class="flex flex-wrap items-start gap-x-3 gap-y-2">
+				<p
+					bind:this={errorNode}
+					role="alert"
+					tabindex="-1"
+					class="min-w-0 flex-1 text-sm text-[var(--color-danger)]"
+				>
+					<ApiErrorText
+						{error}
+						prefix="Could not refresh the token saver settings. "
+						suffix=" The form still shows the last configuration it received."
+					/>
+				</p>
+				<Button
+					variant="ghost"
+					class="px-2 underline"
+					disabled={reading}
+					aria-busy={reading}
+					onclick={() => void load()}>{reading ? 'Trying again' : 'Try again'}</Button
+				>
+			</div>
 		{/if}
 
 		<TokenSaverForm loaded={config} onrefresh={load} />
