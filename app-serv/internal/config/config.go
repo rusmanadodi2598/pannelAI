@@ -34,12 +34,15 @@ type Config struct {
 	LogLevel          string
 	SessionSecret     string
 	SessionTTL        time.Duration
-	EncryptionKey     string
-	BootstrapPassword string
-	LoginMaxFails     int
-	LoginLockout      time.Duration
-	GatewayKeyPrefix  string
-	RateLimitPerMin   int
+	// SessionCookieInsecure opts a development deployment out of the Secure
+	// cookie flag; validate refuses it under APP_ENV=production.
+	SessionCookieInsecure bool
+	EncryptionKey         string
+	BootstrapPassword     string
+	LoginMaxFails         int
+	LoginLockout          time.Duration
+	GatewayKeyPrefix      string
+	RateLimitPerMin       int
 	// RequestLogMaxRows bounds request_logs between the two-day retention runs.
 	RequestLogMaxRows int
 	// UsageRetentionDays bounds usage_records, which has no API purge route.
@@ -155,6 +158,12 @@ func Load() (Config, error) {
 		}
 		*f.dst = v
 	}
+
+	insecureCookie, err := getenvBool("SESSION_COOKIE_INSECURE", false)
+	if err != nil {
+		return Config{}, fmt.Errorf("config: SESSION_COOKIE_INSECURE: %w", err)
+	}
+	cfg.SessionCookieInsecure = insecureCookie
 
 	if err := cfg.validate(); err != nil {
 		return Config{}, err

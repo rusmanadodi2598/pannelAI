@@ -146,13 +146,13 @@ sequenceDiagram
 
     B->>U: POST /api/v1/auth/login {password}
     U->>S: POST /api/v1/auth/login (forwarded, PANEL_API_TARGET)
-    S->>S: bcrypt compare + HMAC nonce
-    S->>R: SET session digest with TTL
+    S->>S: read credential epoch, then bcrypt compare + HMAC nonce
+    S->>R: SET session digest + credential epoch with TTL
     S-->>U: 204 + HttpOnly pannel_session
     U-->>B: redirect to endpoint keys
     B->>U: GET /endpoint-keys
     U->>S: GET /api/v1/auth/status + session cookie
-    S->>R: EXISTS session digest
+    S->>R: MGET session digest + credential epoch
     S-->>U: authenticated=true
 ```
 
@@ -210,15 +210,25 @@ provider response bodies never cross into the browser boundary.
 
 ### 3.3 Autentikasi dan revocation
 
-`POST /api/v1/auth/login` memverifikasi bcrypt hash dari `panel_auth`, membuat
-nonce 32-byte, menandatanganinya dengan HMAC-SHA256 `SESSION_SECRET`, lalu
-menyimpan digest nonce di Redis selama `SESSION_TTL`. Cookie `pannel_session`
-bersifat HttpOnly, SameSite=Lax, Path `/`, dan Secure pada production.
+`POST /api/v1/auth/login` membaca epoch kredensial dari Redis **sebelum** bcrypt
+hash dari `panel_auth`, membuat nonce 32-byte, menandatanganinya dengan
+HMAC-SHA256 `SESSION_SECRET`, lalu menyimpan digest nonce dengan nilai epoch itu
+selama `SESSION_TTL`. Urutan bacanya yang menutup race: rotasi password yang
+mendarat setelah hash dibaca menaikkan epoch, sehingga sesi yang lahir dari hash
+lama tidak cocok lagi. Cookie `pannel_session` bersifat HttpOnly, SameSite=Lax,
+Path `/`, dan Secure secara default; `SESSION_COOKIE_INSECURE=true` hanya untuk
+development dan ditolak saat `APP_ENV=production`.
 
 `POST /api/v1/auth/logout` menghapus digest dari Redis. Guard sesi memverifikasi
-signature dan keberadaan digest sebelum logout, change-password, atau route
-`gateway-keys` dipanggil. Login failure counter dan lockout disimpan di Redis;
-lima kegagalan berturut-turut memicu `LOGIN_LOCKOUT` (default 15 menit).
+signature, keberadaan digest, dan kesamaan epoch sebelum logout, change-password,
+atau route `gateway-keys` dipanggil. Perubahan password menaikkan
+`pannelai:auth:epoch` lewat satu `INCR`, sehingga seluruh digest lama berhenti
+cocok tanpa SCAN; kegagalan `INCR` setelah hash berubah dilaporkan sebagai
+kondisi tersendiri, bukan sebagai password yang gagal diubah. Digest lama
+menghabiskan TTL-nya sendiri. Deploy yang naik ke bentuk epoch ini memaksa login
+ulang sekali, karena digest lama tidak membawa nilai yang cocok. Login failure
+counter dan lockout disimpan di Redis; lima kegagalan berturut-turut memicu
+`LOGIN_LOCKOUT` (default 15 menit).
 
 ### 3.4 Siklus hidup status
 
@@ -701,7 +711,7 @@ Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, da
 | Sumber | Isi | Catatan |
 |---|---|---|
 | PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints` (kolom parity koneksi lewat 000012), `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1), `proxies` (P2, 000009), `media_provider_settings` (P2, 000010; PK `(provider_id, kind)`), `quota_published_state` + `quota_published_window` (000013; PK masing-masing `endpoint_id` dan `(endpoint_id, label)`, index `next_attempt_at` untuk sweep dan `fetched_at` untuk prune TTL); `upstream_endpoints.quota_cooldown_until` (000017) dan `oauth_retry_at` + `oauth_retry_rounds` (000018), tiga deadline yang diedarkan oleh proses latar dan tidak pernah dibaca `Available()` | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali; `proxies.password_encrypted` disegel sama dan `has_password` satu-satunya bentuk yang dibaca kembali; `quota_published_window.total` NULLable dengan sengaja (NULL = tanpa batas, `0` = batas habis); `upstream_keys.consecutive_errors` dan `upstream_endpoints.consecutive_use_count` naik di sisi database (`CASE WHEN $clear THEN 0 ELSE col + 1 END`), bukan ditulis dari nilai agregat, karena dua seleksi konkuren yang memuat baris yang sama akan saling menimpa tulisannya dan circuit breaker akan menghitung terlalu sedikit; jendela parkir yang mengisi `upstream_keys.rate_limited_until` berasal dari `settings.routing.key_park` (7.14), dibaca per provider saat kegagalan dicatat, oleh dua penulis yang sama yakni selector data plane dan probe panel, supaya satu kredensial tidak diparkir dua panjang berbeda. Run per kelas (`consecutive_auth|ratelimit|billing`, migrasi 000019) naik dengan cara yang sama dan hanya untuk kelas kegagalan yang baru saja terjadi; `consecutive_errors` tetap total untuk tampilan, dan `last_error_class` menyebut kolom mana yang baru saja naik karena statement-nya harus memilih satu. `upstream_keys.last_selected_at` dan `upstream_endpoints.last_selected_at` ditulis oleh seleksi itu sendiri (`MarkSelected`), BUKAN oleh tulisan health: sebuah hasil perjalanan memuat agregat yang timestamp-nya sudah usang, dan menulisnya balik akan membatalkan pilihan yang dibuat selagi call itu berjalan |
-| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, dua cursor rotasi (`pannelai:cursor:endpoint:<sha256(provider)>` dengan sticky, `pannelai:cursor:key:<sha256(endpoint)>` sebagai pemutus atomik pemilihan key), circuit state, console ring buffer, sorted set `pannelai:usage:active` (penanda request in-flight, skor = `started_at`, prune 60 dtk; payload-nya membawa `combo`: nama combo yang dialamatkan client, `omitempty` sehingga penanda tanpa combo ditulis byte-identik dengan bentuk build sebelumnya, dan anggota yang tidak bisa di-decode DILEWAT, tidak dihapus, karena menghapus nilai yang reader tidak kenali akan memusnahkan penanda proses lain), channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut. namespace cursor tinggal di implementasinya (`internal/repository/redis`), bukan di data plane, supaya satu ejaan tidak punya dua salinan |
+| Redis | `pannelai:auth:session:*` (nilainya epoch saat sesi dibuat), `pannelai:auth:epoch`, login failure/lockout keys, gateway rate limit, dua cursor rotasi (`pannelai:cursor:endpoint:<sha256(provider)>` dengan sticky, `pannelai:cursor:key:<sha256(endpoint)>` sebagai pemutus atomik pemilihan key), circuit state, console ring buffer, sorted set `pannelai:usage:active` (penanda request in-flight, skor = `started_at`, prune 60 dtk; payload-nya membawa `combo`: nama combo yang dialamatkan client, `omitempty` sehingga penanda tanpa combo ditulis byte-identik dengan bentuk build sebelumnya, dan anggota yang tidak bisa di-decode DILEWAT, tidak dihapus, karena menghapus nilai yang reader tidak kenali akan memusnahkan penanda proses lain), channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; satu digest dapat dicabut langsung, dan seluruh generasi lewat satu `INCR` epoch. namespace cursor tinggal di implementasinya (`internal/repository/redis`), bukan di data plane, supaya satu ejaan tidak punya dua salinan |
 
 ---
 

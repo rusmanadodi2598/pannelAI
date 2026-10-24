@@ -84,6 +84,19 @@ func getenvInt(key string, fallback int) (int, error) {
 	return n, nil
 }
 
+// getenvBool reads a boolean with the same unset/empty rule.
+func getenvBool(key string, fallback bool) (bool, error) {
+	v, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback, nil
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return false, fmt.Errorf("not a boolean: %q", v)
+	}
+	return b, nil
+}
+
 // getenvDuration reads a Go duration string with the same unset/empty rule.
 func getenvDuration(key string, fallback time.Duration) (time.Duration, error) {
 	v, ok := os.LookupEnv(key)

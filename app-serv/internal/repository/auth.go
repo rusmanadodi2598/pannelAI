@@ -24,13 +24,18 @@ type AuthRepository interface {
 
 // SessionStore tracks revocable dashboard sessions.
 type SessionStore interface {
-	Create(ctx context.Context, digest string, ttl time.Duration) error
+	Create(ctx context.Context, digest string, ttl time.Duration, epoch int64) error
 	Exists(ctx context.Context, digest string) (bool, error)
 	Revoke(ctx context.Context, digest string) error
 
-	// RevokeAll removes every tracked session digest. A password change calls
-	// it, because a credential the holder knows to be compromised must not
-	// leave any of its sessions alive.
+	// Epoch returns the current credential epoch. A login reads it before the
+	// password hash so a rotation that lands mid-login leaves the new session
+	// on the old epoch.
+	Epoch(ctx context.Context) (int64, error)
+
+	// RevokeAll invalidates every tracked session digest by advancing the
+	// credential epoch. A password change calls it, because a credential the
+	// holder knows to be compromised must not leave any of its sessions alive.
 	RevokeAll(ctx context.Context) error
 }
 

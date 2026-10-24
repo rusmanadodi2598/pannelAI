@@ -21,14 +21,19 @@ import (
 )
 
 type authRepoFake struct {
-	mu   sync.Mutex
-	hash string
+	mu        sync.Mutex
+	hash      string
+	afterHash func()
 }
 
 func (r *authRepoFake) PasswordHash(context.Context) (string, error) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.hash, nil
+	hash, after := r.hash, r.afterHash
+	r.mu.Unlock()
+	if after != nil {
+		after()
+	}
+	return hash, nil
 }
 
 func (r *authRepoFake) BootstrapPassword(_ context.Context, hash string) (bool, error) {
@@ -52,21 +57,31 @@ func (r *authRepoFake) ChangePassword(_ context.Context, expected, next string) 
 }
 
 type sessionFake struct {
-	mu     sync.Mutex
-	active map[string]bool
+	mu           sync.Mutex
+	epoch        int64
+	active       map[string]int64
+	revokeAllErr error
 }
 
-func newSessionFake() *sessionFake { return &sessionFake{active: make(map[string]bool)} }
-func (s *sessionFake) Create(_ context.Context, digest string, _ time.Duration) error {
+func newSessionFake() *sessionFake {
+	return &sessionFake{active: make(map[string]int64)}
+}
+func (s *sessionFake) Create(_ context.Context, digest string, _ time.Duration, epoch int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.active[digest] = true
+	s.active[digest] = epoch
 	return nil
+}
+func (s *sessionFake) Epoch(context.Context) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.epoch, nil
 }
 func (s *sessionFake) Exists(_ context.Context, digest string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.active[digest], nil
+	epoch, ok := s.active[digest]
+	return ok && epoch == s.epoch, nil
 }
 func (s *sessionFake) Revoke(_ context.Context, digest string) error {
 	s.mu.Lock()
@@ -77,7 +92,10 @@ func (s *sessionFake) Revoke(_ context.Context, digest string) error {
 func (s *sessionFake) RevokeAll(_ context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.active = make(map[string]bool)
+	if s.revokeAllErr != nil {
+		return s.revokeAllErr
+	}
+	s.epoch++
 	return nil
 }
 

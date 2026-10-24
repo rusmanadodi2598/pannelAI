@@ -17,7 +17,8 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// Authenticate verifies token format, HMAC, and Redis revocation state.
+// Authenticate verifies token format, HMAC, revocation state, and that the
+// session was created at the current credential epoch.
 func (s *AuthService) Authenticate(ctx context.Context, token string) error {
 	digest, err := domain.ParseSessionToken(token, s.secret)
 	if err != nil {
@@ -72,7 +73,9 @@ func (s *AuthService) ChangePassword(ctx context.Context, token, currentPassword
 		return err
 	}
 	if err := s.sessions.RevokeAll(ctx); err != nil {
-		return fmt.Errorf("revoking sessions: %w", err)
+		// The hash is already committed, so a failed revoke is its own
+		// condition rather than a failed change.
+		return fmt.Errorf("%w: %v", domain.ErrSessionRevocationIncomplete, err)
 	}
 	return nil
 }

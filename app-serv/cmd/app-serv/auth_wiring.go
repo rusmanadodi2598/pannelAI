@@ -43,6 +43,6 @@ func buildAuth(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, clien
 		return nil, nil, fmt.Errorf("auth bootstrap: %w", err)
 	}
 	return handler.NewAuthHandler(authSvc, handler.SessionCookieOptions{
-		Secure: cfg.IsProduction(), TTL: cfg.SessionTTL,
+		Secure: !cfg.SessionCookieInsecure, TTL: cfg.SessionTTL,
 	}, cfg.TrustedProxies), limiter, nil
 }

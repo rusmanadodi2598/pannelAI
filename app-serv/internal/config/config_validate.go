@@ -56,6 +56,9 @@ func (c Config) validate() error {
 	if c.SessionTTL < time.Minute || c.SessionTTL > 30*24*time.Hour {
 		problems = append(problems, "SESSION_TTL must be between 1m and 720h")
 	}
+	if c.IsProduction() && c.SessionCookieInsecure {
+		problems = append(problems, "SESSION_COOKIE_INSECURE must not be set when APP_ENV=production")
+	}
 	if c.LoginMaxFails < 1 {
 		problems = append(problems, "LOGIN_MAX_FAILS must be >= 1")
 	}

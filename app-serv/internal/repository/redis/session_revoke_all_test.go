@@ -3,9 +3,9 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/session_revoke_all_test.go
-// @for       The password change's sign-out: every tracked session digest is gone after RevokeAll.
+// @for       The password change's sign-out: every session created before RevokeAll stops authenticating.
 // @uses      github.com/redis/go-redis/v9, context, os, testing, time.
-// @reason    R12 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: ChangePassword left every other session alive, so a rotated credential kept its old holders signed in. The scan-and-delete walk is storage behaviour, which keys a SCAN page names, which deletes land, and only a live server can prove it, per this package's tagging rule.
+// @reason    R12 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: ChangePassword left every other session alive, so a rotated credential kept its old holders signed in. The epoch comparison is storage behaviour, and only a live server can prove the key layout this package writes, per this package's tagging rule.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable
@@ -51,11 +51,15 @@ func TestSessionStore_RevokeAllSignsOutEverySession(t *testing.T) {
 	store, ctx := sessionRevokeAllFixture(t)
 	ttl := time.Hour
 
+	epoch, err := store.Epoch(ctx)
+	if err != nil {
+		t.Fatalf("Epoch() error = %v", err)
+	}
 	const seeded = 40
 	digests := make([]string, 0, seeded)
 	for index := 0; index < seeded; index++ {
 		digest := fmt.Sprintf("digest-%03d", index)
-		if err := store.Create(ctx, digest, ttl); err != nil {
+		if err := store.Create(ctx, digest, ttl, epoch); err != nil {
 			t.Fatalf("Create(%s) error = %v", digest, err)
 		}
 		digests = append(digests, digest)
@@ -70,7 +74,35 @@ func TestSessionStore_RevokeAllSignsOutEverySession(t *testing.T) {
 			t.Fatalf("Exists(%s) error = %v", digest, err)
 		}
 		if active {
-			t.Fatalf("session %s survived RevokeAll, want every digest gone", digest)
+			t.Fatalf("session %s survived RevokeAll, want every digest invalid", digest)
 		}
+	}
+}
+
+// TestSessionStore_SessionCreatedAtTheNewEpochAuthenticates pins the half the
+// sign-out must not break: a login that observes the epoch after the rotation
+// keeps working.
+func TestSessionStore_SessionCreatedAtTheNewEpochAuthenticates(t *testing.T) {
+	store, ctx := sessionRevokeAllFixture(t)
+	if err := store.Create(ctx, "before", time.Hour, 0); err != nil {
+		t.Fatalf("Create(before) error = %v", err)
+	}
+	if err := store.RevokeAll(ctx); err != nil {
+		t.Fatalf("RevokeAll() error = %v", err)
+	}
+	epoch, err := store.Epoch(ctx)
+	if err != nil || epoch != 1 {
+		t.Fatalf("Epoch() = %d, %v, want 1", epoch, err)
+	}
+	if err := store.Create(ctx, "after", time.Hour, epoch); err != nil {
+		t.Fatalf("Create(after) error = %v", err)
+	}
+	before, err := store.Exists(ctx, "before")
+	if err != nil || before {
+		t.Fatalf("Exists(before) = %v, %v, want false", before, err)
+	}
+	after, err := store.Exists(ctx, "after")
+	if err != nil || !after {
+		t.Fatalf("Exists(after) = %v, %v, want true", after, err)
 	}
 }

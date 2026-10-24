@@ -24,6 +24,10 @@ var ErrSessionInvalid = NewUnauthorizedError("authentication is required")
 // ErrPasswordChanged indicates a concurrent password update won the compare-and-set.
 var ErrPasswordChanged = NewConflictError("password was changed by another request")
 
+// ErrSessionRevocationIncomplete reports a committed password change whose
+// session revoke failed, so callers can tell it apart from a rejected change.
+var ErrSessionRevocationIncomplete = NewInternalError("password was changed, but existing sessions could not be revoked")
+
 // NewRateLimitedAfter creates a structured rate-limit error with Retry-After metadata.
 func NewRateLimitedAfter(message string, retryAfter time.Duration) *AppError {
 	err := NewRateLimitedError(message)

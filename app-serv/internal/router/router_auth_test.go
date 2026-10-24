@@ -57,20 +57,27 @@ func (r *routerAuthRepo) ChangePassword(_ context.Context, old, next string) err
 
 type routerSessions struct {
 	mu     sync.Mutex
-	active map[string]bool
+	epoch  int64
+	active map[string]int64
 }
 
-func newRouterSessions() *routerSessions { return &routerSessions{active: make(map[string]bool)} }
-func (s *routerSessions) Create(_ context.Context, digest string, _ time.Duration) error {
+func newRouterSessions() *routerSessions { return &routerSessions{active: make(map[string]int64)} }
+func (s *routerSessions) Create(_ context.Context, digest string, _ time.Duration, epoch int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.active[digest] = true
+	s.active[digest] = epoch
 	return nil
+}
+func (s *routerSessions) Epoch(context.Context) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.epoch, nil
 }
 func (s *routerSessions) Exists(_ context.Context, digest string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.active[digest], nil
+	epoch, ok := s.active[digest]
+	return ok && epoch == s.epoch, nil
 }
 func (s *routerSessions) Revoke(_ context.Context, digest string) error {
 	s.mu.Lock()
@@ -81,7 +88,7 @@ func (s *routerSessions) Revoke(_ context.Context, digest string) error {
 func (s *routerSessions) RevokeAll(_ context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.active = make(map[string]bool)
+	s.epoch++
 	return nil
 }
 

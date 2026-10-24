@@ -14,12 +14,18 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
-const sessionKeyPrefix = "pannelai:auth:session:"
+const (
+	sessionKeyPrefix = "pannelai:auth:session:"
+	sessionEpochKey  = "pannelai:auth:epoch"
+)
 
 const redisCallTimeout = 3 * time.Second
 
@@ -33,19 +39,45 @@ func NewSessionStore(client redis.UniversalClient) *SessionStore {
 	return &SessionStore{client: client}
 }
 
-// Create records an active session for its configured lifetime.
-func (s *SessionStore) Create(ctx context.Context, digest string, ttl time.Duration) error {
+// Create records an active session for its configured lifetime at the epoch
+// the login observed before reading the password hash.
+func (s *SessionStore) Create(ctx context.Context, digest string, ttl time.Duration, epoch int64) error {
 	callCtx, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
-	return s.client.Set(callCtx, sessionKey(digest), "1", ttl).Err()
+	return s.client.Set(callCtx, sessionKey(digest), strconv.FormatInt(epoch, 10), ttl).Err()
 }
 
-// Exists reports whether Redis still tracks the session digest.
+// Epoch returns the current credential epoch, or zero before the first rotation.
+func (s *SessionStore) Epoch(ctx context.Context) (int64, error) {
+	callCtx, cancel := context.WithTimeout(ctx, redisCallTimeout)
+	defer cancel()
+	epoch, err := s.client.Get(callCtx, sessionEpochKey).Int64()
+	if errors.Is(err, redis.Nil) {
+		return 0, nil
+	}
+	return epoch, err
+}
+
+// Exists reports whether Redis tracks the digest at the current epoch. The two
+// keys are read in one MGET so a rotation between the reads cannot pass.
 func (s *SessionStore) Exists(ctx context.Context, digest string) (bool, error) {
 	callCtx, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
-	count, err := s.client.Exists(callCtx, sessionKey(digest)).Result()
-	return count == 1, err
+	values, err := s.client.MGet(callCtx, sessionKey(digest), sessionEpochKey).Result()
+	if err != nil {
+		return false, err
+	}
+	created, ok := values[0].(string)
+	if !ok {
+		return false, nil
+	}
+	current := "0"
+	if values[1] != nil {
+		if current, ok = values[1].(string); !ok {
+			return false, fmt.Errorf("session epoch is %T, want string", values[1])
+		}
+	}
+	return created == current, nil
 }
 
 // Revoke removes a session digest immediately.
@@ -55,30 +87,14 @@ func (s *SessionStore) Revoke(ctx context.Context, digest string) error {
 	return s.client.Del(callCtx, sessionKey(digest)).Err()
 }
 
-// RevokeAll removes every tracked session digest, so a password change signs
-// out every client holding one. The dashboard serves one account, so the
-// prefix holds a handful of keys; the scan walks all of them rather than a
-// first page, because a settled page here would leave the newest sessions,
-// the ones a fresh attacker is most likely to hold, alive.
+// RevokeAll invalidates every session created before the call by advancing the
+// credential epoch. One INCR replaces the scan-and-delete walk, so a password
+// change signs out every client atomically; the old digests expire on their own
+// TTL.
 func (s *SessionStore) RevokeAll(ctx context.Context) error {
 	callCtx, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
-	var cursor uint64
-	for {
-		keys, next, err := s.client.Scan(callCtx, cursor, sessionKeyPrefix+"*", quotaScanCount).Result()
-		if err != nil {
-			return err
-		}
-		if len(keys) > 0 {
-			if err := s.client.Del(callCtx, keys...).Err(); err != nil {
-				return err
-			}
-		}
-		cursor = next
-		if cursor == 0 {
-			return nil
-		}
-	}
+	return s.client.Incr(callCtx, sessionEpochKey).Err()
 }
 
 func sessionKey(digest string) string {

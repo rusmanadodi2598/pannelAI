@@ -5,11 +5,11 @@ Dokumen ini adalah **rencana kerja**, bukan catatan yang sudah selesai. Temuan s
 
 | | |
 | --- | --- |
-| **Status** | Fase 0 (baseline) dan Fase 1 (H1) selesai: `govulncheck` melaporkan 0 CVE reachable, suite `-race` penuh dan `go-lint` hijau. Sisa 3 temuan tingkat module ada di `golang.org/x/crypto/ssh` dan `openpgp` yang tidak diimpor. Fase 2-4 belum dikerjakan. |
+| **Status** | Fase 0 (baseline), Fase 1 (H1), dan Fase 2 (M1/M2) selesai. `govulncheck` melaporkan 0 CVE reachable; suite `-race` pada paket yang berubah dan suite integrasi Redis hijau. Sisa 3 temuan tingkat module ada di `golang.org/x/crypto/ssh` dan `openpgp` yang tidak diimpor. Fase 3-4 belum dikerjakan. |
 | **Sumber** | Audit read-only `app-serv`: `go build`, `go vet`, `gofmt`, `staticcheck v0.8.1`, `go test ./...`, `go test -race` pada paket kritis, dan `govulncheck` (16 CVE reachable). |
 | **Lingkup** | `app-serv` (`cmd/`, `internal/`, `migrations/`, `go.mod`) plus gate `scrypts/gates/` dan `.github/workflows/gates.yml`. |
 | **Tidak termasuk** | `app-ui`, deployment multi-replika, dan perubahan bentuk wire. |
-| **Struktural (AGENTS.md §1.9)** | Fase 1 N/A: tidak mengubah domain, data, atau interaksi. Fase 2 perlu ditinjau ulang saat bentuk *session epoch* dipilih. |
+| **Struktural (AGENTS.md §1.9)** | Fase 1 N/A. Fase 2 mengubah bentuk state sesi: `SYSTEM_MAP.md` diperbarui pada alur login/guard dan daftar key Redis; tidak ada perubahan domain, wire, atau batas service. |
 
 ## 1. Baseline yang sudah dijalankan
 
@@ -39,8 +39,8 @@ GO-2026-6613/6605 mendesinkronkan koneksi HTTP/1 CONNECT; GO-2026-6218 membebani
 
 | ID | Temuan | Bukti | Perbaikan | Status |
 | --- | --- | --- | --- | --- |
-| M1 | Login dengan password lama bisa membuat sesi setelah `RevokeAll` rotasi password, dan kegagalan `RevokeAll` setelah CAS meninggalkan sesi hidup | `internal/service/session.go:71-76`, `internal/service/auth.go:121-145` | Tambahkan *session epoch* yang diikat ke kredensial dan dicek di `Authenticate`; pisahkan error revoke parsial | Belum |
-| M2 | Cookie sesi hanya `Secure` bila `APP_ENV=production`; default `development`; tanpa prefix `__Host-` | `cmd/app-serv/auth_wiring.go:46`, `internal/config/config.go:88,166`, `internal/handler/auth_cookie.go:37,45` | Default `Secure: true` dengan opt-out lokal eksplisit; pertimbangkan `__Host-` dan HSTS di terminator TLS | Belum |
+| M1 | Login dengan password lama bisa membuat sesi setelah `RevokeAll` rotasi password, dan kegagalan `RevokeAll` setelah CAS meninggalkan sesi hidup | `internal/service/session.go:71-76`, `internal/service/auth.go:121-145` | Tambahkan *session epoch* yang diikat ke kredensial dan dicek di `Authenticate`; pisahkan error revoke parsial | Selesai: epoch Redis (`pannelai:auth:epoch`) dibaca sebelum hash dan disimpan per digest; `Authenticate` membandingkan lewat satu `MGET`; `RevokeAll` menjadi satu `INCR`; kegagalan revoke menjadi `ErrSessionRevocationIncomplete` |
+| M2 | Cookie sesi hanya `Secure` bila `APP_ENV=production`; default `development`; tanpa prefix `__Host-` | `cmd/app-serv/auth_wiring.go:46`, `internal/config/config.go:88,166`, `internal/handler/auth_cookie.go:37,45` | Default `Secure: true` dengan opt-out lokal eksplisit; pertimbangkan `__Host-` dan HSTS di terminator TLS | Selesai: `Secure` default `true`, opt-out `SESSION_COOKIE_INSECURE=true` ditolak saat `APP_ENV=production`; nama cookie tidak diubah (lihat §5) |
 
 ### 2.3 LOW
 
@@ -77,14 +77,23 @@ Semua pemeriksaan di §1 dijalankan pada working tree bersih sebelum perubahan a
    PASS, `go-lint` PASS (vet, tagged vet, gofmt, staticcheck, golangci-lint 0 issue), `go-headers`
    1491 file PASS, `antislop` PASS, dan `gate-scope` PASS.
 
-### Fase 2: MEDIUM
+### Fase 2: MEDIUM (selesai)
 
-- M1: pilih bentuk *session epoch* (kolom kredensial atau versi di Redis), tambah test race login vs
-  `ChangePassword`, dan jawab kegagalan revoke sebagai kondisi terpisah.
-- M2: ubah kebijakan cookie dan validasi konfigurasi; test handler untuk `APP_ENV` non-produksi.
-
-Kriteria keluar: test baru gagal sebelum patch dan hijau sesudahnya; `go test -race ./internal/service/...
-./internal/handler/...` hijau; `SYSTEM_MAP.md` ditinjau bila bentuk sesi berubah.
+- M1: epoch kredensial disimpan di Redis, dibaca `Login` sebelum hash, dan disimpan bersama digest sesi.
+  `Authenticate` membandingkan nilai digest dengan epoch saat ini dalam satu `MGET`; `RevokeAll` cukup
+  satu `INCR` sehingga tidak ada keadaan revoke sebagian. Kegagalan `INCR` setelah CAS dilaporkan sebagai
+  `ErrSessionRevocationIncomplete` (kode wire `INTERNAL_ERROR`), bukan sebagai password yang gagal diubah.
+- M2: `Secure` default `true`; `SESSION_COOKIE_INSECURE` adalah opt-out eksplisit untuk development dan
+  ditolak saat `APP_ENV=production`. Wiring memakai `!cfg.SessionCookieInsecure`.
+- Test: `TestAuthLoginFromBeforeRotationIsRejected` menempatkan rotasi tepat setelah hash dibaca;
+  `TestAuthChangePasswordReportsRevokeFailure` memisahkan kegagalan revoke; suite Redis menguji epoch
+  lama dan epoch baru; test config dan atribut cookie mencakup kedua profil deployment.
+- Kriteria keluar: test baru gagal sebelum patch dan hijau sesudahnya; `go test -race` pada paket yang
+  berubah hijau; `SYSTEM_MAP.md` diperbarui karena bentuk state sesi berubah.
+  Hasil pada pass ini: `go test -race -count=1` pada `service`, `handler`, `config`, `domain`, dan
+  `router` PASS; suite integrasi Redis PASS; `go-lint` PASS (vet, tagged vet, gofmt, staticcheck,
+  golangci-lint 0 issue, tanpa peringatan batas baris), `go-headers` 1494 file PASS, `antislop` PASS,
+  `gate-scope` PASS, `go-vuln` 0 reachable (3 module-only), dan `git diff --check` bersih.
 
 ### Fase 3: LOW
 
@@ -124,3 +133,18 @@ scrypts/gates/all.sh
   sudah dipakai untuk `staticcheck` dan `gitleaks` di workflow ini.
 - Temuan yang tidak melibatkan jalur kode (3 paket import, 6 module require) tidak dianggap blocker, tetapi
   tetap terlihat di output gate sehingga bisa ditangani saat dependensi itu disentuh.
+- Epoch Redis dipilih daripada kolom kredensial di PostgreSQL: state sesi sudah hidup di Redis, sehingga
+  pemeriksaan `Authenticate` tidak menambah round trip database. Kolom versi di PostgreSQL akan menuntut
+  baca per request atau cache yang justru memunculkan masalah invalidasi yang sama. `INCR` juga membuat
+  pencabutan massal atomik, berbeda dari `SCAN` + `DEL` yang bisa berhenti di tengah.
+- Urutan `Login` adalah bagian dari perbaikan, bukan detail: epoch dibaca sebelum hash. Membacanya sesudah
+  hash akan memberi sesi baru epoch terbaru walaupun password yang dibandingkan sudah basi.
+- Deploy yang naik ke bentuk epoch ini memaksa login ulang sekali. Digest lama tidak membawa nilai epoch,
+  dan memperlakukannya sebagai epoch nol akan mempertahankan sesi yang dibuat sebelum rotasi terakhir,
+  persis yang ingin dicabut.
+- `__Host-` tidak dipakai. Nama `pannel_session` adalah bagian dari permukaan yang sudah didokumentasikan
+  (contoh OpenAPI dan test panel menyebutnya), dan mode opt-out lokal tidak bisa memakai cookie `__Host-`
+  tanpa `Secure`. HSTS tetap tanggung jawab terminator TLS; aplikasi hanya memastikan atribut cookie benar.
+- Kegagalan `RevokeAll` setelah CAS tidak diulang otomatis: password sudah berubah, jadi password lama tidak
+  bisa dipakai lagi untuk mengulang request. Caller menerima kondisi terpisah yang menyebut password sudah
+  berubah tetapi sesi lama belum tercabut.

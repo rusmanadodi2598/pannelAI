@@ -118,6 +118,12 @@ func (s *AuthService) Login(ctx context.Context, clientKey, password string) (st
 	} else if remaining > 0 {
 		return "", rateLimitError(remaining)
 	}
+	// The epoch is read before the hash: a rotation that lands mid-login then
+	// leaves the new session on the old epoch, which Authenticate rejects.
+	epoch, err := s.sessions.Epoch(ctx)
+	if err != nil {
+		return "", fmt.Errorf("reading session epoch: %w", err)
+	}
 	hash, err := s.repo.PasswordHash(ctx)
 	if err != nil {
 		return "", fmt.Errorf("reading password: %w", err)
@@ -142,7 +148,7 @@ func (s *AuthService) Login(ctx context.Context, clientKey, password string) (st
 	if err != nil {
 		return "", fmt.Errorf("creating session token: %w", err)
 	}
-	if err := s.sessions.Create(ctx, digest, s.sessionTTL); err != nil {
+	if err := s.sessions.Create(ctx, digest, s.sessionTTL, epoch); err != nil {
 		return "", fmt.Errorf("storing session: %w", err)
 	}
 	return token, nil
