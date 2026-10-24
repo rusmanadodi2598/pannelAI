@@ -28,10 +28,6 @@ const (
 	defaultReadinessTimeout = 3 * time.Second
 	defaultShutdownTimeout  = 10 * time.Second
 	defaultTelegramAPIBase  = "https://api.telegram.org"
-	defaultBuilderMaxTokens = 700
-	defaultBuilderTimeout   = 20 * time.Second
-	defaultBuilderDailyCap  = 60
-	defaultPromptMaxChars   = 2000
 )
 
 var allowedEnvs = map[string]bool{"development": true, "staging": true, "production": true}
@@ -221,24 +217,6 @@ func requireTelegram(cfg Config) error {
 
 // minSecretAlphabet rejects a long but trivial secret such as aaaaaaaaaaaaaaaa.
 const minSecretAlphabet = 8
-
-// requireBuilder validates the builder transport without echoing the key.
-func requireBuilder(cfg Config) error {
-	if cfg.GatewayBaseURL == "" {
-		return fmt.Errorf("GATEWAY_BASE_URL is required")
-	}
-	parsed, err := url.Parse(cfg.GatewayBaseURL)
-	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil {
-		return fmt.Errorf("GATEWAY_BASE_URL must be an https URL with a host and no user info")
-	}
-	if cfg.GatewayKey == "" {
-		return fmt.Errorf("GATEWAY_KEY is required")
-	}
-	if cfg.BuilderModel == "" {
-		return fmt.Errorf("BUILDER_MODEL is required")
-	}
-	return nil
-}
 
 func distinctChars(value string) int {
 	seen := make(map[rune]struct{}, len(value))

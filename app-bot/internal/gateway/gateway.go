@@ -15,6 +15,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -64,14 +65,21 @@ func (c *Client) Complete(ctx context.Context, req masterprompt.ChatRequest) (ma
 	if err != nil {
 		return masterprompt.ChatResult{}, err
 	}
-	defer resp.Body.Close()
+
+	raw, readErr := io.ReadAll(resp.Body)
+	if closeErr := resp.Body.Close(); closeErr != nil && readErr == nil {
+		return masterprompt.ChatResult{}, fmt.Errorf("closing the gateway response: %w", closeErr)
+	}
+	if readErr != nil {
+		return masterprompt.ChatResult{}, readErr
+	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return masterprompt.ChatResult{}, fmt.Errorf("gateway completed with status %d", resp.StatusCode)
 	}
 
 	var out completionResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.Unmarshal(raw, &out); err != nil {
 		return masterprompt.ChatResult{}, fmt.Errorf("decoding the gateway response: %w", err)
 	}
 	if len(out.Choices) == 0 {
