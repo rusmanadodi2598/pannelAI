@@ -130,9 +130,9 @@ pannelAI/
 │   │   └── hooks.server.ts
 │   ├── static                  # aset yang disajikan
 │   │   ├── fonts               # InterVariable.woff2 (self-hosted)
-│   │   ├── favicon.png
-│   │   ├── logo-mark@128.png
-│   │   └── logo-mark.png
+│   │   ├── favicon.svg
+│   │   ├── logo-mark@128.svg
+│   │   └── logo-mark.svg
 │   ├── tests                   # tes per area, plus support/ untuk helper bersama
 │   ├── .env.example
 │   ├── .prettierignore

@@ -290,28 +290,27 @@ absent.
   still holds, and a filter change restarts the paging. The closed question is §14 Q13.
 - **Pagination discipline:** the registry is a data set the API owns. The screen renders
   `GET /api/v1/providers` with the server's paging and never loads the whole registry into a client filter.
-- **Custom providers (landed):** a section above the table for the two provider types the embedded registry
-  cannot carry, read from `GET /api/v1/provider-nodes` and written through the same route family (§7.4). The
-  set is read whole, because §7.4 returns every node and a node set is hand-configured, and it is not
-  narrowed by the category filter, which filters the registry and not this set. Two controls add a node, one
-  per compatible type. A row states what the registry table cannot: the prefix its models are addressed by,
-  the wire shape, and the endpoint URL the gateway will call. Write actions are not repeated here; edit,
-  test, and delete live on the node's own detail screen. The screen's one refresh control re-reads both this
-  set and the registry (§8.6.2), and each read owns its own failure state, so a node outage does not blank
-  the table. **CodeBuddy CN and CodeBuddy Int are not built here**, and cannot be: both are registry entries
-  rather than nodes, and the registry's own CodeBuddy entry is hidden. The gap is recorded in
-  `docs/DRAFT/011-CODEBUDDY-PROVIDER-READINESS.md`.
+- **Custom providers (landed, list merged 2026-10-23):** two controls above the table add a node for the
+  compatible types the embedded registry cannot carry, written through §7.4. The gateway synthesizes the
+  node into the registry, so the table is its one list: the row is a normal provider row with a `Custom`
+  label beside its name, and the page does not read `GET /api/v1/provider-nodes`. The detail screen states
+  the prefix, api type, endpoint, and timestamps; edit, test, and delete live there. The screen's one
+  refresh control re-reads the registry (§8.6.2). **CodeBuddy CN and CodeBuddy Int are not built here**,
+  and cannot be: both are registry entries rather than nodes, and the registry's own CodeBuddy entry is
+  hidden. The gap is recorded in `docs/DRAFT/011-CODEBUDDY-PROVIDER-READINESS.md`.
 - **Row action:** open detail. A provider with zero endpoints shows "No endpoint configured" and links to
   the create form pre-filled with that provider.
 
 **Detail**
 
-- **Tabs (landed 2026-10-12):** the detail is grouped into three tabs, built on the panel's tablist
+- **Tabs (landed 2026-10-12, custom alignment 2026-10-22):** the detail is grouped into three tabs, built on the panel's tablist
   (`PanelTabs`, the same component as Usage), so an operator switches between the reads rather than
   scrolling one run of plain text. A registry provider has **Overview** (the transport defaults, the
   deprecation notice, and the website), **Models** (the catalog, the disabled set, and the custom models),
   and **Connections** (the connections, the proxy binding, and OAuth for an OAuth provider). A custom node
-  has **Overview** (its details card), **Connections**, and **Models** (its available models). Each tab's
+  has **Overview** (the provider status and common facts, followed by its node details card), **Models**
+  (its available models), and **Connections** (the connections and proxy). Both shapes use the same tab
+  order, so a custom node never moves the operator's reading path. Each tab's
   sections stay folded and closed by default, so a tab stays compact. The tab list is the reading order, and
   a tab's panel renders only while it is selected.
 - **Overview (landed 2026-10-12):** the header facts are grouped into three cards, each answering one
@@ -590,7 +589,9 @@ absent.
   parameter and the summary sends the whole group block for the window, so the order is applied to every
   group rather than to a page of them, and it is URL state so a sorted view is shareable. A provider key is
   resolved to its registry name when the registry answers; the endpoint and gateway-key dimensions render
-  the id, which is what the API sends and what the screens that own those names display. Every value column
+  the id, which is what the API sends and what the screens that own those names display. The registry
+  failure is stated above the charts, because the provider bar chart reads those names whatever dimension
+  the table is grouped by. Every value column
   is shown at once, and the table carries no cost/token toggle (draft 014 F1, F6).
 - **Totals:** requests, tokens in, tokens out, cache read, cache write, cost (string), error rate, p50 and
   p95 latency. Every one of these comes from `GET /api/v1/usage/summary`; the panel computes nothing it
@@ -610,10 +611,15 @@ absent.
   group that did happen never renders as an invisible bar. The figures beside the bars are compact and the
   table's are exact; the compact formatter is the standard one with a pinned locale, not the reference's
   hand-rolled thresholds, which print `1000.0K` for 999,999 (draft 016 F1). A chart's own read failing
-  replaces that chart with its message and leaves the other one drawn (draft 016 F2).
+  replaces that chart with its message and leaves the other one drawn (draft 016 F2). A model bar leads
+  with the segment after the provider path, because long model ids share a prefix that would otherwise make
+  five bars read the same; the full id stays in the label's title and the disclosure table.
 - **Controls band (2026-10-12):** Period, Group by, and Refresh now sit on one even row of three equal
   columns on a phone, each 44px tall, so the band reads as one control set rather than a wrapped pair with
   a separate refresh below it. The refresh keeps its own label beside the two selects' labels.
+  (2026-10-23) The period options are named in their shortest unambiguous form (`24 hours`, not
+  `Last 24 hours`) so the closed select fits its one-third column at 320, and the read's summary sentence
+  prints each window bound with its time: two dates alone read as two whole days.
 - **Breakdown paging (2026-10-12):** the group-by table shows five groups per page with Previous, Next and
   a `Page X of Y` label, because a dimension can return dozens of groups and a full dump is unreadable on
   a phone. The sort orders the whole response before it pages, so page two is never a second sort. The
@@ -693,6 +699,8 @@ absent.
   in-flight box follows a request that arrives while the tab is open, one jump per arrival, gated on the
   frame the way the drawing's motion is; the finished list is never pulled back to the top, since it is
   newest-first and read like a history, and the count in its label is what reports that the stream moved.
+  (2026-10-23) On a phone the tab strip scrolls sideways rather than clipping its third tab, and keyboard
+  focus moves the chosen tab into view.
 
 **Tab 2: Records**
 
@@ -700,12 +708,16 @@ absent.
   error code. Filters: date range, status, endpoint, model, free-text `q`, provider, and gateway key. The
   two id filters are selects fed by the registry and the gateway-key list, and a list that cannot be read
   leaves its select offering the value the URL carries plus one line naming the failed read, rather than
-  showing an empty selection over a filtered table (draft 014 F3).
+  showing an empty selection over a filtered table (draft 014 F3). (2026-10-23) Each field takes the full
+  width on a phone and a fixed width from `sm`, so a provider name in the options cannot set the control's
+  width and push it past the viewport.
 - **Row action:** open the request detail, which is `GET /api/v1/usage/records/{request_id}` joined with
   the captured log when capture is on. When capture is off, the detail view says so instead of showing an
-  empty body area.
-- **Empty state:** "No requests in this window." plus a link to API Docs, because the likely cause is that
-  no client has called the gateway yet.
+  empty body area. (2026-10-23) The drawer is titled `Request detail` and carries the request id as its
+  first fact, because an id is a long single token; its facts stack in one column on a phone, a failed read
+  offers `Try again`, and a read for a request the drawer has left cannot replace the one now open.
+- **Empty state:** "No requests in this window." with a wider-window control and a link to API Docs,
+  because the panel cannot tell a fresh install from a quiet window and does not claim which it is.
 
 ### 6.6 `/quota`
 
@@ -723,19 +735,28 @@ absent.
   hundreds or thousands and one card per key would make the page unmonitorable; the page itself never
   scrolls sideways (§2 R-03). The per-window row set this body used to render (window kind, used,
   limit, percent, countdown, badge) is superseded: the same facts are in the summary line, and the
-  provider's numbers took the place they were pushing against.
+  provider's numbers took the place they were pushing against. The region is focusable (`tabindex="0"`,
+  `role="region"`, named after the card) so a keyboard user can scroll its lower rows; the card name,
+  endpoint heading, and published row label wrap rather than clip when they outgrow the column, with
+  the full text also in `title` as a pointer aid.
+  The fold control's name flips to `Unfold <name>` while folded, because that is what pressing it does.
 - **Fold and bulk fold:** a card folds from its header toggle and stays informative while folded
   through the header counts; the fold is a capability, not a default. Checking cards raises a bar
   that states the real selection ("N selected") with two actions, "Fold selected" and "Unfold
-  selected", so a large registry can be tucked away quickly. The selection clears when the page
-  turns, because a bulk action must never reach checkboxes the operator cannot currently see.
+  selected", so a large registry can be tucked away quickly. The bar sits above the cards and sticks to
+  the top of the scroll region, because a selection made on the first card must be answered where the
+  operator is looking rather than below a page of card bodies. The selection clears when the page
+  turns or the provider filter hides a checked card, because a bulk action must never reach checkboxes
+  the operator cannot currently see.
 - **Pagination (server-driven, 2026-09-26, PORT 006):** the read is paged over provider groups
   (`?page=&per_page=5`, SPEC-API §7.12), so a page of the wire IS a page of cards and no page turn
   ever splits a provider across two pages. The screen sends its card page size on every read (the
   poll included), the pager walks the answered meta ("Page X of Y" with Previous and Next, disabled
   at the bounds), and a read that finds the data shrank below the page it read parks on the last
   page there is and reads it. This is what binds both the page height and the wire size at any
-  registry scale.
+  registry scale. A read that answers `truncated` says so above the cards: the row ceiling cut the
+  page, so some accounts are not shown. A failed poll schedules the next attempt but does not move
+  the "Last read" stamp, because the figures still on screen are older than that attempt.
 - **Toolbar controls (PORT 006):** "Refresh now" carries the icon map's refresh glyph and the
   refresh pause/resume toggle carries the map's pause and resume glyphs beside their labels (R-04,
   R-31): the glyph is what the control does to the poll, never an emoticon.
@@ -792,7 +813,11 @@ absent.
   `12.5 / 3000`, not a rounded integer and not a padded one) because they arrive as decimal strings
   and a credit balance has no integer spelling; only the bar and the percentage parse them, and both
   reuse the counted rows' helpers so the two halves of one screen cannot disagree about what "percent
-  used" means.
+  used" means. (2026-10-23) The "Asked" stamp, the failed-poll stamp, the stored-cap stamp, the last
+  read, and the absolute reset time all print the clock beside the date: a figure whose age is the
+  point cannot be dated to a day. The per-connection control's visible label is `Ask now`; its
+  accessible name still names the connection, so a long provider id no longer sets the button's
+  width.
 - **Budget caps (U2, landed):** a picker plus one form, keyed by endpoint rather than by window, because
   the collection route carries no cap and reading one per endpoint to fill a column would be an N+1
   (SPEC-API §7.12). The picker offers the endpoints the label read returned plus any endpoint the window
@@ -804,6 +829,9 @@ absent.
   endpoint. The bounds and the degenerate zero-cost rule are the API's own, refused by the form before the
   round trip. The section renders whether or not any window exists, because a cap is legal before the
   first routed request, and an endpoint the gateway does not carry is refused with the gateway's sentence.
+  (2026-10-23) The picker and both fields take the phone's full width and a fixed width from `sm`. A cap
+  read that cannot be answered offers `Try again`, the picker is disabled while a save is in flight, and
+  a read for an endpoint the operator has left cannot seed the form now on screen.
 - **Empty state:** "No quota windows yet. Quota tracking starts after the first routed request."
 - **Refresh:** the countdown ticks locally; the data refetches on an interval (§8.6).
 
@@ -825,7 +853,17 @@ absent.
 - **Per-request bypass:** the screen documents the `X-Token-Saver: off` header with a copy control, so an
   operator can hand the header to a client author (SPEC-API §4).
 - **Save behavior:** partial update per section. Saving one section never rewrites another, and the form
-  re-reads the full config after a successful write.
+  re-reads the full config after a successful write. Only one section may be in flight: every save band is
+  disabled until the write and its re-read land, and an edit made to the active section while the write is
+  open stays in the draft rather than being overwritten by the response. A re-read keeps every other
+  section's unsaved edits.
+- **Save failure and discard (2026-10-23):** a failed write is stated inside the section whose button was
+  pressed, beside the control that retries it. "Discard changes" restores only its own section and leaves
+  another section's unsaved edits alone. A re-read that fails after a save keeps the form, names what it
+  still shows, and offers `Try again`. The failure takes focus, so a save pressed at the bottom of the
+  form does not leave the notice off screen.
+- **Headroom URL width:** the field stops at a readable form width rather than spanning the full section,
+  which was 1,094px wide at 1440.
 
 ### 6.8 `/media-providers/[kind]`
 
@@ -842,10 +880,18 @@ absent.
 
 ### 6.9 `/proxy-pools`
 
+**Status: built, browser click-through recorded 2026-10-23.** The pass drove the screen at 1440, 390, and
+320 in both themes against stubbed routes, covering a pool with a reachable row, a failed row with its
+reason, and a never-tested row, the edit dialog with a candidate probe, the batch paste with a rejected
+line, the bulk bar in its empty and single-row states, and the outbound card.
+
 - **Data:** SPEC-API §7.11.
 - **Table:** label, protocol, host, port, username, enabled, last test state and latency. Actions: edit,
   test, delete, each rendered as an icon-only row action whose accessible name carries the row it acts
-  on, with the destructive action in the danger colour (2026-09-26, PORT 007).
+  on, with the destructive action in the danger colour (2026-09-26, PORT 007). That list is the column
+  list: the password has no column, because the wire carries only `has_password` and the edit form states
+  what it means, and a ninth column left the Actions cell too little room to hold its four controls at
+  1440 (amended 2026-10-23).
 - **Toolbar controls (2026-09-26, PORT 007):** "Add a proxy", "Add several at once", and
   "Save outbound settings" carry the icon map's glyphs beside their labels, never an emoticon and never
   bare text (R-04, R-31). The screen carries exactly one refresh control, the shared "Refresh now": the
@@ -854,10 +900,19 @@ absent.
   appear in.
 - **Form:** label, protocol (`http`, `https`, `socks5`), host, port, username, password. Password is
   write-only; after save the row shows no password, only that one is set.
-- **Batch add:** multi-line paste of proxy URLs, parsed in the panel, previewed as a table, then submitted
-  one row at a time. Raw text is not submitted; the parsed and validated rows are (§7). A line with
+- **Batch add:** a dialog, the shape the bulk credential add already takes: the operator leaves the table,
+  pastes, reviews, and comes back. Multi-line paste of proxy URLs, parsed in the panel, previewed as a
+  table, then submitted one row at a time. Raw text is not submitted; the parsed and validated rows are
+  (§7). A line with
   no scheme is read as HTTP, because a pasted list (`user:pass@host:port`) names no scheme anywhere;
-  the preview shows the parsed protocol on every row before anything is saved.
+  the preview shows the parsed protocol on every row before anything is saved. A line whose host carries
+  a character a host name cannot (a space, a stray word) is rejected in the preview: `new URL`
+  percent-encodes it rather than failing, so without that rule the paste would report a row the gateway
+  cannot dial as ready (2026-10-23). The preview carries the five facts the operator checks before
+  sending, line, protocol, address, credential, and result; the credential column says whether a password
+  came with the line rather than spelling it out, and the row's stored label is the address column, so it
+  is not repeated. Closing the dialog discards the paste: the screen mounts the editor only while it is
+  open, so no draft is held out of sight (2026-10-23).
 - **Test:** per row and for a candidate before saving (`POST /api/v1/proxies/test`). The result shows
   state, latency, and checked time.
 - **Outbound assignment:** the global settings from SPEC-API §7.14 (`network.outbound_proxy_enabled`,
@@ -883,7 +938,12 @@ absent.
   catalog is the whole list. (Amended 2026-09-21: the earlier text named two entries, `/antislop` AI and
   SuperPowers, which no route ever served. §7.16 is the catalog of record, and §14 Q2 is closed with it.)
 - **Per entry:** name, one-line description, the endpoint it teaches (or the fact that it teaches none),
-  the two addresses the row carries, and a copy control with the install instruction line.
+  the two addresses the row carries, and an icon-only copy control with the install instruction line,
+  anchored at the card's top-right so the entry block and every capability row share one action edge. Its
+  accessible name includes the skill (`Copy install line for Chat`, `Read it on GitHub: Chat`), and the
+  glyph carries the outcome: a tick for a write that reached the clipboard, a cross for one the browser
+  refused, with the sentence kept in the live region so no word shifts the anchored icon. A long name or
+  endpoint wraps inside the card instead of widening the page.
 - **The two addresses differ by reader.** `raw_url` is what an agent fetches and what the copy control
   hands out; `blob_url` is what a person reads, because it renders the file instead of downloading it. The
   panel renders each as what it is: the raw address as copyable text, the blob address as a link.
@@ -892,7 +952,10 @@ absent.
   did not states the cause and keeps the address on screen, because that address names the path that has to
   be published. A copy control that copies a broken link is not shipped, which is the rule this replaces:
   the earlier text asked for an unavailable state while a source was undecided, and the source is now
-  decided and checkable.
+  decided and checkable. (2026-10-23) Each answer renders on its own row as it lands: the entry install
+  line becomes usable while a slower capability source is still being checked, and the page-level count
+  stays in its checking sentence until all answers are in. A one-row catalog uses the singular in the
+  count.
 - **No invented metadata:** no download counts, no version numbers, no user ratings. There is no such data
   (R-17).
 
@@ -936,7 +999,10 @@ remembers the tab finds the new home rather than an empty heading.
   advertises is registered.
 - **Copy controls:** copy base URL, copy a curl example with a `sk-...` placeholder, never a real key. The
   example is composed from the operation's own method, path, and declared credential; a path parameter is
-  printed as `<id>`, so no example is a URL with literal braces in it.
+  printed as `<id>`, so no example is a URL with literal braces in it. The screen holds one control per group
+  plus one for the address, so each is a 44px icon at the top-right of its card and is named for what it
+  copies (`Copy example call for Gateway Keys`, `Copy base URL <address>`): a screen reader given
+  twenty-four buttons all named `Copy` cannot tell one clipboard write from another.
 - **Phases:** the screen states the document's version and the address it was read from instead of a phase
   per group. The pin above is why: a group on the screen is a route the router registers, so there is no
   built-versus-planned distinction left for a phase marker to carry. Should `app-serv` ever publish a phase
@@ -955,7 +1021,7 @@ Tabs, each mapping to one group of keys in SPEC-API §7.14.
 
 | Tab         | Fields                                                                                                                             | Notes                                                                                                                                                  |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Security    | `security.require_login`, `security.require_api_key`, change password, logout all sessions if the API exposes it                   | Turning `require_login` off shows a warning that the panel becomes open on the network. Change password asks for current and new password.             |
+| Security    | `security.require_login`, `security.require_api_key`, change password, logout all sessions if the API exposes it                   | Turning `require_login` off shows a warning that the panel becomes open on the network, and the box is put back until the answer arrives. The answer edits the draft; it does not write, because a commit from inside the dialog would also carry an unsaved edit on the row beside it (2026-10-24). Change password asks for current and new password. |
 | Routing     | `routing.combo_strategy`, `routing.combo_sticky_limit`, `routing.sticky_limit`, `routing.fallback_strategy`, `routing.key_park.*`, `routing.failover.total_ms`, `routing.failover.max_attempts` | Defaults for new combos and for the credential walk; per-combo values win, and a provider overrides the rotation on its own screen. The tab says both. The park windows and the walk budget are group-level (SPEC-API §7.14) and editable here: a blank park window means inherit rather than zero, so an empty box is sent as absent and not coerced to a number that would park for nothing, and the failover pair is required because the read always names the effective bound. |
 | Network     | `network.outbound_proxy_enabled`, `network.outbound_proxy_url`, `network.outbound_no_proxy`, `network.outbound_proxy_strategy`     | Shared surface with `/proxy-pools`; both read the same endpoint, and the tab links there instead of duplicating the form.                              |
 | Logging     | `logging.request_capture_enabled`, `logging.retention_days`, `logging.capture_body_max_bytes`, `logging.observability_max_records` | Capture sets a privacy cost, so the toggle carries the warning that request bodies will be stored.                                                     |
@@ -963,6 +1029,11 @@ Tabs, each mapping to one group of keys in SPEC-API §7.14.
 
 - **Save behavior:** `PATCH /api/v1/settings` per changed field group, with a dirty indicator and a
   discard action. Secrets are never returned by the API, so no field renders an existing secret value.
+  The band is pinned to the bottom of the scroll while its tab is on screen: the Routing tab runs 2938px
+  tall, and a band at its end sat 2764px below the field being edited, off screen with both the marker and
+  the commit (2026-10-24). The re-read that follows a write keeps the open tab mounted; only the first read
+  shows the loading state, because taking the tab strip down threw the operator back to Security and
+  destroyed the tab's own "Saved." line (2026-10-24).
 - **Password rules:** current password, new password, confirm. Trimming is not applied to password fields
   (§7.2).
 
@@ -970,9 +1041,19 @@ Tabs, each mapping to one group of keys in SPEC-API §7.14.
 
 - **Data:** `GET /api/v1/logs/console`, `DELETE /api/v1/logs/console` (SPEC-API §7.13).
 - **View:** ring buffer lines in a monospace block, newest last, with a pause and resume control, a
-  follow toggle, and a clear action.
+  follow toggle, and a clear action. The block is a named, keyboard-focusable region: it scrolls in both
+  axes inside its own box, and long lines never widen the page. "Follow newest" re-pins it to the last
+  line after every read, not only the first.
 - **Honesty rule:** the buffer is polled, because management API v1 exposes no stream (SPEC-API §7.13). The
-  control is labelled "Auto refresh", not "Live", and shows the poll interval.
+  control is labelled "Auto refresh", not "Live", and shows the poll interval. While paused, the sentence
+  says so and still names the interval that resumes.
+- **Polling:** one read is in flight at a time. A manual refresh during a read queues one more read rather
+  than racing it; a slow gateway must not stack a request on every timer tick. A hidden tab does not read,
+  and becoming visible reads once unless the poll is paused. "Last read" prints the local date, clock to
+  the second, and zone, and advances only when a read carries the buffer.
+- **Read failure:** a first read that fails is an error state with a retry. A later failure keeps the last
+  buffer on screen, states the failure above it, and dates those lines with the last read that succeeded;
+  the next successful poll clears the notice.
 - **Clear:** `DELETE` removes the buffer server-side, so the confirmation names that consequence rather
   than presenting it as a local view reset.
 - **Empty state:** "Console buffer is empty." plus the reason it can be empty: the gateway records console
@@ -981,10 +1062,13 @@ Tabs, each mapping to one group of keys in SPEC-API §7.14.
 
 ### 6.15 `/playground`
 
-**Status: built and wire-verified 2026-09-21, phase U3. The live pass drove the panel's own routes and
-client modules against a booted gateway, including the unset-key and refused-key paths (§16). The browser
-click-through is the outstanding verification: the panel is client-rendered, so the render half is covered
-by jsdom tests only. §14 Q7.**
+**Status: built and wire-verified 2026-09-21, browser click-through recorded 2026-10-23, phase U3. The
+live pass drove the panel's own routes and client modules against a booted gateway, including the
+unset-key and refused-key paths (§16). The render half is now recorded in a browser too: the 2026-10-23
+pass drove the page at 1440, 390, and 320 in both themes against the panel's own routes with stubbed
+answers, covering the model list and its cost, a complete stream with all four facts and the raw frames, a
+refused send with the gateway's code, an unset key, an empty list, a stop before the first token, and a
+300-character unbroken answer. §14 Q7 is closed.**
 
 The screen sends a chat request by hand and shows what the gateway answered, so an operator can check a
 route without wiring a client first.
@@ -1013,7 +1097,10 @@ panel's route answered with. A fact the wire did not state reads as `not stated`
 blank. A disclosure at the bottom holds the frames exactly as they arrived, which is what makes a contract
 divergence visible instead of mysterious. Three stream endings get three sentences, because a stream that
 ended on the documented `[DONE]` sentinel, one the operator stopped, and one that closed without the
-sentinel are not the same fact: the third means the answer may be cut off.
+sentinel are not the same fact: the third means the answer may be cut off. A stop or a close before any
+token says so directly, because "the text above" would point at an empty box. An unset key and an empty
+model list both offer `Check again`, which re-reads the list, and neither renders a composer. Long
+unbroken answer text wraps inside its box rather than being clipped at a phone width.
 
 **The relay streams, and what the gateway does with that is the gateway's.** The panel hands the upstream
 body through rather than reading it to the end, which the live pass proved against a gateway that writes
@@ -1416,6 +1503,10 @@ does not pass review.
 5. Button labels name the action and its object: "Create gateway key", "Test this key", "Purge captured
    logs". "Get Started", "Learn More", and "Try Now" do not appear (R-15).
 6. Empty-state copy explains why the area is empty and what fills it, not "No data".
+7. A count reads as a count. A noun beside one follows it ("1 candidate selected", never "1 candidates"),
+   and a shared control takes its singular form from the caller rather than guessing one off the plural. A
+   slot that qualifies a selection stays silent when there is none: the bulk bar's empty state says "Nothing
+   selected", because the scope sentence ("0 named by you") is a qualifier with nothing to qualify.
 
 ### 8.11 Icons and no-emoji rule
 
@@ -1491,7 +1582,7 @@ records what is fixed by the rules versus what needs the owner's direction.
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Owner-stated direction                    | Legacy panel parity in structure and density, delivered fresh: a cleaner component layer (shadcn-svelte), fresh icons, no emoji, and explicit mobile, tablet, and desktop behaviour (owner, 2026-09-16 and 2026-09-17). |
 | `DESIGN.md`                               | **Present at the repository root** (added 2026-09-17). It holds the identity, the palette, the typeface, the radius and elevation scale, the identity motif, and the reason log.                                        |
-| Palette, typography, logo, identity motif | Supplied through `DESIGN.md`. The logo was supplied by the owner at `app-ui/assets/static/logo.png` on 2026-09-17 and is cropped to a circular mark for the panel.                                                      |
+| Palette, typography, logo, identity motif | Supplied through `DESIGN.md`. The logo was supplied by the owner on 2026-09-17 and ships as `app-ui/assets/static/logo.svg`; the panel serves the SVG marks in a circular frame.                                          |
 
 Consequence: the earlier "draft without direction" state is closed. A screen built from this spec and
 `DESIGN.md` is a deliverable, and `DESIGN.md` is where a visual value is decided. Where the two files
@@ -1913,7 +2004,7 @@ half carry.
 
 1. **Closed 2026-09-17: `DESIGN.md` is present.** The owner supplied the direction the same day: legacy
    structural parity, delivered fresh, with mobile, tablet, and desktop behaviour as an explicit
-   requirement, and the logo at `app-ui/assets/static/logo.png`. `DESIGN.md` at the repository root holds
+   requirement, and the logo at `app-ui/assets/static/logo.svg`. `DESIGN.md` at the repository root holds
    the identity, palette, typeface, radius and elevation scale, identity motif, and reason log, so the
    "draft without direction" state in §9.1 is closed. One follow-up stays open: the typeface is Inter,
    chosen for legibility at 12px in dense tables and for parity with the legacy panel, and it is a value a
@@ -2193,7 +2284,7 @@ table exists so a reader can re-run the measurement instead of trusting the sent
 | Panel type check                               | `bun run check` in `app-ui/`                                                                                                                                        | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Sidebar row count                              | `bun -e` over `NAV_GROUPS` and `allNodes` in `src/lib/navigation.ts`, counting a leaf as routable when it carries `href` or `link`, cross-checked by `bun run test` | 20 nodes in 5 groups: 19 routable leaves (13 static routes plus the 6 media kinds), 0 rows labelled `Planned`, 1 container. Measured 2026-09-21 after `/playground` (was 18 routable and 1 planned after `/skills`, 17 routable and 2 planned after `/api-docs`, and 16 routable and 3 planned before it). One flag remains, on the Media Provider container, which keeps it for shape uniformity and renders as a disclosure rather than a chip, so `grep -c 'planned: true'` finds 1 while the rendered label count is 0 |
 | Accent usage in the shell                      | `grep -rn "color-accent"` across `src/lib/components`                                                                                                               | Active row marker, primary action, focus ring, link, and active tab only (DESIGN.md §3.4)                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Logo source                                    | `file app-ui/assets/static/logo.png`                                                                                                                                | JPEG data, 1254x1254, despite the `.png` extension. Cropped to `static/logo-mark.png` (512x512 RGBA, circular alpha mask)                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Logo source                                    | `file app-ui/assets/static/logo.svg`                                                                                                                                | SVG vector, 1024x1024. It replaced the owner's original 1254x1254 raster on 2026-10-24; the served marks are `static/logo-mark.svg` and `static/favicon.svg`.                                                                                                                                                                                                                                                                                                                                                            |
 | Legacy coral fails AA as a fill                | Contrast calculation over the legacy token from `apps/9router/src/app/globals.css`                                                                                  | `#E56A4A` with white text measures 3.23:1, below the 4.5:1 floor, which is why the light theme uses `#B8412A`                                                                                                                                                                                                                                                                                                                                                                                                              |
 | SvelteKit needs an adapter, and Bun can run it | SvelteKit adapter documentation, the Bun SvelteKit guide, and the Bun adapter template                                                                              | A production SvelteKit server comes from an adapter; Bun documents building SvelteKit apps and a Bun adapter exists, so serving the panel and proxying `/api/v1` from the panel's own Bun process (§10.1) is a supported setup, not a workaround.                                                                                                                                                                                                                                                                          |
 
@@ -2212,7 +2303,7 @@ Path status for every path referenced in this document:
 | `app-serv/`                               | Present, past P0. The auth and gateway-key endpoints the panel calls now exist, so U0 can be exercised against it; the recorded click-through (§9.4.5) is the remaining verification step.                                   |
 | `scrypts/`                                | Present: gates and git hooks, see `scrypts/README.md`.                                                                                                                                                                       |
 | `DESIGN.md`                               | Present at the repository root, added 2026-09-17                                                                                                                                                                             |
-| `app-ui/static/logo-mark.png`             | Present, cropped from the owner's `assets/static/logo.png`                                                                                                                                                                   |
+| `app-ui/static/logo-mark.svg`             | Present, the owner's mark as SVG, with `favicon.svg` and `logo-mark@128.svg` derived from `assets/static/logo.svg`                                                                                                           |
 | `app-ui/static/fonts/InterVariable.woff2` | Present, self-hosted (344 KB), because a font CDN is excluded by §11.7                                                                                                                                                       |
 | `002-TOKEN-SAVER` (native saver spec)     | Planned, per SPEC-API §10 P3                                                                                                                                                                                                 |
 
@@ -2613,3 +2704,27 @@ _Changelog 2026-10-07: §6.3's delete confirmation states what the action takes 
 _Changelog 2026-10-08: §6.3's delete confirmation names the model rows too, and no longer has a silent branch. The sentence states the connection count when it has one, and drops to naming the model rows when the provider holds no connection, because a node with no connection can still have declared models and those go with it. The refusal line covers the second blocker the same screen edits: a combo member or an alias target, each rendered in the gateway's own words._
 
 _Changelog 2026-10-14: the Routing tab edits the two budget groups it used to only inherit, and the keys table splits one timestamp into two. `routing.key_park.*` and `routing.failover.total_ms` / `max_attempts` were already writable on the API (SPEC-API §7.14) with their bounds validated server-side, but the panel had no control for them, so retuning a provider's parking length or a request's walk budget meant an operator typing at the API rather than using the screen they were on. A blank park window is sent as absent, not as `0`: zero would coerce past the "inherit" meaning and park a credential for nothing. The keys table now shows `last_selected_at` beside `last_used_at` because rotation orders by the former and the two come apart whenever a chosen key loses the call to a failover or to the network; that gap is the operator's only view of a key being selected without carrying load. §6.2's "which key would route now" is narrowed to the question the panel can actually answer: under `round-robin` the next credential comes from a Redis counter the panel cannot read and must not guess, so the row states the priority answer and the new column shows what rotation really spent._
+
+_Changelog 2026-10-23: §6.3's custom provider list is the registry table. The separate node list duplicated every row the gateway already synthesizes and made the page read `/provider-nodes` beside the registry. The two add controls remain above the table, a custom row carries a `Custom` label, and the page reads only the registry; the node's prefix, api type, endpoint, and timestamps live on its detail screen._
+
+_Changelog 2026-10-23: §6.5's Usage page passed the per-page UI audit. The filter bar no longer lets a provider name set the select's width, the period options fit their one-third column at 320, a window bound prints its time, the model bars lead with the segment that tells them apart, the request drawer wraps long ids and stacks its facts on a phone with a retry, the Live activity strip scrolls instead of clipping, the provider-names failure is stated above the charts, the empty states name what the panel knows, and the totals draw as 3x3._
+
+_Changelog 2026-10-23: §6.6's Quota Tracker passed the per-page UI audit. The cards' scroll regions are keyboard focusable, long card names and endpoint labels keep a full-text title, the fold control names the action it will take, the bulk bar sits above the cards and sticks while the page scrolls, and the provider filter clears a selection it would hide. The page states a truncated read, a failed poll no longer moves the last-read stamp, and the provider stamps, last read, and reset times print the clock. The per-connection control reads `Ask now` while its accessible name still names the connection, so a long provider id no longer sets its width. The cap form is full-width on a phone with a retry after a failed read, guards the select during a save, and ignores a stale read._
+
+_Changelog 2026-10-23: §6.14's Console Log passed the per-page UI audit. The controls stack on a phone, where the clear action used to run 66px past a 320 viewport, and the paused sentence now says the poll is paused instead of still asserting auto refresh. The buffer is a named keyboard-focusable scroll region, long lines scroll inside it, and "Follow newest" re-pins after every later read instead of only the first. Reads are serialized so a slow first read no longer starts a request on every timer tick, a press during a read queues one more, and returning to a visible tab reads once unless the poll is paused. "Last read" prints the date, clock to the second, and zone; a failed read after data keeps the last buffer on screen and dates it with that stamp._
+
+_Changelog 2026-10-23: §6.7's Token Saver passed the per-page UI audit. The header now names the real rule, that each section saves on its own, instead of claiming every group still starts off. Discard restores only the section whose button was pressed, and a save in one section keeps the unsaved draft in another through the response and the re-read. One section may write at a time: every save band is disabled until the write and its re-read land, and the Headroom URL no longer spans the full card. A failed save reports inside its own section beside the retry control instead of above the screen, and a failed post-save re-read keeps the form, takes focus, and offers `Try again`._
+
+_Changelog 2026-10-23: §6.10's Skills page passed the per-page UI audit. The three copy controls and three source links now carry the skill in their accessible names, and `CopyButton` accepts that name without changing any other caller. The copy controls are icon-only at the top-right of the entry block and every capability card, so one action edge runs down the page, and the outcome is drawn on the glyph (tick or cross) while its sentence stays in the live region, so a copied value never reflows the icon. A source answer lands on its own row, so the entry install line appears while slower capability checks are still open, and a one-row catalog says `1 of 1 source is published`. Long names, endpoints, and descriptions wrap inside their cards instead of running past the right edge at 320._
+
+_Changelog 2026-10-23: §6.15's Playground Chat passed the per-page UI audit, and its browser click-through is recorded. The page holds 1440/390/320 in both themes with no horizontal scroll, a 44px send and stop, and a model picker that keeps its own width. A stop or close before the first token now says no text arrived instead of pointing at an empty box, and the generic no-text sentence is not repeated under it. An unset key and an empty model list both offer `Check again` without rendering a send control, so a fixed key or a route added to the key can be picked up without a reload. A 300-character unbroken answer wraps inside its box at 320 instead of being clipped at the card edge._
+
+_Changelog 2026-10-23: §6.12's API Docs passed the per-page UI audit. The page holds 1440/390/320 in both themes with no horizontal scroll, and a jump-list entry scrolls the shell's content column to its group with a 16px lead. The 24 copy controls were 36px text buttons all named `Copy`; each is now a 44px icon at the top-right of its card, named for the value it copies (`Copy base URL <address>`, `Copy example call for <group>`), with the outcome drawn on the glyph and its sentence kept in the live region. The address and its description stack under that one top-right edge instead of the control dropping to the second line at 320. The error-table headers and the two table captions moved into the screen's copy module._
+
+_Changelog 2026-10-23: §6.9's Proxy Pools passed the per-page UI audit, and its browser click-through is recorded. Nine columns left the Actions cell 141px, so its four 44px controls wrapped into a stack and every row stood 105px tall; the password column went (it is not in §6.9's list, and the edit form states what `has_password` means), the address cells break, and the enabled glyph and its word now share one line at every width. The bulk bar said "0 named by you" with nothing selected and "1 candidates selected" with one, so the shared bar now says "Nothing selected" and takes its singular noun from the caller (§8.10 rule 7). A pasted line whose host carried a space reached the preview as `not%20a%20host` and was called ready; the host rule now refuses it. The empty state reads §6.9's qualified sentence again, the form's Label and Username hints are wired to their fields, and the Port field is full width on a phone._
+
+_Changelog 2026-10-24: §6.9's batch add is a dialog. The paste box was an inline card that pushed the pool table down and toggled its own label to "Hide the paste box"; the operator asked for the pop-up it should have been, which is also the shape the bulk credential add already takes. `Modal` gains a `wide` column for a dialog whose body is a table, the preview drops to the five facts it is read for (line, protocol, address, credential, result) with the password state still unwritten, the submit moves to the footer beside Cancel, and closing discards the paste because the page mounts the editor only while it is open._
+
+_Changelog 2026-10-24: §6.13's Settings passed the per-page UI audit. The commit band is pinned to the bottom of the scroll on all three editing tabs, so the unsaved marker and the commit stay in view on a 2938px Routing form. A write no longer takes the tab strip down: only the first read shows the loading state, so the operator keeps the tab they were on and the tab's own "Saved." line survives the re-read. Turning the password requirement off now asks, edits the draft, and waits for the band rather than committing the group from inside the dialog. The three failure-action sentences read as a list instead of one run-on line._
+
+_Changelog 2026-10-24: the panel's logo and favicon are SVG. The owner's vector master is `app-ui/assets/static/logo.svg`, the served marks are `static/logo-mark.svg`, `static/logo-mark@128.svg`, and `static/favicon.svg`, and `app.html`, the sidebar, and the Usage drawing reference those files. The raster marks were removed, so no current asset path carries a `.png` extension._
