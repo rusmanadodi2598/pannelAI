@@ -191,4 +191,47 @@ describe('SettingsPage', () => {
 			expect(stub.patches.length).toBe(before);
 		});
 	});
+
+	it('asks before opening the panel, and writes nothing until the band is pressed', async () => {
+		// The flip is the dangerous direction, so it asks. It does not commit: a write from inside the
+		// dialog would also carry an unsaved edit on the row beside it, which the operator never saved.
+		const stub = stubSettings();
+		render(SettingsPage);
+		await openTab('Security');
+
+		const box = screen.getByLabelText(/Require a password to open the panel/) as HTMLInputElement;
+
+		await fireEvent.click(box);
+		expect(await screen.findByRole('button', { name: 'Turn it off' })).toBeTruthy();
+		expect(stub.patches).toEqual([]);
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Keep the password' }));
+		expect(box.checked).toBe(true);
+		expect(screen.queryByText('Unsaved changes')).toBeNull();
+
+		await fireEvent.click(box);
+		await fireEvent.click(screen.getByRole('button', { name: 'Turn it off' }));
+
+		expect(box.checked).toBe(false);
+		expect(screen.getByText('Unsaved changes')).toBeTruthy();
+		expect(stub.patches).toEqual([]);
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Save access settings' }));
+		await waitFor(() => expect(stub.patches.length).toBe(1));
+		expect(stub.patches[0].security).toEqual({ require_login: false, require_api_key: true });
+	});
+
+	it('keeps the commit band pinned while a long tab scrolls', async () => {
+		// The Routing tab is 2938px tall: its band sat 2764px below the first field, so the unsaved
+		// marker and the commit were both off screen while the operator was editing.
+		stubSettings();
+		render(SettingsPage);
+		await openTab('Routing');
+
+		const band = screen
+			.getByRole('button', { name: 'Save routing settings' })
+			.closest('div') as HTMLElement;
+		expect(band.className).toContain('sticky');
+		expect(band.className).toContain('bottom-0');
+	});
 });

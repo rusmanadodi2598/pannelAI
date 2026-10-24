@@ -147,11 +147,14 @@
 		What the router does once it knows what the upstream's refusal was, per class. Blank keeps the
 		documented behaviour. Every provider inherits these until it carries its own entry for a class.
 	</p>
-	<p id="settings-class-actions" class="text-xs text-[var(--color-text-muted)]">
-		{FAILURE_ACTION_HELP.park}
-		{FAILURE_ACTION_HELP.rotate}
-		{FAILURE_ACTION_HELP.stop}
-	</p>
+	<ul
+		id="settings-class-actions"
+		class="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]"
+	>
+		{#each FAILURE_ACTIONS as action (action)}
+			<li>{FAILURE_ACTION_HELP[action]}</li>
+		{/each}
+	</ul>
 	<p class="text-xs text-[var(--color-text-muted)]">
 		Classes the credential did not cause are not listed: an unreachable target, a gate that refuses
 		this gateway, or a request refused on its own shape parks no key, so there is no window to tune.

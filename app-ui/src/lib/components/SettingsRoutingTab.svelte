@@ -205,6 +205,7 @@
 
 	<SaveBar
 		saveLabel="Save routing settings"
+		sticky
 		{saving}
 		{dirty}
 		{message}

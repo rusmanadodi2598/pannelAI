@@ -44,7 +44,11 @@
 	onMount(load);
 
 	async function load(): Promise<void> {
-		loading = true;
+		// Only the first read blanks the screen. A re-read after a write replaces the document under the
+		// open tab; taking the tabs down with it threw the operator back to the first tab and destroyed
+		// the "Saved." line the tab had just earned (SPEC-UI §8.6.3).
+		loading = settings === null;
+
 		const result = await fetchSettings();
 		loading = false;
 

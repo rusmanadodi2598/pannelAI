@@ -2,10 +2,12 @@
 	// Settings, Security tab (docs/SPEC-UI/001-SPEC-UI.md §6.13).
 	// PATCH /api/v1/settings, the security group.
 	//
-	// Turning login off exposes the panel on the network, so it asks for confirmation and states what
-	// changes rather than applying the toggle on the click that flipped it. The password form is part of
-	// this tab because a password is a security setting, and giving it a second screen would split one
-	// concern across two places.
+	// Turning login off exposes the panel on the network, so the flip asks for confirmation and the box is
+	// put back until the answer arrives. It does not write: this group commits through the band below,
+	// like the row beside it, and a commit from the dialog would also carry an unsaved edit the operator
+	// made on the other row without pressing Save. The password form is part of this tab because a
+	// password is a security setting, and giving it a second screen would split one concern across two
+	// places.
 	import { untrack } from 'svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import SaveBar from '$lib/components/SaveBar.svelte';
@@ -77,13 +79,13 @@
 	<label class="flex min-h-11 items-start gap-3 text-sm">
 		<input
 			type="checkbox"
-			checked={draft.require_login}
+			bind:checked={draft.require_login}
 			class="mt-1"
 			onchange={(event) => {
-				if (event.currentTarget.checked) {
+				// Unchecking is the direction that exposes the panel, so the box goes back to its stored
+				// value and only the confirmation moves it.
+				if (!event.currentTarget.checked) {
 					draft.require_login = true;
-					void save();
-				} else {
 					confirmingOpenPanel = true;
 				}
 			}}
@@ -108,6 +110,7 @@
 
 	<SaveBar
 		saveLabel="Save access settings"
+		sticky
 		{saving}
 		{dirty}
 		{message}
@@ -136,7 +139,6 @@
 			onclick={() => {
 				confirmingOpenPanel = false;
 				draft.require_login = false;
-				void save();
 			}}>Turn it off</Button
 		>
 	{/snippet}

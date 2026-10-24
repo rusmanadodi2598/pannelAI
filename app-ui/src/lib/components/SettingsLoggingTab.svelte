@@ -127,6 +127,7 @@
 
 	<SaveBar
 		saveLabel="Save logging settings"
+		sticky
 		{saving}
 		{dirty}
 		{message}
