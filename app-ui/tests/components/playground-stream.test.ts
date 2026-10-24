@@ -9,7 +9,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/sve
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import PlaygroundPage from '../../src/routes/playground/+page.svelte';
 import { DONE_FRAME, USAGE_FRAME, chunkFrame, streamResponse } from '../support/playground-sse';
-import { stallingAnswer, stubPlayground } from '../support/playground-page';
+import { stallingAnswer, stallingEmptyAnswer, stubPlayground } from '../support/playground-page';
 
 const MODELS = { data: [{ id: 'deepseek/chat', owned_by: 'deepseek' }] };
 const READ_FROM = 'Read from GET /playground/models.';
@@ -69,6 +69,29 @@ describe('PlaygroundPage send', () => {
 
 		expect(await screen.findByText('You stopped it. The text above is what arrived.')).toBeTruthy();
 		expect(within(answerBlock()).getByText('partial')).toBeTruthy();
+	});
+
+	it('says a stop before the first token arrived, without claiming text above', async () => {
+		stubPlayground({ models: MODELS, chat: stallingEmptyAnswer() });
+		render(PlaygroundPage);
+
+		await sendMessage('hi');
+		await screen.findByRole('button', { name: 'Stop' });
+		await fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+
+		expect(await screen.findByText('You stopped it before any text arrived.')).toBeTruthy();
+		expect(screen.queryByText('You stopped it. The text above is what arrived.')).toBeNull();
+		expect(screen.queryByText('The answer came back with no text.')).toBeNull();
+	});
+
+	it('says a stream closed with no token and no sentinel stopped before any text', async () => {
+		stubPlayground({ models: MODELS, chat: () => streamResponse([]) });
+		render(PlaygroundPage);
+
+		await sendMessage('hi');
+
+		expect(await screen.findByText('The answer stopped before any text arrived.')).toBeTruthy();
+		expect(screen.queryByText('The answer came back with no text.')).toBeNull();
 	});
 
 	it('reports a refused send with the gateway own code, and renders no answer', async () => {

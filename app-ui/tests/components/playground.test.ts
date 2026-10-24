@@ -52,6 +52,19 @@ describe('PlaygroundPage model states', () => {
 		expect(screen.queryByRole('combobox')).toBeNull();
 	});
 
+	it('lets the operator check an unset key again without rendering a composer', async () => {
+		const calls = stubPlayground({ models: KEY_MISSING, modelsStatus: 503 });
+		render(PlaygroundPage);
+
+		expect(await screen.findByText('The panel has no gateway key')).toBeTruthy();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+
+		expect(calls.models).toBe(2);
+		expect(await screen.findByText('The panel has no gateway key')).toBeTruthy();
+		expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
+	});
+
 	it('reports a failed read and reads again when asked', async () => {
 		const calls = stubPlayground({
 			models: { error: { code: 'GATEWAY_ERROR', message: 'The gateway answered HTTP 502.' } },
@@ -109,6 +122,19 @@ describe('PlaygroundPage model states', () => {
 		expect(await screen.findByText('This key routes no model')).toBeTruthy();
 		expect(screen.queryByRole('combobox')).toBeNull();
 		expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
+	});
+
+	it('reads the empty model list again when asked, still without a picker', async () => {
+		const calls = stubPlayground({ models: { data: [] } });
+		render(PlaygroundPage);
+
+		expect(await screen.findByText('This key routes no model')).toBeTruthy();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+
+		expect(calls.models).toBe(2);
+		expect(await screen.findByText('This key routes no model')).toBeTruthy();
+		expect(screen.queryByRole('combobox')).toBeNull();
 	});
 });
 

@@ -33,6 +33,13 @@
 				: 'bg-[var(--color-warn)]'
 	);
 
+	/** The closing sentence, except where "the text above" would point at an empty box. */
+	function endSentence(reason: PlaygroundEndReason, text: string): string {
+		if (text === '' && reason === 'stopped') return copy.answer.end.stoppedEmpty;
+		if (text === '' && reason === 'truncated') return copy.answer.end.truncatedEmpty;
+		return copy.answer.end[reason];
+	}
+
 	const stateSentence = $derived(
 		sending
 			? answer.text === ''
@@ -40,7 +47,7 @@
 				: copy.answer.streaming
 			: endReason === null
 				? copy.answer.interrupted
-				: copy.answer.end[endReason]
+				: endSentence(endReason, answer.text)
 	);
 
 	const facts = $derived([
@@ -68,11 +75,11 @@
 
 	{#if answer.text !== ''}
 		<div
-			class="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm whitespace-pre-wrap"
+			class="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm break-words whitespace-pre-wrap"
 		>
 			{answer.text}
 		</div>
-	{:else if !sending}
+	{:else if !sending && endReason === 'done'}
 		<p class="text-sm text-[var(--color-text-muted)]">{copy.answer.empty}</p>
 	{/if}
 

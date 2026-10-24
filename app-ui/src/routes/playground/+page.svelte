@@ -130,7 +130,13 @@
 			kind="empty"
 			title={copy.models.unavailableTitle}
 			description={`${loadFailure.error.message} ${copy.models.unavailableNote}`}
-		/>
+		>
+			{#snippet action()}
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>
+					{copy.models.checkAgain}
+				</Button>
+			{/snippet}
+		</StateMessage>
 	{:else if loadFailure}
 		<StateMessage
 			kind="error"
@@ -149,7 +155,13 @@
 			kind="empty"
 			title={copy.models.emptyTitle}
 			description={copy.models.emptyDescription}
-		/>
+		>
+			{#snippet action()}
+				<Button variant="ghost" class="px-2 underline" onclick={() => void load()}>
+					{copy.models.checkAgain}
+				</Button>
+			{/snippet}
+		</StateMessage>
 	{:else if models}
 		<!-- Where the line below came from, stated as a fact about its source (SPEC-UI §8.10 rule 4). -->
 		<div

@@ -22,6 +22,8 @@ export const PLAYGROUND_COPY = {
 		loading: 'Loading the models this key routes',
 		errorTitle: 'Could not read the model list',
 		retry: 'Try again',
+		/** Re-reads a state that can change without the page changing: a fixed key or a new route. */
+		checkAgain: 'Check again',
 		/** The key is unset. The description the screen renders is the panel's own sentence, which names it. */
 		unavailableTitle: 'The panel has no gateway key',
 		unavailableNote: 'This screen never holds a key.',
@@ -60,7 +62,11 @@ export const PLAYGROUND_COPY = {
 		end: {
 			done: 'The answer ended cleanly.',
 			stopped: 'You stopped it. The text above is what arrived.',
-			truncated: 'The answer stopped early, so the text above may be partial.'
+			/** A stop before the first token, where "the text above" would point at nothing. */
+			stoppedEmpty: 'You stopped it before any text arrived.',
+			truncated: 'The answer stopped early, so the text above may be partial.',
+			/** A stream that closed without either a token or the sentinel. */
+			truncatedEmpty: 'The answer stopped before any text arrived.'
 		},
 		/** A stream that broke mid-read: the failure block above says why, and this says what is on screen. */
 		interrupted: 'The answer never finished. The text above is what arrived.',

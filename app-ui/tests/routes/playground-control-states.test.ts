@@ -76,4 +76,14 @@ describe('Playground control states', () => {
 		expect(retry.className).toContain('underline');
 		expect(retry.className).not.toContain(ACCENT_FILL);
 	});
+
+	it('gives the empty model list a check-again action on the same ramp', async () => {
+		stubPlayground({ models: { data: [] } });
+		render(PlaygroundPage);
+
+		const check = await screen.findByRole('button', { name: 'Check again' });
+		expectControlStates(check);
+		expect(check.className).toContain('underline');
+		expect(check.className).not.toContain(ACCENT_FILL);
+	});
 });

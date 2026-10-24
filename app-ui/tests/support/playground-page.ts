@@ -65,3 +65,18 @@ export function stallingAnswer(text = 'partial'): ChatAnswer {
 		return new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } });
 	};
 }
+
+/** A stream that holds the response open before its first frame, so a stop has no text to keep. */
+export function stallingEmptyAnswer(): ChatAnswer {
+	return (init) => {
+		const body = new ReadableStream<Uint8Array>({
+			start(controller) {
+				init?.signal?.addEventListener('abort', () => {
+					controller.error(new DOMException('stopped', 'AbortError'));
+				});
+			}
+		});
+
+		return new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+	};
+}
