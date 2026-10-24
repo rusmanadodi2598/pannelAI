@@ -190,7 +190,7 @@ func TestIntegration_UpdateLeavesARotationAndTheUseCountAlone(t *testing.T) {
 	loadedCred := *loaded.OAuth()
 
 	served := loaded
-	served.RecordUpstreamSuccess(servedAt)
+	served.RecordUse(servedAt)
 	if err := repo.RecordUpstreamOutcome(ctx, served); err != nil {
 		t.Fatalf("recording a served outcome: %v", err)
 	}
