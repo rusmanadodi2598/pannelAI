@@ -28,6 +28,10 @@ func TestLoad_GivenEnvironmentVariations_ThenConfigIsAcceptedOrRejected(t *testi
 
 		"TELEGRAM_BOT_TOKEN":      "123456789:AAH-test-token-value",
 		"TELEGRAM_WEBHOOK_SECRET": "test-secret-1234567890",
+
+		"GATEWAY_BASE_URL": "https://app-router.kentang.ai.id",
+		"GATEWAY_KEY":      "gateway-key-value",
+		"BUILDER_MODEL":    "openai/gpt-4o-mini",
 	}
 
 	cases := []struct {
@@ -174,6 +178,12 @@ func TestLoad_GivenOptionalOverrides_ThenValuesAreApplied(t *testing.T) {
 		"SHUTDOWN_TIMEOUT":        "20s",
 		"TELEGRAM_BOT_TOKEN":      "123456789:AAF-test-token-0000000000000000000",
 		"TELEGRAM_WEBHOOK_SECRET": "test-secret-1234567890",
+
+		"GATEWAY_BASE_URL":   "https://app-router.kentang.ai.id",
+		"GATEWAY_KEY":        "gateway-key-value",
+		"BUILDER_MODEL":      "openai/gpt-4o-mini",
+		"BUILDER_MAX_TOKENS": "1200",
+		"BUILDER_TIMEOUT":    "30s",
 	}
 
 	cfg, err := config.Load(func(key string) string { return env[key] })
@@ -185,5 +195,11 @@ func TestLoad_GivenOptionalOverrides_ThenValuesAreApplied(t *testing.T) {
 	}
 	if cfg.ReadinessTimeout.String() != "5s" || cfg.ShutdownTimeout.String() != "20s" {
 		t.Fatalf("timeouts = %s/%s, want 5s/20s", cfg.ReadinessTimeout, cfg.ShutdownTimeout)
+	}
+	if cfg.BuilderMaxTokens != 1200 || cfg.BuilderTimeout.String() != "30s" {
+		t.Fatalf("builder = %d/%s, want the overridden 1200/30s", cfg.BuilderMaxTokens, cfg.BuilderTimeout)
+	}
+	if cfg.BuilderDailyCap != 60 || cfg.PromptMaxChars != 2000 {
+		t.Fatalf("defaults = %d/%d, want 60/2000", cfg.BuilderDailyCap, cfg.PromptMaxChars)
 	}
 }

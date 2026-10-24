@@ -9,6 +9,7 @@ require (
 	github.com/go-telegram/bot v1.27.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/redis/go-redis/v9 v9.22.0
+	golang.org/x/text v0.42.0
 )
 
 require (
@@ -24,5 +25,4 @@ require (
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
 )
