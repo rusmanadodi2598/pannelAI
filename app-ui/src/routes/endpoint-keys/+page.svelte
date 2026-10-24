@@ -1,9 +1,6 @@
 <script lang="ts">
-	// Endpoint & Key (docs/SPEC-UI/001-SPEC-UI.md §6.2).
-	//
-	// One screen, one subject: the keys a CLI tool presents to the gateway. Provider connections live on
-	// the provider's own screen, which is where the reference keeps them (its Connections card), so this
-	// screen carries no connections tab and nothing is duplicated across the two.
+	// Endpoint & Key (docs/SPEC-UI/001-SPEC-UI.md §6.2): one screen, one subject, the keys a client
+	// presents to the gateway. Provider connections live on the provider screen.
 	import GatewayKeysTab from '$lib/components/GatewayKeysTab.svelte';
 </script>
 

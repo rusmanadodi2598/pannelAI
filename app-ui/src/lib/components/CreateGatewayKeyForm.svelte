@@ -1,8 +1,5 @@
 <script lang="ts">
-	// Create-gateway-key form.
-	//
-	// The screen owns the list and the one-time key modal; this component owns one field and one call,
-	// so the screen file stays within the project's line limit and each piece has one job.
+	// Create-gateway-key form: one field and one call; the screen owns the list and the one-time modal.
 	import { createGatewayKey } from '$lib/api/gateway-keys';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { Button } from '$lib/primitives/button/index.js';
@@ -43,9 +40,7 @@
 	}
 </script>
 
-<!-- Mobile: the field and the action stack at full width, so the three controls on this screen (the name
-     field, Create, Refresh) are one column of equal-width rows. On a phone the 256px field kept its width
-     and the Create button sat on its own line at a different width (antislop-layoutmobile, Form Row). -->
+<!-- On a phone the field and action stack at full width; from sm up the form returns to one line. -->
 <form
 	class="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end"
 	onsubmit={submit}

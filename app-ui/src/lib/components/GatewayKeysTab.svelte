@@ -1,14 +1,9 @@
 <script lang="ts">
 	// Gateway keys table of Endpoint & Key (docs/SPEC-UI/001-SPEC-UI.md §6.2).
 	//
-	// This owns the list, its paging, and the confirmation dialog for the destructive action. Creating,
-	// rendering a row, and showing the one-time key each live in their own component, which keeps every
-	// file under the project line limit.
-	//
-	// Revoked rows never reach the table: DELETE is terminal (SPEC-API §7.3), so a key carrying that
-	// status has no control left that would work, and the reference's own list drops a deleted key. The
-	// route still counts revoked rows in `meta.total`, which is what the paging math reads; the
-	// route-side filter is requested in docs/PORT/001-PORT-ENDPOINT-KEYS.md F1.
+	// This owns the list, paging, and the delete confirmation. Revoked rows do not render because
+	// DELETE is terminal (SPEC-API §7.3), but the route still counts them in meta.total, which the
+	// paging math reads; the route-side filter is requested in docs/PORT/001-PORT-ENDPOINT-KEYS.md F1.
 	import CreateGatewayKeyForm from '$lib/components/CreateGatewayKeyForm.svelte';
 	import GatewayKeyRow from '$lib/components/GatewayKeyRow.svelte';
 	import Modal from '$lib/components/Modal.svelte';
@@ -38,8 +33,7 @@
 	let created = $state<CreatedGatewayKey | null>(null);
 	let pendingDelete = $state<GatewayKey | null>(null);
 	let deleting = $state(false);
-	// A failed delete is not a failed list read, so it gets its own line rather than replacing the table
-	// with an error state.
+	// A failed delete gets its own line; it is not a failed list read.
 	let notice = $state<ApiError | null>(null);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
@@ -57,8 +51,6 @@
 		}
 
 		error = null;
-		// The terminal rows stay in the server's count, which the paging math reads, but they do not
-		// render: a revoked key has no working action left, so it leaves the screen.
 		keys = result.data.data.filter((entry) => entry.status !== KEY_STATUS_REVOKED);
 		total = result.data.meta.total;
 	}
@@ -94,8 +86,7 @@
 		}}
 	/>
 
-	<!-- The same mobile width as the create form above: full width on a phone, so Refresh lines up with
-	     Create gateway key instead of sitting at its own size. RefreshControl is shared, so the rule lives here. -->
+	<!-- On a phone, Refresh matches Create's width so the two controls line up. -->
 	<div
 		class="flex flex-col sm:flex-row [&>div]:w-full sm:[&>div]:w-auto [&_button]:w-full sm:[&_button]:w-auto [&_button]:justify-center"
 	>

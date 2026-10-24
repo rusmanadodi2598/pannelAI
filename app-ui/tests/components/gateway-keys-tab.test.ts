@@ -17,6 +17,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import GatewayKeysTab from '../../src/lib/components/GatewayKeysTab.svelte';
 import { keyRow, stubGatewayKeys } from '../support/gateway-key-stub';
 import { expectIconOnly } from '../support/icon-only';
+import { formatTimestamp } from '$lib/utils/time';
 
 async function createKey(name: string): Promise<void> {
 	await fireEvent.input(screen.getByLabelText('Key name'), { target: { value: name } });
@@ -48,6 +49,17 @@ describe('gateway keys tab', () => {
 		expect(screen.getByText('sk-…abcd')).toBeTruthy();
 		expect(screen.getByText('12')).toBeTruthy();
 		expect(screen.getAllByText('Never')).toHaveLength(2);
+	});
+
+	it('renders the last-used instant in the panel format, not the wire value', async () => {
+		const used = '2026-09-18T09:30:00Z';
+		stubGatewayKeys({ rows: [keyRow({ last_used_at: used })] });
+
+		render(GatewayKeysTab);
+
+		await screen.findByRole('table');
+		expect(screen.getByText(formatTimestamp(used))).toBeTruthy();
+		expect(screen.queryByText(used)).toBeNull();
 	});
 
 	it('says the list is empty rather than showing an empty table', async () => {
@@ -156,6 +168,18 @@ describe('gateway keys tab', () => {
 
 		expect(await screen.findByRole('alert')).toBeTruthy();
 		expect(stub.writes).toHaveLength(0);
+	});
+
+	it('gives the one-time key copy control a 44px touch target', async () => {
+		stubGatewayKeys();
+		render(GatewayKeysTab);
+		await screen.findByRole('table');
+
+		await createKey('CI runner');
+		const dialog = await screen.findByRole('dialog');
+		const copy = within(dialog).getByRole('button', { name: 'Copy' });
+
+		expect(copy.className).toContain('size-11');
 	});
 
 	it('copies the new key, and unlocks dismissal once it reached the clipboard', async () => {

@@ -88,6 +88,7 @@
 
 	<BulkActionBar
 		kind="keys"
+		unit="key"
 		selected={bulk.count}
 		total={keys.length}
 		{scope}
