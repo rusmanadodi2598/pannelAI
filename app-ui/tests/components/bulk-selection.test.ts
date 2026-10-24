@@ -20,6 +20,7 @@ afterEach(() => cleanup());
 function renderBar(overrides: Record<string, unknown> = {}): void {
 	render(BulkActionBar, {
 		kind: 'endpoints',
+		unit: 'endpoint',
 		selected: 47,
 		total: 47,
 		scope: 'all 47 on the server',
@@ -59,6 +60,26 @@ describe('the bulk action bar', () => {
 		renderBar({ selected: 0 });
 		expect(screen.getByRole('button', { name: 'Select all 47 endpoints' })).toBeTruthy();
 		expect(screen.queryByRole('button', { name: 'Delete 47 endpoints' })).toBeNull();
+	});
+
+	it('says nothing is selected instead of quoting a zero count as a scope', () => {
+		// The scope qualifies a selection, so with none it read as a claim about names: three screens
+		// passed "0 named by you" and the operator saw that where "Nothing selected" was meant.
+		renderBar({ selected: 0, scope: '0 named by you' });
+
+		const spoken = squashed(screen.getByTestId('bulk-count'));
+		expect(spoken).toBe('Nothing selected');
+		expect(spoken).not.toContain('named by you');
+	});
+
+	it('uses the singular once one row is selected', () => {
+		// "1 candidates selected" and "Disable 1 endpoints" are the plural noun used whatever the
+		// count says, which is the same template fault the source count carried.
+		renderBar({ selected: 1 });
+
+		expect(squashed(screen.getByTestId('bulk-count'))).toContain('1 endpoint selected');
+		expect(screen.getByRole('button', { name: 'Disable 1 endpoint' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Clear selection of 1 endpoint' })).toBeTruthy();
 	});
 
 	// The reported bug: the bar claimed the set while every row checkbox stayed empty.

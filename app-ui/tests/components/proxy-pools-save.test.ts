@@ -119,16 +119,18 @@ describe('editing a proxy', () => {
 		expect(stub.patches[0].id).toBe('prx_01HZZ9K2');
 		expect(stub.patches[0].body.password).toBe('');
 
-		// The fake API applies the same keep rule the real one does, so the row still reports a secret.
+		// The fake API applies the same keep rule the real one does, so the form still reports a secret
+		// after the write and the re-read.
 		expect(await screen.findByText('Frankfurt egress two')).toBeTruthy();
-		expect(screen.getByText('Set')).toBeTruthy();
+		await waitFor(() => expect(document.querySelectorAll('dialog[open]').length).toBe(0));
+		await fireEvent.click(screen.getByRole('button', { name: 'Edit Frankfurt egress two' }));
+		expect(screen.getByText(/Leave empty to keep it/)).toBeTruthy();
 	});
 
 	it('replaces the stored password when a new one is typed', async () => {
 		const stub = stubProxies({ pool: [proxyRow({ has_password: false })] });
 		render(ProxyPoolsPage);
 		await screen.findByRole('table');
-		expect(screen.getByText('Not set')).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Edit Frankfurt egress' }));
 		expect(screen.getByText('No password is stored.')).toBeTruthy();
@@ -138,7 +140,12 @@ describe('editing a proxy', () => {
 
 		await waitFor(() => expect(stub.patches.length).toBe(1));
 		expect(stub.patches[0].body.password).toBe('hunter2');
-		expect(await screen.findByText('Set')).toBeTruthy();
+
+		// The write ends with a re-read and the dialog's own close, and the patch lands before both.
+		// Opening it earlier would read the draft the save started from rather than the row stored.
+		await waitFor(() => expect(document.querySelectorAll('dialog[open]').length).toBe(0));
+		await fireEvent.click(screen.getByRole('button', { name: 'Edit Frankfurt egress' }));
+		expect(screen.getByText(/Leave empty to keep it/)).toBeTruthy();
 	});
 
 	it('shows a refused save as an alert and keeps the dialog open', async () => {

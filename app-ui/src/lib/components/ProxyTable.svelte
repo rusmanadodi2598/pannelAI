@@ -5,8 +5,9 @@
 	// is in the pool at all. Label and address identify the row, the test column says what the last
 	// probe found, and Enabled says whether the row is a live candidate.
 	//
-	// The password is never rendered. The wire carries `has_password` and nothing else, so the cell
-	// says whether one is stored rather than showing a value the panel does not have.
+	// The password is never rendered, and it has no column: the wire carries `has_password` and nothing
+	// else, and §6.9's column list stops at username. The edit form is where that fact is read, and the
+	// pool table keeps the room it needs for the actions.
 	//
 	// A row that was never tested reads "Not tested", which is not the same as a failure and must not
 	// look like one. The three actions are icon-only: the glyph comes
@@ -82,7 +83,6 @@
 				<th scope="col" class="px-3 py-2 font-medium">Host</th>
 				<th scope="col" class="px-3 py-2 font-medium">Port</th>
 				<th scope="col" class="px-3 py-2 font-medium">Username</th>
-				<th scope="col" class="px-3 py-2 font-medium">Password</th>
 				<th scope="col" class="px-3 py-2 font-medium">Enabled</th>
 				<th scope="col" class="px-3 py-2 font-medium">Last test</th>
 				<th scope="col" class="px-3 py-2 font-medium">Actions</th>
@@ -91,32 +91,41 @@
 		<tbody>
 			{#each proxies as proxy (proxy.id)}
 				<tr class="border-t border-[var(--color-border)] align-top">
-					<td data-label="Label" class="px-3 py-2 font-medium">{proxy.label}</td>
+					<td data-label="Label" class="min-w-40 px-3 py-2 font-medium">{proxy.label}</td>
 					<td data-label="Protocol" class="px-3 py-2">{protocolLabel(proxy.protocol)}</td>
-					<td data-label="Host" class="px-3 py-2">{proxy.host}</td>
+					<!-- `break-words` on the address cells: one long host otherwise sets its column's minimum
+					     at 219px and the identity and result columns shrink to make room for it. -->
+					<td data-label="Host" class="px-3 py-2 break-words">{proxy.host}</td>
 					<td data-label="Port" class="px-3 py-2 tabular-nums">{proxy.port}</td>
-					<td data-label="Username" class="px-3 py-2">{proxy.username || 'None'}</td>
-					<td data-label="Password" class="px-3 py-2">{proxy.has_password ? 'Set' : 'Not set'}</td>
+					<td data-label="Username" class="px-3 py-2 break-words">
+						{proxy.username || 'None'}
+					</td>
 					<td data-label="Enabled" class="px-3 py-2">
-						<Button
-							variant="ghost"
-							size="icon"
-							aria-label={proxy.enabled ? `Disable ${proxy.label}` : `Enable ${proxy.label}`}
-							title={proxy.enabled ? `Disable ${proxy.label}` : `Enable ${proxy.label}`}
-							onclick={() => ontoggle(proxy, !proxy.enabled)}
-						>
-							{#if proxy.enabled}
-								<DisableIcon class="size-4" aria-hidden="true" />
-							{:else}
-								<EnableIcon class="size-4" aria-hidden="true" />
-							{/if}
-						</Button>
-						<!-- The word beside the glyph: §8.11.8 refuses a state readable only by hue. -->
-						<span class="ml-1 text-xs">{proxy.enabled ? 'Enabled' : 'Disabled'}</span>
+						<!-- One wrapper, not two siblings: the mobile card layout places each child in its own
+						     grid cell, which dropped the word under the row label instead of beside the glyph. -->
+						<span class="flex items-center gap-1 whitespace-nowrap">
+							<Button
+								variant="ghost"
+								size="icon"
+								aria-label={proxy.enabled ? `Disable ${proxy.label}` : `Enable ${proxy.label}`}
+								title={proxy.enabled ? `Disable ${proxy.label}` : `Enable ${proxy.label}`}
+								onclick={() => ontoggle(proxy, !proxy.enabled)}
+							>
+								{#if proxy.enabled}
+									<DisableIcon class="size-4" aria-hidden="true" />
+								{:else}
+									<EnableIcon class="size-4" aria-hidden="true" />
+								{/if}
+							</Button>
+							<!-- The word beside the glyph: §8.11.6 refuses a state readable only by hue. -->
+							<span class="text-xs">{proxy.enabled ? 'Enabled' : 'Disabled'}</span>
+						</span>
 					</td>
 					<td data-label="Last test" class="px-3 py-2">
 						{#if proxy.status}
-							<span>{proxyTestStateLabel(proxy.status.state)} in {proxy.status.latency_ms}ms</span>
+							<span class="whitespace-nowrap">
+								{proxyTestStateLabel(proxy.status.state)} in {proxy.status.latency_ms}ms
+							</span>
 							{#if proxy.status.checked_at}
 								<span class="block text-xs text-[var(--color-text-muted)]">
 									{formatTimestamp(proxy.status.checked_at)}
@@ -132,7 +141,10 @@
 						{/if}
 					</td>
 					<td data-label="Actions" class="px-3 py-2">
-						<div class="flex flex-wrap gap-x-1">
+						<!-- One line at desktop: nine columns leave this one too little room to hold four 44px
+						     controls, and a wrapped stack made every row 105px tall. Below 768px the card
+						     layout has the room, so wrapping is what fits. -->
+						<div class="flex flex-wrap items-center gap-1 md:flex-nowrap">
 							{#if selectable}
 								<!-- Selection belongs with the actions you can take, not on a labelled line of
 									 its own once the card layout takes over below 768px. -->

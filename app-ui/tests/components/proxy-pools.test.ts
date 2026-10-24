@@ -54,28 +54,33 @@ describe('ProxyPoolsPage', () => {
 		render(ProxyPoolsPage);
 		await screen.findByRole('table');
 
+		// §6.9's column list. The password is not one of them: the wire carries only `has_password`, and
+		// the edit form is where that fact is read, so the table spends its width on the actions.
 		for (const column of [
 			'Label',
 			'Protocol',
 			'Host',
 			'Port',
 			'Username',
-			'Password',
 			'Enabled',
 			'Last test',
 			'Actions'
 		]) {
 			expect(screen.getByRole('columnheader', { name: column }), column).toBeTruthy();
 		}
+		expect(screen.queryByRole('columnheader', { name: 'Password' })).toBeNull();
 	});
 
-	it('reports a stored password as set without putting the value on the page', async () => {
+	it('keeps the stored secret off the page and states it in the edit form', async () => {
 		stubProxies({ pool: [proxyRow({ has_password: true })] });
 		render(ProxyPoolsPage);
 		await screen.findByRole('table');
 
-		expect(screen.getByText('Set')).toBeTruthy();
 		expect(document.body.textContent).not.toContain('hunter2');
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Edit Frankfurt egress' }));
+		expect(screen.getByText(/Leave empty to keep it/)).toBeTruthy();
+		expect(value(screen.getByLabelText('Password'))).toBe('');
 	});
 
 	it('says a row was never tested rather than reading it as a failure', async () => {
@@ -178,7 +183,7 @@ describe('ProxyPoolsPage', () => {
 		});
 
 		const preview = await screen.findByRole('table');
-		expect(text(preview)).toContain('Set');
+		expect(text(preview)).toContain('password set');
 		expect(text(preview)).not.toContain('hunter2');
 	});
 });

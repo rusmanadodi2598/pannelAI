@@ -88,6 +88,11 @@ export const proxyHost = z
 	.refine((value) => !/[/\s]/.test(value), {
 		message: 'Enter a host only, with no scheme, path, or port.'
 	})
+	// `new URL` percent-encodes a character a host cannot carry instead of failing, so a pasted line
+	// with a space in it reaches here as `not%20a%20host` and the batch preview would call it ready.
+	.refine((value) => !value.includes('%'), {
+		message: 'That host carries a character a host name cannot.'
+	})
 	// More than one colon is an IPv6 literal written without brackets, which gets its own message so
 	// the fix is stated. A single colon is the host:port case below.
 	.refine((value) => BRACKETED_IPV6.test(value) || colonCount(value) <= 1, {

@@ -44,7 +44,7 @@
 	let testingId = $state<string | null>(null);
 	let notice = $state<string | ApiError | null>(null);
 	let noticePrefix = $state('');
-	let showBatch = $state(false);
+	let batchOpen = $state(false);
 
 	const total = $derived(proxies?.length ?? 0);
 
@@ -154,24 +154,26 @@
 					Add a proxy
 				</Button>
 			{/if}
-			<Button variant="ghost" class="underline" onclick={() => (showBatch = !showBatch)}>
+			<Button variant="ghost" class="underline" onclick={() => (batchOpen = true)}>
 				<AddManyIcon class="size-4" aria-hidden="true" />
-				{showBatch ? 'Hide the paste box' : 'Add several at once'}
+				Add several at once
 			</Button>
 			<!-- Refresh lives only in the shared control above: a second
 			     plain "Refresh" here would be the same action written twice, and the shared control renders in
 			     every state this toolbar can appear in. -->
 		</div>
 
-		{#if showBatch}
-			<ProxyBatchAdd onsubmitted={load} />
+		{#if batchOpen}
+			<!-- Mounted only while open, so closing the dialog discards the paste rather than holding a
+			     draft the operator cannot see. -->
+			<ProxyBatchAdd onsubmitted={load} onclose={() => (batchOpen = false)} />
 		{/if}
 
 		{#if proxies.length === 0}
 			<StateMessage
 				kind="empty"
 				title="No proxies yet"
-				description="Add one to route upstream calls."
+				description="Add one to route upstream calls through it once proxying is on."
 			>
 				{#snippet action()}
 					<Button variant="ghost" class="underline" onclick={() => (formTarget = 'new')}>
@@ -199,6 +201,7 @@
 
 			<BulkActionBar
 				kind="candidates"
+				unit="candidate"
 				selected={bulk.count}
 				{total}
 				scope={bulk.scope}

@@ -47,6 +47,7 @@ describe('Proxy Pools control states', () => {
 		render(BulkActionBar, {
 			props: {
 				kind: 'keys',
+				unit: 'key',
 				selected: 2,
 				total: 9,
 				scope: 'this provider',

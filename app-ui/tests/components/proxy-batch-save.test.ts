@@ -5,7 +5,7 @@
 // the button again cannot add a duplicate of a row that already landed. The second one is the reason
 // the box is not simply cleared on completion.
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProxyPoolsPage from '../../src/routes/proxy-pools/+page.svelte';
 import { text, value } from '../support/dom';
@@ -94,6 +94,28 @@ describe('batch add', () => {
 
 		await waitFor(() => expect(stub.creates.length).toBe(1));
 		expect(stub.creates[0].host).toBe('a.example.com');
+	});
+
+	it('opens the paste as a dialog and drops the draft when it closes', async () => {
+		// The paste is a task the operator leaves the table to do, so it is a pop-up rather than a box
+		// that pushes the pool down the page. The page mounts the component only while it is open, so
+		// closing discards the draft instead of holding one nobody can see.
+		stubProxies({ pool: [] });
+		render(ProxyPoolsPage);
+		await screen.findByText('No proxies yet');
+		expect(screen.queryByRole('dialog', { name: 'Add several at once' })).toBeNull();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Add several at once' }));
+		const dialog = await screen.findByRole('dialog', { name: 'Add several at once' });
+		await fireEvent.input(screen.getByLabelText('Proxy URLs, one per line'), {
+			target: { value: 'http://a.example.com:8080\n' }
+		});
+
+		await fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+		expect(screen.queryByRole('dialog', { name: 'Add several at once' })).toBeNull();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Add several at once' }));
+		expect(value(await screen.findByLabelText('Proxy URLs, one per line'))).toBe('');
 	});
 });
 

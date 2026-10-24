@@ -16,6 +16,7 @@
 
 	let {
 		kind,
+		unit,
 		selected,
 		total,
 		scope,
@@ -27,8 +28,10 @@
 		ontag,
 		ontoggleall
 	}: {
-		/** What the rows are called, so every control's name says what it acts on. */
+		/** What the rows are called, plural, so every control's name says what it acts on. */
 		kind: string;
+		/** The same noun singular, because "1 candidates selected" is the template talking. */
+		unit: string;
 		/** How many rows the operator has selected. */
 		selected: number;
 		/** How many the server holds for this scope, which is what Select-All addresses. */
@@ -56,9 +59,10 @@
 	let tagging = $state(false);
 	let tagDraft = $state('');
 
-	const selectAllName = $derived(`Select all ${total} ${kind}`);
-	const clearSelectionName = $derived(`Clear selection of ${selected} ${kind}`);
-	const label = (verb: string): string => `${verb} ${selected} ${kind}`;
+	const noun = (count: number): string => (count === 1 ? unit : kind);
+	const selectAllName = $derived(`Select all ${total} ${noun(total)}`);
+	const clearSelectionName = $derived(`Clear selection of ${selected} ${noun(selected)}`);
+	const label = (verb: string): string => `${verb} ${selected} ${noun(selected)}`;
 
 	async function run(
 		slot: keyof typeof busy,
@@ -94,10 +98,12 @@
 		<span class="text-sm tabular-nums" data-testid="bulk-count">
 			{#if selected > 0}
 				{selected}
-				{kind} selected
+				{noun(selected)} selected
 				<span class="text-[var(--color-text-muted)]">({scope})</span>
 			{:else}
-				<span class="text-[var(--color-text-muted)]">{scope}</span>
+				<!-- The scope qualifies a selection, so it is not said with none: "0 named by you" read
+				     as a claim about names rather than as an empty selection. -->
+				<span class="text-[var(--color-text-muted)]">Nothing selected</span>
 			{/if}
 		</span>
 
@@ -180,8 +186,9 @@
 
 <Modal title="Tag the selection" open={tagging} onclose={() => (tagging = false)}>
 	<label class="block text-sm" for="bulk-tag-field">
-		Label to put on these {selected}
-		{kind}
+		Label to put on {selected === 1 ? 'this' : 'these'}
+		{selected}
+		{noun(selected)}
 		<input
 			id="bulk-tag-field"
 			class="mt-1 min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
