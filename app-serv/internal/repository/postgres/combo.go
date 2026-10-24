@@ -23,6 +23,11 @@ import (
 // comboColumns is the projection every read uses, in scan order.
 const comboColumns = `id, name, strategy, sticky_limit, judge_model, models, created_at, updated_at`
 
+// comboNamesLimit bounds the name set a reference check reads. A combo name is
+// short and the set is operator-managed, so the cap only fires on a bulk import
+// that has outgrown what one resolution pass was meant to scan.
+const comboNamesLimit = 1000
+
 // ComboRepository persists combos in PostgreSQL.
 type ComboRepository struct {
 	pool *pgxpool.Pool
@@ -118,11 +123,11 @@ func (r *ComboRepository) ExistsByName(ctx context.Context, name string) (bool, 
 	return exists, nil
 }
 
-// Names returns every combo name, ordered, so validating an alias target or
-// resolving a model string needs one query rather than one per reference
-// (AGENTS.md §1.7).
+// Names returns up to comboNamesLimit combo names, ordered, so validating an
+// alias target or resolving a model string needs one query rather than one per
+// reference (AGENTS.md §1.7).
 func (r *ComboRepository) Names(ctx context.Context) ([]string, error) {
-	rows, err := r.pool.Query(ctx, `SELECT name FROM combos ORDER BY name`)
+	rows, err := r.pool.Query(ctx, `SELECT name FROM combos ORDER BY name LIMIT $1`, comboNamesLimit)
 	if err != nil {
 		return nil, translateComboError(err)
 	}

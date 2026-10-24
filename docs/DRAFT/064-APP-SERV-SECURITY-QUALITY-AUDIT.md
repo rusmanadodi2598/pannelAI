@@ -5,11 +5,11 @@ Dokumen ini adalah **rencana kerja**, bukan catatan yang sudah selesai. Temuan s
 
 | | |
 | --- | --- |
-| **Status** | Fase 0 (baseline), Fase 1 (H1), dan Fase 2 (M1/M2) selesai. `govulncheck` melaporkan 0 CVE reachable; suite `-race` pada paket yang berubah dan suite integrasi Redis hijau. Sisa 3 temuan tingkat module ada di `golang.org/x/crypto/ssh` dan `openpgp` yang tidak diimpor. Fase 3-4 belum dikerjakan. |
+| **Status** | Fase 0 (baseline), Fase 1 (H1), Fase 2 (M1/M2), dan Fase 3 (L1-L4) selesai. `govulncheck` melaporkan 0 CVE reachable; suite `-race` dan suite integrasi Redis/PostgreSQL hijau. Sisa 3 temuan tingkat module ada di `golang.org/x/crypto/ssh` dan `openpgp` yang tidak diimpor. Fase 4 belum dikerjakan. |
 | **Sumber** | Audit read-only `app-serv`: `go build`, `go vet`, `gofmt`, `staticcheck v0.8.1`, `go test ./...`, `go test -race` pada paket kritis, dan `govulncheck` (16 CVE reachable). |
 | **Lingkup** | `app-serv` (`cmd/`, `internal/`, `migrations/`, `go.mod`) plus gate `scrypts/gates/` dan `.github/workflows/gates.yml`. |
 | **Tidak termasuk** | `app-ui`, deployment multi-replika, dan perubahan bentuk wire. |
-| **Struktural (AGENTS.md §1.9)** | Fase 1 N/A. Fase 2 mengubah bentuk state sesi: `SYSTEM_MAP.md` diperbarui pada alur login/guard dan daftar key Redis; tidak ada perubahan domain, wire, atau batas service. |
+| **Struktural (AGENTS.md §1.9)** | Fase 1 N/A. Fase 2 mengubah bentuk state sesi: `SYSTEM_MAP.md` diperbarui pada alur login/guard dan daftar key Redis; tidak ada perubahan domain, wire, atau batas service. Fase 3 N/A: TLS/sslmode adalah konfigurasi transport, fail-closed hanya mengubah cara planner menjawab kegagalan baca, dan `LIMIT` serta cache tetap internal; tidak ada domain, wire, atau batas service yang berubah. |
 
 ## 1. Baseline yang sudah dijalankan
 
@@ -46,10 +46,10 @@ GO-2026-6613/6605 mendesinkronkan koneksi HTTP/1 CONNECT; GO-2026-6218 membebani
 
 | ID | Temuan | Bukti | Perbaikan | Status |
 | --- | --- | --- | --- | --- |
-| L1 | Redis tanpa TLS; `POSTGRES_DSN` tidak menegakkan `sslmode` | `cmd/app-serv/main.go:66-73`, `internal/config/config_validate.go:26-27` | Dukung TLS Redis; wajibkan `sslmode` verifikasi di luar local | Belum |
-| L2 | Planner proxy fail-open ke egress langsung saat pool gagal dibaca | `internal/service/proxy_route.go:105-111` | Fail-closed bila proxy diwajibkan; fail-open hanya untuk kondisi "tidak ada proxy" | Belum |
-| L3 | Query list proxy/provider node/combo tanpa `LIMIT`, dibaca ulang tiap request | `internal/repository/postgres/proxy.go:79`, `provider_node.go:65`, `combo.go:125`; `internal/service/proxy_route.go:86,105,127-147` | `LIMIT`/pagination dan cache per request atau TTL singkat | Belum |
-| L4 | Komentar duplikat dan `@reason` basi | `internal/domain/gateway_key.go:49-53`, `internal/domain/media_provider.go:7` | Hapus duplikasi; samakan `@reason` dengan egress yang sudah dijaga | Belum |
+| L1 | Redis tanpa TLS; `POSTGRES_DSN` tidak menegakkan `sslmode` | `cmd/app-serv/main.go:66-73`, `internal/config/config_validate.go:26-27` | Dukung TLS Redis; wajibkan `sslmode` verifikasi di luar local | Selesai: `REDIS_TLS_ENABLED`/`REDIS_TLS_CA_FILE` membangun `TLSConfig` minimum TLS 1.2 di `redis_wiring.go`; di luar `development`, DSN wajib `sslmode=verify-ca` atau `verify-full` |
+| L2 | Planner proxy fail-open ke egress langsung saat pool gagal dibaca | `internal/service/proxy_route.go:105-111` | Fail-closed bila proxy diwajibkan; fail-open hanya untuk kondisi "tidak ada proxy" | Selesai: provider dengan pin pool mendapat error saat pool tidak terbaca; tanpa pin tetap degradasi ke shared client yang sudah membawa rute statis |
+| L3 | Query list proxy/provider node/combo tanpa `LIMIT`, dibaca ulang tiap request | `internal/repository/postgres/proxy.go:79`, `provider_node.go:65`, `combo.go:125`; `internal/service/proxy_route.go:86,105,127-147` | `LIMIT`/pagination dan cache per request atau TTL singkat | Selesai: `LIMIT 1000` pada ketiga query; daftar proxy dipakai ulang selama 5 detik; test integrasi menyeberangi batas dan test planner menghitung pembacaan |
+| L4 | Komentar duplikat dan `@reason` basi | `internal/domain/gateway_key.go:49-53`, `internal/domain/media_provider.go:7` | Hapus duplikasi; samakan `@reason` dengan egress yang sudah dijaga | Selesai: paragraf duplikat dihapus; `@reason` media menyebut guard egress bersama, bukan katup yang belum terpasang |
 
 ### 2.4 INFO
 
@@ -95,14 +95,30 @@ Semua pemeriksaan di §1 dijalankan pada working tree bersih sebelum perubahan a
   golangci-lint 0 issue, tanpa peringatan batas baris), `go-headers` 1494 file PASS, `antislop` PASS,
   `gate-scope` PASS, `go-vuln` 0 reachable (3 module-only), dan `git diff --check` bersih.
 
-### Fase 3: LOW
+### Fase 3: LOW (selesai)
 
-- L1: konfigurasi TLS Redis + validasi `sslmode` Postgres.
-- L2: fail-closed untuk proxy yang diwajibkan; test planner untuk error pembacaan pool.
-- L3: `LIMIT` + cache; test query dan test planner.
-- L4: higiene komentar; `antislop.sh` dan `go-headers.sh` tetap hijau.
-
-Kriteria keluar: setiap butir punya test atau gate yang membuktikan perilakunya, bukan hanya komentar.
+- L1: `REDIS_TLS_ENABLED` dan `REDIS_TLS_CA_FILE` masuk ke `Config`; `redis_wiring.go` membangun
+  `TLSConfig` minimum TLS 1.2, memakai system roots bila bundle kosong, dan menolak bundle yang tidak
+  bisa dibaca atau tidak memuat sertifikat. `POSTGRES_DSN` wajib `sslmode=verify-ca` atau `verify-full`
+  saat `APP_ENV` bukan `development`; `disable`, `require`, dan nilai kosong ditolak karena tidak
+  memverifikasi identitas server.
+- L2: `Plan` mengembalikan error bila `List` gagal dan provider memiliki pin pool. Tanpa pin, planner
+  tetap menjawab "tanpa rencana" karena shared client sudah membawa rute statis; degradasi itu yang
+  mencegah kegagalan baca menjatuhkan data plane.
+- L3: `proxies.List`, `provider_nodes.List`, dan `combos.Names` dibatasi `LIMIT 1000`. `ProxyRouteService`
+  menyimpan hasil `List` selama 5 detik di bawah mutex, dan kegagalan baca tidak pernah di-cache sehingga
+  error sementara dicoba lagi pada request berikutnya.
+- L4: paragraf duplikat di `NewGatewayKey` dihapus; `@reason` `media_provider` menyebut guard egress
+  bersama yang memeriksa alamat hasil resolve saat dial, bukan katup yang belum terpasang.
+- Test: `config_transport_test.go` menguji ketujuh kombinasi profil/sslmode dan lima kombinasi Redis TLS;
+  `redis_wiring_test.go` memeriksa opsi client, minimum TLS, bundle valid, dan bundle rusak;
+  `TestProxyRouteService_Plan_UnreadablePool` memisahkan pin dari warisan global;
+  `TestProxyRouteService_Plan_ReusesThePoolReadWithinTheWindow` menghitung pembacaan; tiga test integrasi
+  PostgreSQL menyisipkan satu baris di atas batas dan memastikan hasilnya tepat 1000.
+- Kriteria keluar: setiap butir punya test atau gate yang membuktikan perilakunya, bukan hanya komentar.
+  Hasil pada pass ini: `go test -race -count=1 ./...` exit 0 (20 paket ok, 0 FAIL), test integrasi
+  PostgreSQL 17 untuk tiga cap `LIMIT` PASS, `go-lint` 0 issue, `go-headers` 1500 file PASS, `antislop`
+  PASS, `gate-scope` PASS, `go-vuln` 0 reachable (3 module-only), dan `git diff --check` bersih.
 
 ### Fase 4: INFO
 
@@ -148,3 +164,15 @@ scrypts/gates/all.sh
 - Kegagalan `RevokeAll` setelah CAS tidak diulang otomatis: password sudah berubah, jadi password lama tidak
   bisa dipakai lagi untuk mengulang request. Caller menerima kondisi terpisah yang menyebut password sudah
   berubah tetapi sesi lama belum tercabut.
+- `sslmode=require` sengaja ikut ditolak di luar `development`: ia mengenkripsi koneksi tanpa memverifikasi
+  identitas server, jadi tidak menutup risiko yang ditemukan. Hanya `verify-ca` dan `verify-full` yang
+  diterima, dan `development` dikecualikan agar stack lokal dengan `sslmode=disable` tetap bisa boot.
+- TLS Redis bersifat opt-in, bukan wajib per profil. Audit meminta dukungan transport, bukan pemaksaan:
+  memaksa TLS akan memutus deployment yang Redis-nya hanya reachable lewat jaringan privat, dan keputusan
+  itu milik operator. Bundle CA opsional; kosong berarti system roots.
+- Fail-closed L2 dibatasi pada provider yang punya pin. Tanpa pin, planner mengembalikan rencana kosong dan
+  shared client tetap memakai rute statis global, jadi tidak ada dial langsung yang melewati proxy yang
+  diwajibkan; menjadikannya error justru akan menjatuhkan data plane karena kegagalan baca yang sementara.
+- Batas 1000 dipilih jauh di atas pool yang bisa dirawat tangan, sehingga cap hanya menjaga tabel yang tumbuh
+  karena impor massal. Cache 5 detik cukup untuk menghapus satu pembacaan per request tanpa membuat edit
+  panel menunggu restart; kegagalan baca tidak disimpan agar error sementara tidak menempel selama window.

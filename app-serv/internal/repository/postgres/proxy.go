@@ -28,6 +28,11 @@ import (
 const proxyColumns = `id, label, protocol, host, port, username, password_encrypted,
 	enabled, status, created_at, updated_at`
 
+// proxyListLimit bounds one pool read. It sits far above a pool an operator can
+// maintain by hand, so the cap only stops an accidental bulk import from making
+// every route plan read the whole table.
+const proxyListLimit = 1000
+
 // proxyStatusDocument is the jsonb shape of a candidate's last test result. A
 // concrete struct, so the column has one declared decode contract
 // (AGENTS.md §1.4).
@@ -69,14 +74,15 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
 	return nil
 }
 
-// List returns every candidate ordered by label, which is the order the panel
-// shows and the order an operator scans.
+// List returns up to proxyListLimit candidates ordered by label, which is the
+// order the panel shows and the order an operator scans.
 //
-// Unbounded by design and stated as the §1.7 tradeoff: a proxy row exists only
-// because an operator created it, and the pool editor reads the whole list to
-// label every candidate's pool, so paging it would show a partial label set.
+// The pool editor reads the whole list to label every candidate's pool, so the
+// bound is a safety cap rather than pagination: staying under it keeps the panel
+// complete, and hitting it means the table grew outside the hand-maintained set
+// this engine is built for.
 func (r *ProxyRepository) List(ctx context.Context) ([]domain.Proxy, error) {
-	rows, err := r.pool.Query(ctx, `SELECT `+proxyColumns+` FROM proxies ORDER BY label, id`)
+	rows, err := r.pool.Query(ctx, `SELECT `+proxyColumns+` FROM proxies ORDER BY label, id LIMIT $1`, proxyListLimit)
 	if err != nil {
 		return nil, fmt.Errorf("proxies: %w", err)
 	}

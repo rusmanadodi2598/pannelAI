@@ -12,6 +12,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -124,6 +125,45 @@ func TestProxyRouteService_Plan(t *testing.T) {
 				if got[i] != tc.wantIDs[i] {
 					t.Fatalf("Plan() ids = %v, want %v", got, tc.wantIDs)
 				}
+			}
+		})
+	}
+}
+
+// TestProxyRouteService_Plan_UnreadablePool pins the fail-closed boundary: a
+// provider pinned to a pool cannot be served by dialing around that pool, while
+// a provider that inherits the global setting still reaches the shared client,
+// which carries the static route.
+func TestProxyRouteService_Plan_UnreadablePool(t *testing.T) {
+	cases := []struct {
+		name     string
+		document domain.Settings
+		provider string
+		wantErr  bool
+	}{
+		{"a pinned provider fails closed", bindingDocument("", "", "openai", domain.ProviderProxy{PoolID: "prx_a"}), "openai", true},
+		{"a provider on the global setting degrades to the shared route", planDocument("", "http://static.example.com:3128"), "openai", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			svc := NewProxyRouteService(ProxyRouteDeps{
+				Proxies:  &fakeProxyLister{err: errors.New("pool read failed")},
+				Routes:   &fakeRouteStore{parked: map[string]bool{}},
+				Settings: &fakePlanSettings{document: tc.document},
+				Opener:   &fakePlanOpener{},
+			})
+			plan, err := svc.Plan(context.Background(), tc.provider, "api.destination.example")
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("Plan() = nil error, want the pinned pool's read failure")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Plan() error = %v", err)
+			}
+			if len(plan) != 0 {
+				t.Fatalf("Plan() ids = %v, want no plan so the shared client serves the request", attemptIDs(plan))
 			}
 		})
 	}

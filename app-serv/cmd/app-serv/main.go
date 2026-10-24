@@ -63,14 +63,10 @@ func run() error {
 	}
 	defer pool.Close()
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:         cfg.RedisAddr,
-		Password:     cfg.RedisPassword,
-		PoolSize:     cfg.RedisPoolSize,
-		DialTimeout:  cfg.RedisDialTimeout,
-		ReadTimeout:  cfg.RedisReadTimeout,
-		WriteTimeout: cfg.RedisWriteTimeout,
-	})
+	rdb, err := buildRedisClient(cfg)
+	if err != nil {
+		return err
+	}
 	defer func() { _ = rdb.Close() }()
 
 	// The schema ships inside the binary, so a fresh checkout boots against an

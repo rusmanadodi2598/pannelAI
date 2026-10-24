@@ -19,11 +19,13 @@ import (
 )
 
 type fakeProxyLister struct {
-	rows []domain.Proxy
-	err  error
+	rows  []domain.Proxy
+	err   error
+	calls int
 }
 
 func (f *fakeProxyLister) List(context.Context) ([]domain.Proxy, error) {
+	f.calls++
 	return f.rows, f.err
 }
 

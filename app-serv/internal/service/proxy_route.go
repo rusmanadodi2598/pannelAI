@@ -3,7 +3,7 @@
 // @file      internal/service/proxy_route.go
 // @for       The proxy route engine's one decision: which proxy candidates a request dials through, in which order (docs/PORT/008-PORT-PROXY-ENGINE.md D1-D6).
 // @uses      internal/domain, internal/repository, context, net/url, strings, time.
-// @reason    §7.11 makes the pool a set of tested candidates and the owner's directive makes it carry traffic: one service owns the plan so the two dataplane call sites walk one order rather than re-implementing the strategy. Every rule the plan applies (usability, exemption, stable order, rotation, parking, the static last resort) is pinned by proxy_route_test.go, and each degradation is deliberate: a pool the process cannot read must not take the data plane down.
+// @reason    §7.11 makes the pool a set of tested candidates and the owner's directive makes it carry traffic: one service owns the plan so the two dataplane call sites walk one order rather than re-implementing the strategy. Every rule the plan applies (usability, exemption, stable order, rotation, parking, the static last resort) is pinned by proxy_route_test.go, and the degradations are deliberate: an unreadable pool degrades to the shared route when the provider inherits the global setting, while a pinned provider fails closed because the pin is the operator's instruction.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -15,11 +15,17 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
+
+// proxyListCacheTTL is how long one pool read is reused. The plan runs once per
+// proxied request while the pool changes by hand, so a short window removes the
+// per-request read without making a panel edit wait for a restart.
+const proxyListCacheTTL = 5 * time.Second
 
 // planSettingsReader is the settings read the plan needs per request.
 type planSettingsReader interface {
@@ -56,6 +62,11 @@ type ProxyRouteService struct {
 	settings planSettingsReader
 	opener   planSecretOpener
 	clock    func() time.Time
+
+	mu          sync.Mutex
+	cached      []domain.Proxy
+	cachedAt    time.Time
+	cachedValid bool
 }
 
 // NewProxyRouteService returns the service, defaulting the clock to time.Now when
@@ -72,6 +83,29 @@ func NewProxyRouteService(deps ProxyRouteDeps) *ProxyRouteService {
 		opener:   deps.Opener,
 		clock:    clock,
 	}
+}
+
+// listProxies reuses one pool read for proxyListCacheTTL. A read failure is
+// never cached, so a transient database error is retried on the next request.
+func (s *ProxyRouteService) listProxies(ctx context.Context) ([]domain.Proxy, error) {
+	s.mu.Lock()
+	if s.cachedValid && s.clock().Sub(s.cachedAt) < proxyListCacheTTL {
+		rows := s.cached
+		s.mu.Unlock()
+		return rows, nil
+	}
+	s.mu.Unlock()
+
+	rows, err := s.proxies.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s.mu.Lock()
+	s.cached = rows
+	s.cachedAt = s.clock()
+	s.cachedValid = true
+	s.mu.Unlock()
+	return rows, nil
 }
 
 // Plan returns the proxy attempts one request from providerID to destHost walks,
@@ -102,12 +136,16 @@ func (s *ProxyRouteService) Plan(ctx context.Context, providerID, destHost strin
 		return nil, nil
 	}
 
-	rows, err := s.proxies.List(ctx)
+	rows, err := s.listProxies(ctx)
 	if err != nil {
-		// A pool the process cannot read degrades to the shared route at the read
-		// boundary: the static URL still proxies, and the empty-URL bypass still
-		// dials direct.
-		//nolint:nilerr // reason: an unreadable pool is answered as "no plan" rather than as a fault, so the shared client serves the request exactly as it did before the engine existed; failing it would take the data plane down over an optimisation.
+		// A pin is the operator's instruction, so an unreadable pool refuses the
+		// request instead of quietly dialing around it. Without a pin the shared
+		// client already carries the static route, and keeping that degradation is
+		// what stops a read failure from taking the data plane down.
+		if binding.PoolID != "" {
+			return nil, fmt.Errorf("reading the proxy pool pinned by %s: %w", providerID, err)
+		}
+		//nolint:nilerr // reason: the shared client still applies the global static route, so an unreadable pool is answered as "no plan" rather than a fault.
 		return nil, nil
 	}
 	usable := make([]domain.Proxy, 0, len(rows))

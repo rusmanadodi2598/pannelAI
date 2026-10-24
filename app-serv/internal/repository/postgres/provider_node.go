@@ -26,6 +26,10 @@ import (
 // nodeColumns is the projection every node read uses, in scan order.
 const nodeColumns = `id, type, name, prefix, api_type, base_url, created_at, updated_at`
 
+// nodeListLimit bounds one node read. The panel reads the whole hand-configured
+// set, so the cap is a safety bound rather than pagination.
+const nodeListLimit = 1000
+
 // NodeRepository persists custom provider nodes in PostgreSQL.
 type NodeRepository struct {
 	pool *pgxpool.Pool
@@ -56,15 +60,14 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 	return nil
 }
 
-// List returns every node, ordered by prefix so the list is stable. It is
-// deliberately unpaginated: nodes are a hand-configured set, and the §1.7 rule
-// against unbounded reads is about request-serving tables that grow with traffic
-// (upstream_endpoints, usage_records), not about a table an operator fills in by
-// hand.
+// List returns up to nodeListLimit nodes, ordered by prefix so the list is
+// stable. Nodes are hand-configured, so the bound is a safety cap rather than
+// pagination; it keeps the §1.7 rule against fetch-all reads true even for a
+// table that normally stays small.
 func (r *NodeRepository) List(ctx context.Context) ([]domain.ProviderNode, error) {
-	const q = `SELECT ` + nodeColumns + ` FROM provider_nodes ORDER BY prefix, id`
+	const q = `SELECT ` + nodeColumns + ` FROM provider_nodes ORDER BY prefix, id LIMIT $1`
 
-	rows, err := r.pool.Query(ctx, q)
+	rows, err := r.pool.Query(ctx, q, nodeListLimit)
 	if err != nil {
 		return nil, translateNodeError(err)
 	}

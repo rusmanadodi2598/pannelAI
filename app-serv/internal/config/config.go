@@ -21,11 +21,16 @@ import (
 // Config holds every runtime setting for app-serv. It is loaded once, validated,
 // and then immutable for the process lifetime (AGENTS.md §1.4).
 type Config struct {
-	AppEnv            string
-	HTTPAddr          string
-	PostgresDSN       string
-	RedisAddr         string
-	RedisPassword     string
+	AppEnv          string
+	HTTPAddr        string
+	PostgresDSN     string
+	RedisAddr       string
+	RedisPassword   string
+	RedisTLSEnabled bool
+	// RedisTLSCAFile points at the PEM bundle that signs the Redis server
+	// certificate; empty keeps the system roots. It has no effect without
+	// RedisTLSEnabled, which validate refuses.
+	RedisTLSCAFile    string
 	RedisPoolSize     int
 	RedisDialTimeout  time.Duration
 	RedisReadTimeout  time.Duration
@@ -93,6 +98,7 @@ func Load() (Config, error) {
 		PostgresDSN:       getenv("POSTGRES_DSN", ""),
 		RedisAddr:         getenv("REDIS_ADDR", "localhost:6379"),
 		RedisPassword:     getenv("REDIS_PASSWORD", ""),
+		RedisTLSCAFile:    getenv("REDIS_TLS_CA_FILE", ""),
 		LogLevel:          getenv("LOG_LEVEL", "info"),
 		SessionSecret:     getenv("SESSION_SECRET", ""),
 		EncryptionKey:     getenv("ENCRYPTION_KEY", ""),
@@ -165,6 +171,12 @@ func Load() (Config, error) {
 	}
 	cfg.SessionCookieInsecure = insecureCookie
 
+	redisTLS, err := getenvBool("REDIS_TLS_ENABLED", false)
+	if err != nil {
+		return Config{}, fmt.Errorf("config: REDIS_TLS_ENABLED: %w", err)
+	}
+	cfg.RedisTLSEnabled = redisTLS
+
 	if err := cfg.validate(); err != nil {
 		return Config{}, err
 	}
@@ -174,4 +186,9 @@ func Load() (Config, error) {
 // IsProduction reports whether APP_ENV is a production profile.
 func (c Config) IsProduction() bool {
 	return c.AppEnv == "production"
+}
+
+// IsLocal reports whether APP_ENV is the local development profile.
+func (c Config) IsLocal() bool {
+	return c.AppEnv == "development"
 }

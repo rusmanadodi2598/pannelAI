@@ -12,6 +12,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -25,9 +26,14 @@ func (c Config) validate() error {
 	}
 	if c.PostgresDSN == "" {
 		problems = append(problems, "POSTGRES_DSN is required")
+	} else if !c.IsLocal() && !postgresTLSVerified(c.PostgresDSN) {
+		problems = append(problems, "POSTGRES_DSN must set sslmode=verify-ca or verify-full outside development")
 	}
 	if c.RedisAddr == "" {
 		problems = append(problems, "REDIS_ADDR is required")
+	}
+	if c.RedisTLSCAFile != "" && !c.RedisTLSEnabled {
+		problems = append(problems, "REDIS_TLS_CA_FILE requires REDIS_TLS_ENABLED=true")
 	}
 	if len(c.SessionSecret) < 32 {
 		problems = append(problems, "SESSION_SECRET must be at least 32 bytes")
@@ -94,4 +100,28 @@ func (c Config) validate() error {
 		return fmt.Errorf("config: invalid: %s", strings.Join(problems, "; "))
 	}
 	return nil
+}
+
+// postgresTLSVerified reports whether the DSN asks the driver to verify the
+// server certificate. The driver default, prefer, encrypts without verifying,
+// so an unset sslmode is refused along with require and disable. Both the URL
+// and key/value DSN forms libpq accepts are read.
+func postgresTLSVerified(dsn string) bool {
+	mode := ""
+	if strings.Contains(dsn, "://") {
+		parsed, err := url.Parse(dsn)
+		if err != nil {
+			return false
+		}
+		mode = parsed.Query().Get("sslmode")
+	} else {
+		for _, field := range strings.Fields(dsn) {
+			key, value, ok := strings.Cut(field, "=")
+			if ok && key == "sslmode" {
+				mode = value
+				break
+			}
+		}
+	}
+	return mode == "verify-ca" || mode == "verify-full"
 }

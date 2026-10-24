@@ -47,8 +47,6 @@ type GatewayKey struct {
 }
 
 // NewGatewayKey is the only constructor for a freshly issued key. Callers pass
-// the plaintext once; the domain keeps the digest and the masking hint only.
-// NewGatewayKey is the only constructor for a freshly issued key. Callers pass
 // the plaintext once; the domain keeps the digest, and the caller computes the
 // masking hint (the visible prefix is configurable, so it is a service concern).
 func NewGatewayKey(name, plaintext, keyHint string, now time.Time) GatewayKey {
