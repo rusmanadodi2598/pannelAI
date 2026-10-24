@@ -41,10 +41,12 @@ export const SKILLS_COPY = {
 		 * read as "7 of 7" while seven rows report a 404, and a count that cannot move tells the
 		 * operator nothing about the thing they are looking at.
 		 */
-		summary: (published: number, total: number) =>
-			published === 1
-				? `1 of ${total} sources is published.`
-				: `${published} of ${total} sources are published.`,
+		summary: (published: number, total: number) => {
+			const source = total === 1 ? 'source' : 'sources';
+			return published === 1
+				? `1 of ${total} ${source} is published.`
+				: `${published} of ${total} ${source} are published.`;
+		},
 		checking: (total: number) => (total === 1 ? 'Checking 1 source' : `Checking ${total} sources`),
 		checkAgain: 'Check again',
 		checkingRow: 'Checking the source',

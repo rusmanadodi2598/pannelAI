@@ -47,12 +47,19 @@
 	}
 
 	// `probes` is emptied first, so a row with no entry in it is one the check has not answered yet
-	// rather than one the panel has an old answer for.
+	// rather than one the panel has an old answer for. Each answer lands on its own row, so the entry
+	// line is usable while a slower capability source is still being checked.
 	async function checkSources(next: SkillCatalog): Promise<void> {
 		probing = true;
 		probes = {};
-		probes = await probeSkillSources(orderSkills(next.data));
-		probing = false;
+
+		try {
+			await probeSkillSources(orderSkills(next.data), (id, probe) => {
+				probes = { ...probes, [id]: probe };
+			});
+		} finally {
+			probing = false;
+		}
 	}
 
 	// Reads the catalog out of state before awaiting, so the control never hands a null to the probe.

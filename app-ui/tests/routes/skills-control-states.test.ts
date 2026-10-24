@@ -43,7 +43,7 @@ describe('Skills control states', () => {
 		await loaded();
 
 		const link = within(rowFor('pannelai-chat')).getByRole('link', {
-			name: 'Read it on GitHub'
+			name: 'Read it on GitHub: Chat'
 		}) as HTMLAnchorElement;
 
 		expect(link.getAttribute('href')).toMatch(/^https:\/\/github\.com\//);
@@ -54,14 +54,14 @@ describe('Skills control states', () => {
 
 	it('gives the copy control the row the screen is for', async () => {
 		// The install line is what an operator comes to take, and taking it is a press rather than a
-		// glance, so the dense table shape does not apply here.
+		// glance, so the dense table shape does not apply here: the icon-only control keeps a 44px square.
 		stubSkills(skillCatalog());
 		render(SkillsPage);
 		await loaded();
 
-		const copies = screen.getAllByRole('button', { name: 'Copy install line' });
+		const copies = screen.getAllByRole('button', { name: /Copy install line/ });
 		expect(copies).toHaveLength(3);
-		for (const copy of copies) expect(copy.className).toContain('min-h-11');
+		for (const copy of copies) expect(copy.className).toContain('size-11');
 	});
 
 	it('gives a failed catalog read its retry', async () => {

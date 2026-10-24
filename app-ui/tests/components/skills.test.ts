@@ -80,7 +80,9 @@ describe('SkillsPage entry skill', () => {
 		const block = within(entryBlock());
 		expect(block.getByText('Source available')).toBeTruthy();
 
-		await fireEvent.click(block.getByRole('button', { name: 'Copy install line' }));
+		await fireEvent.click(
+			block.getByRole('button', { name: 'Copy install line for pannelAI (Entry)' })
+		);
 
 		expect(copied[0]).toBe(line);
 	});
@@ -94,7 +96,7 @@ describe('SkillsPage entry skill', () => {
 		).toBeTruthy();
 
 		const block = within(entryBlock());
-		expect(block.queryByRole('button', { name: 'Copy install line' })).toBeNull();
+		expect(block.queryByRole('button', { name: /Copy install line/ })).toBeNull();
 		expect(block.getByText('Source unavailable')).toBeTruthy();
 		// The address stays on screen: it names the path that has to be published.
 		expect(block.getByText(DEFAULT_ROWS[0].raw_url)).toBeTruthy();
@@ -125,7 +127,9 @@ describe('SkillsPage capability rows', () => {
 		expect(chat.getByText('/chat/completions')).toBeTruthy();
 		expect(chat.getByText(DEFAULT_ROWS[1].raw_url)).toBeTruthy();
 
-		const link = chat.getByRole('link', { name: 'Read it on GitHub' }) as HTMLAnchorElement;
+		const link = chat.getByRole('link', {
+			name: 'Read it on GitHub: Chat'
+		}) as HTMLAnchorElement;
 		expect(link.getAttribute('href')).toBe(DEFAULT_ROWS[1].blob_url);
 	});
 
@@ -140,12 +144,14 @@ describe('SkillsPage capability rows', () => {
 		expect(
 			image.getByText('No file at that path (HTTP 404). Publish it in the repository.')
 		).toBeTruthy();
-		expect(image.queryByRole('button', { name: 'Copy install line' })).toBeNull();
-		expect(image.queryByRole('link', { name: 'Read it on GitHub' })).toBeNull();
+		expect(image.queryByRole('button', { name: /Copy install line/ })).toBeNull();
+		expect(image.queryByRole('link', { name: /Read it on GitHub/ })).toBeNull();
 
 		// The row that did answer keeps its control, so the rule is per row rather than per page.
 		expect(
-			within(rowFor('pannelai-chat')).getByRole('button', { name: 'Copy install line' })
+			within(rowFor('pannelai-chat')).getByRole('button', {
+				name: 'Copy install line for Chat'
+			})
 		).toBeTruthy();
 	});
 
@@ -184,7 +190,9 @@ describe('SkillsPage source check', () => {
 		expect(await screen.findByText('3 of 3 sources are published.')).toBeTruthy();
 		expect(stub.sources.length).toBe(6);
 		expect(
-			within(rowFor('pannelai-image')).getByRole('button', { name: 'Copy install line' })
+			within(rowFor('pannelai-image')).getByRole('button', {
+				name: 'Copy install line for Image Generation'
+			})
 		).toBeTruthy();
 	});
 
