@@ -107,7 +107,7 @@
 		}
 
 		onresolved(provider.provider_id, result.data);
-		saved = 'Saved. This kind now uses that address.';
+		saved = 'Saved. This kind now uses this configuration.';
 	}
 </script>
 
@@ -116,21 +116,21 @@
 	aria-labelledby={`media-${provider.provider_id}`}
 >
 	<div class="flex flex-wrap items-baseline justify-between gap-2">
-		<div class="flex flex-col">
-			<h2 id={`media-${provider.provider_id}`} class="text-base font-medium">
+		<div class="flex min-w-0 flex-1 flex-col">
+			<h2 id={`media-${provider.provider_id}`} class="min-w-0 text-base font-medium">
 				<Button
 					href={resolve('/providers/[provider_id]', { provider_id: provider.provider_id })}
 					variant="ghost"
-					class="px-2 text-base underline"
+					class="w-full min-w-0 justify-start whitespace-normal break-words px-2 text-left text-base underline"
 				>
-					{provider.provider_name}
+					<span class="min-w-0 break-words">{provider.provider_name}</span>
 				</Button>
 			</h2>
-			<p class="text-sm text-[var(--color-text-muted)]">{provider.provider_id}</p>
+			<p class="break-all text-sm text-[var(--color-text-muted)]">{provider.provider_id}</p>
 		</div>
 		<!-- The count is scoped to this provider and this kind, so it is stated rather than linked: the
 		     endpoint screen filters by provider alone, and a link there would promise a narrower list. -->
-		<p class="text-sm text-[var(--color-text-muted)]">
+		<p class="text-sm text-[var(--color-text-muted)] max-sm:basis-full">
 			{provider.endpoint_count}
 			{provider.endpoint_count === 1 ? 'endpoint' : 'endpoints'}
 			{provider.endpoint_count === 0 ? ' configured for this kind yet' : ' for this kind'}
@@ -174,7 +174,7 @@
 	</div>
 
 	{#if undeclared}
-		<p class="text-xs text-[var(--color-text-muted)]">
+		<p class="break-all text-xs text-[var(--color-text-muted)]">
 			Currently {undeclared}, no longer declared. The registry default clears it.
 		</p>
 	{/if}

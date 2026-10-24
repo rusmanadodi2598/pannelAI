@@ -80,7 +80,9 @@
 			{kind === null ? 'Media providers' : mediaKindLabel(kind)}
 		</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			Providers for this kind, and the address each uses.
+			{kind === null
+				? 'Pick one of the six media kinds.'
+				: 'Providers for this kind, and the address each uses.'}
 		</p>
 	</div>
 

@@ -68,6 +68,7 @@ describe('the page reads one kind', () => {
 		renderKind('chat');
 
 		await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+		expect(screen.getByText('Pick one of the six media kinds.')).toBeTruthy();
 		expect(stub.reads).toEqual([]);
 		// §8.6.2's control is absent here for the same reason: there is no read to repeat, and a button that
 		// silently did nothing would read as broken.

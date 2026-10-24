@@ -61,6 +61,23 @@ describe('what a card shows', () => {
 		);
 	});
 
+	it('wraps a long provider name and id inside the card', async () => {
+		const longName =
+			'TH HARBOR 1 with a very long custom provider display name for layout pressure';
+		const longId = 'openai-compatible-0386BKG9Q4DYZPYC01VJH4C51G';
+		stubMediaProviders({
+			rows: [mediaRow({ provider_name: longName, provider_id: longId, endpoint_count: 1 })]
+		});
+		renderKind('tts');
+
+		const link = await screen.findByRole('link', { name: longName });
+		expect(link.className).toContain('whitespace-normal');
+		expect(link.className).toContain('w-full');
+		expect(screen.getByText(longName).className).toContain('break-words');
+		expect(screen.getByText(longId).className).toContain('break-all');
+		expect(screen.getByText('1 endpoint for this kind').className).toContain('max-sm:basis-full');
+	});
+
 	it('fills the base URL field when the override is what the gateway is dialing', async () => {
 		stubMediaProviders({
 			rows: [
