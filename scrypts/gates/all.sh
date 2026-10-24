@@ -33,6 +33,7 @@ run_gate() {
 
 run_gate "gate scope routing (which gates a change set earns)" bash "$root/scrypts/gates/gate-scope-test.sh"
 run_gate "go lint (vet, gofmt, staticcheck, golangci-lint)" bash "$root/scrypts/gates/go-lint.sh"
+run_gate "go vuln (govulncheck)" bash "$root/scrypts/gates/go-vuln.sh"
 run_gate "go headers (AGENTS.md §1.2)" bash "$root/scrypts/gates/go-headers.sh"
 run_gate "antislop comment rules (R-02, separators, doc length, field shape)" bash "$root/scrypts/gates/antislop.sh"
 run_gate "go test (race)" bash "$root/scrypts/gates/go-test.sh"

@@ -5,8 +5,8 @@
 # checks live here rather than in pre-commit so the commit path stays fast enough
 # that people do not bypass it.
 #
-#   1. Go: build, vet, gofmt, staticcheck (default and integration-tagged) and the
-#      race-enabled test suite, with golangci-lint when installed
+#   1. Go: build, vet, gofmt, staticcheck (default and integration-tagged),
+#      govulncheck, and the race-enabled test suite, with golangci-lint when installed
 #   2. app-ui: prettier, eslint, svelte-kit sync, svelte-check, vitest, production build
 #   3. antislop comment rules: R-02, separators and banners, the §1.2 header shape,
 #      doc block length, and suppressions without a stated reason
@@ -119,6 +119,7 @@ printf 'go:    %s\npanel: %s\n' "$GATE_SCOPE_GO_WHY" "$GATE_SCOPE_FE_WHY"
 
 if [ "$GATE_SCOPE_GO" = 1 ]; then
 	run_gate "go lint (vet, gofmt, staticcheck)" bash "$root/scrypts/gates/go-lint.sh"
+	run_gate "go vuln (govulncheck)" bash "$root/scrypts/gates/go-vuln.sh"
 	run_gate "go test (race)" bash "$root/scrypts/gates/go-test.sh"
 fi
 

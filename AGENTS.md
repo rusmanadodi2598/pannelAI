@@ -240,7 +240,7 @@ Untuk mendukung stabilitas microservices dan mempercepat delivery, codebase ini 
 
 ## Stack
 
-- **Go (Golang)**, latest stable release (currently 1.26.5), pinned via the `toolchain` directive in `go.mod`.
+- **Go (Golang)**, latest stable release (currently 1.26.10), pinned via the `toolchain` directive in `go.mod`.
 - **PostgreSQL**, primary datastore. Connection-pool limits set explicitly per service (see §1.7).
 - **Redis**: replay guard, rate limiter, cache, idempotence store.
 - **HMAC-SHA256**: service-to-service (S2S) authentication (see §1.6).

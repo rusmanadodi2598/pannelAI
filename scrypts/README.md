@@ -19,6 +19,7 @@ stale after an update.
 | Gate | Checks |
 |---|---|
 | `gates/go-lint.sh` | `go vet`, `gofmt -l`, `staticcheck`, `golangci-lint`, on the default and `integration`-tagged builds |
+| `gates/go-vuln.sh` | `govulncheck`: published vulnerabilities reachable from the service code |
 | `gates/go-headers.sh` | AGENTS.md §1.2 header contract on every hand-authored Go file |
 | `gates/antislop.sh` | antislop comment rules: R-02 tree-wide, separators, banners, emoji, ` , ` artifacts, header field shape, doc-block length and citations on changed Go files |
 | `gates/go-test.sh` | `go test -race`, plus the tagged integration suite when a DSN is set |
@@ -115,9 +116,10 @@ unverified.
 
 | Tool | Needed by | Install |
 |---|---|---|
-| `go` 1.26+ | go-lint, go-test, go-headers | https://go.dev/dl/ |
+| `go` 1.26.10+ | go-lint, go-vuln, go-test, go-headers | https://go.dev/dl/ |
 | `gofmt` | go-lint, pre-commit | ships with Go |
 | `staticcheck` | go-lint | `go install honnef.co/go/tools/cmd/staticcheck@latest` |
+| `govulncheck` | go-vuln | `go install golang.org/x/vuln/cmd/govulncheck@v1.9.0` |
 | `golangci-lint` | go-lint (optional) | https://golangci-lint.run/welcome/install/ |
 | `gitleaks` 8.30+ | secrets, pre-commit, pre-push | https://github.com/gitleaks/gitleaks#installing |
 | `bun` or `node`+`npm` | panel-check | https://bun.sh (or Node 22+) |
