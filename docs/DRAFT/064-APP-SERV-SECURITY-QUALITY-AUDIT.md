@@ -5,11 +5,11 @@ suite `-race`; status tiap butir diperbarui saat perbaikannya mendarat.
 
 | | |
 | --- | --- |
-| **Status** | Fase 0 sampai Fase 5 selesai; seluruh temuan (H1, M1-M2, L1-L4, I1) tertutup. `govulncheck` melaporkan 0 CVE reachable, `go test -race -count=1 ./...` exit 0, dan `all.sh` PASS pada kesepuluh gerbang. Sisa 3 temuan tingkat module ada di `golang.org/x/crypto/ssh` dan `openpgp` yang tidak diimpor dan tidak terpanggil. |
+| **Status** | Fase 0 sampai Fase 6 selesai; seluruh temuan kode (H1, M1-M2, L1-L4, I1) tertutup, dan dua dari tiga temuan module-only (MOD1-MOD2) tertutup lewat bump `golang.org/x/crypto`. `govulncheck` melaporkan 0 CVE reachable, `go test -race -count=1 ./...` exit 0, dan `all.sh` PASS pada kesepuluh gerbang. Sisa 1 temuan tingkat module adalah `openpgp`: tidak diimpor, tidak terpanggil, dan tidak punya versi perbaikan. |
 | **Sumber** | Audit read-only `app-serv`: `go build`, `go vet`, `gofmt`, `staticcheck v0.8.1`, `go test ./...`, `go test -race` pada paket kritis, dan `govulncheck` (16 CVE reachable). |
 | **Lingkup** | `app-serv` (`cmd/`, `internal/`, `migrations/`, `go.mod`) plus gate `scrypts/gates/` dan `.github/workflows/gates.yml`. |
 | **Tidak termasuk** | `app-ui`, deployment multi-replika, dan perubahan bentuk wire. |
-| **Struktural (AGENTS.md §1.9)** | Fase 1 N/A. Fase 2 mengubah bentuk state sesi: `SYSTEM_MAP.md` diperbarui pada alur login/guard dan daftar key Redis; tidak ada perubahan domain, wire, atau batas service. Fase 3 N/A: TLS/sslmode adalah konfigurasi transport, fail-closed hanya mengubah cara planner menjawab kegagalan baca, dan `LIMIT` serta cache tetap internal; tidak ada domain, wire, atau batas service yang berubah. Fase 4 N/A: guard origin adalah middleware pada permukaan handler yang sudah ada; tidak ada domain, wire, atau batas service yang berubah. |
+| **Struktural (AGENTS.md §1.9)** | Fase 1 N/A. Fase 2 mengubah bentuk state sesi: `SYSTEM_MAP.md` diperbarui pada alur login/guard dan daftar key Redis; tidak ada perubahan domain, wire, atau batas service. Fase 3 N/A: TLS/sslmode adalah konfigurasi transport, fail-closed hanya mengubah cara planner menjawab kegagalan baca, dan `LIMIT` serta cache tetap internal; tidak ada domain, wire, atau batas service yang berubah. Fase 4 N/A: guard origin adalah middleware pada permukaan handler yang sudah ada; tidak ada domain, wire, atau batas service yang berubah. Fase 6 N/A: bump dependensi dan direktif `go`; tidak ada domain, wire, atau batas service yang berubah. |
 
 ## 1. Baseline yang sudah dijalankan
 
@@ -57,6 +57,14 @@ GO-2026-6613/6605 mendesinkronkan koneksi HTTP/1 CONNECT; GO-2026-6218 membebani
 | --- | --- | --- | --- | --- |
 | I1 | CSRF hanya bersandar pada `SameSite=Lax` + JSON | `internal/handler/auth_cookie.go:37` | Pemeriksaan `Origin`/`Referer` sebagai lapisan kedua | Selesai: `RequireSession` dan `Login` menolak mutasi yang menyebut host lain lewat `Sec-Fetch-Site`, lalu `Origin`/`Referer` dengan `X-Forwarded-Host`; request tanpa header browser tetap diterima; test handler dan mux menolak origin asing |
 | I2 | CI tidak menjalankan pemindaian kerentanan | `.github/workflows/gates.yml` | Ditutup oleh H1 | Selesai bersama H1 |
+
+### 2.5 Module-only
+
+| ID | Temuan | Bukti | Perbaikan | Status |
+| --- | --- | --- | --- | --- |
+| MOD1 | DoS pada channel `ssh` yang macet | `app-serv/go.mod:11`; govulncheck GO-2026-6355 | Naikkan `golang.org/x/crypto` ke versi yang memuat perbaikan | Selesai: v0.58.0 (perbaikan tersedia sejak v0.56.0) |
+| MOD2 | DoS pada channel `ssh` yang belum diputuskan | `app-serv/go.mod:11`; govulncheck GO-2026-6354 | Sama dengan MOD1 | Selesai: v0.58.0 (perbaikan tersedia sejak v0.56.0) |
+| MOD3 | Paket `openpgp` tidak dirawat dan punya isu keamanan | `app-serv/go.mod:11`; govulncheck GO-2026-5932 | Tidak ada versi perbaikan; paket tidak diimpor | Terbuka, bukan blocker: `bcrypt` yang dipakai berasal dari modul yang sama, dan tidak ada simbol `openpgp` di binary |
 
 ## 3. Fase kerja
 
@@ -150,7 +158,20 @@ Semua pemeriksaan di §1 dijalankan pada working tree bersih sebelum perubahan a
   topologi async. Fase 2 memperbarui alur login/guard dan daftar key Redis; Fase 3 dan Fase 4 hanya
   menyentuh konfigurasi transport dan kebijakan di dalam handler.
 - Status tabel diperbarui: tidak ada temuan yang tersisa. Tiga temuan module-only tetap tercatat dan
-  tidak terpanggil oleh kode.
+  tidak terpanggil oleh kode; Fase 6 menutup dua di antaranya.
+
+### Fase 6: temuan module-only (selesai sebagian)
+
+- `golang.org/x/crypto` naik dari v0.55.0 ke v0.58.0; perbaikan kedua advisori `ssh` tersedia sejak
+  v0.56.0. `go get` ikut menaikkan `golang.org/x/sync` ke v0.24.0, `x/sys` ke v0.49.0, dan `x/text` ke
+  v0.43.0, serta menormalkan direktif `go` menjadi `1.26.0`; tidak ada API yang dipakai yang berubah.
+- `openpgp` tetap tercatat karena advisori itu tidak punya versi perbaikan dan paketnya tidak dirawat.
+  Paket itu tidak diimpor: satu-satunya simbol yang dipakai dari modul ini adalah `bcrypt`, sehingga tidak
+  ada jalur kode yang bisa dicapai.
+- Kriteria keluar: temuan module-only turun dari tiga menjadi satu, 0 reachable, dan seluruh test tetap
+  hijau. Hasil pada pass ini: `go build`, `go vet`, dan `gofmt -l` bersih; `go test -race -count=1 ./...`
+  exit 0 (20 paket ok, 0 FAIL); `govulncheck` 0 reachable dan 1 module-only (GO-2026-5932); `all.sh` PASS
+  pada kesepuluh gerbang.
 
 ## 4. Gerbang verifikasi
 
@@ -203,3 +224,7 @@ scrypts/gates/all.sh
   menunjuk host panel. `X-Forwarded-Host` yang diisi proxy panel menjembatani keduanya untuk browser lama.
   Browser tidak bisa memalsukan header itu, dan klien non-browser yang bisa memalsukannya tidak perlu
   melewati guard ini karena dapat menghilangkan header sekalian.
+- Bump `golang.org/x/crypto` dipilih daripada menambah pengecualian gate: kedua advisori `ssh` punya versi
+  perbaikan, jadi naik ke v0.58.0 menghapusnya dari laporan tanpa mekanisme suppress. `openpgp` tidak bisa
+  dihapus dengan cara yang sama karena advisori itu tidak punya versi perbaikan dan `bcrypt` yang dipakai
+  berasal dari modul yang sama; memisahkannya bukan pilihan yang tersedia.
