@@ -24,6 +24,7 @@
 	import { pickerSections } from '$lib/schemas/model-picker';
 	import type { CatalogModel } from '$lib/schemas/model';
 	import type { Provider } from '$lib/schemas/provider';
+	import { formatTimestamp } from '$lib/utils/time';
 	import { getVisionAdapter, replaceVisionAdapter } from '$lib/api/vision-adapter';
 	import {
 		buildVisionAdapterBody,
@@ -151,7 +152,9 @@
 			<span class="text-[var(--color-text-muted)]">Current state:</span>
 			{status}
 			{#if adapter?.updated_at}
-				<span class="text-[var(--color-text-muted)]">, last saved {adapter.updated_at}</span>
+				<span class="text-[var(--color-text-muted)]"
+					>, last saved {formatTimestamp(adapter.updated_at)}</span
+				>
 			{/if}
 		</p>
 

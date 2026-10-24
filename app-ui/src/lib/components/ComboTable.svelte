@@ -12,6 +12,7 @@
 	import { ChevronDown } from '@lucide/svelte';
 	import { Button } from '$lib/primitives/button/index.js';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
+	import { formatTimestamp } from '$lib/utils/time';
 	import {
 		comboModelSummary,
 		comboStrategyLabel,
@@ -58,7 +59,7 @@
 			<div class="flex items-center gap-2 px-3 py-2">
 				<Button
 					variant="ghost"
-					class="min-w-0 flex-1 justify-start text-left text-sm font-medium text-[var(--color-text)]"
+					class="min-w-0 flex-1 flex-wrap justify-start text-left text-sm font-medium text-[var(--color-text)]"
 					aria-expanded={expanded[combo.id] === true}
 					aria-controls={`combo-detail-${combo.id}`}
 					onclick={() => toggle(combo.id)}
@@ -68,7 +69,8 @@
 						aria-hidden="true"
 					/>
 					<span class="truncate">{combo.name}</span>
-					<span class="ms-auto shrink-0 text-xs font-normal text-[var(--color-text-muted)]"
+					<span
+						class="ms-auto shrink-0 text-xs font-normal text-[var(--color-text-muted)] max-sm:ms-0 max-sm:basis-full"
 						>{comboStrategyLabel(combo.strategy)} · {comboModelSummary(combo)}</span
 					>
 				</Button>
@@ -127,7 +129,7 @@
 							: 'Not used'}
 					</dd>
 					<dt class="text-[var(--color-text-muted)]">Updated</dt>
-					<dd>{combo.updated_at ?? 'Unknown'}</dd>
+					<dd>{combo.updated_at ? formatTimestamp(combo.updated_at) : 'Unknown'}</dd>
 				</dl>
 			{/if}
 		</section>
