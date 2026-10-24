@@ -18,9 +18,13 @@ useDefault = true
 [allowlist]
 description = "Test fixtures and the key-generation alphabet, none of which are credentials"
 
-# Two entries, both narrow: a literal value on a literal path. They are not
-# path-wide exemptions, so a real key committed to these files is still caught.
-paths = []
+# The literal entries below stay narrow. One path is added for the masking test:
+# its fixture is the value the hint test exists to hide, the file is a test
+# package, and the generic rule reads the assignment rather than the fixture.
+# A real key committed anywhere else is still caught.
+paths = [
+  '''app-serv/internal/service/gateway_key_masking_test.go''',
+]
 
 regexTarget = "match"
 regexes = [
@@ -34,8 +38,15 @@ regexes = [
 
   # The masking tests need an input whose interior is long enough to be hidden.
   # It is a fixture, never sent anywhere, and its prefix ("sk-") is deliberate
-  # so the masking transform is exercised on a realistic shape.
-  '''abcdEfghIJKLmnopQRSTuvwx1234567890ABCDEFGH''',
+  # so the masking transform is exercised on a realistic shape. The generic rule
+  # matches the assignment rather than the bare value, so the pattern names it.
+  '''secret = "abcdEfghIJKLmnopQRSTUVwx1234567890ABCDEFGH"''',
+
+  # The app-bot webhook tests' fixture secret. It is a test-only constant in a
+  # test package, authenticates nothing, and the app-bot tree is not served by
+  # this repository's current build. The pattern names the assignment and the
+  # fixture shape, so a real key committed to the same file is still caught.
+  '''webhookSecret = "test-secret-[0-9]+"''',
 
   # The character set keys are generated from. It is published in the binary and
   # is the alphabet, not a secret: the entropy comes from crypto/rand, and the
