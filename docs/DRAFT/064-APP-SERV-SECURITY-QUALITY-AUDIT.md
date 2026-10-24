@@ -5,11 +5,11 @@ Dokumen ini adalah **rencana kerja**, bukan catatan yang sudah selesai. Temuan s
 
 | | |
 | --- | --- |
-| **Status** | Fase 0 (baseline), Fase 1 (H1), Fase 2 (M1/M2), dan Fase 3 (L1-L4) selesai. `govulncheck` melaporkan 0 CVE reachable; suite `-race` dan suite integrasi Redis/PostgreSQL hijau. Sisa 3 temuan tingkat module ada di `golang.org/x/crypto/ssh` dan `openpgp` yang tidak diimpor. Fase 4 belum dikerjakan. |
+| **Status** | Fase 0 (baseline), Fase 1 (H1), Fase 2 (M1/M2), Fase 3 (L1-L4), dan Fase 4 (I1) selesai. `govulncheck` melaporkan 0 CVE reachable; suite `-race` dan suite integrasi Redis/PostgreSQL hijau. Sisa 3 temuan tingkat module ada di `golang.org/x/crypto/ssh` dan `openpgp` yang tidak diimpor. Fase 5 (penutupan) belum dijalankan. |
 | **Sumber** | Audit read-only `app-serv`: `go build`, `go vet`, `gofmt`, `staticcheck v0.8.1`, `go test ./...`, `go test -race` pada paket kritis, dan `govulncheck` (16 CVE reachable). |
 | **Lingkup** | `app-serv` (`cmd/`, `internal/`, `migrations/`, `go.mod`) plus gate `scrypts/gates/` dan `.github/workflows/gates.yml`. |
 | **Tidak termasuk** | `app-ui`, deployment multi-replika, dan perubahan bentuk wire. |
-| **Struktural (AGENTS.md §1.9)** | Fase 1 N/A. Fase 2 mengubah bentuk state sesi: `SYSTEM_MAP.md` diperbarui pada alur login/guard dan daftar key Redis; tidak ada perubahan domain, wire, atau batas service. Fase 3 N/A: TLS/sslmode adalah konfigurasi transport, fail-closed hanya mengubah cara planner menjawab kegagalan baca, dan `LIMIT` serta cache tetap internal; tidak ada domain, wire, atau batas service yang berubah. |
+| **Struktural (AGENTS.md §1.9)** | Fase 1 N/A. Fase 2 mengubah bentuk state sesi: `SYSTEM_MAP.md` diperbarui pada alur login/guard dan daftar key Redis; tidak ada perubahan domain, wire, atau batas service. Fase 3 N/A: TLS/sslmode adalah konfigurasi transport, fail-closed hanya mengubah cara planner menjawab kegagalan baca, dan `LIMIT` serta cache tetap internal; tidak ada domain, wire, atau batas service yang berubah. Fase 4 N/A: guard origin adalah middleware pada permukaan handler yang sudah ada; tidak ada domain, wire, atau batas service yang berubah. |
 
 ## 1. Baseline yang sudah dijalankan
 
@@ -55,7 +55,7 @@ GO-2026-6613/6605 mendesinkronkan koneksi HTTP/1 CONNECT; GO-2026-6218 membebani
 
 | ID | Temuan | Bukti | Perbaikan | Status |
 | --- | --- | --- | --- | --- |
-| I1 | CSRF hanya bersandar pada `SameSite=Lax` + JSON | `internal/handler/auth_cookie.go:37` | Pemeriksaan `Origin`/`Referer` sebagai lapisan kedua | Belum |
+| I1 | CSRF hanya bersandar pada `SameSite=Lax` + JSON | `internal/handler/auth_cookie.go:37` | Pemeriksaan `Origin`/`Referer` sebagai lapisan kedua | Selesai: `RequireSession` dan `Login` menolak mutasi yang menyebut host lain lewat `Sec-Fetch-Site`, lalu `Origin`/`Referer` dengan `X-Forwarded-Host`; request tanpa header browser tetap diterima; test handler dan mux menolak origin asing |
 | I2 | CI tidak menjalankan pemindaian kerentanan | `.github/workflows/gates.yml` | Ditutup oleh H1 | Selesai bersama H1 |
 
 ## 3. Fase kerja
@@ -120,10 +120,24 @@ Semua pemeriksaan di §1 dijalankan pada working tree bersih sebelum perubahan a
   PostgreSQL 17 untuk tiga cap `LIMIT` PASS, `go-lint` 0 issue, `go-headers` 1500 file PASS, `antislop`
   PASS, `gate-scope` PASS, `go-vuln` 0 reachable (3 module-only), dan `git diff --check` bersih.
 
-### Fase 4: INFO
+### Fase 4: INFO (selesai)
 
-- I1: pemeriksaan `Origin`/`Referer` untuk endpoint state-changing, dengan test yang menolak origin asing
-  dan tetap menerima request tanpa header dari klien non-browser.
+- I1: `sameOriginRequest` di `auth_origin.go` memeriksa request state-changing sebelum handler berjalan.
+  `Sec-Fetch-Site` dipakai lebih dulu karena hanya browser yang menurunkannya dan proxy panel meneruskan
+  header apa adanya; `same-origin` dan `none` diterima, `same-site` dan `cross-site` ditolak. Bila header
+  itu tidak ada, `Origin` lalu `Referer` dibandingkan dengan `X-Forwarded-Host` (host yang dilihat browser
+  di balik panel) atau `Host`; origin `null`, origin tanpa host, dan URL yang tidak bisa di-parse ditolak.
+  Request tanpa ketiga header adalah klien non-browser dan tetap diterima, karena klien seperti itu bisa
+  menghilangkan header alih-alih memalsukannya.
+- Guard dipasang di `RequireSession` (semua route manajemen) dan `Login`; route data plane memakai gateway
+  key, bukan cookie, sehingga tidak ikut dibatasi.
+- Test: `TestSameOriginRequest` menutup 14 kombinasi metode dan header;
+  `TestAuthHandlerRefusesAForeignOrigin` membuktikan login asing tidak memberi cookie dan sesi valid dari
+  origin asing ditolak; `TestManagementMutationsRefuseAForeignOrigin` membuktikan wiring mux untuk route
+  manajemen.
+- Kriteria keluar: origin asing ditolak sebelum mutasi berjalan, klien non-browser tetap diterima.
+  Hasil pada pass ini: `go test ./... -count=1` exit 0 (20 paket ok), `go-lint` 0 issue, `go-headers`
+  1503 file PASS, `antislop` PASS, `gate-scope` PASS, dan `git diff --check` bersih.
 
 ### Fase 5: penutupan
 
@@ -176,3 +190,8 @@ scrypts/gates/all.sh
 - Batas 1000 dipilih jauh di atas pool yang bisa dirawat tangan, sehingga cap hanya menjaga tabel yang tumbuh
   karena impor massal. Cache 5 detik cukup untuk menghapus satu pembacaan per request tanpa membuat edit
   panel menunggu restart; kegagalan baca tidak disimpan agar error sementara tidak menempel selama window.
+- Guard I1 membaca `Sec-Fetch-Site` lebih dulu, bukan `Origin`, karena panel meneruskan `/api/v1` dari
+  server-nya sendiri: `Host` yang diterima app-serv adalah host app-serv, sedangkan `Origin` browser
+  menunjuk host panel. `X-Forwarded-Host` yang diisi proxy panel menjembatani keduanya untuk browser lama.
+  Browser tidak bisa memalsukan header itu, dan klien non-browser yang bisa memalsukannya tidak perlu
+  melewati guard ini karena dapat menghilangkan header sekalian.

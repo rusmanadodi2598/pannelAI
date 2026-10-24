@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/clientip"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
@@ -36,6 +37,9 @@ func NewAuthHandler(auth *service.AuthService, cookie SessionCookieOptions, trus
 
 // Login serves POST /api/v1/auth/login and sets the session cookie on success.
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	if !guardOrigin(w, r) {
+		return
+	}
 	var req schema.LoginRequest
 	if err := schema.DecodeJSON(r, &req); err != nil {
 		schema.WriteError(w, err)
@@ -106,12 +110,25 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 // RequireSession rejects protected routes before their handlers run.
 func (h *AuthHandler) RequireSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !guardOrigin(w, r) {
+			return
+		}
 		if err := h.auth.Authenticate(r.Context(), sessionToken(r)); err != nil {
 			schema.WriteError(w, err)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// guardOrigin answers false after writing the 403 when a cookie-authenticated
+// mutation names another origin.
+func guardOrigin(w http.ResponseWriter, r *http.Request) bool {
+	if sameOriginRequest(r) {
+		return true
+	}
+	schema.WriteError(w, domain.NewForbiddenError("cross-origin request refused"))
+	return false
 }
 
 // clientAddress answers which client the login limiter buckets this request
