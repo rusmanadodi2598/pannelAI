@@ -1,11 +1,11 @@
 # 064-APP-SERV-SECURITY-QUALITY-AUDIT.md: 16 CVE stdlib dan rotasi sesi yang bisa balapan
 
-Dokumen ini adalah **rencana kerja**, bukan catatan yang sudah selesai. Temuan sudah diverifikasi di kode,
-`govulncheck`, dan suite `-race`; status tiap butir diperbarui saat perbaikannya mendarat.
+Dokumen ini mencatat rencana kerja dan hasilnya. Temuan sudah diverifikasi di kode, `govulncheck`, dan
+suite `-race`; status tiap butir diperbarui saat perbaikannya mendarat.
 
 | | |
 | --- | --- |
-| **Status** | Fase 0 (baseline), Fase 1 (H1), Fase 2 (M1/M2), Fase 3 (L1-L4), dan Fase 4 (I1) selesai. `govulncheck` melaporkan 0 CVE reachable; suite `-race` dan suite integrasi Redis/PostgreSQL hijau. Sisa 3 temuan tingkat module ada di `golang.org/x/crypto/ssh` dan `openpgp` yang tidak diimpor. Fase 5 (penutupan) belum dijalankan. |
+| **Status** | Fase 0 sampai Fase 5 selesai; seluruh temuan (H1, M1-M2, L1-L4, I1) tertutup. `govulncheck` melaporkan 0 CVE reachable, `go test -race -count=1 ./...` exit 0, dan `all.sh` PASS pada kesepuluh gerbang. Sisa 3 temuan tingkat module ada di `golang.org/x/crypto/ssh` dan `openpgp` yang tidak diimpor dan tidak terpanggil. |
 | **Sumber** | Audit read-only `app-serv`: `go build`, `go vet`, `gofmt`, `staticcheck v0.8.1`, `go test ./...`, `go test -race` pada paket kritis, dan `govulncheck` (16 CVE reachable). |
 | **Lingkup** | `app-serv` (`cmd/`, `internal/`, `migrations/`, `go.mod`) plus gate `scrypts/gates/` dan `.github/workflows/gates.yml`. |
 | **Tidak termasuk** | `app-ui`, deployment multi-replika, dan perubahan bentuk wire. |
@@ -139,10 +139,18 @@ Semua pemeriksaan di §1 dijalankan pada working tree bersih sebelum perubahan a
   Hasil pada pass ini: `go test ./... -count=1` exit 0 (20 paket ok), `go-lint` 0 issue, `go-headers`
   1503 file PASS, `antislop` PASS, `gate-scope` PASS, dan `git diff --check` bersih.
 
-### Fase 5: penutupan
+### Fase 5: penutupan (selesai)
 
-- `go test -race -count=1 ./...`, `scrypts/gates/go-lint.sh`, `go-headers.sh`, `antislop.sh`, `go-vuln.sh`,
-  dan `all.sh` dijalankan; status tabel diperbarui; `SYSTEM_MAP.md` ditandai N/A atau diperbarui.
+- `go test -race -count=1 ./...` exit 0 (20 paket ok, 0 FAIL), dan `scrypts/gates/all.sh` PASS pada
+  kesepuluh gerbang: gate scope, go lint, go vuln, go headers, antislop, go test (race), panel checks,
+  secrets, contract drift, dan contract artifact.
+- Suite integrasi PostgreSQL tidak dijalankan pada pass ini karena `PANNELAI_TEST_POSTGRES_DSN` tidak
+  disetel; ketiga test cap `LIMIT` sudah dijalankan pada Fase 3 terhadap PostgreSQL 17 sementara dan PASS.
+- `SYSTEM_MAP.md` ditandai N/A: seluruh fase tidak mengubah domain, data, interaksi service, atau
+  topologi async. Fase 2 memperbarui alur login/guard dan daftar key Redis; Fase 3 dan Fase 4 hanya
+  menyentuh konfigurasi transport dan kebijakan di dalam handler.
+- Status tabel diperbarui: tidak ada temuan yang tersisa. Tiga temuan module-only tetap tercatat dan
+  tidak terpanggil oleh kode.
 
 ## 4. Gerbang verifikasi
 
